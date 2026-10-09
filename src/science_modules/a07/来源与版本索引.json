@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "version": "A07.double_report.14",
+  "frozen_dependencies": [
+    {
+      "path": "src/report_flow.py",
+      "sha256": "eef9efcf2609c77f7fc1a8d2c6469cf88c34597ac135e69adfadab6085abe49a"
+    },
+    {
+      "path": "src/report_flow_pathway.py",
+      "sha256": "9d32fd55faf5b545a768b1058575c978c721c2a8fb77de4a4480a30c7b6a0756"
+    },
+    {
+      "path": "src/report_figures.py",
+      "sha256": "eb8774874b9efac8d282c47291112030c7d9353dd7e75e612e6bf924253dd04b"
+    }
+  ],
+  "extensions": [
+    {
+      "path": "src/science_modules/a07/reports.py",
+      "sha256": "2c729ac05acf8b07b5f291af6fc475395ae02aac0622d2fe1f528a58df905865"
+    }
+  ]
+}

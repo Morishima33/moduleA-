@@ -11,14 +11,11 @@ def selected_record(workflow, manifest): # 未准备或未批准时不纳入可�
 def run_reports(workflow, study_id, expected_a07, reason, **kwargs): # 网页和自动衔接共用可选通路分派。
     manifest = workflow.load(study_id) # 读取本次科学与审批版本。
     record = selected_record(workflow,manifest) # 同时核验批准图件指纹。
-    if record: # 当前通路获用户认可才使用新增生成器。
-        from report_flow_pathway import run_reports as generate # 原生成器文件保持原样。
-    else: # 其他研究保持原报告行为。
-        from report_flow import run_reports as generate # 不强加通路候选关口。
+    from science_modules.a07.reports import run_reports as generate # 新报告使用第14版，旧实现保留复算。
     return generate(workflow,study_id,expected_a07,reason,**kwargs) # 完整A07仍待人工复核。
 
 def validator(root): # 新旧报告均按自身保存契约校验。
-    from report_flow_pathway import validator as validate # 新校验器兼容已归档旧报告。
+    from science_modules.a07.reports import validator as validate # 新校验器兼容已归档旧报告。
     return validate(root) # 不迁移或改写历史结果。
 
 def require_alignment(workflow, manifest, run): # 完整报告批准前核对可选通路最新决定。
