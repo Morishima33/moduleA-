@@ -86,7 +86,8 @@ export default function TaskDrawer({ open, focusTaskId, onClose, studyId, onTask
   const retry = async (t: Task) => {
     try {
       const r = await api.retryTask(t.task_id); // 请求重试
-      message.success(r.created ? '已重新排队' : '已有同类任务在进行，未重复创建');
+      if (r.task.state === 'failed') message.error(r.task.error_zh || '任务重试启动失败，请查看失败原因。');
+      else message.success(r.created ? '重试任务已提交' : '已有同类任务在进行，未重复创建');
       setLogTask(r.task.task_id); // 展开新任务日志
       onActive([r.task]); // 交给外层跟踪
       load();

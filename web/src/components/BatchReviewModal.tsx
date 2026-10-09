@@ -80,7 +80,8 @@ export default function BatchReviewModal({ open, studyId, current, otherId, onCl
         })),
       };
       const res = await api.batchReview(studyId, body);
-      message.success(res.message_zh);
+      if (res.task?.state === 'failed') message.warning(res.message_zh);
+      else message.success(res.message_zh);
       onClose();
       onSaved(res.task); // 刷新；有任务时打开任务面板
     } catch (e) {

@@ -89,7 +89,9 @@ export default function StudyPage({ studyId, moduleId, runId }: { studyId: strin
       onOk: async () => {
         try {
           const r = await api.continue(studyId); // 提交后台任务
-          message.success(r.created ? '后台任务已开始' : '已有同类任务在进行');
+          // 启动失败已有终态与原因，不能提示成功。
+          if (r.task.state === 'failed') message.error(r.task.error_zh || '后台任务启动失败，请查看任务面板。');
+          else message.success(r.created ? '后台任务已提交' : '已有同类任务在进行');
           app.trackTasks([r.task]);
           app.openTasks(r.task.task_id);
         } catch (e) {

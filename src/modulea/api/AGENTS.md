@@ -13,7 +13,7 @@
 
 | HTTP | code | 场景 |
 |---|---|---|
-| 400 | BAD_REQUEST | JSON 或编号格式错误 |
+| 400 | BAD_REQUEST | JSON、编号或整数查询参数格式错误；`details.field` 指出参数 |
 | 403 | FORBIDDEN_ORIGIN / BAD_TOKEN | 安全检查失败 |
 | 404 | NOT_FOUND | 研究、模块、运行、表格或文件不存在 |
 | 409 | STALE_VERSION | 版本已变化 |
@@ -69,6 +69,14 @@
 | POST `/tasks/{tid}:cancel` / `:retry` | 取消 / 重试 |
 
 任务对象 `Task`：`{task_id, study_id, kind, kind_zh, state: queued|running|succeeded|failed|cancelled|interrupted, state_zh, requested_by, message_zh, error_zh, progress: {step_zh, done, total}|null, created_at, started_at, finished_at}`。前端每 3 秒轮询有活动任务的研究即可。
+
+### 参数与任务失败处理（2026-10-09 基础修复）
+
+- `page`、`size`、`offset` 不是整数时返回 400 `BAD_REQUEST`，`details.field` 为参数名。合法整数继续沿用页码至少 1、每页 1—500 条、日志偏移至少 0 的边界处理。
+- `Content-Length` 非整数或负数返回 400；超过正文限制仍返回 413。
+- 提交/重试的 202 表示任务已登记，**不表示子进程一定启动成功**。启动失败时返回的 `task.state=failed`，同时有 `error_zh` 与 `finished_at`；前端显示失败原因并保留手动重试入口。
+- 保存复核的 201 仍表示决定已保存；若随后启动后台任务失败，`message_zh` 明确分别说明保存成功与启动失败，前端用警告提示。
+- GET 任务列表/详情时检查进程状态。Windows 只读探测进程，禁止通过 `os.kill(pid, 0)` 检查存活；排队任务保留 30 秒启动宽限。丢失进程的活动任务标记中断，不自动重跑。
 
 ## 4 StudyCard / StudyView
 

@@ -12,12 +12,14 @@ import sys
 import tempfile
 import threading
 import unittest
+from unittest.mock import Mock, patch
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 
-from modulea.api.server import create_server  # noqa: E402
+from modulea.api.server import Request, create_server  # noqa: E402
+from modulea.api.errors import ApiError
 from modulea.config import load_settings  # noqa: E402
 from modulea.core import modules as registry  # noqa: E402
 from modulea.core.status import map_state  # noqa: E402
@@ -95,6 +97,40 @@ class ApiTest(unittest.TestCase):
         status, body = self.call("GET", "/api/v1/studies/study_00000000000000000000000000000000")
         self.assertEqual(status, 404)
 
+    def test_invalid_integer_parameters_are_bad_requests(self):
+        table = f"/api/v1/studies/{self.study}/modules/A01/tables/herb_summary"
+        for field in ("page", "size"):
+            for value in ("abc", "1.5"):
+                with self.subTest(field=field, value=value):
+                    status, body = self.call("GET", table + f"?{field}={value}")
+                    self.assertEqual(status, 400, body)
+                    self.assertEqual(body["error"]["code"], "BAD_REQUEST")
+                    self.assertEqual(body["error"]["details"]["field"], field)
+        status, body = self.call("GET", "/api/v1/tasks/task_missing/log?offset=abc")
+        self.assertEqual(status, 400, body)
+        self.assertEqual(body["error"]["details"]["field"], "offset")
+        status, body = self.call("GET", table + "?page=-1&size=999")
+        self.assertEqual(status, 200)
+        self.assertEqual(body["page"], 1)
+        self.assertEqual(body["size"], 500)
+
+    def test_task_startup_failure_can_be_retried_from_api(self):
+        missing = str(Path(self.tmp.name) / "does-not-exist.exe")
+        with patch.object(self.app.settings, "science_python", missing):
+            status, body = self.call("POST", f"/api/v1/studies/{self.study}:continue")
+            self.assertEqual(status, 202, body)
+            first = body["task"]
+            self.assertEqual(first["state"], "failed")
+            self.assertIn("启动失败", first["error_zh"])
+            status, body = self.call("POST", f"/api/v1/tasks/{first['task_id']}:retry")
+            self.assertEqual(status, 202, body)
+            self.assertTrue(body["created"])
+            self.assertNotEqual(body["task"]["task_id"], first["task_id"])
+            self.assertEqual(body["task"]["state"], "failed")
+        status, body = self.call("GET", f"/api/v1/tasks?study={self.study}&active=1")
+        self.assertEqual(status, 200)
+        self.assertEqual(body["items"], [])
+
     # ---- 安全 ----
     def test_security_checks(self):
         status, body = self.call("GET", "/api/v1/session", host="evil.example:80")
@@ -146,6 +182,19 @@ class ApiTest(unittest.TestCase):
         status, body = self.call("POST", f"/api/v1/studies/{self.study}:restore",
                                  {"operator": "测试", "reason": "恢复", "expected_action_id": study["management"]["expected_action_id"], "confirm": True})
         self.assertEqual(status, 201, body)
+
+
+class RequestValidationTest(unittest.TestCase):
+    def test_bad_content_length_rejected_before_body_read(self):
+        for value in ("-1", "abc", "1.5"):
+            with self.subTest(value=value):
+                handler = Mock()
+                handler.headers = {"Content-Length": value}
+                with self.assertRaises(ApiError) as caught:
+                    Request(handler, {}).json()
+                self.assertEqual(caught.exception.status, 400)
+                self.assertEqual(caught.exception.details["field"], "Content-Length")
+                handler.rfile.read.assert_not_called()
 
 
 class StatusMappingTest(unittest.TestCase):

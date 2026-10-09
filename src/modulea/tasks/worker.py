@@ -7,16 +7,13 @@
 
 from __future__ import annotations
 
+import os
 import traceback
-from datetime import datetime, timezone
 
 from ..config import Settings
 from ..core.kernel import full_workflow
 from .manager import TaskManager
 
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
 
 
 def run_continue(settings: Settings, task: dict, manager: TaskManager) -> str:
@@ -41,17 +38,19 @@ def run_task(settings: Settings, task_id: str) -> int:
     if not task:
         print("找不到任务：" + task_id, flush=True)
         return 2
-    manager.update(task_id, state="running", started_at=_now())
+    if not manager.claim(task_id, os.getpid()):
+        print("任务已取消、中断或已被认领，不重复执行：" + task_id, flush=True)
+        return 1
     try:
         text = HANDLERS[task["kind"]](settings, task, manager)
-        manager.update(task_id, state="succeeded", finished_at=_now(), message_zh=text)
+        manager.finish(task_id, "succeeded", message_zh=text)
         return 0
     except ModuleNotFoundError as error:  # 科学依赖缺失：说明缺什么、怎么处理
         traceback.print_exc()
-        manager.update(task_id, state="failed", finished_at=_now(),
+        manager.finish(task_id, "failed",
                        error_zh=f"后台计算所用的 Python 缺少科学依赖 {error.name}；请在 config/local.toml 的 science_python 指定已安装科学依赖的解释器后重试。已有结果未受影响。")
         return 1
     except Exception as error:  # 任务失败要如实记录，不伪装成空结果
         traceback.print_exc()
-        manager.update(task_id, state="failed", finished_at=_now(), error_zh=f"{type(error).__name__}: {error}")
+        manager.finish(task_id, "failed", error_zh=f"{type(error).__name__}: {error}")
         return 1

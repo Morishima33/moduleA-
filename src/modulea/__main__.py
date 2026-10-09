@@ -9,7 +9,9 @@
 from __future__ import annotations
 
 import argparse
-import importlib.util
+import json
+import os
+import subprocess
 import sys
 import webbrowser
 from pathlib import Path
@@ -72,27 +74,78 @@ def main(argv: list[str] | None = None) -> int:
     return 1
 
 
+SCIENCE_DEPS = ("networkx", "docx", "rdkit", "meeko", "gemmi", "numpy")
+
+
+def probe_science_python(executable: str) -> dict:
+    """只读探测配置的科学解释器，不使用服务解释器的依赖结果。"""
+    script = """import sys, json, importlib.util
+names = %r
+found = {}
+for name in names:
+    try:
+        found[name] = importlib.util.find_spec(name) is not None
+    except (ImportError, ValueError):
+        found[name] = False
+print(json.dumps({"executable": sys.executable, "version": list(sys.version_info[:3]), "dependencies": found}))
+""" % (SCIENCE_DEPS,)
+    try:
+        result = subprocess.run([executable, "-c", script], capture_output=True, text=True,
+                                encoding="utf-8", errors="replace", timeout=15,
+                                creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
+    except (OSError, ValueError) as error:
+        return {"passed": False, "error_zh": f"科学解释器无法启动（{type(error).__name__}）；请检查 science_python。"}
+    except subprocess.TimeoutExpired:
+        return {"passed": False, "error_zh": "科学解释器探测超时（15 秒）。"}
+    if result.returncode != 0:
+        return {"passed": False, "error_zh": f"科学解释器探测失败，退出码 {result.returncode}。"}
+    try:
+        payload = json.loads(result.stdout)
+        version, dependencies = payload["version"], payload["dependencies"]
+        if (not isinstance(version, list) or len(version) < 2 or
+                any(type(v) is not int for v in version) or
+                not isinstance(payload["executable"], str) or
+                any(type(dependencies[name]) is not bool for name in SCIENCE_DEPS)):
+            raise ValueError
+    except (ValueError, KeyError, TypeError):
+        return {"passed": False, "error_zh": "科学解释器探测返回了无效结果。"}
+    payload["passed"] = tuple(version[:2]) >= (3, 11) and all(dependencies.values())
+    if tuple(version[:2]) < (3, 11):
+        payload["error_zh"] = "后台任务需要 Python 3.11 或更新版本。"
+    return payload
+
+
 def doctor(settings) -> int:
-    """逐项打印本机环境检查结果。科学依赖缺失只影响后台计算，不影响查看与复核。"""
+    """环境或归档异常返回非零；缺少科学依赖仍允许只读查看与复核页面。"""
     from .core.kernel import Kernel
 
     print("项目根目录：", settings.project_root)
-    print("数据目录：  ", settings.data_root, "（存在）" if settings.studies_dir.exists() else "（缺少 studies/）")
-    print("科学解释器：", settings.science_python)
-    kernel = Kernel(settings)
-    workflow = kernel.workflow()
+    passed = settings.studies_dir.is_dir()
+    print("数据目录：  ", settings.data_root, "（存在）" if passed else "（缺少 studies/）")
+    print("配置科学解释器：", settings.science_python)
+    workflow = Kernel(settings).workflow()
     for trashed in (False, True):
-        for manifest in workflow.studies(trashed=trashed):
-            try:
-                workflow.view(manifest["study_id"])
-                state = "归档核验通过"
-            except Exception as error:
-                state = "归档未就绪：" + str(error)
-            print(f"  研究 {manifest['study_id']}{'（回收站）' if trashed else ''}：{state}")
-    for name in ("networkx", "docx", "rdkit", "meeko", "gemmi", "numpy"):
-        found = importlib.util.find_spec(name) is not None
-        print(f"  科学依赖 {name:<9}：{'已安装' if found else '缺失（仅影响后台计算）'}")
-    return 0
+        try:
+            studies = workflow.studies(trashed=trashed)
+            for manifest in studies:
+                try:
+                    workflow.view(manifest["study_id"])
+                    state = "归档核验通过"
+                except Exception as error:
+                    passed = False
+                    state = "归档未就绪：" + str(error)
+                print(f"  研究 {manifest['study_id']}{'（回收站）' if trashed else ''}：{state}")
+        except Exception as error:
+            passed = False
+            print("研究目录读取失败：", str(error))
+    probe = probe_science_python(settings.science_python)
+    if probe.get("executable"):
+        print("实际科学解释器：", probe["executable"], "Python", ".".join(map(str, probe["version"])))
+        for name in SCIENCE_DEPS:
+            print(f"  科学依赖 {name:<9}：{'已安装' if probe['dependencies'][name] else '缺失（仅影响后台计算）'}")
+    if probe.get("error_zh"):
+        print(probe["error_zh"])
+    return 0 if passed and probe["passed"] else 1
 
 
 if __name__ == "__main__":

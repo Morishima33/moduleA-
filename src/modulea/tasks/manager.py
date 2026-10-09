@@ -4,7 +4,7 @@
 规则（问题清单 Q13/Q14，用户同意按建议执行）：
 - 同一研究同一时刻只运行一个写入型任务；重复提交返回已有任务，不重复执行。
 - 取消会结束子进程；被取消或中断的运行不会被复用，旧文件全部保留。
-- 服务重启时，记录为 running 但进程已不存在的任务标记为 interrupted，不自动重跑，由用户点“重试”。
+- 启动失败记为 failed；丢失进程的 running 或过期 queued 记为 interrupted，不自动重跑，由用户点“重试”。
 任务索引存在 <runtime_dir>/tasks.sqlite，它只是运行时信息；研究事实仍以 studies/ 下的归档为准。
 """
 
@@ -17,6 +17,8 @@ import sqlite3
 import subprocess
 import threading
 import uuid
+from contextlib import contextmanager
+from collections.abc import Iterator
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -31,11 +33,31 @@ def _now() -> str:
 
 
 def _pid_alive(pid: int | None) -> bool:
-    """判断进程是否仍在运行。"""
-    if not pid:
+    """只读检测进程；Windows 上 os.kill(pid, 0) 会终止进程，禁止使用。"""
+    if not pid or pid <= 0:
         return False
+    if os.name == "nt":
+        import ctypes
+        from ctypes import wintypes
+
+        kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel.OpenProcess.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
+        kernel.OpenProcess.restype = wintypes.HANDLE
+        kernel.WaitForSingleObject.argtypes = (wintypes.HANDLE, wintypes.DWORD)
+        kernel.WaitForSingleObject.restype = wintypes.DWORD
+        kernel.CloseHandle.argtypes = (wintypes.HANDLE,)
+        kernel.CloseHandle.restype = wintypes.BOOL
+        handle = kernel.OpenProcess(0x00100000, False, pid)  # SYNCHRONIZE，无写权限。
+        if not handle:
+            return ctypes.get_last_error() == 5  # 拒绝访问不代表进程已退出。
+        try:
+            return kernel.WaitForSingleObject(handle, 0) != 0  # WAIT_OBJECT_0 表示已经退出。
+        finally:
+            kernel.CloseHandle(handle)
     try:
         os.kill(pid, 0)
+    except PermissionError:
+        return True
     except (OSError, ValueError):
         return False
     return True
@@ -57,10 +79,15 @@ class TaskManager:
             )
         self.reconcile()
 
-    def _connect(self) -> sqlite3.Connection:
+    @contextmanager
+    def _connect(self) -> Iterator[sqlite3.Connection]:
         db = sqlite3.connect(self.db_path, timeout=10)
         db.row_factory = sqlite3.Row
-        return db
+        try:
+            with db:  # 正常提交、异常回滚；SQLite 自身的上下文并不关闭连接。
+                yield db
+        finally:
+            db.close()
 
     # ---- 查询 ----
     def get(self, task_id: str) -> dict | None:
@@ -100,12 +127,25 @@ class TaskManager:
 
     # ---- 状态维护 ----
     def reconcile(self) -> None:
-        """把进程已经不存在的运行中任务标记为中断。"""
-        with self._lock, self._connect() as db:
-            for row in db.execute("SELECT task_id, pid FROM tasks WHERE state='running'").fetchall():
-                if not _pid_alive(row["pid"]):
-                    db.execute("UPDATE tasks SET state='interrupted', finished_at=?, error_zh=? WHERE task_id=?",
-                               (_now(), "任务进程已不存在（工作台关闭或进程异常退出）；不会自动重跑，请确认后重试", row["task_id"]))
+        """恢复丢失进程的活动任务；启动阶段保留 30 秒宽限，不自动重跑。"""
+        with self._lock:
+            self.reconcile_unlocked()
+
+    def claim(self, task_id: str, pid: int) -> bool:
+        """由子进程原子认领排队任务；取消或已认领的任务不能重新开始。"""
+        with self._connect() as db:
+            changed = db.execute(
+                "UPDATE tasks SET state='running', pid=?, started_at=? WHERE task_id=? AND state='queued'",
+                (pid, _now(), task_id),
+            ).rowcount
+        return changed == 1
+
+    def finish(self, task_id: str, state: str, **fields) -> None:
+        """终态只覆盖运行中任务，保留并发取消或中断的决定。"""
+        fields = dict(fields, state=state, finished_at=_now())
+        keys = ", ".join(f"{key}=?" for key in fields)
+        with self._connect() as db:
+            db.execute(f"UPDATE tasks SET {keys} WHERE task_id=? AND state='running'", (*fields.values(), task_id))
 
     def update(self, task_id: str, **fields) -> None:
         """后台子进程用来回写状态、进度和结果说明。"""
@@ -130,14 +170,28 @@ class TaskManager:
             with self._connect() as db:
                 db.execute("INSERT INTO tasks (task_id, study_id, kind, state, requested_by, log_path, created_at) VALUES (?,?,?,?,?,?,?)",
                            (task_id, study_id, kind, "queued", requested_by, str(log_path), _now()))
-            self._spawn(task_id, log_path)
+            try:
+                self._spawn(task_id, log_path)
+            except Exception as error:
+                self.update(task_id, state="failed", finished_at=_now(),
+                            error_zh=f"任务启动失败（{type(error).__name__}）：{error}；请检查 science_python 与运行目录权限后手动重试。")
             return self.get(task_id), True
 
     def reconcile_unlocked(self) -> None:
         with self._connect() as db:
-            for row in db.execute("SELECT task_id, pid FROM tasks WHERE state='running'").fetchall():
-                if not _pid_alive(row["pid"]):
-                    db.execute("UPDATE tasks SET state='interrupted', finished_at=? WHERE task_id=?", (_now(), row["task_id"]))
+            rows = db.execute("SELECT task_id, state, pid, created_at FROM tasks WHERE state IN ('queued','running')").fetchall()
+            for row in rows:
+                if _pid_alive(row["pid"]):
+                    continue
+                if row["state"] == "queued":
+                    try:
+                        created = datetime.fromisoformat(row["created_at"])
+                        if (datetime.now(timezone.utc) - created).total_seconds() < 30:
+                            continue
+                    except (TypeError, ValueError):
+                        pass
+                db.execute("UPDATE tasks SET state='interrupted', finished_at=?, error_zh=? WHERE task_id=? AND state IN ('queued','running')",
+                           (_now(), "任务进程已不存在；不会自动重跑，请确认后手动重试。", row["task_id"]))
 
     def _spawn(self, task_id: str, log_path: Path) -> None:
         """用配置的科学解释器启动子进程：python -m modulea task-run <task_id>。"""
@@ -145,11 +199,10 @@ class TaskManager:
         env["PYTHONPATH"] = str(LEGACY_SRC) + os.pathsep + env.get("PYTHONPATH", "")
         env["MODULEA_DATA_ROOT"] = str(self.settings.data_root)
         command = [self.settings.science_python, "-m", "modulea", "--runtime-dir", str(self.settings.runtime_dir), "task-run", task_id]
-        stream = open(log_path, "ab")
         flags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
-        process = subprocess.Popen(command, cwd=str(self.settings.project_root), env=env, stdout=stream, stderr=subprocess.STDOUT,
-                                   creationflags=flags, start_new_session=(os.name != "nt"))
-        stream.close()
+        with open(log_path, "ab") as stream:
+            process = subprocess.Popen(command, cwd=str(self.settings.project_root), env=env, stdout=stream, stderr=subprocess.STDOUT,
+                                       creationflags=flags, start_new_session=(os.name != "nt"))
         self.update(task_id, pid=process.pid)
 
     def cancel(self, task_id: str) -> dict:
@@ -181,6 +234,7 @@ class TaskManager:
         task = self._raw(task_id)
         if not task:
             raise KeyError(task_id)
+        offset = max(0, offset)
         path = Path(task["log_path"])
         if not path.exists():
             return {"offset": offset, "next_offset": offset, "text": ""}

@@ -62,7 +62,8 @@ export default function ReviewPanel({ studyId, view, onSaved, onStale }: Props) 
   const [changeOpen, setChangeOpen] = useState(false); // 已通过时是否展开“更改决定”
   const [saving, setSaving] = useState<'save' | 'continue' | null>(null); // 正在提交的方式
   const [error, setError] = useState<string | null>(null); // 提交错误
-  const [success, setSuccess] = useState<string | null>(null); // 提交成功说明
+  const [success, setSuccess] = useState<string | null>(null); // 决定已保存的说明
+  const [taskFailed, setTaskFailed] = useState(false); // 保存后后台启动是否失败
   const [batchOpen, setBatchOpen] = useState(false); // 批量复核弹窗
   const decision = Form.useWatch('decision', form) as Decision | undefined; // 当前选择的决定
 
@@ -75,6 +76,7 @@ export default function ReviewPanel({ studyId, view, onSaved, onStale }: Props) 
     setChangeOpen(false);
     setError(null);
     setSuccess(null);
+    setTaskFailed(false);
     form.setFieldsValue({ decision: undefined, note: '', reviewer: rememberedReviewer() });
   }, [view.module.module_id, view.run?.run_id, form]);
 
@@ -90,6 +92,7 @@ export default function ReviewPanel({ studyId, view, onSaved, onStale }: Props) 
     setSaving(after);
     setError(null);
     setSuccess(null);
+    setTaskFailed(false);
     try {
       const res = await api.review(studyId, view.module.module_id, {
         run_id: r.run_id, // 本次复核的运行
@@ -102,7 +105,9 @@ export default function ReviewPanel({ studyId, view, onSaved, onStale }: Props) 
       rememberReviewer(v.reviewer.trim()); // 记住复核人
       form.setFieldsValue({ decision: undefined, note: '' }); // 清空决定与意见，避免重复提交
       setSuccess(res.message_zh); // 显示接口返回的说明
-      message.success(res.message_zh);
+      setTaskFailed(res.task?.state === 'failed'); // 保存成功与任务启动分别显示
+      if (res.task?.state === 'failed') message.warning(res.message_zh);
+      else message.success(res.message_zh);
       setChangeOpen(false);
       onSaved(res.task); // 刷新数据；有任务时打开任务面板
     } catch (e) {
@@ -146,7 +151,7 @@ export default function ReviewPanel({ studyId, view, onSaved, onStale }: Props) 
   if ((r.already_approved || SETTLED.has(code)) && !changeOpen) {
     return (
       <Box title={view.state.label_zh} ok>
-        {success && <Alert type="success" showIcon message={success} />}
+        {success && <Alert type={taskFailed ? "warning" : "success"} showIcon message={success} />}
         <span style={{ fontSize: 14 }}>{code === 'published' ? '两份正式报告已发布，无需重复操作。' : '本版本已通过复核，无需重复操作。'}</span>
         {r.current && <CurrentDecision session={session} r={r} />}
         <Button style={{ alignSelf: 'flex-start' }} onClick={() => setChangeOpen(true)}>更改决定</Button>
@@ -186,7 +191,7 @@ export default function ReviewPanel({ studyId, view, onSaved, onStale }: Props) 
         </Form.Item>
       </Form>
       {error && <Alert type="error" showIcon message={error} />}
-      {success && <Alert type="success" showIcon message={success} />}
+      {success && <Alert type={taskFailed ? "warning" : "success"} showIcon message={success} />}
       {/* 提交按钮 */}
       <Space direction="vertical" style={{ width: '100%' }}>
         {canContinue && (

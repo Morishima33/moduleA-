@@ -88,16 +88,18 @@ class App:
         return {"items": self.views.runs(study_id, module_id)}
 
     def get_table(self, req, study_id, module_id, name):
-        return self.views.table(study_id, module_id, name, req.query1("run_id"), int(req.query1("page") or 1),
-                                int(req.query1("size") or 50), req.query1("q") or "")
+        return self.views.table(study_id, module_id, name, req.query1("run_id"), req.query_int("page", 1),
+                                req.query_int("size", 50), req.query1("q") or "")
 
     def get_inbox(self, req):
         return {"items": self.views.inbox()}
 
     def list_tasks(self, req):
+        self.tasks.reconcile()
         return {"items": self.tasks.list(req.query1("study"), active_only=req.query1("active") == "1")}
 
     def get_task(self, req, task_id):
+        self.tasks.reconcile()
         task = self.tasks.get(task_id)
         if not task:
             raise not_found("任务")
@@ -105,7 +107,7 @@ class App:
 
     def get_task_log(self, req, task_id):
         try:
-            return self.tasks.log(task_id, int(req.query1("offset") or 0))
+            return self.tasks.log(task_id, req.query_int("offset", 0))
         except KeyError:
             raise not_found("任务")
 
@@ -136,7 +138,7 @@ class App:
         if decision == "approved" and (after == "continue" or automatic_a00):
             task, _ = self.tasks.submit(study_id, "continue", "保存并继续")
         return {"review": review, "task": task,
-                "message_zh": "复核决定已保存。" + ("后台已开始生成下一批结果，可在任务面板查看进度。" if task else "")}, 201
+                "message_zh": "复核决定已保存。" + self._task_message(task)}, 201
 
     def post_batch_review(self, req, study_id):
         """A01 与 A02 一次提交、分别留下独立复核记录；任一项冲突则整批拒绝。"""
@@ -156,7 +158,15 @@ class App:
         codes = {m["module_id"]: m["code"] for group in study["nav"] for m in group["modules"]}
         if codes.get("A01") == "approved" and codes.get("A02") == "approved":
             task, _ = self.tasks.submit(study_id, "continue", "A01与A02均通过")
-        return {"reviews": reviews, "task": task, "message_zh": "两项复核决定已保存。" + ("A01 与 A02 均已通过，后台开始生成交集。" if task else "")}, 201
+        return {"reviews": reviews, "task": task, "message_zh": "两项复核决定已保存。" + self._task_message(task)}, 201
+
+    @staticmethod
+    def _task_message(task):
+        if not task:
+            return ""
+        if task["state"] == "failed":
+            return "后台任务未能启动：" + (task.get("error_zh") or "请在任务面板查看原因并手动重试。")
+        return "后台任务已提交，可在任务面板查看进度。"
 
     def post_continue(self, req, study_id):
         """手动触发“推进到下一人工关口”（与保存并继续相同的后台任务）。"""
@@ -213,8 +223,19 @@ class Request:
         values = self.query.get(name)
         return values[0] if values else None
 
+    def query_int(self, name: str, default: int) -> int:
+        try:
+            return int(self.query1(name) or default)
+        except (ValueError, TypeError):
+            raise ApiError(400, "BAD_REQUEST", f"查询参数 {name} 必须是整数", {"field": name}) from None
+
     def json(self) -> dict:
-        length = int(self.handler.headers.get("Content-Length") or 0)
+        try:
+            length = int(self.handler.headers.get("Content-Length") or 0)
+            if length < 0:
+                raise ValueError
+        except ValueError:
+            raise ApiError(400, "BAD_REQUEST", "Content-Length 必须是非负整数", {"field": "Content-Length"}) from None
         if length > MAX_BODY:
             raise ApiError(413, "BODY_TOO_LARGE", "请求内容过大")
         try:
