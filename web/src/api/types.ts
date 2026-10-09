@@ -187,9 +187,24 @@ export interface ReportFile { role: string; label_zh: string; key: string | null
 /** A07 纳入通路 */
 export interface PathwayItem { id: string; name_zh: string; status_zh: string; hits: number }
 
+/** 分库资料入口；格式与当前版本由后端确定。 */
+export interface SourceUploadInfo {
+  enabled: boolean; disabled_reason_zh: string;
+  expected_a00: string; expected_run: string; expected_staging: string;
+  note_zh: string; can_process: boolean; process_reason_zh: string; query_zh: string;
+  sources: SourceUploadItem[];
+}
+export interface SourceUploadItem {
+  database: string; label_zh: string; status_zh: string; hint_zh: string;
+  uploaded_name: string | null; sha256: string | null; download_url: string | null;
+  formats: { value: string; label_zh: string; accept: string; template_url: string }[];
+}
+
 /** 模块专属数据（第 6 节）；各模块只有其中一部分键 */
 export interface Special {
   venn?: Venn;
+  component_top?: { compound_id: string; name: string; herbs: string; main_rank: number; intersection_count: number; mixed_degree: number }[];
+  component_top_note_zh?: string;
   ppi_top?: PpiTopItem[];
   enrichment_top?: Record<string, EnrichItem[]>;
   heatmap?: Heatmap;
@@ -225,6 +240,7 @@ export interface ModuleView {
   history: RunItem[];
   tasks: Task[];
   historical: boolean;
+  source_uploads?: SourceUploadInfo | null;
 }
 
 /** 明细表分页返回 */

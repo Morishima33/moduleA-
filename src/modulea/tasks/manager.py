@@ -25,7 +25,7 @@ from pathlib import Path
 from ..config import LEGACY_SRC, Settings
 
 ACTIVE = ("queued", "running")
-KINDS = {"continue": "自动推进到下一人工关口"}
+KINDS = {"continue": "自动推进到下一人工关口", "source_upload": "分库资料上传与校验", "a01_sources": "整理已上传三库资料"}
 
 
 def _now() -> str:
@@ -77,6 +77,9 @@ class TaskManager:
                 " pid INTEGER, requested_by TEXT, message_zh TEXT, error_zh TEXT, progress TEXT, log_path TEXT,"
                 " created_at TEXT, started_at TEXT, finished_at TEXT)"
             )
+            columns = {row[1] for row in db.execute("PRAGMA table_info(tasks)")}
+            if "payload" not in columns:
+                db.execute("ALTER TABLE tasks ADD COLUMN payload TEXT")
         self.reconcile()
 
     @contextmanager
@@ -121,6 +124,7 @@ class TaskManager:
         data["kind_zh"] = KINDS.get(data["kind"], data["kind"])
         data["state_zh"] = {"queued": "排队中", "running": "运行中", "succeeded": "已完成", "failed": "失败",
                             "cancelled": "已取消", "interrupted": "已中断"}.get(data["state"], data["state"])
+        data.pop("payload", None)  # 私有上传输入不进入接口或日志。
         data.pop("pid", None)
         data.pop("log_path", None)
         return data
@@ -156,7 +160,7 @@ class TaskManager:
             db.execute(f"UPDATE tasks SET {keys} WHERE task_id=?", (*fields.values(), task_id))
 
     # ---- 提交、取消、重试 ----
-    def submit(self, study_id: str, kind: str, requested_by: str) -> tuple[dict, bool]:
+    def submit(self, study_id: str, kind: str, requested_by: str, payload: dict | None = None) -> tuple[dict, bool]:
         """提交任务。返回 (任务, 是否新建)。同一研究已有活动任务时返回该任务。"""
         if kind not in KINDS:
             raise ValueError("未知任务类型：" + kind)
@@ -168,8 +172,8 @@ class TaskManager:
             task_id = "task_" + uuid.uuid4().hex
             log_path = self.log_dir / (task_id + ".log")
             with self._connect() as db:
-                db.execute("INSERT INTO tasks (task_id, study_id, kind, state, requested_by, log_path, created_at) VALUES (?,?,?,?,?,?,?)",
-                           (task_id, study_id, kind, "queued", requested_by, str(log_path), _now()))
+                db.execute("INSERT INTO tasks (task_id, study_id, kind, state, requested_by, log_path, created_at, payload) VALUES (?,?,?,?,?,?,?,?)",
+                           (task_id, study_id, kind, "queued", requested_by, str(log_path), _now(), json.dumps(payload, ensure_ascii=False) if payload is not None else None))
             try:
                 self._spawn(task_id, log_path)
             except Exception as error:
@@ -228,7 +232,7 @@ class TaskManager:
             raise KeyError(task_id)
         if task["state"] in ACTIVE:
             return self.get(task_id), False
-        return self.submit(task["study_id"], task["kind"], requested_by)
+        return self.submit(task["study_id"], task["kind"], requested_by, json.loads(task["payload"]) if task.get("payload") else None)
 
     def log(self, task_id: str, offset: int = 0, limit: int = 65536) -> dict:
         task = self._raw(task_id)

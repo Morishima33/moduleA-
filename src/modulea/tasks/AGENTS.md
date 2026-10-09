@@ -13,3 +13,7 @@
 4. 任务只能通过科学内核的生产入口产生结果（例如 `auto_continue.continue_after_review`），不得绕过 `Workflow.begin/finish` 直接写文件；任务从不代签复核。
 5. 失败要写明原因（`error_zh`），缺科学依赖时说明缺哪个包、如何配置；联网失败与“0 条结果”严格区分。
 6. 新增任务类型：在 `manager.KINDS` 登记中文名，在 `worker.HANDLERS` 登记执行函数，并在 `api/AGENTS.md` 说明触发方式。
+
+## 分库资料任务
+
+`source_upload`解析A01来源包或调用既有A02候选入口，`a01_sources`显式整理完整三库。任务payload存私有SQLite，不进入公开任务响应；原始字节暂存于runtime/upload_queue并校验指纹，失败/取消后保留供人工重试。重试保留原版本绑定；版本过期须重新上传。所有写入仍使用Workflow和研究锁，不代签。

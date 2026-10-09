@@ -34,12 +34,12 @@ async function request<T>(method: 'GET' | 'POST', path: string, body?: unknown, 
   const headers: Record<string, string> = {}; // 请求头
   if (method === 'POST') {
     if (!token) await loadSession(); // 写请求前确保已取得令牌
-    headers['Content-Type'] = 'application/json'; // 正文为 JSON
+    if (!(body instanceof FormData)) headers['Content-Type'] = 'application/json'; // multipart边界由浏览器生成
     headers['X-ModuleA-Token'] = token || ''; // 携带令牌
   }
   let res: Response; // 网络响应
   try {
-    res = await fetch(API_BASE + path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+    res = await fetch(API_BASE + path, { method, headers, body: body === undefined ? undefined : body instanceof FormData ? body : JSON.stringify(body) });
   } catch {
     // 网络层失败（服务未启动等）
     throw new ApiError(0, 'NETWORK', '无法连接本机服务，请确认工作台服务仍在运行', true);
@@ -94,6 +94,12 @@ export const api = {
   /** 明细表分页 */
   table: (sid: string, mid: string, name: string, p: { page?: number; size?: number; q?: string; runId?: string | null }) =>
     request<TablePage>('GET', `/studies/${sid}/modules/${mid}/tables/${name}${qs({ page: p.page, size: p.size, q: p.q, run_id: p.runId })}`),
+  /** 分库上传；仍经过令牌与统一错误处理 */
+  uploadSource: (sid: string, mid: string, body: FormData) =>
+    request<{ task: Task; created: boolean; message_zh: string }>('POST', `/studies/${sid}/modules/${mid}/actions/upload`, body),
+  /** 整理当前已上传三库，结果停在复核 */
+  processSources: (sid: string, body: { expected_a00: string; expected_run: string; expected_staging: string; reason: string }) =>
+    request<{ task: Task; created: boolean; message_zh: string }>('POST', `/studies/${sid}/modules/A01/actions/process_sources`, body),
   /** 单个模块复核 */
   review: (sid: string, mid: string, body: { run_id: string; expected_review_id: string | null; decision: Decision; reviewer: string; note: string; after: 'save' | 'continue' }) =>
     request<ReviewResponse>('POST', `/studies/${sid}/modules/${mid}/reviews`, body),

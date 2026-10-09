@@ -15,6 +15,8 @@ import Heatmap from './special/Heatmap';
 import PpiTop from './special/PpiTop';
 import ReportSummary from './special/ReportSummary';
 import Venn from './special/Venn';
+import ComponentTop from './special/ComponentTop';
+import SourceUploads from './SourceUploads';
 
 // 需要在标题下方用说明框强调的状态（其他状态只有接口给出 reason_zh 时才显示说明框）
 const BOXED = new Set(['idle', 'ready', 'running', 'incomplete', 'failed', 'waiting', 'empty', 'stale', 'unavailable']);
@@ -90,6 +92,8 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
         </section>
       )}
 
+      {view.source_uploads && <SourceUploads studyId={studyId} moduleId={m.module_id} info={view.source_uploads} />}
+
       {/* 本轮你只需核对这些（历史版本不显示） */}
       {!view.historical && <FocusSection items={view.focus} />}
       {/* 窄屏时复核栏紧随重点 */}
@@ -103,6 +107,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
 
       {/* 模块专属图 */}
       {sp.venn && <Venn data={sp.venn} />}
+      {sp.component_top && sp.component_top.length > 0 && <ComponentTop items={sp.component_top} note={sp.component_top_note_zh} />}
       {sp.ppi_top && sp.ppi_top.length > 0 && <PpiTop items={sp.ppi_top} />}
       {sp.enrichment_top && <EnrichmentTop data={sp.enrichment_top} />}
       {sp.heatmap && <Heatmap data={sp.heatmap} />}

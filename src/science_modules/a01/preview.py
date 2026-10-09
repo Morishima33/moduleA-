@@ -8,7 +8,7 @@ def read(path):
     return json.loads(path.read_text(encoding="utf-8"))
 
 # 复用原三库身份与已有关系计算；标准化TCMSP和HGNC必须属于同一研究依据。
-def build_candidate(raw, tc, hr, br, mapper, normalized_tcmsp, identity_summary, herbs, source_coverage):
+def build_candidate(raw, tc, hr, br, mapper, normalized_tcmsp, identity_summary, herbs, source_coverage, batman_raw=None):
     require(identity_summary.get("mapping_snapshot") == mapper.digest, "TCMSP与新增来源HGNC快照不一致")
     require(identity_summary.get("mapping_rule") == mapper.rule, "TCMSP与新增来源HGNC规则不一致")
     require(identity_summary.get("identity_evidence_snapshot") == (mapper.supplement.digest if mapper.supplement else ""), "TCMSP与新增来源补充证据不一致")
@@ -42,7 +42,7 @@ def build_candidate(raw, tc, hr, br, mapper, normalized_tcmsp, identity_summary,
             require(tid in target_names, "HERB关系靶点未对应官方命名表")  # 不猜靶点编号。
             add("HERB", cid, target_names[tid], ("raw/" + detail_path.relative_to(raw).as_posix()) + ":ingredient_target:" + str(line), tid)  # 使用官方现行名字核对HGNC。
     bnames = {r["source_id"]: r["name"] for r in br}  # 核对官方成分总表与已有关系表名称一致。
-    for line, row in enumerate(batman_known(raw / "BATMAN_known_browse_by_ingredients.txt.gz"), 2):  # 明确不读取预测表。
+    for line, row in enumerate(batman_known((batman_raw or raw) / "BATMAN_known_browse_by_ingredients.txt.gz"), 2):  # 明确不读取预测表。
         cid = row["PubChem_CID"]  # 原始数字身份完整保留。
         if cid not in bnames:  # 其他药味成分不纳入。
             continue  # 不把全库靶点作为全方靶点。

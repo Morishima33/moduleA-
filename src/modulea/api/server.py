@@ -11,6 +11,8 @@
 from __future__ import annotations
 
 import json
+import hashlib
+import uuid
 import mimetypes
 import re
 import secrets
@@ -21,10 +23,12 @@ from urllib.parse import parse_qs, quote, urlsplit
 
 from .. import __version__
 from ..config import Settings
-from ..core.kernel import ContractError, Kernel
+from ..core.kernel import ContractError, Kernel, read_json, verified_file
 from ..tasks.manager import TaskManager
 from .errors import ApiError, from_contract, not_found
 from .views import PREUPLOAD_PROFILES, Views
+from ..core.source_uploads import formats as upload_formats, template as upload_template, staging as upload_staging
+from disease_io import multipart
 
 API_CSP = "default-src 'none'; frame-ancestors 'none'"
 FILE_CSP = "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; sandbox"
@@ -56,6 +60,11 @@ class App:
             ("POST", rf"/api/v1/studies/{ID}:continue", self.post_continue),
             ("POST", rf"/api/v1/studies/{ID}:trash", self.post_trash),
             ("POST", rf"/api/v1/studies/{ID}:restore", self.post_restore),
+            ("GET", rf"/api/v1/studies/{ID}/modules/{ID}/sources", self.get_sources),
+            ("GET", rf"/api/v1/studies/{ID}/modules/{ID}/sources/{ID}/template", self.get_source_template),
+            ("GET", rf"/api/v1/studies/{ID}/modules/{ID}/sources/{ID}/file", self.get_source_file),
+            ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/upload", self.post_source_upload),
+            ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/process_sources", self.post_source_process),
             ("GET", r"/api/v1/trash", self.list_trash),
             ("GET", r"/api/v1/inbox", self.get_inbox),
             ("GET", r"/api/v1/tasks", self.list_tasks),
@@ -69,7 +78,7 @@ class App:
     # ------------------------------------------------------------------ 读取
     def session(self, req):
         return {"token": self.token, "version": __version__, "platform": sys.platform,
-                "capabilities": {"review": True, "batch_review": True, "tasks": True, "trash": True, "module_actions": False},
+                "capabilities": {"review": True, "batch_review": True, "tasks": True, "trash": True, "module_actions": False, "source_upload": True},
                 "decisions_zh": {"approved": "通过，允许下游使用", "rejected": "退回修改", "pending": "暂存待定"}}
 
     def list_studies(self, req):
@@ -203,6 +212,102 @@ class App:
             raise not_found("任务")
         return {"task": task, "created": created}, 202
 
+    # 读取来源入口时只核对归档，不导入科学依赖。
+    def get_sources(self, req, study_id, module_id):
+        value = self.views.module(study_id, module_id).get("source_uploads")
+        if value is None:
+            raise not_found("该模块没有资料上传入口")
+        return value
+
+    def get_source_template(self, req, study_id, module_id, database):
+        info = self.get_sources(req, study_id, module_id)
+        fmt = req.query1("format")
+        if database not in {r["database"] for r in info["sources"]} or fmt not in upload_formats(module_id, database):
+            raise ApiError(422, "VALIDATION_FAILED", "数据库或资料格式不属于当前研究方案")
+        workflow = self.kernel.workflow()
+        manifest = workflow.load(study_id)
+        summary = workflow.result(manifest, manifest["current"]["A00"])["summary"]
+        from components import parse_herbs
+        data, name, mime = upload_template(module_id, database, fmt, parse_herbs(summary["herbs"]))
+        return ("download", data, name, mime)
+
+    # 原始资料下载只允许当前研究清单中登记且指纹核验通过的文件。
+    def get_source_file(self, req, study_id, module_id, database):
+        info = self.get_sources(req, study_id, module_id)
+        if not any(s["database"] == database and s["download_url"] for s in info["sources"]):
+            raise not_found("当前库的上传资料")
+        workflow = self.kernel.workflow()
+        manifest = workflow.load(study_id)
+        if module_id == "A01":
+            sources = upload_staging(workflow, manifest)["datasets"]
+        else:
+            result = workflow.result(manifest, manifest["current"]["A02"])
+            record = next(r for r in result["sources"] if r.get("role") == "source_manifest")
+            sources = read_json(verified_file(workflow.location(study_id), record))["datasets"]
+        item = next(r for r in sources if r["database"] == database)
+        path = verified_file(workflow.location(study_id), item["source_record"])
+        return ("file", path, item.get("name") or path.name, "application/octet-stream", False)
+
+    # 双重校验页面版本：提交前检查，后台进入科学写锁后再次检查。
+    def _source_versions(self, req, study_id, module_id, body):
+        info = self.get_sources(req, study_id, module_id)
+        if not info["enabled"]:
+            raise ApiError(409, "GATE_BLOCKED", info["disabled_reason_zh"])
+        if any(body.get(k, "") != info[k] for k in ("expected_a00", "expected_run", "expected_staging")):
+            raise ApiError(409, "STALE_VERSION", "研究或资料版本已改变，请刷新后重新提交")
+        return info
+
+    def post_source_upload(self, req, study_id, module_id):
+        fields, files = req.multipart()
+        info = self._source_versions(req, study_id, module_id, fields)
+        database, fmt = fields.get("database"), fields.get("format")
+        if database not in {s["database"] for s in info["sources"]} or fmt not in upload_formats(module_id, database):
+            raise ApiError(422, "VALIDATION_FAILED", "数据库或格式不属于当前研究方案")
+        if fields.get("confirmed") != "yes":
+            raise ApiError(422, "VALIDATION_FAILED", "请确认资料属于当前研究后上传")
+        for key in ("query", "retrieved_at", "version", "source_url", "reason"):
+            if not fields.get(key, "").strip():
+                raise ApiError(422, "VALIDATION_FAILED", "请填写检索词、获取日期、版本、来源和上传原因", {"field": key})
+        source = {k: fields.get(k, "").strip() for k in ("database", "format", "encoding", "query", "retrieved_at", "version", "source_url")}
+        source["encoding"] = source["encoding"] or "utf-8-sig"
+        if database == "GeneCards":
+            source.update(query_quoted=fields.get("query_quoted", "unknown"), export_completeness=fields.get("export_completeness", "unknown"))
+        source["name"] = files["upload"]["name"]
+        payload = {k: info[k] for k in ("expected_a00", "expected_run", "expected_staging")}
+        payload.update(module_id=module_id, source=source, reason=fields["reason"].strip())
+        if module_id == "A02":
+            summary = self.views._snapshot(study_id)[1]
+            current = next(m for m in summary["modules"] if m["module_id"] == "A02")["result"]
+            payload["source_profile"] = (current or {}).get("summary", {}).get("source_profile") or ("A02.source_profile.3" if self.views._manifest(study_id).get("workflow_profile") in PREUPLOAD_PROFILES else "A02.source_profile.default.1")
+        # 原始字节暂存到运行目录，任务输入只保存固定文件名与指纹，不保存客户端路径。
+        folder = self.settings.runtime_dir / "upload_queue"
+        folder.mkdir(parents=True, exist_ok=True)
+        name = uuid.uuid4().hex + ".bin"
+        path = folder / name
+        path.write_bytes(files["upload"]["data"])
+        payload.update(blob_name=name, blob_sha256=hashlib.sha256(files["upload"]["data"]).hexdigest())
+        task, created = self.tasks.submit(study_id, "source_upload", "网页分库上传", payload)
+        if not created:
+            path.unlink()
+            raise ApiError(409, "GATE_BLOCKED", "当前研究已有后台任务，本次资料未提交，请完成后重试")
+        return {"task": task, "created": created, "message_zh": "资料已提交后台校验，处理结果见任务面板；尚未批准。" + self._task_message(task)}, 202
+
+    def post_source_process(self, req, study_id, module_id):
+        if module_id != "A01":
+            raise not_found("该模块没有三库整理操作")
+        body = req.json()
+        info = self._source_versions(req, study_id, module_id, body)
+        if not info["can_process"]:
+            raise ApiError(409, "GATE_BLOCKED", info["process_reason_zh"])
+        if not isinstance(body.get("reason"), str) or not body["reason"].strip():
+            raise ApiError(422, "VALIDATION_FAILED", "请填写本次整理原因")
+        payload = {k: info[k] for k in ("expected_a00", "expected_run", "expected_staging")}
+        payload["reason"] = body["reason"].strip()
+        task, created = self.tasks.submit(study_id, "a01_sources", "网页整理三库", payload)
+        if not created:
+            raise ApiError(409, "GATE_BLOCKED", "当前研究已有后台任务，请完成后重试")
+        return {"task": task, "created": created, "message_zh": "三库整理任务已提交，结果仍需独立复核。" + self._task_message(task)}, 202
+
     # ------------------------------------------------------------------ 分派
     def dispatch(self, method: str, path: str, req):
         for route_method, pattern, handler in self.compiled:
@@ -228,6 +333,21 @@ class Request:
             return int(self.query1(name) or default)
         except (ValueError, TypeError):
             raise ApiError(400, "BAD_REQUEST", f"查询参数 {name} 必须是整数", {"field": name}) from None
+
+    # multipart容量沿用原上传入口；JSON容量保持1MiB，安全检查仍在读取正文之前。
+    def multipart(self):
+        try:
+            length = int(self.handler.headers.get("Content-Length") or 0)
+        except ValueError:
+            raise ApiError(400, "BAD_REQUEST", "Content-Length必须是非负整数") from None
+        if length <= 0:
+            raise ApiError(400, "BAD_REQUEST", "请选择一个资料文件")
+        if length > 17 * 1024 * 1024:
+            raise ApiError(413, "BODY_TOO_LARGE", "上传请求超过17MiB，请按库上传不超过16MiB的文件")
+        try:
+            return multipart(self.handler.headers.get("Content-Type", ""), self.handler.rfile.read(length))
+        except (UnicodeError, ValueError):
+            raise ApiError(422, "VALIDATION_FAILED", "上传格式或文本编码损坏，请重新选择文件") from None
 
     def json(self) -> dict:
         try:
@@ -328,6 +448,10 @@ def make_handler(app: App):
                     _, path, name, mime, inline = result
                     disposition = ("inline" if inline else "attachment") + "; filename*=UTF-8''" + quote(name, safe="")
                     return self._send(200, Path(path).read_bytes(), mime, FILE_CSP, {"Content-Disposition": disposition})
+                if isinstance(result, tuple) and result and result[0] == "download":
+                    _, data, name, mime = result
+                    disposition = "attachment; filename*=UTF-8''" + quote(name, safe="")
+                    return self._send(200, data, mime, API_CSP, {"Content-Disposition": disposition})
                 status = 200
                 if isinstance(result, tuple):
                     result, status = result

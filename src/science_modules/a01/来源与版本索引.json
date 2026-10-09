@@ -27,8 +27,16 @@
       "source_relative": "governance/三库成分去重核查_v1_20261008/candidate_code/preview_a01_a03.py",
       "destination": "src/science_modules/a01/preview.py",
       "source_sha256": "cccc6fbaea98dfba52c50ee0db8cc80e074e383ba2cc2e88462d0b61e8bcccbe",
-      "destination_sha256": "e97ef54acb65677e37cb12a74a65924c1cb19f06c72f8de6f39831ca3ac99c7b",
-      "adaptation": "抽取独立候选计算；输入当前药味、TCMSP标准结果和同源HGNC，不写文件、不代签例外"
+      "destination_sha256": "53d3f5d4667b559ec4094fa93bf1cc47329a7d0e43039d98cc087d7ec5836475",
+      "adaptation": "抽取独立候选计算；输入当前药味、TCMSP标准结果和同源HGNC，不写文件、不代签例外；可显式传入独立BATMAN来源目录，默认行为保持原样"
+    }
+  ],
+  "extensions": [
+    {
+      "destination": "src/science_modules/a01/uploads.py",
+      "version": "A01.multisource.upload.1",
+      "sha256": "db98f781d50ed0cbe3a96cba5aeb1aea06b6252ce87b8e2be02b41bdadee1cdc",
+      "purpose": "通用分库上传留存与版本化整理；复用原解析/去重/HGNC规则，不沿用病例例外"
     }
   ]
 }

@@ -10,6 +10,8 @@ import mimetypes
 from pathlib import Path
 
 from ..core import modules as registry
+from ..core.source_catalog import source_intro
+from ..core.source_uploads import context as upload_context
 from ..core.kernel import ContractError, Kernel, read_json, verified_file
 from ..core.status import LABELS, map_state, unavailable
 from ..presenters import present
@@ -234,7 +236,7 @@ class Views:
         if run:
             parts["params"] = parts["params"] + self._config_params(run, parts["params"])
         return {
-            "module": {"module_id": module_id, "title_zh": spec.title_zh, "group_zh": spec.group_zh, "purpose_zh": spec.purpose_zh,
+            "module": {"module_id": module_id, "title_zh": spec.title_zh, "group_zh": spec.group_zh, "purpose_zh": source_intro(module_id, real, result) + spec.purpose_zh,
                        "sub": spec.sub, "depends_on": list(spec.depends_on)},
             "state": state if not historical else {**state, "code": "history", "label_zh": "历史版本（只读）", "can_review": False},
             "purpose": self._purpose(view),
@@ -251,6 +253,7 @@ class Views:
             "history": history,
             "tasks": self.tasks.list(study_id, active_only=True),
             "historical": historical,
+            "source_uploads": upload_context(workflow, real, module_id, result, historical, bool(self.tasks.active_for(study_id))) if not historical else None,
         }
 
     @staticmethod

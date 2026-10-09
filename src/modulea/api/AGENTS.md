@@ -160,3 +160,19 @@
 A01 使用既有 `kpis`、`flow`、`params`、`table` 和 `focus` 字段展示三库归档，不新增状态来源。摘要含 `候选成分分组数` 时，区分结构键分组与结构待核分组；828 等数量只读归档，不能称为已全部核实的独立物质数。来源摘要表按 `component_sources` 的来源编号去重计数，跨库来源计数不可相加作为最终分组数。A01/A02/A03 的原始结果、来源和例外继续由分页及下载接口提供。
 
 已有研究的独立本地快照保留原运行和审批绑定；显示原批准不代表重构实现已经验收。上游三库更新后旧 A03_SELECT/A04—A07 的失效由 Workflow 判定，不自动重算、批准或替换旧报告。本轮不把代码中的导入函数表示为网页通用上传入口已完成。
+
+## 2026-10-09 来源名称与前十展示
+
+模块首段 `module.purpose_zh` 按绑定方案列出实际数据库名称，历史 DisGeNET 方案不替换成 PharmGKB。A03 `special.component_top` 为归档 ranking 的前十及第十个同分并列；字段保持原名，`component_top_note_zh` 解释排序与用途。完整 ranking 分页不截断，不改变科学排序、候选名额或韦恩图说明。
+
+## 2026-10-09 分库上传接口
+
+A01/A02模块视图新增 `source_uploads`（历史及回收站只读）：`enabled`、`disabled_reason_zh`、`expected_a00`、`expected_run`、`expected_staging`、`note_zh`、`can_process`、`process_reason_zh`、`sources`。sources各项包括database、label_zh、status_zh、formats[{value,label_zh,accept,template_url}]、hint_zh、uploaded_name、sha256、download_url；全部由后端给出。
+
+- GET `.../modules/{mid}/sources`：当前分库入口及资料状态。
+- GET `.../modules/{mid}/sources/{database}/template?format=...`：该库该格式模板；A01为官方原始资料ZIP包装规范及字段示例，A02复用原解析器的字段模板。
+- GET `.../modules/{mid}/sources/{database}/file`：当前研究绑定的原始资料，先核验归档指纹。
+- POST `.../modules/{mid}/actions/upload`：multipart/form-data，一个upload文件（最多16MiB，整包17MiB）。字段database、format、encoding、query、retrieved_at、version、source_url、reason、expected_a00、expected_run、expected_staging、confirmed=yes；字段非空及格式需校验。令牌、Origin和Host要求保持不变。立即返回202 `{task,created,message_zh}`，解析和归档在后台科学任务中执行。
+- POST `.../modules/A01/actions/process_sources`：JSON `{expected_a00,expected_run,expected_staging,reason}`，完整三库包及HGNC依据齐备后，后台沿用现有算法生成新的待复核A01。未知身份不继承历史例外，缺资料/映射依据明确失败。
+
+A02上传通过现有run_disease单库替换入口产生新候选，不自动批准或标准化。A01上传先按库校验并版本化留存，原结果保持；页面明确提示上传资料尚未进入结果。三库整理为用户另行触发的操作，绝不因上传而后台代签。历史文件只追加；同研究已有活动任务时拒绝第二次不同写操作。任务保存私有输入以支持失败重试，不向公共Task或日志输出上传内容。
