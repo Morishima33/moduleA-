@@ -1,0 +1,216 @@
+# Module A 独立代码仓库（moduleA-）
+
+本仓库只保存正式代码、前端构建产物、测试、项目文档、大纲、模板和配置样例。实际研究资料、来源数据库、环境工具和运行日志独立留在本地；空代码仓库不能据此视为已具备真实研究全流程环境。
+
+- **来源基线**：`Morishima33/moduleA`，分支 `docs/architecture-redesign-v1`，提交 `d2c1ee68483142b8e69a11c63ade1228ed4b5609`。本仓库建立独立历史，没有上传旧仓库的研究历史。
+- **当前完成**：独立代码基线与模块完成后 GitHub 自动上传；后续开发分支为 `development`，不自动合并 `main`。
+- **尚未完成**：A01—A03 本机最新三库能力迁入、已核查问题修复和新页面全部操作接入。本轮没有修改科学算法、模板内容或运行环境。
+- **已知问题**：Windows 换行转换可能破坏旧研究归档校验；科学解释器启动失败可能滞留排队任务；SQLite 连接未关闭导致清理失败；doctor 检查的是当前进程环境；非法分页文本返回 500。这些是源基线问题，本次上传配置不宣称已修复。
+
+[GitHub 自动上传说明](docs/GitHub自动上传说明_v1.0.md) · [项目工作约定](AGENTS.md) · [上传工具](tools/README.md)
+
+目录仍按重构基线职责组织：`src/modulea/` 是接口/展示/任务外壳，`src/*.py` 与 R 文件为科学内核，`web/` 为前端，`tests/` 为测试，`docs/` 为项目文档，`templates/` 为模板规格，`config/` 只提交样例，`tools/` 为本仓库上传工具。以后按模块迁入时补充代码索引。
+
+实际运行需指定独立数据根目录；不要为了启动复制原项目个人配置或默认读写原项目研究。以下保留源分支的使用和架构说明，其中研究状态、历史路径及未提供的 `studies/`、`references/`、`governance/` 内容属于来源背景，并非本仓库随附资料。
+
+---
+
+# Module A：网络药理学与分子对接通用初筛工作台
+
+一次输入**一个方剂 + 一个已选定疾病**，半自动完成成分与靶点整理、疾病靶点汇集、交集、PPI 网络、GO/KEGG 富集、有限数量的分子对接，最后输出专业详细版和临床简略版两份 Word 报告。每个模块都在本机网页中由专业人员复核，所有结果可追溯到具体资料、参数和版本。
+
+> 开发前必读：[AGENTS.md](AGENTS.md)（项目约束）→ 本文 → 要改动部分的 `AGENTS.md`。
+> 用 Codex 开发：见 [docs/Codex使用说明.md](docs/Codex使用说明.md)。本次重构做了什么、后续怎么做：见 [docs/架构重构交接说明_v1_20261009.md](docs/架构重构交接说明_v1_20261009.md)。
+> 已批准大纲：[docs/ModuleA首版项目指导大纲_v1.0.docx](docs/ModuleA首版项目指导大纲_v1.0.docx)。
+
+---
+
+## 1 快速开始
+
+| 方式 | 命令 | 说明 |
+|---|---|---|
+| 新版工作台（Windows） | 双击 `start_v2.cmd` | 新界面 + JSON 接口，默认 http://127.0.0.1:8780 |
+| 新版工作台（macOS/Linux） | 双击 `start_v2.command` | 同上；需要 Python ≥ 3.11 |
+| 原工作台（Windows） | 双击 `start.cmd` | 原网页，http://127.0.0.1:8765；模块操作（运行、上传、范围决定、候选选择、对接方案、通路审核）目前仍从这里进入 |
+| 环境检查 | `PYTHONPATH=src python3 -m modulea doctor` | 检查数据目录、归档核验、科学依赖 |
+
+新版工作台本身只需要 Python 标准库，任何电脑都能打开、查看和复核。后台科学计算（自动接续、对接等）需要科学依赖：在 `config/local.toml` 中用 `science_python` 指定已安装依赖的解释器（样例见 `config/local.example.toml`）。
+
+两个工作台读写同一套研究数据和同一个写锁，可以并存使用。
+
+---
+
+## 2 研究流程
+
+```mermaid
+flowchart LR
+  A00[A00 研究登记] --> A01[A01 成分与方剂靶点]
+  A00 --> A02[A02 疾病靶点]
+  A01 --> A03[A03 交集与成分排序]
+  A02 --> A03
+  A03 --> SEL[A03_SELECT 主候选确认]
+  A03 --> A04[A04 PPI 网络]
+  A03 --> A05[A05 GO/KEGG 富集]
+  SEL --> PREP[A06_PREP 对接对象与配置]
+  A04 --> PREP
+  PREP --> A06[A06 分子对接]
+  A06 --> A07[A07 双报告与结论]
+  A05 --> A07
+```
+
+| 模块 | 做什么 | 关键规则（详见 AGENTS.md 第 4 节） |
+|---|---|---|
+| A00 | 登记方剂、药味、疾病；MeSH 向 NLM 官方核对 | 首版只纳入本病 |
+| A01 | TCMSP 快照整理成分、药味归属、成分—靶点 | OB≥30%、DL≥0.18；HGNC 统一身份 |
+| A02 | 五个来源汇集疾病基因、范围复核 | 失败不是 0 条；不新增评分阈值 |
+| A03 | 交集 I = T ∩ D；成分双排序 | 交集是 PPI 与富集的共同输入 |
+| A03_SELECT | 确认进入对接的成分 | 默认最多 5 个；并列和药味代表须人工确认 |
+| A04 | STRING PPI，三指标两轮 | 9606、score≥0.9、全部有边分量 |
+| A05 | GO 三类与 KEGG 过度代表分析 | BH p.adjust < 0.05 |
+| A06_PREP | 受体结构、搜索盒、参考配体重对接质控 | RMSD ≤ 2 Å；失败不自动调参 |
+| A06 | Vina 对接矩阵与热图 | 固定 Top-1；NA 不补 0 |
+| A07 | 两份 Word 报告与共同结论 | 结论必须人工复核 |
+
+**人工关口**：每个模块都要人工复核（通过 / 退回 / 暂存）。“保存并继续”只会自动生成下一批结果，停在下一个人工关口，程序从不代签。上游产生新版本时，依赖它的下游自动失效；没有依赖关系的分支不受影响。
+
+---
+
+## 3 架构
+
+### 3.1 两层结构
+
+```mermaid
+flowchart TB
+  subgraph FE["前端 web/（React + TypeScript + Ant Design，预构建到 src/modulea/static）"]
+    UI["首页 · 研究工作页 · 模块页 · 复核栏 · 任务面板 · 回收站"]
+  end
+  subgraph SHELL["新架构外壳 src/modulea/（只用 Python 标准库）"]
+    API["api/ 本机 JSON 接口 /api/v1<br/>安全：仅 127.0.0.1 · Host/Origin · 令牌 · CSP"]
+    VIEWS["api/views 视图组装"]
+    PRES["presenters/ 各模块展示适配（只读归档结果）"]
+    TASKS["tasks/ 后台任务（子进程 · 取消 · 中断 · 重试）"]
+    CORE["core/ 内核桥接 · 模块登记 · 状态映射"]
+  end
+  subgraph KERNEL["科学内核 src/*.py（已验收，规则冻结）"]
+    WF["workflow / storage / contracts<br/>唯一状态来源 · 原子写入 · 写锁 · 指纹"]
+    SCI["components · disease · normalization · intersection · ppi · enrichment(R) · docking_* · report_*"]
+    AUTO["auto_continue 自动推进到下一人工关口"]
+  end
+  DATA[("studies/ 研究包<br/>references/ 来源快照")]
+  UI -->|JSON| API --> VIEWS --> PRES
+  VIEWS --> CORE
+  API --> TASKS
+  CORE --> WF
+  TASKS -->|"python -m modulea task-run（科学解释器）"| AUTO --> SCI --> WF
+  WF --> DATA
+```
+
+**为什么这样分**：科学内核里装着几十条已经由用户逐条确认的规则，已批准结果也由它产生，重写的风险大、收益小，所以保留并冻结。网页、编排、展示这层问题最多（单线程卡顿、字符串拼接页面、到处判断模块编号），所以重做。
+
+### 3.2 关键设计
+
+| 设计点 | 做法 |
+|---|---|
+| 状态只算一次 | 全部状态由 `Workflow.view()` 计算；`core/status.py` 只把内核状态翻译为前端状态码，前端不推算 |
+| 不阻塞网页 | 接口服务多线程；长计算在后台子进程运行，网页立即返回，任务面板显示进度、日志、取消、重试 |
+| 依赖轻 | 接口进程只用标准库，任何电脑可查看与复核；科学依赖只在后台任务进程中加载 |
+| 展示与计算分离 | `presenters/` 只读已归档的 `result.json` 生成关键数字、数量变化链、重点核对项和专属图数据；不计算、不联网 |
+| 不可覆盖 | 运行、复核、报告只追加；`manifest.json` 是唯一当前指针；写入在跨进程写锁内原子完成 |
+| 可追溯 | 每个运行固定上游版本、输入与配置指纹、代码与环境版本；文件下载只允许归档索引中、指纹核验通过的文件 |
+| 历史可复算 | 重构前完整代码在 git 标签 `legacy-v1-20261008`；规则版本只增不改 |
+| 路径不写死 | 本机路径只在 `config/local.toml`；数据目录可通过 `--data-root` 或 `MODULEA_DATA_ROOT` 指定 |
+
+### 3.3 状态模型
+
+| 状态码 | 中文 | 含义 |
+|---|---|---|
+| idle | 未开始 | 上游尚未全部通过 |
+| ready | 可以开始 | 上游已通过，本模块尚无运行 |
+| running / incomplete | 运行中 / 未完整提交 | 有后台任务在跑 / 没有任务但结果未提交（可能已中断） |
+| failed | 执行失败 | 计算失败，不等于 0 条 |
+| waiting | 等待资料 | 有资料、范围或身份问题未处理，暂不能通过 |
+| empty | 有效空结果 | 计算完整但没有结果，可以复核 |
+| review / hold / returned | 待复核 / 暂存 / 已退回 | 人工复核状态 |
+| approved / published | 已通过 / 已发布 | 可交下游使用；A07 通过即两份报告发布 |
+| stale | 已失效 | 上游已变化，旧文件保留但不能交下游 |
+| unavailable | 归档未就绪 | 归档文件指纹核验失败（例如 LFS 文件未下载完） |
+
+### 3.4 本机接口一览
+
+完整契约见 [src/modulea/api/AGENTS.md](src/modulea/api/AGENTS.md)。
+
+| 端点 | 用途 |
+|---|---|
+| `GET /api/v1/session` | 令牌与能力开关 |
+| `GET /api/v1/studies`、`/trash`、`/inbox` | 研究卡片、回收站、跨研究待办 |
+| `GET /api/v1/studies/{sid}` | 研究页：导航、下一步、用途横幅 |
+| `GET /api/v1/studies/{sid}/modules/{mid}` | 模块页：重点核对项、关键数字、数量变化链、专属图数据、参数、追溯、复核栏、下游影响 |
+| `GET .../tables/{name}`、`GET .../files/{key}` | 完整明细分页、归档文件下载 |
+| `POST .../reviews`、`POST /studies/{sid}/reviews:batch` | 复核（含“保存并继续”）、A01+A02 一次提交 |
+| `POST /studies/{sid}:continue`、`:trash`、`:restore` | 推进到下一关口、回收站 |
+| `GET/POST /api/v1/tasks...` | 后台任务查询、日志、取消、重试 |
+
+---
+
+## 4 目录
+
+| 目录 | 职责 |
+|---|---|
+| `src/modulea/` | 新架构外壳（接口、展示、任务、配置）；`static/` 为前端构建产物 |
+| `src/*.py`、`src/enrichment.R` | 科学内核与原网页（规则冻结，见 [src/AGENTS.md](src/AGENTS.md)） |
+| `web/` | 前端源码（React + TypeScript + Ant Design），见 `web/README.md` |
+| `tests/` | `tests/modulea/` 外壳测试；`tests/test_*.py` 科学内核测试 |
+| `docs/` | 已批准大纲、技术流程图、使用说明、数据字典、方法学汇报资料、Codex 使用说明、架构重构交接说明 |
+| `config/` | `local.example.toml`（本机配置样例）；`local.toml` 不提交 |
+| `environments/` | 依赖与工具安装记录、固定的对接工具包 |
+| `references/` | 共享来源快照（TCMSP、HGNC、富集注释包等，内容寻址） |
+| `studies/` | 每项研究的独立结果包，不覆盖、不迁移 |
+| `governance/` | 已关闭的施工与决策档案（只读），含冻结基线、授权记录、旧版 AGENTS/README 全文 |
+| `templates/` | 报告模板规格 |
+
+研究包结构：
+
+```text
+studies/<study_id>/
+  manifest.json                 唯一当前指针
+  intake/<run_id>.json          每版登记原文
+  raw/                          原始资料（共享快照按内容指纹命名）
+  normalized/                   规范化资料
+  runs/<模块>/<run_id>/          run.json、result.json、明细 CSV、异常、执行记录、图
+  reviews/                      复核记录（只追加）与回收站管理记录
+  reports/<报告修订>/            两份 Word 与图
+  task_packages/<编号>/          PyMOL 出图任务包
+```
+
+---
+
+## 5 开发
+
+```bash
+# 外壳测试（任何平台）
+PYTHONPATH=src python3 -m unittest discover -s tests/modulea -v
+
+# 生成演示数据（只读源研究，复制其当前结果到新的演示目录）
+PYTHONPATH=src python3 -m modulea.devtools.demo_data /tmp/moduleA-demo --source . --study <研究编号>
+
+# 用演示数据启动接口，允许前端开发服务器跨源访问
+PYTHONPATH=src python3 -m modulea --data-root /tmp/moduleA-demo serve --port 8799 --no-browser --allow-origin http://localhost:5173
+
+# 前端开发与构建（见 web/README.md）
+cd web && npm install && npm run dev      # 开发
+cd web && npm run build                   # 构建到 src/modulea/static
+```
+
+**下一步路线**（每项单独 PR，细节见 [src/AGENTS.md](src/AGENTS.md) 第 3 节；给 Codex 下任务的模板和推荐顺序见 [docs/Codex使用说明.md](docs/Codex使用说明.md)）：
+
+1. 模块操作接入新接口（运行、上传、范围批量决定、候选选择、对接方案确认、通路审核），之后新版工作台可完全替代原网页。
+2. 历史授权从代码移到研究包内的决定文件；修复 `ppi_flow` 默认授权回退缺陷；统一 A07 校验。
+3. 复算护栏工具：已批准运行的归档指纹核验 + 冻结实现从归档输入复算比对。
+4. 合并重复实现（报告生成器、热图、任务包、重对接入口）；对接复用键改为算法版本号。
+5. 依赖锁定（pyproject、renv）与工具清单；平台路径全部配置化。
+
+---
+
+## 6 当前状态
+
+见 [AGENTS.md 第 5 节](AGENTS.md#5-当前状态2026-10-08)。2026-10-08 之前的完整进度日志见 [governance/README_历史全文_至20261008.md](governance/README_历史全文_至20261008.md)。

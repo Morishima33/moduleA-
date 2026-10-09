@@ -1,0 +1,342 @@
+"""本机 JSON 接口服务（/api/v1）与预构建前端的静态托管。
+
+安全措施沿用原工作台：
+- 只绑定 127.0.0.1；Host 头必须是 127.0.0.1:<端口> 或 localhost:<端口>（防止 DNS 重绑定）；
+- 写请求必须带 X-ModuleA-Token（启动时随机生成，前端从 /api/v1/session 取得）；
+- 写请求的 Origin 必须是本服务自身，或 allowed_origins 中明确允许的前端开发地址；
+- 只能下载结果索引中登记且指纹核验通过的文件；所有响应禁止缓存，并带内容安全策略。
+服务是多线程的：慢请求不会卡住其他页面；长计算一律交给后台任务子进程。
+"""
+
+from __future__ import annotations
+
+import json
+import mimetypes
+import re
+import secrets
+import sys
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from urllib.parse import parse_qs, quote, urlsplit
+
+from .. import __version__
+from ..config import Settings
+from ..core.kernel import ContractError, Kernel
+from ..tasks.manager import TaskManager
+from .errors import ApiError, from_contract, not_found
+from .views import PREUPLOAD_PROFILES, Views
+
+API_CSP = "default-src 'none'; frame-ancestors 'none'"
+FILE_CSP = "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; sandbox"
+STATIC_CSP = ("default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+              "font-src 'self' data: https://fonts.gstatic.com; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'")
+MAX_BODY = 1024 * 1024
+ID = r"([A-Za-z0-9_]+)"
+
+
+class App:
+    """接口应用：持有配置、内核、任务管理和视图组装；路由表把 (方法, 路径) 对应到处理函数。"""
+
+    def __init__(self, settings: Settings):
+        self.settings = settings
+        self.kernel = Kernel(settings)
+        self.tasks = TaskManager(settings)
+        self.views = Views(self.kernel, self.tasks)
+        self.token = secrets.token_urlsafe(32)
+        self.routes = [
+            ("GET", r"/api/v1/session", self.session),
+            ("GET", r"/api/v1/studies", self.list_studies),
+            ("GET", rf"/api/v1/studies/{ID}", self.get_study),
+            ("GET", rf"/api/v1/studies/{ID}/modules/{ID}", self.get_module),
+            ("GET", rf"/api/v1/studies/{ID}/modules/{ID}/runs", self.get_runs),
+            ("GET", rf"/api/v1/studies/{ID}/modules/{ID}/tables/{ID}", self.get_table),
+            ("GET", rf"/api/v1/studies/{ID}/files/([A-Za-z0-9_.]+)", self.get_file),
+            ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/reviews", self.post_review),
+            ("POST", rf"/api/v1/studies/{ID}/reviews:batch", self.post_batch_review),
+            ("POST", rf"/api/v1/studies/{ID}:continue", self.post_continue),
+            ("POST", rf"/api/v1/studies/{ID}:trash", self.post_trash),
+            ("POST", rf"/api/v1/studies/{ID}:restore", self.post_restore),
+            ("GET", r"/api/v1/trash", self.list_trash),
+            ("GET", r"/api/v1/inbox", self.get_inbox),
+            ("GET", r"/api/v1/tasks", self.list_tasks),
+            ("GET", rf"/api/v1/tasks/{ID}", self.get_task),
+            ("GET", rf"/api/v1/tasks/{ID}/log", self.get_task_log),
+            ("POST", rf"/api/v1/tasks/{ID}:cancel", self.post_cancel),
+            ("POST", rf"/api/v1/tasks/{ID}:retry", self.post_retry),
+        ]
+        self.compiled = [(method, re.compile("^" + pattern + "$"), handler) for method, pattern, handler in self.routes]
+
+    # ------------------------------------------------------------------ 读取
+    def session(self, req):
+        return {"token": self.token, "version": __version__, "platform": sys.platform,
+                "capabilities": {"review": True, "batch_review": True, "tasks": True, "trash": True, "module_actions": False},
+                "decisions_zh": {"approved": "通过，允许下游使用", "rejected": "退回修改", "pending": "暂存待定"}}
+
+    def list_studies(self, req):
+        return {"items": self.views.study_cards(trashed=False)}
+
+    def list_trash(self, req):
+        return {"items": self.views.study_cards(trashed=True)}
+
+    def get_study(self, req, study_id):
+        return self.views.study(study_id)
+
+    def get_module(self, req, study_id, module_id):
+        return self.views.module(study_id, module_id, req.query1("run_id"))
+
+    def get_runs(self, req, study_id, module_id):
+        return {"items": self.views.runs(study_id, module_id)}
+
+    def get_table(self, req, study_id, module_id, name):
+        return self.views.table(study_id, module_id, name, req.query1("run_id"), int(req.query1("page") or 1),
+                                int(req.query1("size") or 50), req.query1("q") or "")
+
+    def get_inbox(self, req):
+        return {"items": self.views.inbox()}
+
+    def list_tasks(self, req):
+        return {"items": self.tasks.list(req.query1("study"), active_only=req.query1("active") == "1")}
+
+    def get_task(self, req, task_id):
+        task = self.tasks.get(task_id)
+        if not task:
+            raise not_found("任务")
+        return task
+
+    def get_task_log(self, req, task_id):
+        try:
+            return self.tasks.log(task_id, int(req.query1("offset") or 0))
+        except KeyError:
+            raise not_found("任务")
+
+    def get_file(self, req, study_id, key):
+        path, name, mime = self.views.file(study_id, key)
+        inline = req.query1("inline") == "1" and mime.startswith("image/")
+        return ("file", path, name, mime, inline)
+
+    # ------------------------------------------------------------------ 写入
+    def post_review(self, req, study_id, module_id):
+        body = req.json()
+        decision = body.get("decision")
+        after = body.get("after", "save")
+        workflow = self.kernel.workflow()
+        try:
+            manifest = workflow.load(study_id)
+            run_id = body.get("run_id") or ""
+            if run_id not in manifest["runs"] or workflow.run(manifest, run_id)["module_id"] != module_id:
+                raise ApiError(409, "STALE_VERSION", "复核对象与模块不一致，请刷新后重试")
+            review = workflow.review(study_id, run_id, decision, body.get("reviewer", ""), body.get("note", ""), body.get("expected_review_id") or None)
+        except ModuleNotFoundError as error:
+            # A07 通过需核对报告通路，依赖 python-docx 等报告库；本机缺少时如实说明
+            raise ApiError(503, "TOOL_UNAVAILABLE", f"本机缺少报告依赖（{error.name}），暂不能完成该项复核")
+        except ContractError as error:
+            raise from_contract(str(error))
+        task = None
+        automatic_a00 = module_id == "A00" and manifest.get("workflow_profile") in PREUPLOAD_PROFILES
+        if decision == "approved" and (after == "continue" or automatic_a00):
+            task, _ = self.tasks.submit(study_id, "continue", "保存并继续")
+        return {"review": review, "task": task,
+                "message_zh": "复核决定已保存。" + ("后台已开始生成下一批结果，可在任务面板查看进度。" if task else "")}, 201
+
+    def post_batch_review(self, req, study_id):
+        """A01 与 A02 一次提交、分别留下独立复核记录；任一项冲突则整批拒绝。"""
+        body = req.json()
+        entries = {}
+        for module in ("A01", "A02"):
+            item = (body.get("entries") or {}).get(module) or {}
+            entries[module] = {"run_id": item.get("run_id", ""), "expected_review": item.get("expected_review_id") or None,
+                               "action": item.get("action", "decide"), "decision": item.get("decision", ""), "note": item.get("note", "")}
+        workflow = self.kernel.workflow()
+        try:
+            reviews = workflow.review_a01_a02(study_id, entries, body.get("reviewer", ""))
+        except ContractError as error:
+            raise from_contract(str(error))
+        task = None
+        study = self.views.study(study_id)
+        codes = {m["module_id"]: m["code"] for group in study["nav"] for m in group["modules"]}
+        if codes.get("A01") == "approved" and codes.get("A02") == "approved":
+            task, _ = self.tasks.submit(study_id, "continue", "A01与A02均通过")
+        return {"reviews": reviews, "task": task, "message_zh": "两项复核决定已保存。" + ("A01 与 A02 均已通过，后台开始生成交集。" if task else "")}, 201
+
+    def post_continue(self, req, study_id):
+        """手动触发“推进到下一人工关口”（与保存并继续相同的后台任务）。"""
+        self.views._manifest(study_id)
+        task, created = self.tasks.submit(study_id, "continue", "手动继续")
+        return {"task": task, "created": created}, 202
+
+    def _trash(self, req, study_id, trashed: bool):
+        body = req.json()
+        if body.get("confirm") is not True:
+            raise ApiError(422, "VALIDATION_FAILED", "请勾选确认后再提交")
+        try:
+            action = self.kernel.workflow().set_trashed(study_id, trashed, body.get("operator", ""), body.get("reason", ""), body.get("expected_action_id") or None)
+        except ContractError as error:
+            raise from_contract(str(error))
+        return {"action": action}, 201
+
+    def post_trash(self, req, study_id):
+        return self._trash(req, study_id, True)
+
+    def post_restore(self, req, study_id):
+        return self._trash(req, study_id, False)
+
+    def post_cancel(self, req, task_id):
+        try:
+            return self.tasks.cancel(task_id)
+        except KeyError:
+            raise not_found("任务")
+
+    def post_retry(self, req, task_id):
+        try:
+            task, created = self.tasks.retry(task_id, "重试")
+        except KeyError:
+            raise not_found("任务")
+        return {"task": task, "created": created}, 202
+
+    # ------------------------------------------------------------------ 分派
+    def dispatch(self, method: str, path: str, req):
+        for route_method, pattern, handler in self.compiled:
+            match = pattern.match(path)
+            if match and route_method == method:
+                return handler(req, *match.groups())
+        raise not_found("接口 " + path)
+
+
+class Request:
+    """一次请求的查询参数与 JSON 正文。"""
+
+    def __init__(self, handler: BaseHTTPRequestHandler, query: dict):
+        self.handler = handler
+        self.query = query
+
+    def query1(self, name: str) -> str | None:
+        values = self.query.get(name)
+        return values[0] if values else None
+
+    def json(self) -> dict:
+        length = int(self.handler.headers.get("Content-Length") or 0)
+        if length > MAX_BODY:
+            raise ApiError(413, "BODY_TOO_LARGE", "请求内容过大")
+        try:
+            data = json.loads(self.handler.rfile.read(length) or b"{}")
+        except ValueError:
+            raise ApiError(400, "BAD_REQUEST", "请求内容不是有效的 JSON")
+        if not isinstance(data, dict):
+            raise ApiError(400, "BAD_REQUEST", "请求内容必须是 JSON 对象")
+        return data
+
+
+def make_handler(app: App):
+    class Handler(BaseHTTPRequestHandler):
+        server_version = "ModuleA"
+
+        def log_message(self, format, *args):  # 不把研究内容写进控制台
+            return
+
+        # ---- 安全检查 ----
+        def _host_ok(self) -> bool:
+            port = str(self.server.server_port)
+            return self.headers.get("Host") in ("127.0.0.1:" + port, "localhost:" + port)
+
+        def _origin(self) -> str | None:
+            return self.headers.get("Origin")
+
+        def _origin_allowed(self) -> bool:
+            origin = self._origin()
+            port = str(self.server.server_port)
+            return origin is None or origin in ("http://127.0.0.1:" + port, "http://localhost:" + port) or origin in app.settings.allowed_origins
+
+        def _cors(self):
+            origin = self._origin()
+            if origin and origin in app.settings.allowed_origins:
+                self.send_header("Access-Control-Allow-Origin", origin)
+                self.send_header("Vary", "Origin")
+                self.send_header("Access-Control-Allow-Headers", "Content-Type, X-ModuleA-Token")
+                self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+
+        # ---- 响应 ----
+        def _send(self, status: int, data: bytes, mime: str, csp: str, extra: dict | None = None):
+            self.send_response(status)
+            self.send_header("Content-Type", mime)
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("Content-Security-Policy", csp)
+            self.send_header("Referrer-Policy", "no-referrer")
+            for key, value in (extra or {}).items():
+                self.send_header(key, value)
+            self._cors()
+            self.end_headers()
+            if self.command != "HEAD":
+                self.wfile.write(data)
+
+        def _json(self, status: int, payload):
+            self._send(status, json.dumps(payload, ensure_ascii=False, default=str).encode("utf-8"), "application/json; charset=utf-8", API_CSP)
+
+        def _error(self, error: ApiError):
+            self._json(error.status, error.body())
+
+        # ---- 方法 ----
+        def do_OPTIONS(self):
+            if not self._host_ok() or not self._origin_allowed():
+                return self._error(ApiError(403, "FORBIDDEN_ORIGIN", "访问来源不被允许"))
+            self._send(204, b"", "text/plain", API_CSP)
+
+        def do_GET(self):
+            self._handle("GET")
+
+        def do_POST(self):
+            self._handle("POST")
+
+        def _handle(self, method: str):
+            try:
+                if not self._host_ok():
+                    raise ApiError(403, "FORBIDDEN_ORIGIN", "访问地址不匹配")
+                route = urlsplit(self.path)
+                if not route.path.startswith("/api/"):
+                    if method != "GET":
+                        raise not_found(route.path)
+                    return self._static(route.path)
+                if method == "POST":
+                    if not self._origin_allowed():
+                        raise ApiError(403, "FORBIDDEN_ORIGIN", "不接受其他网页发起的操作")
+                    if not secrets.compare_digest(self.headers.get("X-ModuleA-Token", ""), app.token):
+                        raise ApiError(403, "BAD_TOKEN", "操作令牌无效，请刷新页面")
+                result = app.dispatch(method, route.path, Request(self, parse_qs(route.query)))
+                if isinstance(result, tuple) and result and result[0] == "file":
+                    _, path, name, mime, inline = result
+                    disposition = ("inline" if inline else "attachment") + "; filename*=UTF-8''" + quote(name, safe="")
+                    return self._send(200, Path(path).read_bytes(), mime, FILE_CSP, {"Content-Disposition": disposition})
+                status = 200
+                if isinstance(result, tuple):
+                    result, status = result
+                self._json(status, result)
+            except ApiError as error:
+                self._error(error)
+            except ContractError as error:
+                self._error(from_contract(str(error)))
+            except Exception as error:  # 未预期错误：返回说明，不泄露路径细节
+                self._error(ApiError(500, "INTERNAL", f"服务内部错误：{type(error).__name__}"))
+
+        def _static(self, path: str):
+            """托管预构建前端；未知路径回到 index.html（单页应用路由）。"""
+            root = app.settings.static_dir
+            if not root or not (root / "index.html").exists():
+                return self._json(200, {"name": "Module A", "version": __version__, "api": "/api/v1",
+                                        "note_zh": "未找到预构建前端；请运行 npm run build（见 web/README）或使用 --static-dir 指定。"})
+            target = (root / path.lstrip("/")).resolve()
+            if not target.is_relative_to(root.resolve()) or not target.is_file():
+                target = root / "index.html"
+            mime = mimetypes.guess_type(target.name)[0] or "application/octet-stream"
+            if mime.startswith("text/") or mime in ("application/javascript", "application/json"):
+                mime += "; charset=utf-8"
+            self._send(200, target.read_bytes(), mime, STATIC_CSP)
+
+    return Handler
+
+
+def create_server(settings: Settings, port: int = 8765) -> tuple[ThreadingHTTPServer, App]:
+    app = App(settings)
+    server = ThreadingHTTPServer(("127.0.0.1", port), make_handler(app))
+    server.daemon_threads = True
+    return server, app

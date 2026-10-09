@@ -1,0 +1,5 @@
+# 依赖目录与临时构建目录不进入版本库；正式构建产物在 ../src/modulea/static
+node_modules/
+dist/
+*.tsbuildinfo
+.vite/

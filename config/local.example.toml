@@ -1,0 +1,14 @@
+# 本机配置样例：复制为 config/local.toml 后按本机情况填写。local.toml 不提交到 git。
+# 所有路径都可以省略，省略时使用默认值。
+
+[paths]
+# studies/ 与 references/ 所在目录；默认就是项目根目录
+# data_root = "D:/codex-重大专项/moduleA"
+# 后台科学计算使用的 Python（需已安装 networkx、python-docx、rdkit、meeko 等科学依赖）；默认与工作台相同
+# science_python = "C:/Users/<用户名>/scoop/apps/python/current/python.exe"
+# 预构建前端目录；默认 src/modulea/static
+# static_dir = ""
+
+[server]
+# 前端开发服务器地址（仅开发时需要），例如 ["http://localhost:5173"]
+allowed_origins = []

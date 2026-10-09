@@ -1,0 +1,117 @@
+// 文件用途：研究工作页中间的模块页。依次显示：历史版本提示、标题与状态、状态说明、进行中的任务、重点核对、
+// （窄屏时）复核栏、需要知悉、关键数字、数量变化、模块专属图、三个页签、（窄屏时）下游影响。
+import { Alert, Button, Progress } from 'antd';
+import type { ReactNode } from 'react';
+import type { ModuleView } from '../api/types';
+import { useApp } from '../lib/appContext';
+import { fmtTime } from '../lib/format';
+import { hrefFor } from '../lib/route';
+import { stateStyle, taskColor } from '../lib/theme';
+import { StatusPill } from './common';
+import DataTabs from './DataTabs';
+import { FlowChain, FocusSection, KnowSection, KpiGrid } from './ModuleSections';
+import EnrichmentTop from './special/EnrichmentTop';
+import Heatmap from './special/Heatmap';
+import PpiTop from './special/PpiTop';
+import ReportSummary from './special/ReportSummary';
+import Venn from './special/Venn';
+
+// 需要在标题下方用说明框强调的状态（其他状态只有接口给出 reason_zh 时才显示说明框）
+const BOXED = new Set(['idle', 'ready', 'running', 'incomplete', 'failed', 'waiting', 'empty', 'stale', 'unavailable']);
+
+/** 模块页 */
+export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }: {
+  studyId: string; view: ModuleView; reviewSlot?: ReactNode; downstreamSlot?: ReactNode;
+}) {
+  const app = useApp(); // 全局上下文（打开任务面板）
+  const m = view.module; // 模块信息
+  const st = view.state; // 状态
+  const sp = view.special || {}; // 专属数据
+  const style = stateStyle(st.code); // 状态配色
+  const showBox = BOXED.has(st.code) || !!st.reason_zh; // 是否显示状态说明框
+  return (
+    <div className="stack">
+      {/* 历史版本（只读）提示 */}
+      {view.historical && (
+        <Alert
+          type="info"
+          showIcon
+          message="历史版本（只读）"
+          description={<span>正在查看 {view.run?.order_zh}（<span className="mono">{view.run?.run_id}</span>）。历史版本不能复核。</span>}
+          action={<Button href={hrefFor({ page: 'study', studyId, moduleId: m.module_id })} type="primary">回到当前版本</Button>}
+        />
+      )}
+
+      {/* 标题与状态 */}
+      <section className="card" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px 18px', padding: '18px 22px' }}>
+        <div style={{ flex: '999 1 300px', minWidth: 0 }}>
+          <div className="mono small muted">{m.module_id}{m.group_zh ? ` · ${m.group_zh}` : ''}</div>
+          <h1 style={{ margin: '2px 0 0', fontSize: 24 }}>{m.title_zh}</h1>
+          <p className="small muted" style={{ margin: '4px 0 0' }}>{m.purpose_zh}</p>
+        </div>
+        <div style={{ flex: '1 1 200px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, minWidth: 0 }}>
+          <StatusPill code={st.code} label={st.label_zh} large />
+          {view.run ? (
+            <span className="tiny muted" style={{ textAlign: 'right' }}>
+              {view.historical ? '查看版本' : '当前版本'} {view.run.order_zh} · <span className="mono">{view.run.run_id}</span>
+              <br />生成于 {fmtTime(view.run.finished_at || view.run.created_at)}
+            </span>
+          ) : (
+            <span className="tiny muted">尚无运行结果</span>
+          )}
+        </div>
+      </section>
+
+      {/* 状态说明框：失败、等待资料、空结果、已失效等 */}
+      {showBox && (
+        <div style={{ padding: '12px 14px', borderRadius: 8, background: style.boxBg, border: `1px solid ${style.boxLine}`, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <strong style={{ fontSize: 14 }}>{st.label_zh}</strong>
+          {st.reason_zh && <span style={{ fontSize: 14, color: '#26323C', overflowWrap: 'anywhere' }}>{st.reason_zh}</span>}
+          {st.code === 'failed' && <span className="small muted">这是执行失败，不是“0 条结果”。</span>}
+          {st.is_empty_result && <span className="small muted">计算已完整执行，结果为空；完整统计表照常保存，可按正常流程复核。</span>}
+          {st.handoff_blocked && <span className="small" style={{ color: '#4E3780' }}>资料补齐或例外确认前不能选择“通过”。</span>}
+        </div>
+      )}
+
+      {/* 本模块进行中的后台任务 */}
+      {view.tasks.length > 0 && (
+        <section className="card" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <h2 style={{ margin: 0, fontSize: 16 }}>后台任务</h2>
+          {view.tasks.map((t) => (
+            <div key={t.task_id} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+              <span className="pill" style={{ background: taskColor(t.state).bg, color: taskColor(t.state).fg }}>{t.state_zh}</span>
+              <span>{t.kind_zh}</span>
+              {t.progress && <span className="small muted">{t.progress.step_zh}（{t.progress.done}/{t.progress.total}）</span>}
+              <Button size="small" onClick={() => app.openTasks(t.task_id)}>查看日志</Button>
+              {t.progress && <Progress style={{ flex: '1 1 100%' }} percent={t.progress.total ? Math.round((t.progress.done / t.progress.total) * 100) : 0} size="small" showInfo={false} />}
+              {t.error_zh && <span style={{ color: '#8E1B12', flex: '1 1 100%' }}>{t.error_zh}</span>}
+            </div>
+          ))}
+        </section>
+      )}
+
+      {/* 本轮你只需核对这些（历史版本不显示） */}
+      {!view.historical && <FocusSection items={view.focus} />}
+      {/* 窄屏时复核栏紧随重点 */}
+      {reviewSlot}
+      {/* 需要知悉 */}
+      <KnowSection items={view.focus} />
+      {/* 关键数字 */}
+      <KpiGrid kpis={view.kpis} />
+      {/* 数量变化 */}
+      <FlowChain steps={view.flow} note={view.flow_note_zh} />
+
+      {/* 模块专属图 */}
+      {sp.venn && <Venn data={sp.venn} />}
+      {sp.ppi_top && sp.ppi_top.length > 0 && <PpiTop items={sp.ppi_top} />}
+      {sp.enrichment_top && <EnrichmentTop data={sp.enrichment_top} />}
+      {sp.heatmap && <Heatmap data={sp.heatmap} />}
+      {(sp.conclusion_zh || sp.leads || sp.limits || sp.report_files) && <ReportSummary special={sp} studyId={studyId} />}
+
+      {/* 结果明细 / 参数与版本 / 来源与追溯 */}
+      <DataTabs studyId={studyId} view={view} />
+      {/* 窄屏时下游影响放在最后 */}
+      {downstreamSlot}
+    </div>
+  );
+}

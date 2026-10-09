@@ -1,0 +1,238 @@
+// 文件用途：本机接口（/api/v1）返回数据的 TypeScript 类型；字段与 src/modulea/api/AGENTS.md 契约一一对应。
+// 改字段前先改契约文件，再改这里；前端不自行推算状态。
+
+/** 状态码：与契约第 2 节一致 */
+export type StateCode =
+  | 'idle' | 'ready' | 'running' | 'incomplete' | 'failed' | 'waiting' | 'empty'
+  | 'review' | 'hold' | 'returned' | 'approved' | 'stale' | 'published' | 'unavailable' | 'history';
+
+/** 复核决定的三种取值 */
+export type Decision = 'approved' | 'rejected' | 'pending';
+
+/** 接口错误正文 */
+export interface ApiErrorBody {
+  error: { code: string; message_zh: string; details: Record<string, unknown>; retryable: boolean };
+}
+
+/** GET /session 的返回 */
+export interface Session {
+  token: string; // 写请求令牌
+  version: string; // 服务版本
+  platform: string; // 运行平台
+  capabilities: Record<string, boolean>; // 能力开关
+  decisions_zh: Record<Decision, string>; // 决定中文名
+}
+
+/** 研究用途（例如流程测试） */
+export interface Purpose {
+  analysis_purpose: string;
+  banner_zh: string;
+  severity: 'warning' | 'info' | string;
+}
+
+/** 后台任务 */
+export interface Task {
+  task_id: string;
+  study_id: string;
+  kind: string;
+  kind_zh: string;
+  state: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled' | 'interrupted';
+  state_zh: string;
+  requested_by: string;
+  message_zh: string | null;
+  error_zh: string | null;
+  progress: { step_zh: string; done: number; total: number } | null;
+  created_at: string | null;
+  started_at: string | null;
+  finished_at: string | null;
+}
+
+/** 研究基本信息 */
+export interface StudyInfo {
+  study_id: string;
+  title_zh: string;
+  formula_zh: string | null;
+  herbs_zh: string[];
+  disease: { name_zh: string | null; mesh_term: string | null; mesh_ui: string | null };
+  kind: string | null;
+  workflow_profile: string | null;
+  trashed: boolean;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+/** 下一步提示 */
+export interface NextStep {
+  module_id: string | null;
+  code: string;
+  text_zh: string;
+}
+
+/** 首页研究卡片 */
+export interface StudyCard {
+  study: StudyInfo;
+  purpose: Purpose | null;
+  archive_ok: boolean;
+  archive_error_zh: string | null;
+  progress: { approved: number; total: number; segments: { module_id: string; code: StateCode; label_zh: string }[] };
+  next_step: NextStep | null;
+  todo_count: number;
+  active_task: Task | null;
+}
+
+/** 导航中的一个模块 */
+export interface NavModule {
+  module_id: string;
+  title_zh: string;
+  sub: boolean;
+  code: StateCode;
+  label_zh: string;
+}
+
+/** 待办条目（研究内） */
+export interface InboxEntry {
+  module_id: string;
+  code: StateCode;
+  label_zh: string;
+  text_zh: string;
+}
+
+/** 跨研究待办条目 */
+export interface GlobalInboxEntry extends InboxEntry {
+  study_id: string;
+  study_title_zh: string;
+}
+
+/** 研究页 */
+export interface StudyView {
+  study: StudyInfo;
+  purpose: Purpose | null;
+  archive_ok: boolean;
+  archive_error_zh: string | null;
+  progress: { approved: number; total: number };
+  nav: { group_zh: string; modules: NavModule[] }[];
+  next_step: NextStep | null;
+  inbox: InboxEntry[];
+  active_tasks: Task[];
+  management: { expected_action_id: string | null };
+}
+
+/** 关键数字卡片 */
+export interface Kpi { label_zh: string; value: unknown; text: string; note_zh: string; source: string | null }
+/** 数量变化链中的一步 */
+export interface FlowStep { label_zh: string; value: unknown; text: string; note_zh: string; delta_zh: string; kind: 'main' | 'plain' | 'end' }
+/** “本轮你只需核对这些”条目 */
+export interface FocusItem { tier: 'must_handle' | 'should_know'; title_zh: string; body_zh: string; impact_zh: string; blocks: string[] }
+/** 参数与版本条目 */
+export interface ParamItem { label_zh: string; value: unknown; origin: 'recorded' | 'outline' | 'decision' | 'run_config' | string }
+/** 复核记录 */
+export interface ReviewRecord {
+  review_id: string;
+  decision: Decision;
+  reviewer: string;
+  note: string;
+  created_at: string;
+  batch: unknown;
+  previous_review_id?: string | null;
+}
+/** 模块复核信息 */
+export interface ReviewInfo {
+  current: ReviewRecord | null;
+  history: ReviewRecord[];
+  can_review: boolean;
+  allowed_decisions: Decision[];
+  blocked_reason_zh: string | null;
+  expected_review_id: string | null;
+  run_id: string | null;
+  batch_with: string | null;
+  continue: { available: boolean; note_zh: string };
+  already_approved: boolean;
+}
+/** 归档文件 */
+export interface FileItem { key: string; role: string; name: string; path: string; bytes: number | null; sha256: string | null; inline: boolean }
+/** 可分页明细表的索引 */
+export interface TableIndex { name: string; kind: 'rows' | 'object'; row_count: number | null; columns: string[] }
+/** 运行历史条目 */
+export interface RunItem {
+  run_id: string;
+  order_zh: string;
+  created_at: string | null;
+  reason_zh: string | null;
+  outcome: string | null;
+  review_decision: Decision | null;
+  is_current: boolean;
+}
+
+/** A06 热图 */
+export interface Heatmap {
+  unit: string;
+  orientation: string;
+  color_rule_zh: string;
+  min: number;
+  max: number;
+  receptors: { name: string; order: number; pdb: string | null; rmsd: number | null; status_zh: string; role_zh: string }[];
+  rows: { compound_id: string; compound_name: string; cells: { receptor: string; value: number | null }[] }[];
+  omitted: { kind: string; name: string; reason_zh: string }[];
+}
+/** A05 富集前列条目 */
+export interface EnrichItem { id: string; description: string; count: number; gene_ratio: string; p_adjust: number; rich_factor: number }
+/** A04 第一轮前 10 */
+export interface PpiTopItem { symbol: string; degree: number; bc: number; cc: number; round2: boolean; bar: number }
+/** A03 韦恩图 */
+export interface Venn { formula_only: number; both: number; disease_only: number; formula_total: number; disease_total: number }
+/** A07 研究线索 */
+export interface Lead { title_zh: string; fact_zh: string; next_zh: string }
+/** A07 报告文件 */
+export interface ReportFile { role: string; label_zh: string; key: string | null; path: string; sha256: string }
+/** A07 纳入通路 */
+export interface PathwayItem { id: string; name_zh: string; status_zh: string; hits: number }
+
+/** 模块专属数据（第 6 节）；各模块只有其中一部分键 */
+export interface Special {
+  venn?: Venn;
+  ppi_top?: PpiTopItem[];
+  enrichment_top?: Record<string, EnrichItem[]>;
+  heatmap?: Heatmap;
+  conclusion_zh?: string;
+  leads?: Lead[];
+  limits?: string[];
+  pathway?: PathwayItem[];
+  report_files?: ReportFile[];
+}
+
+/** 模块页 */
+export interface ModuleView {
+  module: { module_id: string; title_zh: string; group_zh: string; purpose_zh: string; sub: boolean; depends_on: string[] };
+  state: { code: StateCode; label_zh: string; reason_zh: string | null; raw_state: string; is_empty_result: boolean; handoff_blocked: boolean; can_review: boolean };
+  purpose: Purpose | null;
+  run: {
+    run_id: string; artifact_id: string | null; order_zh: string; created_at: string | null; finished_at: string | null;
+    reason_zh: string | null; parent_runs: Record<string, string>; is_current: boolean; is_active: boolean;
+  } | null;
+  outcome: 'success' | 'empty' | 'failed' | 'partial' | null;
+  kpis: Kpi[];
+  flow: FlowStep[];
+  flow_note_zh: string;
+  focus: FocusItem[];
+  params: ParamItem[];
+  table: { columns: { key: string; label_zh: string }[]; rows: Record<string, unknown>[]; row_count: number; source_table: string | null } | null;
+  special: Special;
+  review: ReviewInfo;
+  downstream: { note_zh: string; modules: { module_id: string; title_zh: string; code: StateCode; label_zh: string }[] };
+  trace: { label_zh: string; value: unknown }[];
+  files: FileItem[];
+  tables: TableIndex[];
+  history: RunItem[];
+  tasks: Task[];
+  historical: boolean;
+}
+
+/** 明细表分页返回 */
+export type TablePage =
+  | { kind: 'rows'; name?: string; columns: string[]; total: number; page: number; size: number; items: Record<string, unknown>[] }
+  | { kind: 'object'; name?: string; data: unknown };
+
+/** 复核提交的返回 */
+export interface ReviewResponse { review: ReviewRecord; task: Task | null; message_zh: string }
+/** 批量复核的返回 */
+export interface BatchReviewResponse { reviews: unknown; task: Task | null; message_zh: string }

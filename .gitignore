@@ -1,0 +1,33 @@
+# 科研资料、结果及工具环境只保存在独立本地目录。
+studies/
+references/
+environments/
+environment/
+governance/
+demo_data/
+runtime/
+.runtime/
+browser_profile/
+audit_*/
+# 个人配置和凭据不进入代码仓库。
+config/local.toml
+config/automation_runtime.toml
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+# 缓存、依赖、日志和过程文件。
+__pycache__/
+*.py[cod]
+node_modules/
+dist/
+*.tsbuildinfo
+*.sqlite
+*.sqlite-*
+*.db
+*.log
+docs/_qa/
+.DS_Store
+Thumbs.db
+# 正式前端构建产物保留在 src/modulea/static/。

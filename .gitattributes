@@ -1,0 +1,4 @@
+# 保持源码、归档规格和模板的原始字节，不引入旧仓库的 LFS 历史。
+* -text
+*.docx binary
+*.pdf binary
