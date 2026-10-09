@@ -1,5 +1,5 @@
 # 人工复核后的安全自动接续；只运行已有明确规则的模块，遇到人工判断立即暂停。
-from components import run_components  # A00通过后可以按固定本地来源生成A01。
+from components_multisource_flow import run_components  # A00通过后可以按固定本地来源生成A01。
 from a02_auto_prepare import prepare as prepare_a02  # A00通过后自动准备OTP与TTD公开来源。
 from enrichment_flow import run_enrichment  # A03通过后可以按固定配置生成A05。
 from intersection_flow import run_intersection  # A01和A02通过后可以生成A03。

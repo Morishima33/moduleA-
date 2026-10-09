@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "scientific_rules": "TCMSP OB≥30、DL≥0.18；HERB/BATMAN不做ADME淘汰；仅已有关系；完整InChIKey且无分子式冲突合并",
+  "files": [
+    {
+      "source_relative": "src/components_multisource_flow.py",
+      "destination": "src/components_multisource_flow.py",
+      "source_sha256": "70782f0fab0000c371da4fac704cf63c858e7ae54ad4a991520ca882da642175",
+      "destination_sha256": "70782f0fab0000c371da4fac704cf63c858e7ae54ad4a991520ca882da642175",
+      "adaptation": "A01.multisource.1 原字节迁入，仅供已有绑定事实包复算"
+    },
+    {
+      "source_relative": "governance/三库成分去重核查_v1_20261008/candidate_code/components_multisource.py",
+      "destination": "src/science_modules/a01/multisource.py",
+      "source_sha256": "366c351c77fa74c4191978b1fb1a581882a8d87b03e7aa95896bb783dae76de1",
+      "destination_sha256": "24977bd171020bab2ad23558285f7bb94fe65780e16781a2d7ce7fb1f994b74d",
+      "adaptation": "显式药味、HERB工作簿、BATMAN条目和可选PubChem凭据；关闭目录外路径和读取句柄"
+    },
+    {
+      "source_relative": "governance/三库成分去重核查_v1_20261008/candidate_code/collect_herb_existing.py",
+      "destination": "src/science_modules/a01/collect_herb_existing.py",
+      "source_sha256": "485a3fe6b74f2c0bf68779f98b3e7be58ea5fea57e159430aaedcef84fc76c2f",
+      "destination_sha256": "03c7eaad77003ec166eaf7d6d92addd72b43b9baa6c4ecd365cc297d18b6b4d3",
+      "adaptation": "显式HERB药味文件绑定、编号路径校验；保留已有关系采集和失败记录"
+    },
+    {
+      "source_relative": "governance/三库成分去重核查_v1_20261008/candidate_code/preview_a01_a03.py",
+      "destination": "src/science_modules/a01/preview.py",
+      "source_sha256": "cccc6fbaea98dfba52c50ee0db8cc80e074e383ba2cc2e88462d0b61e8bcccbe",
+      "destination_sha256": "e97ef54acb65677e37cb12a74a65924c1cb19f06c72f8de6f39831ca3ac99c7b",
+      "adaptation": "抽取独立候选计算；输入当前药味、TCMSP标准结果和同源HGNC，不写文件、不代签例外"
+    }
+  ]
+}

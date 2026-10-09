@@ -5,3 +5,5 @@
 - 行为测试：`tests/test_github_upload.py`；使用 Python 标准库、Git 和 PowerShell，在临时本地仓库运行。
 
 详细格式和使用步骤见 [GitHub自动上传说明](../docs/GitHub自动上传说明_v1.0.md)。报告和日志保存在仓库外，不提交测试结果截图或过程文件。
+
+- `open_snapshot_preview.py`：使用指定的独立 `--data-root` 和 `--runtime-dir` 打开核查页面，启动时检查归档与 A01 版本；服务进程隐藏启动，浏览器可见。同一端口已运行时复用，不停止其他服务、不触发研究复核或科学重跑。研究快照与运行日志不提交。

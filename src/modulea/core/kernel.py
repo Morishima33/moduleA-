@@ -79,6 +79,7 @@ def full_workflow(data_root: Path) -> Workflow:
     """
     from normalization import validator as normalization_validator
     from components import validate_components
+    from components_multisource_flow import validator as multisource_validator
     from disease import validate_disease
     from intersection_flow import validate_intersection, validate_selection
     from ppi_flow import validator as ppi_validator
@@ -88,7 +89,7 @@ def full_workflow(data_root: Path) -> Workflow:
 
     root = data_root
     return Workflow(root, {
-        "A01": normalization_validator(root, validate_components),
+        "A01": multisource_validator(root, normalization_validator(root, validate_components)),
         "A02": normalization_validator(root, validate_disease),
         "A03": validate_intersection,
         "A03_SELECT": validate_selection,

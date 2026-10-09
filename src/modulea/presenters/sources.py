@@ -7,6 +7,8 @@ from .base import Parts, clean, focus, kpi, param, pick, step, table, tables_of
 
 def present_a01(result: dict, ctx: dict) -> Parts:
     s = result.get("summary") or {}
+    if "候选成分分组数" in s:
+        return present_a01_multisource(result, ctx)
     t = tables_of(result)
     parts = Parts()
     parts.kpis = clean([
@@ -31,6 +33,50 @@ def present_a01(result: dict, ctx: dict) -> Parts:
         parts.focus.append(focus("身份问题组", f"共 {s['身份问题组数']} 组；处理方式：{pick(s, '身份问题处理', default='见明细')}", tier="should_know"))
     if s.get("handoff_blocked"):
         parts.focus.insert(0, focus("尚不能交给下游", "仍有资料或身份问题未处理。", blocks=["A03"]))
+    return parts
+
+
+# 读取三库归档事实，区分来源编号、保守成分分组和进入交集的标准化靶点。
+def present_a01_multisource(result: dict, ctx: dict) -> Parts:
+    s = result.get("summary") or {}
+    t = tables_of(result)
+    parts = Parts()
+    parts.kpis = clean([
+        kpi("候选成分分组", pick(s, "候选成分分组数"), "保守分组，含结构待核条目"),
+        kpi("方剂标准化靶点", pick(s, "标准化基因数"), "HGNC 统一身份"),
+        kpi("结构待核分组", pick(s, "结构待核分组数"), "进入对接前须核实"),
+    ])
+    parts.flow = clean([
+        step("候选成分分组", pick(s, "候选成分分组数"), "三库并集保守去重", kind="main"),
+        step("标准成分—基因关系", pick(s, "去重成分—人类基因关系数"), "跨库去重，来源证据保留"),
+        step("方剂标准化靶点", pick(s, "标准化基因数"), "进入交集", kind="end"),
+    ])
+    parts.flow_note_zh = "结构键分组与结构待核分组共同构成候选分组；各库来源编号不可相加当作独立成分数。"
+    grouped = {}
+    for row in t.get("component_sources") or []:
+        source = row.get("source")
+        source_id = row.get("source_id")
+        if source and source_id:
+            grouped.setdefault(source, set()).add(source_id)
+    rows = [{"source": source, "source_ids": len(ids)} for source, ids in grouped.items()]
+    parts.table = table([("source", "来源库"), ("source_ids", "不同来源编号数")], rows)
+    parts.params = clean([
+        param("成分来源方案", pick(s, "component_source_profile")),
+        param("基因身份规则", pick(s, "mapping_rule")),
+        param("标识空间", pick(s, "namespace")),
+        param("资料阶段", pick(s, "资料阶段")),
+        param("身份例外处理", pick(s, "身份例外处理")),
+        param("结构待核处理", pick(s, "结构待核处理")),
+    ])
+    pending = pick(s, "结构待核分组数")
+    if pending:
+        parts.focus.append(focus("结构尚待核实", f"{pick(s, '结构键分组数', default='—')} 个结构键分组，{pending} 个结构待核分组；两者共同组成候选分组，候选分组数不等于已完全核实的独立物质数。", tier="should_know"))
+    excluded = pick(s, "身份例外处理")
+    if excluded:
+        parts.focus.append(focus("本研究身份例外决定", str(excluded) + "；该决定仅适用于当前研究及绑定版本。", tier="should_know"))
+    parts.focus.append(focus("已有关系的证据范围", "数据库已有关系及人类HGNC身份不等于人体直接结合实验证据；本方案未增加新的靶点预测。", tier="should_know"))
+    if s.get("handoff_blocked"):
+        parts.focus.insert(0, focus("尚不能交给下游", "当前仍有未处理的资料或身份问题；历史病例决定不会自动应用。", blocks=["A03"]))
     return parts
 
 
