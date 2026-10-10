@@ -2,7 +2,7 @@
   "schema_version": 1,
   "module": "A04",
   "checked_at": "2026-10-10",
-  "status_zh": "双分支代码已实现，演示范图待确认，当前研究未计算",
+  "status_zh": "A04大纲已确认，第二版蓝红图表演示待核查，真实研究未计算",
   "source_zh": "D:/codex-重大专项/moduleA 的当前科学代码；与重构仓库已有文件逐一核对",
   "versions": [
     "A04.1",
@@ -48,7 +48,7 @@
     },
     {
       "path": "src/science_modules/a04/figures.py",
-      "sha256": "c3c974d001e183575f97e144dcc71a3e276635fab48b5d0637148edd2b5ace1b"
+      "sha256": "ea51f51910418f65ac0429c6f5e53c5c2b05c52200722cb6bd06bc821ec7873d"
     }
   ]
 }

@@ -119,3 +119,16 @@ a:hover { color: #0A4350; }
   .enrich-row { grid-template-columns: minmax(0, 1fr) 90px; }
   .enrich-row .eb { grid-column: 1 / -1; order: 3; }
 }
+
+/* A04表格按用户报告参考排版；横向滚动仍限制在表格自身。 */
+.ppi-reference-table .ant-table-thead > tr > th {
+  background: #2F6077 !important; color: white; font-weight: 700;
+  border: 1px solid black; border-right-width: 0; border-radius: 0 !important;
+}
+.ppi-reference-table .ant-table-thead > tr > th:last-child { border-right-width: 1px; }
+.ppi-reference-table .ant-table-tbody > tr > td {
+  background: white !important; color: #203342; border: 1px solid black;
+  border-top-width: 0; border-right-width: 0;
+}
+.ppi-reference-table .ant-table-tbody > tr > td:last-child { border-right-width: 1px; }
+.ppi-reference-table .ant-table-container { border-radius: 0 !important; }

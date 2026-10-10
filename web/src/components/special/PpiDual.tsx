@@ -10,15 +10,16 @@ function metric(value: number) { return <Tooltip title={String(value)}>{Number(v
 export default function PpiDual({ data }: { data: Dual }) {
   const base = [{ title: '名次', dataIndex: 'rank', width: 72 }, { title: '基因', dataIndex: 'symbol', width: 130 }, { title: 'HGNC ID', dataIndex: 'target_id', width: 130 }];
   const metrics = [{ title: 'Degree', dataIndex: 'degree', width: 90 }, { title: 'BC', dataIndex: 'bc', render: metric, width: 110 }, { title: 'CC', dataIndex: 'cc', render: metric, width: 110 }];
+  const degreeColumns = [{ title: '基因', dataIndex: 'symbol', width: 130 }, { title: 'HGNC', dataIndex: 'target_id', width: 130 }, metrics[0], { ...metrics[1], title: 'Betweenness', render: (value: number) => <Tooltip title={String(value)}>{value.toFixed(3)}</Tooltip> }, { ...metrics[2], title: 'Closeness', render: (value: number) => <Tooltip title={String(value)}>{value.toFixed(4)}</Tooltip> }];
   return <section className="card">
     <SectionHead title="A04 双分支第二轮候选排名" extra="两分支独立筛选" />
     <p className="small muted">{data.note_zh}</p>
     <h3>Degree第二轮前十</h3>
     <p className="small muted">第一轮 {data.counts.degree_round1_count} 个 → 第二轮 {data.counts.degree_round2_count} 个；本表 {data.degree_rows.length} 个。</p>
-    <Table<PpiDualRow> size="small" rowKey="target_id" columns={[...base, ...metrics]} dataSource={data.degree_rows} pagination={false} scroll={{ x: 650 }} locale={{ emptyText: '第二轮没有符合条件的Degree候选，不补足前十。' }} />
+    <Table<PpiDualRow> size="small" rowKey="target_id" className="ppi-reference-table" columns={degreeColumns} dataSource={data.degree_rows} pagination={false} scroll={{ x: 650 }} locale={{ emptyText: '第二轮没有符合条件的Degree候选，不补足前十。' }} />
     <h3 style={{ marginTop: 24 }}>BC＋CC第二轮前十五</h3>
     <p className="small muted">第一轮 {data.counts.bc_cc_round1_count} 个 → 第二轮 {data.counts.bc_cc_round2_count} 个；本表 {data.bc_cc_rows.length} 个。两项平均名次越小越靠前。</p>
-    <Table<PpiDualRow> size="small" rowKey="target_id" columns={[...base, metrics[1], metrics[2], { title: '两项平均名次', dataIndex: 'mean_rank', width: 130 }, metrics[0]]} dataSource={data.bc_cc_rows} pagination={false} scroll={{ x: 790 }} locale={{ emptyText: '第二轮没有同时满足BC、CC条件的候选，不补足前十五。' }} />
+    <Table<PpiDualRow> size="small" rowKey="target_id" className="ppi-reference-table" columns={[...base, metrics[1], metrics[2], { title: '两项平均名次', dataIndex: 'mean_rank', width: 130 }, metrics[0]]} dataSource={data.bc_cc_rows} pagination={false} scroll={{ x: 790 }} locale={{ emptyText: '第二轮没有同时满足BC、CC条件的候选，不补足前十五。' }} />
     <Alert style={{ marginTop: 16 }} type="info" showIcon message={data.network_note_zh} />
   </section>;
 }

@@ -1,60 +1,72 @@
-"""Degree第一轮网络版式预览；批准标志默认关闭，演示图不代表科研结果。"""
+"""按用户参考报告生成Degree候选网络；正式版式未经确认不启用。"""
+
 from pathlib import Path
+
 NETWORK_DESIGN_APPROVED = False
 
-# 图形只读取完整网络原指标；所有第一轮节点保留，即使在绘图子图中无边。
+
+# 图注与报告使用同一说明；红色严格对应第二轮前十及截断边界并列。
+def degree_caption(tables):
+    return (
+        f"图2 Degree第一轮{len(tables['degree_round1'])}节点候选网络。"
+        "全部第一轮节点保留；第二轮Degree前十及边界并列以红色突出并标注，其余为蓝色。"
+        "节点指标来自完整网络，节点大小表示完整网络Degree。"
+    )
+
+
+# 复用冻结报告的蓝红色、细边、节点描边及下方标签，全部第一轮候选参与绘图。
 def draw_degree(tables, destination, demo=False):
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-    from matplotlib.font_manager import FontProperties
-    import networkx as nx
-    font = Path("C:/Windows/Fonts/msyh.ttc")
-    if font.exists():
-        from matplotlib import font_manager
-        font_manager.fontManager.addfont(str(font))
-        plt.rcParams["font.family"] = FontProperties(fname=str(font)).get_name()
-    plt.rcParams["svg.fonttype"] = "none"
-    plt.rcParams["axes.unicode_minus"] = False
+    from report_figures import _network_pair
+
     first = tables["degree_round1"]
-    second = {r["target_id"] for r in tables["degree_round2"]}
-    top = {r["target_id"] for r in tables["degree_top10"]}
-    graph = nx.Graph()
-    graph.add_nodes_from(r["target_id"] for r in first)
-    graph.add_edges_from((r["source"], r["target"]) for r in tables["edges"] if r["source"] in graph and r["target"] in graph)
-    # 绘图子图的无边节点单独摆放，避免弹簧布局把主网络挤到角落。
-    connected = [n for n in graph if graph.degree(n)]
-    positions = dict(nx.spring_layout(graph.subgraph(connected), seed=27, k=1.8 / max(len(connected), 1) ** .5, iterations=150)) if connected else {}
-    isolates = sorted(set(graph) - set(connected))
-    if connected:
-        for i, node in enumerate(isolates): positions[node] = (1.45 + .3 * (i // 5), .8 - .4 * (i % 5))
-    elif isolates:
-        positions = dict(nx.circular_layout(graph))
-    fig, ax = plt.subplots(figsize=(12, 8), facecolor="white")
-    maximum = max((r["degree"] for r in first), default=1)
-    sizes = [180 + 850 * r["degree"] / maximum for r in first]
-    colors = ["#218C8D" if r["target_id"] in second else "#D5DCE0" for r in first]
-    if first:
-        nx.draw_networkx_edges(graph, positions, ax=ax, edge_color="#A6B5BC", alpha=.6, width=1.2)
-        nx.draw_networkx_nodes(graph, positions, nodelist=[r["target_id"] for r in first], ax=ax, node_size=sizes, node_color=colors, edgecolors="white", linewidths=1.8)
-        labels = {r["target_id"]: r["symbol"] for r in first if r["target_id"] in top}
-        nx.draw_networkx_labels(graph, positions, labels=labels, ax=ax, font_family=plt.rcParams["font.family"][0], font_size=9, font_weight="bold", font_color="#12383D")
-    else:
-        ax.text(.5, .5, "第一轮无候选，不绘制虚构网络", transform=ax.transAxes, ha="center", fontsize=14)
-    ax.margins(.2)
-    ax.axis("off")
-    prefix = "演示数据  " if demo else ""
-    fig.suptitle(prefix + "Degree第一轮候选网络", fontsize=19, fontweight="bold", x=.5, y=.965)
-    fig.text(.5, .905, f"第一轮 {len(first)} 个节点  ·  第二轮 {len(second)} 个节点  ·  标注第二轮前十及边界并列", ha="center", fontsize=11, color="#526571")
-    from matplotlib.lines import Line2D
-    handles=[Line2D([0], [0], marker="o", color="white", markerfacecolor="#D5DCE0", markersize=12, label="第一轮入选、第二轮未入选"), Line2D([0], [0], marker="o", color="white", markerfacecolor="#218C8D", markersize=12, label="第二轮入选")]
-    fig.legend(handles=handles, loc="lower center", bbox_to_anchor=(.5, .095), ncol=2, frameon=False, fontsize=11)
-    fig.text(.5, .065, "节点指标来自完整网络；本图展示第一轮候选，颜色突出第二轮入选节点。", ha="center", fontsize=10, color="#526571")
-    fig.text(.5, .032, "节点大小表示完整网络Degree；仅绘制候选间的边，子图无边节点仍保留。" + ("本图不是当前研究结果。" if demo else ""), ha="center", fontsize=9, color="#526571")
-    fig.subplots_adjust(top=.86, bottom=.17, left=.035, right=.965)
-    destination=Path(destination);destination.parent.mkdir(parents=True,exist_ok=True)
-    result={}
-    for kind in ("svg", "png"):
-        path=destination.with_suffix('.'+kind);fig.savefig(path,dpi=170,facecolor="white");result[kind]=path
-    plt.close(fig)
+    nodes = [row["target_id"] for row in first]
+    node_set = set(nodes)
+    top = {row["target_id"] for row in tables["degree_top10"]}
+    edges = [
+        (row["source"], row["target"])
+        for row in tables["edges"]
+        if row["source"] in node_set and row["target"] in node_set
+    ]
+    labels = {row["target_id"]: row["symbol"] for row in first if row["target_id"] in top}
+    groups = {node: "core" if node in top else "other" for node in nodes}
+    # 按完整网络Degree缩放半径，避免高Degree节点全部达到尺寸上限。
+    maximum = max((row["degree"] for row in first), default=1)
+    sizes = {row["target_id"]: 7 + 22 * row["degree"] / maximum for row in first}
+    title = f"PPI Degree第一轮候选网络 {len(nodes)}个节点"
+    if demo:
+        title += " 演示数据"
+    if not nodes:
+        title += " 无符合条件的候选"
+    destination = Path(destination)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    result = {kind: destination.with_suffix("." + kind) for kind in ("svg", "png")}
+    # 冻结绘图器的标题区与顶部节点较近；新增独立标题区，保留原节点布局和描边。
+    _network_pair(result["svg"], result["png"], "", nodes, edges, labels, groups, sizes, seed=24)
+    from html import escape
+    from PIL import Image, ImageDraw
+    from report_figures import _font, COLORS
+
+    note = "节点位置仅用于展示；节点大小表示完整网络Degree。"
+    with Image.open(result["png"]) as original:
+        width, height = original.size
+        picture = original.copy()
+    draw = ImageDraw.Draw(picture)
+    draw.rectangle((0, height - 70, width, height), fill="white")
+    draw.text((width / 2, height - 42), note, font=_font(18), fill="#526B7A", anchor="ma")
+    page = Image.new("RGB", (width, height + 60), "white")
+    page.paste(picture, (0, 60))
+    ImageDraw.Draw(page).text(
+        (width / 2, 28), title, font=_font(34, True), fill=COLORS["dark"], anchor="ma"
+    )
+    page.save(result["png"], dpi=(220, 220))
+    raw = result["svg"].read_text(encoding="utf-8")
+    body = raw[raw.index(">") + 1 : raw.rfind("</svg>")]
+    body = body.replace("节点位置仅用于展示；节点大小表示Degree或连边数。", escape(note))
+    result["svg"].write_text(
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height + 60}" viewBox="0 0 {width} {height + 60}">'
+        '<rect width="100%" height="100%" fill="white"/>'
+        f'<g transform="translate(0,60)">{body}</g>'
+        f'<text x="{width / 2}" y="48" text-anchor="middle" font-family="Microsoft YaHei" font-size="34" font-weight="700" fill="{COLORS["dark"]}">{escape(title)}</text></svg>',
+        encoding="utf-8",
+    )
     return result

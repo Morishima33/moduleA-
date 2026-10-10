@@ -22,7 +22,7 @@
     },
     {
       "path": "src/science_modules/a07/dual_reports.py",
-      "sha256": "b83ed5bfdf626507ff507af3de472a1dff6c58dcc7dc5d044957a66954d8e2ce"
+      "sha256": "8cae761b2d096761504d95f554c853564ab99ce606c9df6ad9556cbfaeddf9ed"
     }
   ],
   "pending_version": "A07.double_report.15"
