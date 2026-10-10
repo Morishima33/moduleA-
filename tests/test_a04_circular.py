@@ -40,8 +40,18 @@ class CircularTests(unittest.TestCase):
         self.assertNotEqual(tables["degree_round1_top10"], tables["degree_top10"])
         document = Document()
         add_dual_section(document, {"tables": tables})
-        self.assertIn("第二轮候选网络", document.paragraphs[0].text)
+        self.assertIn("第一轮前十表及第二轮候选网络", document.paragraphs[0].text)
         self.assertIn("第一轮前十", document.paragraphs[1].text)
+        with patch(
+            "science_modules.a07.circular_reports.legacy._add_figure",
+            side_effect=lambda doc, *args: doc.add_paragraph("第二轮图件占位"),
+        ):
+            ordered = Document()
+            add_dual_section(ordered, {"tables": tables}, ({}, Path(".")))
+        elements = list(ordered._element.body)
+        graph = next(p._p for p in ordered.paragraphs if p.text == "第二轮图件占位")
+        self.assertLess(elements.index(ordered.tables[0]._tbl), elements.index(graph))
+        self.assertLess(elements.index(graph), elements.index(ordered.tables[1]._tbl))
         archive = {"a04_degree_top10": degree_rows(tables), "a04_bc_cc_top15": bc_cc_rows(tables)}
         validate_word_tables(document, {"tables": tables}, archive)
         self.assertEqual(

@@ -61,7 +61,7 @@ def present_a04_dual(s, t):
         parts.special["ppi_dual"]["degree_round"] = 2
     if s["selection_version"] == "A04.dual.3":
         parts.special["ppi_dual"].update(network_round=2,
-            note_zh="Degree图展示第二轮全部候选，Degree表保留第一轮前十；BC＋CC表取第二轮前十五。边界并列全部保留，不足按实际数量、空结果不补足；完整名单见结果明细。",
+            note_zh="先展示Degree第一轮前十表，再展示第二轮全部候选网络图；BC＋CC表取第二轮前十五。边界并列全部保留，不足按实际数量、空结果不补足；完整名单见结果明细。",
             network_note_zh="圆形位置仅用于展示；节点大小表示完整网络Degree。红色为第二轮前十及边界并列，其余蓝色；候选及真实连边完整保留，对接候选另行确认。")
     parts.table = table([("branch_zh", "分支"), ("round", "轮次"), ("population", "筛选前"), ("selected", "筛选后"), ("degree_threshold", "Degree阈值"), ("bc_threshold", "BC阈值"), ("cc_threshold", "CC阈值"), ("comparison_zh", "比较条件")], t["dual_thresholds"], "dual_thresholds")
     parts.params = clean([param("筛选版本", s["selection_version"]), param("STRING版本", s.get("STRING版本")), param("置信度", "≥0.9", "outline"), param("计算库版本", s.get("计算库版本"))])

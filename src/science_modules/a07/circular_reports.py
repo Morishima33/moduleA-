@@ -562,12 +562,12 @@ def reference_table(document, rows, columns, widths):
     return table
 
 
-# 图、图注、第一轮Degree表和第二轮BC/CC表按用户确认顺序写入。
+# 按最新确认先写第一轮Degree表，再写第二轮图和图注，最后写BC/CC表。
 def add_dual_section(document, a04, network=None):
     tables = a04["tables"]
     for title, branch, rows, columns, widths, quota, ranking in [
         (
-            "A04 01 Degree第二轮候选网络及第一轮前十表",
+            "A04 01 Degree第一轮前十表及第二轮候选网络",
             "degree",
             degree_rows(tables),
             DEGREE_COLUMNS,
@@ -586,10 +586,6 @@ def add_dual_section(document, a04, network=None):
         ),
     ]:
         document.add_heading(title, level=2)
-        if branch == "degree" and network is not None:
-            legacy._add_figure(
-                document, network[0], network[1], "ppi_round1", dual_figures.degree_caption(tables)
-            )
         if branch == "degree":
             document.add_paragraph("表 A04 01 Degree第一轮前十（含边界并列）")
         thresholds = [r for r in tables["dual_thresholds"] if r["branch"] == branch]
@@ -600,6 +596,11 @@ def add_dual_section(document, a04, network=None):
         document.add_paragraph(
             f"筛选数量：{thresholds[0]['population']} → {thresholds[0]['selected']} → {thresholds[1]['selected']}。{ranking}。本表取{'第一轮' if branch == 'degree' else '第二轮'}结果，列{len(rows)}个；截断边界并列完整保留，不足{quota}个时按实际数量展示。完整名单及精确阈值见绑定A04归档。"
         )
+        if branch == "degree" and network is not None:
+            document.add_paragraph("图 A04 01 Degree第二轮候选网络")
+            legacy._add_figure(
+                document, network[0], network[1], "ppi_round1", dual_figures.degree_caption(tables)
+            )
         if branch == "degree" and network is None:
             document.add_paragraph("本节尚未绑定本次A04网络图，不显示其他版本图件。")
     document.add_paragraph(
