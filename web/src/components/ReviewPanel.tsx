@@ -173,6 +173,7 @@ export default function ReviewPanel({ studyId, view, onSaved, onStale }: Props) 
         <Alert type="warning" showIcon message="更改已通过的决定" description={view.downstream.note_zh || '更改决定可能使下游结果失效。'} />
       )}
       {r.current && <CurrentDecision session={session} r={r} />}
+      {view.special.ppi_identity && <Alert type="warning" showIcon style={{ marginBottom: 12 }} message="请先完成身份核验" description="待核验清单已在页面标题下展开。这里保存的是整体模块复核意见，不会自动解决身份问题。" />}
       <Form form={form} layout="vertical" requiredMark={false} disabled={!!saving}>
         {/* 决定：三选一 */}
         <Form.Item name="decision" label="决定" rules={[{ required: true, message: '请选择决定' }]} style={{ marginBottom: 12 }}>

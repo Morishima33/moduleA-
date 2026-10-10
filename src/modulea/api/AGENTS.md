@@ -192,3 +192,7 @@ A04专用任务a04_ppi完成后停在A04。助手修复图件时可通过私有�
 ## 2026-10-10 圆形第二轮Degree图（用户认可）
 
 A04.dual.3保留dual.2筛选及表格口径，仅新增degree_network_rule=A04.degree_round2_circular.1。special.ppi_dual新增可选network_round=2；degree_round=1仍说明Degree表来自第一轮，不用于描述图。图展示degree_round2全部候选和真实诱导边，degree_top10（第二轮前十含边界并列）标红，其余蓝色。network.url仍来自本次A04已核验PNG。历史dual.1/2契约和归档保持不变。
+
+## 2026-10-10 待核验事项优先展示
+
+focus各项新增可选source_table，指定已归档明细表的入口。A04身份项source_table=identity_issues；special新增ppi_identity={total,source_table,note_zh,rows:[{target_id,symbol,returned,reason_zh}]}，rows逐项来自本次已核验归档identity_issues，不重查、不修改身份、不推算处理状态。存在待核验明细时在标题后优先展开，用中文标签显示；点击本项只读查看证据及同运行的已核验下载文件。历史版绑定历史run，保持只读。上传/审核权限、身份授权范围、模块通过门控不变。

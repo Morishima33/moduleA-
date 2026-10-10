@@ -122,7 +122,7 @@ export interface Kpi { label_zh: string; value: unknown; text: string; note_zh: 
 /** 数量变化链中的一步 */
 export interface FlowStep { label_zh: string; value: unknown; text: string; note_zh: string; delta_zh: string; kind: 'main' | 'plain' | 'end' }
 /** “本轮你只需核对这些”条目 */
-export interface FocusItem { tier: 'must_handle' | 'should_know'; title_zh: string; body_zh: string; impact_zh: string; blocks: string[] }
+export interface FocusItem { tier: 'must_handle' | 'should_know'; title_zh: string; body_zh: string; impact_zh: string; blocks: string[]; source_table?: string }
 /** 参数与版本条目 */
 export interface ParamItem { label_zh: string; value: unknown; origin: 'recorded' | 'outline' | 'decision' | 'run_config' | string }
 /** 复核记录 */
@@ -207,6 +207,7 @@ export interface Special {
   component_top_note_zh?: string;
   ppi_top?: PpiTopItem[];
   ppi_dual?: PpiDual;
+  ppi_identity?: PpiIdentity;
 
   enrichment_top?: Record<string, EnrichItem[]>;
   heatmap?: Heatmap;
@@ -262,3 +263,7 @@ export interface PpiDual { network_round?: 1 | 2; degree_round?: 1 | 2; network?
 
 // A04专用任务由后端核验研究和上游版本，网页只显示和传回绑定。
 export interface PpiRunInfo { enabled: boolean; disabled_reason_zh: string; expected_a03: string; expected_a04: string }
+
+// 只读待核验身份，显示归档原值；不提供代签或自动身份替换。
+export interface PpiIdentityRow { target_id: string; symbol: string; returned: string; reason_zh: string }
+export interface PpiIdentity { total: number; source_table: string; note_zh: string; rows: PpiIdentityRow[] }

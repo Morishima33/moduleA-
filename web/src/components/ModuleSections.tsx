@@ -1,10 +1,11 @@
 // 文件用途：模块页的通用区块：重点核对、需要知悉、关键数字、数量变化链、下游影响。内容全部来自 ModuleView，不在前端推算。
+import type { ReactNode } from 'react';
 import type { FlowStep, FocusItem, Kpi, ModuleView } from '../api/types';
 import { hrefFor } from '../lib/route';
 import { StatusPill } from './common';
 
 /** “本轮你只需核对这些”：只列 must_handle，编号显示；为空时给出“没有需要处理的事项” */
-export function FocusSection({ items }: { items: FocusItem[] }) {
+export function FocusSection({ items, evidence }: { items: FocusItem[]; evidence?: ReactNode }) {
   const must = items.filter((f) => f.tier === 'must_handle'); // 必须处理项
   if (!must.length) {
     // 没有必须处理项
@@ -19,16 +20,17 @@ export function FocusSection({ items }: { items: FocusItem[] }) {
     <section className="card focus-box" aria-label="本轮你只需核对这些" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <CheckBadge warn />
-        <h2 style={{ margin: 0, fontSize: 18 }}>本轮你只需核对这些</h2>
+        <h2 style={{ margin: 0, fontSize: 18 }}>本轮需要你核验</h2>
       </div>
       {must.map((f, i) => (
         // 每个必须处理项：编号、标题、说明、影响
         <div key={i} className="focus-item">
           <span className="focus-n">{i + 1}</span>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0, width: '100%' }}>
             <strong style={{ fontSize: 15 }}>{f.title_zh}</strong>
             {f.body_zh && <span style={{ fontSize: 14, color: '#3A4651' }}>{f.body_zh}</span>}
             {f.impact_zh && <span style={{ fontSize: 13, color: '#7A4100' }}>{f.impact_zh}</span>}
+            {f.source_table === 'identity_issues' && evidence}
           </div>
         </div>
       ))}
@@ -61,7 +63,7 @@ export function KnowSection({ items }: { items: FocusItem[] }) {
 function CheckBadge({ warn }: { warn?: boolean }) {
   return (
     <span aria-hidden="true" style={{ width: 28, height: 28, flex: '0 0 28px', borderRadius: '50%', background: warn ? '#FFF0D6' : '#E3F2EA', color: warn ? '#7A4100' : '#17633F', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3 8.5 6.5 12 13 4.5" /></svg>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">{warn ? <path d="M8 3v6M8 12v1" /> : <path d="M3 8.5 6.5 12 13 4.5" />}</svg>
     </span>
   );
 }

@@ -1,6 +1,7 @@
-// 文件用途：研究工作页中间的模块页。依次显示：历史版本提示、标题与状态、状态说明、进行中的任务、重点核对、
+// 文件用途：研究模块页。待核验事项紧接标题，先核验、后计算和查看结果；历史只读提示保留。
+// 状态、后台任务、
 // （窄屏时）复核栏、需要知悉、关键数字、数量变化、模块专属图、三个页签、（窄屏时）下游影响。
-import { Alert, Button, Progress } from 'antd';
+import { Alert, Button, Progress, Tooltip } from 'antd';
 import type { ReactNode } from 'react';
 import type { ModuleView } from '../api/types';
 import { useApp } from '../lib/appContext';
@@ -19,6 +20,7 @@ import Venn from './special/Venn';
 import ComponentTop from './special/ComponentTop';
 import SourceUploads from './SourceUploads';
 import PpiRun from './PpiRun';
+import IdentityReview from './IdentityReview';
 
 // 需要在标题下方用说明框强调的状态（其他状态只有接口给出 reason_zh 时才显示说明框）
 const BOXED = new Set(['idle', 'ready', 'running', 'incomplete', 'failed', 'waiting', 'empty', 'stale', 'unavailable']);
@@ -57,7 +59,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
           <StatusPill code={st.code} label={st.label_zh} large />
           {view.run ? (
             <span className="tiny muted" style={{ textAlign: 'right' }}>
-              {view.historical ? '查看版本' : '当前版本'} {view.run.order_zh} · <span className="mono">{view.run.run_id}</span>
+              <Tooltip title={`运行编号：${view.run.run_id}`}><span>{view.historical ? '查看版本' : '当前版本'} {view.run.order_zh}</span></Tooltip>
               <br />生成于 {fmtTime(view.run.finished_at || view.run.created_at)}
             </span>
           ) : (
@@ -65,6 +67,12 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
           )}
         </div>
       </section>
+
+      {/* 待核验事项紧接标题；证据直接展开，不藏在结果末尾。 */}
+      {!view.historical && <FocusSection items={view.focus} evidence={sp.ppi_identity ? <IdentityReview studyId={studyId} view={view} data={sp.ppi_identity} /> : undefined} />}
+      {view.historical && sp.ppi_identity && <section className="card"><h2>历史身份问题清单（只读）</h2><IdentityReview studyId={studyId} view={view} data={sp.ppi_identity} /></section>}
+      {/* 窄屏时整体复核栏也在结果之前。 */}
+      {reviewSlot}
 
       {/* 状态说明框：失败、等待资料、空结果、已失效等 */}
       {showBox && (
@@ -97,10 +105,6 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       {view.ppi_run && <PpiRun studyId={studyId} info={view.ppi_run} />}
       {view.source_uploads && <SourceUploads studyId={studyId} moduleId={m.module_id} info={view.source_uploads} />}
 
-      {/* 本轮你只需核对这些（历史版本不显示） */}
-      {!view.historical && <FocusSection items={view.focus} />}
-      {/* 窄屏时复核栏紧随重点 */}
-      {reviewSlot}
       {/* 需要知悉 */}
       <KnowSection items={view.focus} />
       {/* 关键数字 */}

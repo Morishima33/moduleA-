@@ -132,3 +132,10 @@ a:hover { color: #0A4350; }
 }
 .ppi-reference-table .ant-table-tbody > tr > td:last-child { border-right-width: 1px; }
 .ppi-reference-table .ant-table-container { border-radius: 0 !important; }
+
+/* 核验清单作为首要内容展开；表内滚动不造成整页横向溢出。 */
+.identity-review { min-width: 0; width: 100%; margin-top: 10px; }
+.identity-review-heading { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+.identity-review-downloads { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.identity-review .ant-table-thead > tr > th { background: #FFF0D6; color: #7A4100; }
+.identity-review .ant-table-cell { overflow-wrap: anywhere; }
