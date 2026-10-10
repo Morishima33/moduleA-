@@ -233,10 +233,20 @@ class Views:
         history = self.runs(study_id, module_id, workflow=workflow, manifest=manifest)
         files = self._files(run, result)
         self._link_report_files(parts, files, result)
+        dual = parts.get("special", {}).get("ppi_dual")
+        network = ((result or {}).get("tables") or {}).get("degree_network")
+        if dual and network:
+            network = network[0]
+            record = {k: network["png_" + k] for k in ("path", "bytes", "sha256")}
+            key = next((f["key"] for f in files if f["path"] == record["path"] and f["sha256"] == record["sha256"]), None)
+            if key:
+                dual["network"] = {"url": f"/api/v1/studies/{study_id}/files/{key}?inline=1", "caption_zh": network["caption_zh"]}
+        a03_id = real.get("current", {}).get("A03", "")
+        ppi_enabled = bool(module_id == "A04" and a03_id and not historical and not real.get("trashed") and workflow.active(real, a03_id) and workflow.approved(real, a03_id) and not self.tasks.active_for(study_id))
         if run:
             parts["params"] = parts["params"] + self._config_params(run, parts["params"])
         return {
-            "module": {"module_id": module_id, "title_zh": spec.title_zh, "group_zh": spec.group_zh, "purpose_zh": source_intro(module_id, real, result) + ("STRING人类功能关联网络；Degree与BC＋CC两分支独立进行两轮筛选，显示第二轮排名。" if module_id == "A04" and result and result.get("summary", {}).get("selection_version") == "A04.dual.1" else spec.purpose_zh),
+            "module": {"module_id": module_id, "title_zh": spec.title_zh, "group_zh": spec.group_zh, "purpose_zh": source_intro(module_id, real, result) + ("STRING人类功能关联网络；两分支独立两轮；Degree图展示第二轮候选，Degree表展示第一轮前十，BC＋CC表展示第二轮前十五。" if module_id == "A04" and result and result.get("summary", {}).get("selection_version") == "A04.dual.3" else ("STRING人类功能关联网络；Degree与BC＋CC两分支独立进行两轮筛选，Degree图表显示第一轮前十，BC＋CC表显示第二轮前十五。" if module_id == "A04" and result and result.get("summary", {}).get("selection_version") == "A04.dual.2" else ("STRING人类功能关联网络；双分支独立两轮，显示第二轮排名。" if module_id == "A04" and result and result.get("summary", {}).get("selection_version") == "A04.dual.1" else spec.purpose_zh))),
                        "sub": spec.sub, "depends_on": list(spec.depends_on)},
             "state": state if not historical else {**state, "code": "history", "label_zh": "历史版本（只读）", "can_review": False},
             "purpose": self._purpose(view),
@@ -253,6 +263,7 @@ class Views:
             "history": history,
             "tasks": self.tasks.list(study_id, active_only=True),
             "historical": historical,
+            "ppi_run": {"enabled": ppi_enabled, "disabled_reason_zh": "" if ppi_enabled else "请先通过当前A03，并等待本研究活动任务结束；历史及回收站只读。", "expected_a03": a03_id, "expected_a04": real.get("current", {}).get("A04", "")} if module_id == "A04" and not historical else None,
             "source_uploads": upload_context(workflow, real, module_id, result, historical, bool(self.tasks.active_for(study_id))) if not historical else None,
         }
 

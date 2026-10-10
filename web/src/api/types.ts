@@ -243,6 +243,7 @@ export interface ModuleView {
   tasks: Task[];
   historical: boolean;
   source_uploads?: SourceUploadInfo | null;
+  ppi_run?: PpiRunInfo | null;
 }
 
 /** 明细表分页返回 */
@@ -257,4 +258,7 @@ export interface BatchReviewResponse { reviews: unknown; task: Task | null; mess
 
 /** 双分支第二轮归档排名，网页不重新计算名次 */
 export interface PpiDualRow { target_id: string; symbol: string; degree: number; bc: number; cc: number; rank: number; bc_rank?: number; cc_rank?: number; mean_rank?: number }
-export interface PpiDual { version: string; counts: Record<string, number>; thresholds: Record<string, unknown>[]; degree_rows: PpiDualRow[]; bc_cc_rows: PpiDualRow[]; note_zh: string; network_note_zh: string }
+export interface PpiDual { network_round?: 1 | 2; degree_round?: 1 | 2; network?: { url: string; caption_zh: string } | null; version: string; counts: Record<string, number>; thresholds: Record<string, unknown>[]; degree_rows: PpiDualRow[]; bc_cc_rows: PpiDualRow[]; note_zh: string; network_note_zh: string }
+
+// A04专用任务由后端核验研究和上游版本，网页只显示和传回绑定。
+export interface PpiRunInfo { enabled: boolean; disabled_reason_zh: string; expected_a03: string; expected_a04: string }

@@ -18,6 +18,7 @@ import ReportSummary from './special/ReportSummary';
 import Venn from './special/Venn';
 import ComponentTop from './special/ComponentTop';
 import SourceUploads from './SourceUploads';
+import PpiRun from './PpiRun';
 
 // 需要在标题下方用说明框强调的状态（其他状态只有接口给出 reason_zh 时才显示说明框）
 const BOXED = new Set(['idle', 'ready', 'running', 'incomplete', 'failed', 'waiting', 'empty', 'stale', 'unavailable']);
@@ -93,6 +94,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
         </section>
       )}
 
+      {view.ppi_run && <PpiRun studyId={studyId} info={view.ppi_run} />}
       {view.source_uploads && <SourceUploads studyId={studyId} moduleId={m.module_id} info={view.source_uploads} />}
 
       {/* 本轮你只需核对这些（历史版本不显示） */}

@@ -25,7 +25,7 @@ from pathlib import Path
 from ..config import LEGACY_SRC, Settings
 
 ACTIVE = ("queued", "running")
-KINDS = {"continue": "自动推进到下一人工关口", "source_upload": "分库资料上传与校验", "a01_sources": "整理已上传三库资料"}
+KINDS = {"continue": "自动推进到下一人工关口", "source_upload": "分库资料上传与校验", "a01_sources": "整理已上传三库资料", "a04_ppi": "计算A04双分支PPI"}
 
 
 def _now() -> str:

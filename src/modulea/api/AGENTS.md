@@ -180,3 +180,15 @@ A02上传通过现有run_disease单库替换入口产生新候选，不自动批
 ## 2026-10-10 A04双分支展示
 
 A04.dual.1新增`special.ppi_dual`：`{version, thresholds, degree_rows, bc_cc_rows, counts, note_zh, network_note_zh}`。rows分别来自归档`degree_top10`、`bc_cc_top15`，均为第二轮排名含边界并列；空数组代表真实空候选。thresholds来自`dual_thresholds`，counts含两分支两轮数量。BC/CC平级，分别用平均名次处理同值，再取两项名次平均；原始指标不相加。完整四轮名单、排名和指标继续通过既有明细接口提供。旧`ppi_top`保留历史第一轮含义，新版不同时输出该键。网络方案尚未确认时只显示说明，不输出正式新图。新双分支不提供旧`round1`别名供对接使用；对接来源待用户决定。
+
+## 2026-10-10 用户确认第一轮网络及实际A04计算
+
+A04.dual.2沿用双分支阈值，新增归档degree_round1_top10（第一轮Degree排名前十及边界并列）；旧degree_top10仍指第二轮，历史dual.1不变。special.ppi_dual新增degree_round（1或2）、network（null或{url,caption_zh}）；新版degree_rows来自degree_round1_top10，BC/CC仍来自第二轮bc_cc_top15。network.url只绑定本次结果files内的已核验PNG。
+
+ModuleView新增ppi_run（A04且非历史时）：{enabled,disabled_reason_zh,expected_a03,expected_a04}。POST /studies/{sid}/modules/A04/actions/run_ppi JSON {expected_a03,expected_a04,reason}：先核验当前已批准A03及旧A04编号，再提交后台a04_ppi任务；任务入科学写锁后再核验。仅产生A04，不运行A05/A06、不代签结果；旧版保留。session.capabilities新增ppi_compute=true。失败重试仍使用原版本绑定，已过期时须刷新重新提交。
+
+A04专用任务a04_ppi完成后停在A04。助手修复图件时可通过私有任务payload提供reuse_source_run，必须等于expected_a04，且原run同研究、同A03；使用指纹核验的原始STRING包归档新A04版本，不覆盖旧文件。公开页面按钮默认重新获取来源，不提供该私有参数。图元数据采用degree_network单行平面表，与结果files中的SVG/PNG指纹绑定，遵守既有表格契约。
+
+## 2026-10-10 圆形第二轮Degree图（用户认可）
+
+A04.dual.3保留dual.2筛选及表格口径，仅新增degree_network_rule=A04.degree_round2_circular.1。special.ppi_dual新增可选network_round=2；degree_round=1仍说明Degree表来自第一轮，不用于描述图。图展示degree_round2全部候选和真实诱导边，degree_top10（第二轮前十含边界并列）标红，其余蓝色。network.url仍来自本次A04已核验PNG。历史dual.1/2契约和归档保持不变。

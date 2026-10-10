@@ -8,7 +8,7 @@ from .base import Parts, clean, focus, kpi, param, pick, step, table, tables_of
 def present_a04(result: dict, ctx: dict) -> Parts:
     s = result.get("summary") or {}
     t = tables_of(result)
-    if s.get("selection_version") == "A04.dual.1":
+    if s.get("selection_version") in ("A04.dual.1", "A04.dual.2", "A04.dual.3"):
         return present_a04_dual(s, t)
     parts = Parts()
     parts.kpis = clean([
@@ -53,10 +53,20 @@ def present_a04_dual(s, t):
     parts.flow = clean([step("交集输入", s.get("交集输入数")), step("STRING已识别", s.get("已识别数")), step("完整网络参与节点", s.get("参与节点数"))])
     parts.flow_note_zh = "两分支独立从完整网络开始；第二轮只缩小取中位数的范围，指标不重算。"
     parts.special["ppi_dual"] = {"version": s["selection_version"], "counts": counts, "thresholds": t["dual_thresholds"], "degree_rows": t["degree_top10"], "bc_cc_rows": t["bc_cc_top15"], "note_zh": "Degree显示第二轮前十；BC＋CC显示第二轮前十五，按两项平均名次等权排序。边界并列全部保留，不足名额按实际数量展示，空结果不补足；完整名单见结果明细。", "network_note_zh": "网络图方案待用户确认，当前不替换正式图。"}
+    if s["selection_version"] in ("A04.dual.2", "A04.dual.3"):
+        parts.special["ppi_dual"].update(degree_round=1, degree_rows=t["degree_round1_top10"], network=None,
+            note_zh="Degree图表取第一轮前十；BC＋CC表取第二轮前十五，按两项平均名次等权排序。边界并列全部保留；不足按实际数量、空结果不补足。完整四轮名单见结果明细。",
+            network_note_zh="节点指标来自完整网络；红色与标签为第一轮Degree前十及边界并列，其余为蓝色。第一轮候选全部保留；后续对接候选另行确认。")
+    else:
+        parts.special["ppi_dual"]["degree_round"] = 2
+    if s["selection_version"] == "A04.dual.3":
+        parts.special["ppi_dual"].update(network_round=2,
+            note_zh="Degree图展示第二轮全部候选，Degree表保留第一轮前十；BC＋CC表取第二轮前十五。边界并列全部保留，不足按实际数量、空结果不补足；完整名单见结果明细。",
+            network_note_zh="圆形位置仅用于展示；节点大小表示完整网络Degree。红色为第二轮前十及边界并列，其余蓝色；候选及真实连边完整保留，对接候选另行确认。")
     parts.table = table([("branch_zh", "分支"), ("round", "轮次"), ("population", "筛选前"), ("selected", "筛选后"), ("degree_threshold", "Degree阈值"), ("bc_threshold", "BC阈值"), ("cc_threshold", "CC阈值"), ("comparison_zh", "比较条件")], t["dual_thresholds"], "dual_thresholds")
     parts.params = clean([param("筛选版本", s["selection_version"]), param("STRING版本", s.get("STRING版本")), param("置信度", "≥0.9", "outline"), param("计算库版本", s.get("计算库版本"))])
     if s.get("身份待核验数"):
-        parts.focus.append(focus("STRING身份待核验", f"{s['身份待核验数']}个靶点身份未确认。", blocks=["A06_PREP"]))
+        parts.focus.append(focus("STRING身份待核验", f"{s['身份待核验数']}个靶点身份未确认：" + "、".join(str(r.get("symbol") or r.get("target_id")) for r in t.get("identity_issues", [])) + "。详见身份问题明细；未核实前不能通过。", blocks=["A06_PREP"]))
     parts.focus.append(focus("对接候选来源待确认", "本轮排名仅用于核查；尚未决定后续对接使用哪一分支和哪一轮。", blocks=["A06_PREP"]))
     return parts
 

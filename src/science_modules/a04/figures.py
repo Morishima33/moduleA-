@@ -1,27 +1,34 @@
-"""按用户参考报告生成Degree候选网络；正式版式未经确认不启用。"""
+"""按用户参考报告生成Degree候选网络；用户已确认蓝红版式。"""
 
 from pathlib import Path
 
-NETWORK_DESIGN_APPROVED = False
+NETWORK_DESIGN_APPROVED = True
 
 
-# 图注与报告使用同一说明；红色严格对应第二轮前十及截断边界并列。
+# 图注与报告使用同一说明；按显式版本区分第一轮及旧第二轮前十。
 def degree_caption(tables):
     return (
         f"图2 Degree第一轮{len(tables['degree_round1'])}节点候选网络。"
-        "全部第一轮节点保留；第二轮Degree前十及边界并列以红色突出并标注，其余为蓝色。"
+        f"全部第一轮节点保留；{'第一轮' if 'degree_round1_top10' in tables else '第二轮'}Degree前十及边界并列以红色突出并标注，其余为蓝色。"
         "节点指标来自完整网络，节点大小表示完整网络Degree。"
     )
 
 
 # 复用冻结报告的蓝红色、细边、节点描边及下方标签，全部第一轮候选参与绘图。
 def draw_degree(tables, destination, demo=False):
+    if "degree_round1_top10" in tables:
+        from science_modules.a04.figure_labels import draw_degree as draw
+
+        return draw(tables, destination, demo)
     from report_figures import _network_pair
 
     first = tables["degree_round1"]
     nodes = [row["target_id"] for row in first]
     node_set = set(nodes)
-    top = {row["target_id"] for row in tables["degree_top10"]}
+    top = {
+        row["target_id"]
+        for row in tables.get("degree_round1_top10", tables.get("degree_top10", []))
+    }
     edges = [
         (row["source"], row["target"])
         for row in tables["edges"]

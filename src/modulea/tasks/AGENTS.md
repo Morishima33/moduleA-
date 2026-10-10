@@ -17,3 +17,5 @@
 ## 分库资料任务
 
 `source_upload`解析A01来源包或调用既有A02候选入口，`a01_sources`显式整理完整三库。任务payload存私有SQLite，不进入公开任务响应；原始字节暂存于runtime/upload_queue并校验指纹，失败/取消后保留供人工重试。重试保留原版本绑定；版本过期须重新上传。所有写入仍使用Workflow和研究锁，不代签。
+
+A04专用任务a04_ppi完成后停在A04。助手修复图件时可通过私有任务payload提供reuse_source_run，必须等于expected_a04，且原run同研究、同A03；使用指纹核验的原始STRING包归档新A04版本，不覆盖旧文件。公开页面按钮默认重新获取来源，不提供该私有参数。图元数据采用degree_network单行平面表，与结果files中的SVG/PNG指纹绑定，遵守既有表格契约。

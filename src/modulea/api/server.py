@@ -63,6 +63,7 @@ class App:
             ("GET", rf"/api/v1/studies/{ID}/modules/{ID}/sources", self.get_sources),
             ("GET", rf"/api/v1/studies/{ID}/modules/{ID}/sources/{ID}/template", self.get_source_template),
             ("GET", rf"/api/v1/studies/{ID}/modules/{ID}/sources/{ID}/file", self.get_source_file),
+            ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/run_ppi", self.post_run_ppi),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/upload", self.post_source_upload),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/process_sources", self.post_source_process),
             ("GET", r"/api/v1/trash", self.list_trash),
@@ -78,7 +79,7 @@ class App:
     # ------------------------------------------------------------------ 读取
     def session(self, req):
         return {"token": self.token, "version": __version__, "platform": sys.platform,
-                "capabilities": {"review": True, "batch_review": True, "tasks": True, "trash": True, "module_actions": False, "source_upload": True},
+                "capabilities": {"review": True, "batch_review": True, "tasks": True, "trash": True, "module_actions": False, "source_upload": True, "ppi_compute": True},
                 "decisions_zh": {"approved": "通过，允许下游使用", "rejected": "退回修改", "pending": "暂存待定"}}
 
     def list_studies(self, req):
@@ -307,6 +308,25 @@ class App:
         if not created:
             raise ApiError(409, "GATE_BLOCKED", "当前研究已有后台任务，请完成后重试")
         return {"task": task, "created": created, "message_zh": "三库整理任务已提交，结果仍需独立复核。" + self._task_message(task)}, 202
+
+    # 页面和后台两次核对上游版本，仅登记A04科学任务。
+    def post_run_ppi(self, req, study_id, module_id):
+        if module_id != "A04":
+            raise not_found("该模块没有PPI计算操作")
+        body = req.json()
+        info = self.views.module(study_id, module_id).get("ppi_run")
+        if not info or any(body.get(k) != info[k] for k in ("expected_a03", "expected_a04")):
+            raise ApiError(409, "STALE_VERSION", "交集或PPI版本已改变，请刷新后重试")
+        if not info["enabled"]:
+            raise ApiError(409, "GATE_BLOCKED", info["disabled_reason_zh"])
+        if not isinstance(body.get("reason"), str) or not body["reason"].strip():
+            raise ApiError(422, "VALIDATION_FAILED", "请填写本次PPI计算原因")
+        payload = {key: info[key] for key in ("expected_a03", "expected_a04")}
+        payload["reason"] = body["reason"].strip()
+        task, created = self.tasks.submit(study_id, "a04_ppi", "页面启动A04", payload)
+        if not created:
+            raise ApiError(409, "GATE_BLOCKED", "当前研究已有后台任务，请等待完成")
+        return {"task": task, "created": created, "message_zh": "A04计算已提交，完成后需独立复核。" + self._task_message(task)}, 202
 
     # ------------------------------------------------------------------ 分派
     def dispatch(self, method: str, path: str, req):

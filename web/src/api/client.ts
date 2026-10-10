@@ -100,6 +100,9 @@ export const api = {
   /** 整理当前已上传三库，结果停在复核 */
   processSources: (sid: string, body: { expected_a00: string; expected_run: string; expected_staging: string; reason: string }) =>
     request<{ task: Task; created: boolean; message_zh: string }>('POST', `/studies/${sid}/modules/A01/actions/process_sources`, body),
+  /** 只生成A04，停在复核；不自动运行富集和对接 */
+  runPpi: (sid: string, body: { expected_a03: string; expected_a04: string; reason: string }) =>
+    request<{ task: Task; created: boolean; message_zh: string }>('POST', `/studies/${sid}/modules/A04/actions/run_ppi`, body),
   /** 单个模块复核 */
   review: (sid: string, mid: string, body: { run_id: string; expected_review_id: string | null; decision: Decision; reviewer: string; note: string; after: 'save' | 'continue' }) =>
     request<ReviewResponse>('POST', `/studies/${sid}/modules/${mid}/reviews`, body),

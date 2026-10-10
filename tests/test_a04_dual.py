@@ -210,8 +210,9 @@ class DualTests(unittest.TestCase):
                 docking_validator(root, lambda *args: None)(
                     {"study_id": sid, "parent_runs": {"A04": r["run_id"]}}
                 )
-            with self.assertRaisesRegex(ContractError, "版式"):
-                run_reports(w, sid, "", "不能提前发布")
+            with patch("science_modules.a04.figures.NETWORK_DESIGN_APPROVED", False):
+                with self.assertRaisesRegex(ContractError, "版式"):
+                    run_reports(w, sid, "", "不能提前发布")
             before = (w.location(sid) / "runs/A04" / r["run_id"] / "result.json").read_bytes()
             newer = run_ppi(w, sid, a03, r["run_id"], "第二个合成版本", source_bundle(target))
             self.assertNotEqual(newer["run_id"], r["run_id"])
@@ -243,7 +244,7 @@ class DualTests(unittest.TestCase):
             destination = Path(directory) / "professional.docx"
             with patch(
                 "science_modules.a07.dual_reports.previous.build_detailed", side_effect=prior
-            ):
+            ), patch("science_modules.a04.figures.NETWORK_DESIGN_APPROVED", False):
                 build_detailed({"a04_dual": a04}, destination, Path(directory), "test")
             doc = Document(destination)
             texts = [p.text for p in doc.paragraphs]

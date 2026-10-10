@@ -77,7 +77,29 @@ def run_a01_sources(settings: Settings, task: dict, manager: TaskManager) -> str
     manager.update(task["task_id"], progress={"step_zh": "新A01结果待独立复核", "done": 1, "total": 1})
     return "已生成新的三库A01：" + result["run_id"] + "；身份问题保留，未自动批准或运行下游。"
 
-HANDLERS = {"continue": run_continue, "source_upload": run_source_upload, "a01_sources": run_a01_sources}
+# 只生成本次绑定A03的PPI，停止在A04复核，不推进其他科学模块。
+def run_a04_ppi(settings: Settings, task: dict, manager: TaskManager) -> str:
+    from ppi_dispatch import run_ppi
+    payload = json.loads(task.get("payload") or "{}")
+    manager.update(task["task_id"], progress={"step_zh": "获取当前交集的STRING网络并进行双分支筛选", "done": 0, "total": 1})
+    workflow = full_workflow(settings.data_root)
+    if payload.get("reuse_source_run"):
+        # 图件修复沿用已核验的同研究、同A03原始来源；不能借用另一研究网络。
+        from contracts import require
+        from storage import read_json, verified_file
+        manifest = workflow.load(task["study_id"])
+        require(payload["reuse_source_run"] == payload["expected_a04"], "图件修订来源与当前A04不一致")
+        previous = workflow.run(manifest, payload["reuse_source_run"])
+        require(previous["module_id"] == "A04" and previous["parent_runs"].get("A03") == payload["expected_a03"], "图件修订来源不属于本次交集")
+        source = read_json(verified_file(workflow.location(task["study_id"]), previous["inputs"]["source_file"]))
+        result = run_ppi(workflow, task["study_id"], payload["expected_a03"], payload["expected_a04"], payload["reason"], bundle=source)
+    else:
+        result = run_ppi(workflow, task["study_id"], payload["expected_a03"], payload["expected_a04"], payload["reason"])
+    manager.update(task["task_id"], progress={"step_zh": "新A04图表已归档，等待人工复核", "done": 1, "total": 1})
+    pending = result["summary"].get("身份待核验数", 0)
+    return f"新A04已归档：{result['run_id']}；{pending}个身份待核验。未自动批准，请核对本轮图表及范围。"
+
+HANDLERS = {"a04_ppi": run_a04_ppi, "continue": run_continue, "source_upload": run_source_upload, "a01_sources": run_a01_sources}
 
 
 def run_task(settings: Settings, task_id: str) -> int:
