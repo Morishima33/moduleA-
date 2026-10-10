@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "module": "A04",
+  "checked_at": "2026-10-10",
+  "status_zh": "代码原字节复用，待用户修改要求，暂不计算",
+  "source_zh": "D:/codex-重大专项/moduleA 的当前科学代码；与重构仓库已有文件逐一核对",
+  "versions": [
+    "A04.1",
+    "A04.2"
+  ],
+  "scientific_run_performed": false,
+  "frozen_dependencies": [
+    {
+      "path": "src/ppi.py",
+      "sha256": "57c8c5ab7c80f0ac88f8233931ebb0302004b033ebda79bd88789cd67446b991",
+      "source_path": "src/ppi.py",
+      "reuse": "原字节复用"
+    },
+    {
+      "path": "src/ppi_flow.py",
+      "sha256": "2b2f642b2c1ceb11d56f8fc51917b7efb0620f0d7f700931e48575ec86e988eb",
+      "source_path": "src/ppi_flow.py",
+      "reuse": "原字节复用"
+    },
+    {
+      "path": "src/ppi_identity.py",
+      "sha256": "9a6dbfe136581701d5c4952a9a823767e8de5c2bc1e53e55a5a7d46615deb69c",
+      "source_path": "src/ppi_identity.py",
+      "reuse": "原字节复用"
+    },
+    {
+      "path": "src/ppi_ui.py",
+      "sha256": "7ba56ec145c74a9131d21a9c94be41725dcce5d919b3774aea190acc31b992b5",
+      "source_path": "src/ppi_ui.py",
+      "reuse": "原字节复用"
+    }
+  ]
+}
