@@ -245,6 +245,7 @@ export interface ModuleView {
   historical: boolean;
   source_uploads?: SourceUploadInfo | null;
   ppi_run?: PpiRunInfo | null;
+  identity_plan?: IdentityPlanInfo | null;
 }
 
 /** 明细表分页返回 */
@@ -267,3 +268,7 @@ export interface PpiRunInfo { enabled: boolean; disabled_reason_zh: string; expe
 // 只读待核验身份，显示归档原值；不提供代签或自动身份替换。
 export interface PpiIdentityRow { target_id: string; symbol: string; returned: string; reason_zh: string }
 export interface PpiIdentity { total: number; source_table: string; note_zh: string; rows: PpiIdentityRow[] }
+
+// 保存的是人工补查方案；身份与模块是否可通过仍由科学归档和Workflow决定。
+export interface IdentityPlanInfo { enabled: boolean; disabled_reason_zh: string; expected_a03: string; expected_a04: string; expected_decision_id: string | null; latest: { decision_id: string; reviewer: string; note_zh: string; created_at: string; check_ids: string[]; omit_ids: string[]; applied_run_id: string | null; pending_count: number | null; evidence_url?: string | null; error_zh?: string; status_zh: string } | null }
+export interface IdentityPlanRequest { expected_a03: string; expected_a04: string; expected_decision_id: string | null; reviewer: string; note: string; check_ids: string[]; omit_ids: string[]; confirmed: true }

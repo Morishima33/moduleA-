@@ -13,6 +13,7 @@ from ..core import modules as registry
 from ..core.source_catalog import source_intro
 from ..core.source_uploads import context as upload_context
 from ..core.kernel import ContractError, Kernel, read_json, verified_file
+from ..core.identity_workflow import plan_view
 from ..core.status import LABELS, map_state, unavailable
 from ..presenters import present
 from ..tasks.manager import TaskManager
@@ -264,6 +265,7 @@ class Views:
             "tasks": self.tasks.list(study_id, active_only=True),
             "historical": historical,
             "ppi_run": {"enabled": ppi_enabled, "disabled_reason_zh": "" if ppi_enabled else "请先通过当前A03，并等待本研究活动任务结束；历史及回收站只读。", "expected_a03": a03_id, "expected_a04": real.get("current", {}).get("A04", "")} if module_id == "A04" and not historical else None,
+            "identity_plan": plan_view(workflow, real, run, result, ppi_enabled and bool(run) and workflow.active(real, run["run_id"]), historical) if module_id == "A04" else None,
             "source_uploads": upload_context(workflow, real, module_id, result, historical, bool(self.tasks.active_for(study_id))) if not historical else None,
         }
 

@@ -99,7 +99,25 @@ def run_a04_ppi(settings: Settings, task: dict, manager: TaskManager) -> str:
     pending = result["summary"].get("身份待核验数", 0)
     return f"新A04已归档：{result['run_id']}；{pending}个身份待核验。未自动批准，请核对本轮图表及范围。"
 
-HANDLERS = {"a04_ppi": run_a04_ppi, "continue": run_continue, "source_upload": run_source_upload, "a01_sources": run_a01_sources}
+
+# 人工方案留存后补查，失败保留原结果，只生成A04。
+def run_a04_identity(settings: Settings, task: dict, manager: TaskManager) -> str:
+    from science_modules.a04.identity_flow import run_identity
+
+    payload = json.loads(task.get("payload") or "{}")
+    manager.update(
+        task["task_id"],
+        progress={"step_zh": "留存人工方案并按官方稳定编号补查STRING", "done": 0, "total": 1},
+    )
+    result = run_identity(full_workflow(settings.data_root), task["study_id"], payload)
+    manager.update(
+        task["task_id"],
+        progress={"step_zh": "身份方案已应用到新的待复核A04", "done": 1, "total": 1},
+    )
+    count = result["summary"].get("身份待核验数", 0)
+    return f"身份补查方案已保存并应用，生成新A04：{result['run_id']}；仍有{count}项待核验。旧版本保留，新结果未自动批准；请核查图表和剩余问题。"
+
+HANDLERS = {"a04_identity": run_a04_identity, "a04_ppi": run_a04_ppi, "continue": run_continue, "source_upload": run_source_upload, "a01_sources": run_a01_sources}
 
 
 def run_task(settings: Settings, task_id: str) -> int:

@@ -64,6 +64,8 @@ class App:
             ("GET", rf"/api/v1/studies/{ID}/modules/{ID}/sources/{ID}/template", self.get_source_template),
             ("GET", rf"/api/v1/studies/{ID}/modules/{ID}/sources/{ID}/file", self.get_source_file),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/run_ppi", self.post_run_ppi),
+            ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/identity_plan", self.post_identity_plan),
+            ("GET", rf"/api/v1/studies/{ID}/modules/A04/identity_evidence/{ID}", self.get_identity_evidence),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/upload", self.post_source_upload),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/process_sources", self.post_source_process),
             ("GET", r"/api/v1/trash", self.list_trash),
@@ -327,6 +329,57 @@ class App:
         if not created:
             raise ApiError(409, "GATE_BLOCKED", "当前研究已有后台任务，请等待完成")
         return {"task": task, "created": created, "message_zh": "A04计算已提交，完成后需独立复核。" + self._task_message(task)}, 202
+
+    # 补查原文按研究索引下载；人工方案明确提交后台，不代签身份结果。
+    def get_identity_evidence(self, req, study_id, evidence_id):
+        workflow = self.kernel.workflow()
+        manifest = workflow.load(study_id)
+        for record in manifest.get("identity_evidence", []):
+            path = verified_file(workflow.location(study_id), record)
+            data = read_json(path)
+            if data.get("evidence_id") == evidence_id and data.get("study_id") == study_id:
+                return ("file", path, path.name, "application/json", False)
+        raise not_found("本研究的身份补查原文")
+
+    # 校验本研究版本与人工范围，长计算走后台。
+    def post_identity_plan(self, req, study_id, module_id):
+        if module_id != "A04":
+            raise not_found("该模块没有PPI身份操作")
+        body = req.json()
+        info = self.views.module(study_id, module_id).get("identity_plan")
+        if not info or any(
+            body.get(k) != info[k] for k in ("expected_a03", "expected_a04", "expected_decision_id")
+        ):
+            raise ApiError(409, "STALE_VERSION", "身份方案、交集或PPI版本已改变，请刷新")
+        if not info["enabled"]:
+            raise ApiError(409, "GATE_BLOCKED", info["disabled_reason_zh"])
+        keys = (
+            "expected_a03",
+            "expected_a04",
+            "expected_decision_id",
+            "reviewer",
+            "note",
+            "check_ids",
+            "omit_ids",
+            "confirmed",
+        )
+        payload = {k: body.get(k) for k in keys}
+        payload["decision_id"] = "decision_" + uuid.uuid4().hex
+        try:
+            self.kernel.workflow().validate_identity_plan(study_id, payload)
+        except ContractError as error:
+            raise from_contract(str(error))
+        task, created = self.tasks.submit(
+            study_id, "a04_identity", payload["reviewer"].strip(), payload
+        )
+        if not created:
+            raise ApiError(409, "GATE_BLOCKED", "当前研究已有后台任务，本次方案未提交")
+        return {
+            "task": task,
+            "created": created,
+            "message_zh": "方案已提交后台保存与应用，请查看任务结果；尚未批准A04。"
+            + self._task_message(task),
+        }, 202
 
     # ------------------------------------------------------------------ 分派
     def dispatch(self, method: str, path: str, req):

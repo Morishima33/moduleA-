@@ -196,3 +196,16 @@ A04.dual.3保留dual.2筛选及表格口径，仅新增degree_network_rule=A04.d
 ## 2026-10-10 待核验事项优先展示
 
 focus各项新增可选source_table，指定已归档明细表的入口。A04身份项source_table=identity_issues；special新增ppi_identity={total,source_table,note_zh,rows:[{target_id,symbol,returned,reason_zh}]}，rows逐项来自本次已核验归档identity_issues，不重查、不修改身份、不推算处理状态。存在待核验明细时在标题后优先展开，用中文标签显示；点击本项只读查看证据及同运行的已核验下载文件。历史版绑定历史run，保持只读。上传/审核权限、身份授权范围、模块通过门控不变。
+
+
+## 2026-10-10 身份方案确认与应用
+
+ModuleView新增identity_plan：{enabled,disabled_reason_zh,expected_a03,expected_a04,expected_decision_id,latest|null}。latest只读取Workflow指纹索引中的人工决定及绑定的新A04结果，包含reviewer、note_zh、check_ids、omit_ids、applied_run_id、pending_count、status_zh。历史页只读取原run.inputs.identity_authorization，不提供提交。
+
+POST .../modules/A04/actions/identity_plan：{expected_a03,expected_a04,expected_decision_id,reviewer,note,check_ids,omit_ids,confirmed:true}→202 {task,created,message_zh}。选项只能来自当前身份问题清单；omit_ids是用户明确允许“全部官方稳定编号补查均成功无命中时，仅本次PPI暂不采用”的子集，缺编号、请求失败、编号冲突均不能因此移除。核验人和说明必填，不预填代签。安全要求保持；同研究活动任务拒绝重复提交。后台通过IdentityWorkflow公开方法，在统一写锁内向研究decisions/A04_identity/追加决定并更新manifest.identity_decisions索引。失败重试沿用同一决定编号，不追加重复决定。
+
+新的A04.identity_apply.1冻结人工方案与原A03/A04归档指纹；科学筛选、身份匹配规则和图表顺序沿用dual.3。唯一一致的稳定编号才能采用；原名称返回STRING编号与稳定编号冲突仍失败，不改写原始名称返回。确认的是补查及有限处理方案，不是已核实全部身份或模块通过；剩余问题继续门控。任务失败保留决定和旧结果，成功新增待复核A04，不运行A05/A06。科研结果仍经独立复核。
+
+补查请求及原响应（含失败前已经返回的原文）经Workflow公开方法追加至decisions/A04_identity/，manifest.identity_evidence仅记录文件指纹；不完整取证明确error_zh，不能作为成功空响应。latest新增evidence_url、error_zh。GET .../modules/A04/identity_evidence/{evidence_id}仅下载本研究索引登记且指纹完整的原文；不能指定任意路径。历史页只展示原决定的证据。
+
+同一A03的逐项补查保留已应用的人工范围，新选择追加；决定记录引用原已应用方案，旧运行继续按原决定独立复算。再次计算A04沿用当前结果已绑定的同上游方案，不重复签署；更换A03不继承。

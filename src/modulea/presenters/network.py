@@ -178,7 +178,7 @@ def add_identity_review(parts, summary, tables):
         return  # 已解决或已批准的历史问题不重新制造待办。
     item = focus(
         "请先核验STRING基因身份",
-        f"{count if count is not None else len(rows)}个靶点身份待核验。下方直接展示清单，点击基因名或“核查本项”查看原始证据。"
+        f"{count if count is not None else len(rows)}个靶点身份待核验。下方直接展示清单，点击基因名或“查看证据”查看原始证据。"
         if rows
         else "身份问题尚未处理；本次归档未提供可展示的明细，请补齐证据。",
         blocks=["A06_PREP"],
