@@ -206,6 +206,8 @@ export interface Special {
   component_top?: { compound_id: string; name: string; herbs: string; main_rank: number; intersection_count: number; mixed_degree: number }[];
   component_top_note_zh?: string;
   ppi_top?: PpiTopItem[];
+  ppi_dual?: PpiDual;
+
   enrichment_top?: Record<string, EnrichItem[]>;
   heatmap?: Heatmap;
   conclusion_zh?: string;
@@ -252,3 +254,7 @@ export type TablePage =
 export interface ReviewResponse { review: ReviewRecord; task: Task | null; message_zh: string }
 /** 批量复核的返回 */
 export interface BatchReviewResponse { reviews: unknown; task: Task | null; message_zh: string }
+
+/** 双分支第二轮归档排名，网页不重新计算名次 */
+export interface PpiDualRow { target_id: string; symbol: string; degree: number; bc: number; cc: number; rank: number; bc_rank?: number; cc_rank?: number; mean_rank?: number }
+export interface PpiDual { version: string; counts: Record<string, number>; thresholds: Record<string, unknown>[]; degree_rows: PpiDualRow[]; bc_cc_rows: PpiDualRow[]; note_zh: string; network_note_zh: string }

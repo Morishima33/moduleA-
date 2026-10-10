@@ -19,6 +19,11 @@
     {
       "path": "src/science_modules/a07/reports.py",
       "sha256": "2c729ac05acf8b07b5f291af6fc475395ae02aac0622d2fe1f528a58df905865"
+    },
+    {
+      "path": "src/science_modules/a07/dual_reports.py",
+      "sha256": "b83ed5bfdf626507ff507af3de472a1dff6c58dcc7dc5d044957a66954d8e2ce"
     }
-  ]
+  ],
+  "pending_version": "A07.double_report.15"
 }

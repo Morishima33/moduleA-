@@ -176,3 +176,7 @@ A01/A02模块视图新增 `source_uploads`（历史及回收站只读）：`enab
 - POST `.../modules/A01/actions/process_sources`：JSON `{expected_a00,expected_run,expected_staging,reason}`，完整三库包及HGNC依据齐备后，后台沿用现有算法生成新的待复核A01。未知身份不继承历史例外，缺资料/映射依据明确失败。
 
 A02上传通过现有run_disease单库替换入口产生新候选，不自动批准或标准化。A01上传先按库校验并版本化留存，原结果保持；页面明确提示上传资料尚未进入结果。三库整理为用户另行触发的操作，绝不因上传而后台代签。历史文件只追加；同研究已有活动任务时拒绝第二次不同写操作。任务保存私有输入以支持失败重试，不向公共Task或日志输出上传内容。
+
+## 2026-10-10 A04双分支展示
+
+A04.dual.1新增`special.ppi_dual`：`{version, thresholds, degree_rows, bc_cc_rows, counts, note_zh, network_note_zh}`。rows分别来自归档`degree_top10`、`bc_cc_top15`，均为第二轮排名含边界并列；空数组代表真实空候选。thresholds来自`dual_thresholds`，counts含两分支两轮数量。BC/CC平级，分别用平均名次处理同值，再取两项名次平均；原始指标不相加。完整四轮名单、排名和指标继续通过既有明细接口提供。旧`ppi_top`保留历史第一轮含义，新版不同时输出该键。网络方案尚未确认时只显示说明，不输出正式新图。新双分支不提供旧`round1`别名供对接使用；对接来源待用户决定。

@@ -8,6 +8,8 @@ from .base import Parts, clean, focus, kpi, param, pick, step, table, tables_of
 def present_a04(result: dict, ctx: dict) -> Parts:
     s = result.get("summary") or {}
     t = tables_of(result)
+    if s.get("selection_version") == "A04.dual.1":
+        return present_a04_dual(s, t)
     parts = Parts()
     parts.kpis = clean([
         kpi("参与节点", pick(s, "参与节点数"), f"{pick(s, '有边分量数', default='—')} 个有边分量"),
@@ -41,6 +43,22 @@ def present_a04(result: dict, ctx: dict) -> Parts:
         parts.focus.append(focus("本次 PPI 暂不采用", f"{excluded} 个（{names}）；仍保留在交集和富集中。", tier="should_know"))
     return parts
 
+
+
+# 双分支只显示归档的第二轮排名与阈值，不在网页层重新筛选或合成名次。
+def present_a04_dual(s, t):
+    parts = Parts()
+    counts = {key: s[key] for key in ("degree_round1_count", "degree_round2_count", "bc_cc_round1_count", "bc_cc_round2_count")}
+    parts.kpis = clean([kpi("参与节点", s.get("参与节点数")), kpi("合格边", s.get("合格边数")), kpi("Degree第二轮", counts["degree_round2_count"]), kpi("BC＋CC第二轮", counts["bc_cc_round2_count"])])
+    parts.flow = clean([step("交集输入", s.get("交集输入数")), step("STRING已识别", s.get("已识别数")), step("完整网络参与节点", s.get("参与节点数"))])
+    parts.flow_note_zh = "两分支独立从完整网络开始；第二轮只缩小取中位数的范围，指标不重算。"
+    parts.special["ppi_dual"] = {"version": s["selection_version"], "counts": counts, "thresholds": t["dual_thresholds"], "degree_rows": t["degree_top10"], "bc_cc_rows": t["bc_cc_top15"], "note_zh": "Degree显示第二轮前十；BC＋CC显示第二轮前十五，按两项平均名次等权排序。边界并列全部保留，不足名额按实际数量展示，空结果不补足；完整名单见结果明细。", "network_note_zh": "网络图方案待用户确认，当前不替换正式图。"}
+    parts.table = table([("branch_zh", "分支"), ("round", "轮次"), ("population", "筛选前"), ("selected", "筛选后"), ("degree_threshold", "Degree阈值"), ("bc_threshold", "BC阈值"), ("cc_threshold", "CC阈值"), ("comparison_zh", "比较条件")], t["dual_thresholds"], "dual_thresholds")
+    parts.params = clean([param("筛选版本", s["selection_version"]), param("STRING版本", s.get("STRING版本")), param("置信度", "≥0.9", "outline"), param("计算库版本", s.get("计算库版本"))])
+    if s.get("身份待核验数"):
+        parts.focus.append(focus("STRING身份待核验", f"{s['身份待核验数']}个靶点身份未确认。", blocks=["A06_PREP"]))
+    parts.focus.append(focus("对接候选来源待确认", "本轮排名仅用于核查；尚未决定后续对接使用哪一分支和哪一轮。", blocks=["A06_PREP"]))
+    return parts
 
 GROUP_NAMES = {"BP": "GO BP", "CC": "GO CC", "MF": "GO MF", "KEGG": "KEGG"}
 

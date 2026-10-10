@@ -2,11 +2,13 @@
   "schema_version": 1,
   "module": "A04",
   "checked_at": "2026-10-10",
-  "status_zh": "代码原字节复用，待用户修改要求，暂不计算",
+  "status_zh": "双分支代码已实现，演示范图待确认，当前研究未计算",
   "source_zh": "D:/codex-重大专项/moduleA 的当前科学代码；与重构仓库已有文件逐一核对",
   "versions": [
     "A04.1",
-    "A04.2"
+    "A04.2",
+    "A04.dual.1",
+    "A04.equal_rank.1"
   ],
   "scientific_run_performed": false,
   "frozen_dependencies": [
@@ -33,6 +35,20 @@
       "sha256": "7ba56ec145c74a9131d21a9c94be41725dcce5d919b3774aea190acc31b992b5",
       "source_path": "src/ppi_ui.py",
       "reuse": "原字节复用"
+    }
+  ],
+  "extensions": [
+    {
+      "path": "src/science_modules/a04/selection.py",
+      "sha256": "e144a380461eb94c99ed0a60a82eec92b8410c84477fda6d0f69567c33b901a5"
+    },
+    {
+      "path": "src/science_modules/a04/flow.py",
+      "sha256": "f08573747133fd2f9f44ed339cdd8a6e62020f96921fb9635a30cf6e6645695f"
+    },
+    {
+      "path": "src/science_modules/a04/figures.py",
+      "sha256": "c3c974d001e183575f97e144dcc71a3e276635fab48b5d0637148edd2b5ace1b"
     }
   ]
 }

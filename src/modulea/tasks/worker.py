@@ -25,7 +25,22 @@ def run_continue(settings: Settings, task: dict, manager: TaskManager) -> str:
 
     manager.update(task["task_id"], progress={"step_zh": "按依赖顺序检查并生成下一批结果", "done": 0, "total": 1})
     workflow = full_workflow(settings.data_root)
-    result = continue_after_review(workflow, task["study_id"])
+    # 新双分支的对接来源未确认时停下，不启动旧候选准备和计算。
+    manifest = workflow.load(task["study_id"])
+    a04 = manifest.get("current", {}).get("A04")
+    if a04 and workflow.active(manifest, a04) and workflow.result(manifest, a04).get("summary", {}).get("docking_candidate_source_pending"):
+        # PPI与富集保持独立；可以重试未完成的A05，但始终不进入A06。
+        a05 = manifest.get("current", {}).get("A05")
+        if not a05 or not workflow.active(manifest, a05):
+            from enrichment_flow import run_enrichment
+            run_enrichment(workflow, task["study_id"], manifest["current"]["A03"], a05 or "", "用户明确继续：生成独立A05分支")
+            return "A05已生成待复核；双分支PPI的对接候选来源未确认，未启动A06。"
+        return "双分支PPI的对接候选来源尚未确认；已停下，未启动A06。"
+    # 复用冻结编排，仅将该科学子进程的PPI入口显式绑定为新版本；不修改旧模块全局。
+    from types import FunctionType
+    from ppi_dispatch import run_ppi
+    continuation = FunctionType(continue_after_review.__code__, dict(continue_after_review.__globals__, run_ppi=run_ppi))
+    result = continuation(workflow, task["study_id"])
     print("自动接续结果：", result, flush=True)
     manager.update(task["task_id"], progress={"step_zh": "已停在下一人工关口", "done": 1, "total": 1})
     # 分支错误不隐藏：message() 会把每个分支的失败原因写进说明

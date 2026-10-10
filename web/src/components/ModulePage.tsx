@@ -13,6 +13,7 @@ import { FlowChain, FocusSection, KnowSection, KpiGrid } from './ModuleSections'
 import EnrichmentTop from './special/EnrichmentTop';
 import Heatmap from './special/Heatmap';
 import PpiTop from './special/PpiTop';
+import PpiDual from './special/PpiDual';
 import ReportSummary from './special/ReportSummary';
 import Venn from './special/Venn';
 import ComponentTop from './special/ComponentTop';
@@ -108,6 +109,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       {/* 模块专属图 */}
       {sp.venn && <Venn data={sp.venn} />}
       {sp.component_top && sp.component_top.length > 0 && <ComponentTop items={sp.component_top} note={sp.component_top_note_zh} />}
+      {sp.ppi_dual && <PpiDual data={sp.ppi_dual} />}
       {sp.ppi_top && sp.ppi_top.length > 0 && <PpiTop items={sp.ppi_top} />}
       {sp.enrichment_top && <EnrichmentTop data={sp.enrichment_top} />}
       {sp.heatmap && <Heatmap data={sp.heatmap} />}

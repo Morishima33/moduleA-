@@ -236,7 +236,7 @@ class Views:
         if run:
             parts["params"] = parts["params"] + self._config_params(run, parts["params"])
         return {
-            "module": {"module_id": module_id, "title_zh": spec.title_zh, "group_zh": spec.group_zh, "purpose_zh": source_intro(module_id, real, result) + spec.purpose_zh,
+            "module": {"module_id": module_id, "title_zh": spec.title_zh, "group_zh": spec.group_zh, "purpose_zh": source_intro(module_id, real, result) + ("STRING人类功能关联网络；Degree与BC＋CC两分支独立进行两轮筛选，显示第二轮排名。" if module_id == "A04" and result and result.get("summary", {}).get("selection_version") == "A04.dual.1" else spec.purpose_zh),
                        "sub": spec.sub, "depends_on": list(spec.depends_on)},
             "state": state if not historical else {**state, "code": "history", "label_zh": "历史版本（只读）", "can_review": False},
             "purpose": self._purpose(view),
