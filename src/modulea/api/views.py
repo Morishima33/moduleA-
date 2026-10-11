@@ -15,6 +15,7 @@ from ..core.source_uploads import context as upload_context
 from ..core.kernel import ContractError, Kernel, read_json, verified_file
 from ..core.identity_workflow import plan_view
 from ..core.enrichment_workflow import display_context
+from ..core.docking_workflow import candidate_context
 from ..core.status import LABELS, map_state, unavailable
 from ..presenters import present
 from ..tasks.manager import TaskManager
@@ -27,6 +28,15 @@ def hide_pending_kegg(special, info):
         for key in ("kegg_p_top10","kegg_count_top10"):
             special.get("enrichment_display_tables",{}).pop(key,None)
 
+
+# 来源规则确认已独立归档后，当前页不再显示旧的“来源未定”提示。
+def apply_candidate_context(parts,info):
+    if not info or not info.get("data"):
+        return
+    parts["focus"]=[r for r in parts["focus"] if r["title_zh"]!="对接候选来源待确认"]
+    dual=parts["special"].get("ppi_dual")
+    if dual:
+        dual["network_note_zh"]=dual["network_note_zh"].replace("对接候选另行确认。","对接候选按已归档A/B两梯队使用；结构质控另行核查。")
 
 PREUPLOAD_PROFILES = ("A00.preupload.1", "A00.preupload.2")
 PURPOSE_BANNERS = {
@@ -264,6 +274,9 @@ class Views:
                     parts["special"]["enrichment_graphs"][row["group"]] = {"url":f"/api/v1/studies/{study_id}/files/{key}?inline=1","caption_zh":"GO三类各前八；中英文名称，柱长与深浅表示Count。" if row["group"]=="go" else "KEGG统计显著性前十五；横轴RichFactor，面积Count，颜色为−log10(BH校正后P值)。"}
         enrichment_info = display_context(workflow, real, run, result, historical, bool(self.tasks.active_for(study_id))) if module_id == "A05" else None
         hide_pending_kegg(parts["special"],enrichment_info)
+        candidates_info = candidate_context(workflow,real,historical,bool(self.tasks.active_for(study_id))) if module_id in ("A04","A06_PREP","A06") else None
+        if module_id == "A04":
+            apply_candidate_context(parts,candidates_info)
         a03_id = real.get("current", {}).get("A03", "")
         ppi_enabled = bool(module_id == "A04" and a03_id and not historical and not real.get("trashed") and workflow.active(real, a03_id) and workflow.approved(real, a03_id) and not self.tasks.active_for(study_id))
         if run:
@@ -289,6 +302,7 @@ class Views:
             "ppi_run": {"enabled": ppi_enabled, "disabled_reason_zh": "" if ppi_enabled else "请先通过当前A03，并等待本研究活动任务结束；历史及回收站只读。", "expected_a03": a03_id, "expected_a04": real.get("current", {}).get("A04", "")} if module_id == "A04" and not historical else None,
             "identity_plan": plan_view(workflow, real, run, result, ppi_enabled and bool(run) and workflow.active(real, run["run_id"]), historical) if module_id == "A04" else None,
             "enrichment_display": enrichment_info,
+            "docking_candidates": candidates_info,
             "source_uploads": upload_context(workflow, real, module_id, result, historical, bool(self.tasks.active_for(study_id))) if not historical else None,
         }
 

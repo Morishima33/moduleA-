@@ -63,6 +63,8 @@ class App:
             ("GET", rf"/api/v1/studies/{ID}/modules/{ID}/sources", self.get_sources),
             ("GET", rf"/api/v1/studies/{ID}/modules/{ID}/sources/{ID}/template", self.get_source_template),
             ("GET", rf"/api/v1/studies/{ID}/modules/{ID}/sources/{ID}/file", self.get_source_file),
+            ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/docking_candidates", self.post_docking_candidates),
+            ("GET", rf"/api/v1/studies/{ID}/docking_candidates/{ID}", self.get_docking_candidates),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/run_ppi", self.post_run_ppi),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/identity_plan", self.post_identity_plan),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/display_confirmation", self.post_display_confirmation),
@@ -313,6 +315,38 @@ class App:
         return {"task": task, "created": created, "message_zh": "三库整理任务已提交，结果仍需独立复核。" + self._task_message(task)}, 202
 
     # 页面和后台两次核对上游版本，仅登记A04科学任务。
+    def post_docking_candidates(self,req,study_id,module_id):
+        if module_id not in ("A04","A06_PREP"):
+            raise not_found("该模块没有候选分组操作")
+        body=req.json()
+        info=self.views.module(study_id,module_id).get("docking_candidates")
+        keys=("expected_a03","expected_a04","expected_a04_review")
+        if not info or any(body.get(k)!=info[k] for k in keys):
+            raise ApiError(409,"STALE_VERSION","A03、A04或A04复核已改变，请刷新")
+        if not info["enabled"]:
+            raise ApiError(409,"GATE_BLOCKED",info["disabled_reason_zh"])
+        payload={k:body.get(k) for k in keys}
+        payload.update(reason=body.get("reason"),group_id="group_"+uuid.uuid4().hex)
+        try:
+            self.kernel.workflow().validate_candidates(study_id,payload)
+        except ContractError as error:
+            raise from_contract(str(error))
+        task,created=self.tasks.submit(study_id,"a06_candidates","页面生成两梯队候选",payload)
+        if not created:
+            raise ApiError(409,"GATE_BLOCKED","当前研究已有后台任务，请等待完成")
+        return {"task":task,"created":created,"message_zh":"候选分组已提交；不运行真实分子对接。"+self._task_message(task)},202
+
+    # 下载只查本研究索引，拒绝任意路径与跨研究编号。
+    def get_docking_candidates(self,req,study_id,group_id):
+        workflow=self.kernel.workflow()
+        manifest=workflow.load(study_id)
+        for record in manifest.get("docking_candidate_records",[]):
+            path=verified_file(workflow.location(study_id),record)
+            data=read_json(path)
+            if data.get("group_id")==group_id and data.get("study_id")==study_id:
+                return ("file",path,path.name,"application/json",False)
+        raise not_found("本研究的候选分组")
+
     def post_run_ppi(self, req, study_id, module_id):
         if module_id != "A04":
             raise not_found("该模块没有PPI计算操作")

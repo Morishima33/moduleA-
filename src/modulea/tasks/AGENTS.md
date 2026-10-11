@@ -31,3 +31,8 @@ continue后台使用science_modules/a05/flow.run_enrichment，full_workflow登�
 ## 2026-10-11 A05第三版展示入口
 
 现行continue及a05_display使用science_modules/a05/compact_flow，full_workflow登记其validator并委托旧版历史核验。用户要求的版式修订通过revise_layout复用原统计、译名和排除范围，生成A05.display.3；新版式待用户确认，不运行R、不代签A05或启动A06。未新增公开任务类型或后台监听。
+
+## A06候选分组
+新增a06_candidates：只经DockingWorkflow.generate_candidates读取当前已批准A04归档并追加分组，不重算PPI、不下载结构、不启动Vina、不代签。continue仍停在A06来源/结构准备关口，不能将分组生成视为结构质控通过。
+
+已有有效两梯队归档时，continue准确提示“结构方案待微调与核查”，不再称候选来源未确定；A05独立分支仍保留。此入口不会调用旧第一轮准备、不会启动真实对接。

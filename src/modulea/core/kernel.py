@@ -29,7 +29,7 @@ _ensure_legacy_path()
 from contracts import MODULES, ContractError  # noqa: E402
 from storage import read_json, verified_file  # noqa: E402
 from workflow import Workflow  # noqa: E402
-from .enrichment_workflow import EnrichmentWorkflow  # noqa: E402
+from .docking_workflow import DockingWorkflow  # noqa: E402
 
 __all__ = ["Kernel", "ContractError", "MODULES", "read_json", "verified_file", "full_workflow"]
 
@@ -54,7 +54,7 @@ class Kernel:
         self.settings = settings
 
     def workflow(self) -> Workflow:
-        return EnrichmentWorkflow(self.settings.data_root, VIEW_VALIDATORS)
+        return DockingWorkflow(self.settings.data_root, VIEW_VALIDATORS)
 
     def display_workflow(self) -> Workflow:
         """只用于显示状态的实例：回收站中的研究也按原有批准关系计算状态。
@@ -65,7 +65,7 @@ class Kernel:
         return _DisplayWorkflow(self.settings.data_root, VIEW_VALIDATORS)
 
 
-class _DisplayWorkflow(EnrichmentWorkflow):
+class _DisplayWorkflow(DockingWorkflow):
     def load(self, study_id):
         manifest = dict(super().load(study_id))
         manifest["trashed"] = False
@@ -90,7 +90,7 @@ def full_workflow(data_root: Path) -> Workflow:
     from report_dispatch import validator as report_validator
 
     root = data_root
-    return EnrichmentWorkflow(root, {
+    return DockingWorkflow(root, {
         "A01": upload_validator(root, multisource_validator(root, normalization_validator(root, validate_components))),
         "A02": normalization_validator(root, validate_disease),
         "A03": validate_intersection,

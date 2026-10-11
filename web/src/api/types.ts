@@ -222,6 +222,7 @@ export interface Special {
 
 /** 模块页 */
 export interface ModuleView {
+  docking_candidates?: DockingCandidatesInfo | null;
   module: { module_id: string; title_zh: string; group_zh: string; purpose_zh: string; sub: boolean; depends_on: string[] };
   state: { code: StateCode; label_zh: string; reason_zh: string | null; raw_state: string; is_empty_result: boolean; handoff_blocked: boolean; can_review: boolean };
   purpose: Purpose | null;
@@ -280,3 +281,17 @@ export interface EnrichmentDisplayInfo { kegg_ready: boolean; kegg_reason_zh: st
 export interface EnrichmentDisplayRequest { expected_a03: string; expected_a05: string; expected_decision_id: string | null; action: 'exclusions' | 'layout'; reviewer: string; note: string; excluded_ids: string[]; confirmed: true }
 
 export interface IdentityPlanRequest { expected_a03: string; expected_a04: string; expected_decision_id: string | null; reviewer: string; note: string; check_ids: string[]; omit_ids: string[]; confirmed: true }
+
+// 两梯队名单只读后台归档，前端不自行相交或排名。
+export interface DockingCandidateRow {
+  target_id: string; symbol: string; degree: number; bc: number; cc: number; evidence_group?: 'A' | 'B';
+}
+export interface DockingCandidatesInfo {
+  enabled: boolean; disabled_reason_zh: string;
+  expected_a03: string; expected_a04: string; expected_a04_review: string;
+  preparation_note_zh: string;
+  data: null | { group_id: string; rule_zh: string; note_zh: string;
+    source_runs: { A03: string; A04: string }; group_a: DockingCandidateRow[]; group_b: DockingCandidateRow[];
+    counts: { a: number; b: number; degree_top10: number; bc_cc_top15: number; degree_top15: number };
+  };
+}

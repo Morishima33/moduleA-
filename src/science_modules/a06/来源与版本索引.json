@@ -1,0 +1,207 @@
+{
+  "schema_version": "A06.code_reuse.1",
+  "active_files": [
+    {
+      "path": "src/docking_audit.py",
+      "original_sha256": "81af126931a132d2b60469db291f61d9500e3a454f56484a69d9c562cbfc1954",
+      "code_sha256": "81af126931a132d2b60469db291f61d9500e3a454f56484a69d9c562cbfc1954",
+      "same_bytes": true
+    },
+    {
+      "path": "src/docking_automation.py",
+      "original_sha256": "3d5a32be2eb78bf695d5c9d1953c5a1cf389b8aa34d4d7a8d41ad37566509da3",
+      "code_sha256": "15b842b50ff82e8dbdda718063c18cd05d82f8b6be38aad333f4ecf7b4e5451a",
+      "same_bytes": false
+    },
+    {
+      "path": "src/docking_automation_compute.py",
+      "original_sha256": "2e3c4b4049b5317d678dfdb59fc8a19c4608d1dba0775d1ca270acd89093c15b",
+      "code_sha256": "2e3c4b4049b5317d678dfdb59fc8a19c4608d1dba0775d1ca270acd89093c15b",
+      "same_bytes": true
+    },
+    {
+      "path": "src/docking_automation_ui.py",
+      "original_sha256": "0acbb2ea91485b185b9df21c1b60b11772a28be511ffb039963f501b7f069773",
+      "code_sha256": "8cc548e7c2f83b2ad71a6f81c5a3fc86806a06eb5e53b98940cb28ecbe6c6c42",
+      "same_bytes": false
+    },
+    {
+      "path": "src/docking_contract.py",
+      "original_sha256": "e56f4a007b7ec2afd633efde4dc114ae3e5c155cdfc532f6bbbe4a48fc1a858c",
+      "code_sha256": "e56f4a007b7ec2afd633efde4dc114ae3e5c155cdfc532f6bbbe4a48fc1a858c",
+      "same_bytes": true
+    },
+    {
+      "path": "src/docking_dynamic_heatmap.py",
+      "original_sha256": "5baa588e7aa31676c69949744479051997cc057067394fd80f8ef78fdb9aced9",
+      "code_sha256": "5baa588e7aa31676c69949744479051997cc057067394fd80f8ef78fdb9aced9",
+      "same_bytes": true
+    },
+    {
+      "path": "src/docking_formal.py",
+      "original_sha256": "a089e4565572d5a2189d05ffdff44e0448387044e13f05ee92de5299f9a05270",
+      "code_sha256": "a089e4565572d5a2189d05ffdff44e0448387044e13f05ee92de5299f9a05270",
+      "same_bytes": true
+    },
+    {
+      "path": "src/docking_generic_prep.py",
+      "original_sha256": "0ab1fd4fba84e013795d8889646302500ef6a99e3865e8a4583c8e0e5ce01697",
+      "code_sha256": "3e2ea6883e62e1486346597497df89c00bc8ddd14a9a28d173c7b2c6dcbcb52c",
+      "same_bytes": false
+    },
+    {
+      "path": "src/docking_grouped_heatmap.py",
+      "original_sha256": "8928dc78598d8caf5d4462482d623032ca18d91ed8ffbebcb076f111f336342e",
+      "code_sha256": "9c93ae2b6be01efccfdcec1d798045e4d73d07e8200490a59487c09bbe2abf20",
+      "same_bytes": false
+    },
+    {
+      "path": "src/docking_ligand.py",
+      "original_sha256": "e49ac8a56661136f54b811155661927dd168380840da654f15c5ec968c2c4d27",
+      "code_sha256": "84788ecd1e5f57bf89ea3abf3f2f932d01080ae4e1058ec64a738837c6b81194",
+      "same_bytes": false
+    },
+    {
+      "path": "src/docking_ligand_flow.py",
+      "original_sha256": "b620aa2dd1fac67eda79668c50fc9c6c6b2f2c8bf71a49f1e58ef40e2e693e53",
+      "code_sha256": "b620aa2dd1fac67eda79668c50fc9c6c6b2f2c8bf71a49f1e58ef40e2e693e53",
+      "same_bytes": true
+    },
+    {
+      "path": "src/docking_p2rank.py",
+      "original_sha256": "862ea933b6c1fd99c7495e5d36ce49960c5a120d0872f9e09aac661c09fabe7a",
+      "code_sha256": "13c77ddf708ce887247abcb1170dbefdfbd0a90e17351593b5c56b17c159b384",
+      "same_bytes": false
+    },
+    {
+      "path": "src/docking_receptor.py",
+      "original_sha256": "64c00f3a719ea1b977b4b51d308b788f10d956565e535244fc448cb2d20c0245",
+      "code_sha256": "22388a3378f8ab2ec38887957b3f1ab3256ab302c3d845c1c8b0fd066932ab09",
+      "same_bytes": false
+    },
+    {
+      "path": "src/docking_receptor_diagnostic.py",
+      "original_sha256": "40e01a36570fd11258aff8a0d9578989bcc295b373d76d0203e888783d270a6a",
+      "code_sha256": "ef9ecfedc8353975267c7345cb647a14b0ed503f9fd1554d7a1c2e0adebd01aa",
+      "same_bytes": false
+    },
+    {
+      "path": "src/docking_redocking.py",
+      "original_sha256": "be08ea46b9bfcce7190e096b13f27fcc48e20eb221414b5f01b0ba1c44d5a367",
+      "code_sha256": "23239d586fbe5d44100b5e93ece735124eafc76c3a177bccc3a1110fd9a3a0fd",
+      "same_bytes": false
+    },
+    {
+      "path": "src/docking_reference_ligand.py",
+      "original_sha256": "1cc898c22a496547464c10436c7f5c99788b85e9ad0485fb744fecf290ad4e40",
+      "code_sha256": "0d62584bd1a2f0c6462b5b6a6f8ca0c26b1a152045f43a5e91a8ffaa55563b5b",
+      "same_bytes": false
+    },
+    {
+      "path": "src/docking_result_reuse.py",
+      "original_sha256": "4d013d313435cd889ad2fe086fd714c71b31234ead15f2b0d737e0e8e9c824d1",
+      "code_sha256": "4d013d313435cd889ad2fe086fd714c71b31234ead15f2b0d737e0e8e9c824d1",
+      "same_bytes": true
+    },
+    {
+      "path": "src/docking_runtime.py",
+      "original_sha256": "e43e47915a596bc6728b404bc5fa9abd34ff2406d4291750539707eba41a3f80",
+      "code_sha256": "2e8cdae32817437d63221e36f2b036e5ca4222c5dd44498b88d6e701b142b675",
+      "same_bytes": false
+    },
+    {
+      "path": "src/docking_sources.py",
+      "original_sha256": "0db37b2011ae0ccd5319525814546e22f05264f995c5788f0f5e95177ae8f802",
+      "code_sha256": "0db37b2011ae0ccd5319525814546e22f05264f995c5788f0f5e95177ae8f802",
+      "same_bytes": true
+    },
+    {
+      "path": "src/docking_task_package.py",
+      "original_sha256": "4fba584cbb3ca13cbd9c5edfb1aa1f9ce3650f0c065a42a81a333bfc636742e4",
+      "code_sha256": "c2b92470dc643bfbe00501fe7fe58aab5b189380e5b53c0229b069c695716b72",
+      "same_bytes": false
+    },
+    {
+      "path": "src/docking_task_package_v2.py",
+      "original_sha256": "784298e9a25b146e2e4acda86747a1c986b153e2ad3c494695d50bdc2ad73718",
+      "code_sha256": "784298e9a25b146e2e4acda86747a1c986b153e2ad3c494695d50bdc2ad73718",
+      "same_bytes": true
+    },
+    {
+      "path": "src/docking_top10_execute.py",
+      "original_sha256": "8beb7abd71bb92fd23d5c78b49c3caf8173ac4c3dd86c0a64a79f9881261333b",
+      "code_sha256": "8beb7abd71bb92fd23d5c78b49c3caf8173ac4c3dd86c0a64a79f9881261333b",
+      "same_bytes": true
+    },
+    {
+      "path": "src/docking_top10_publish.py",
+      "original_sha256": "ab418da2b51bcc4b5da5640fc1f7078ec30f06e7f7ebeb2d0719c0e828e514a5",
+      "code_sha256": "9c3315369117c0b36646f690e4656bc26b792da1a32b504eeb0a6983ee68e3a2",
+      "same_bytes": false
+    },
+    {
+      "path": "src/docking_ui.py",
+      "original_sha256": "de1665d0c085bf6aceda1800f8ef875e3e4da10289e55a63715252ef1d533f3e",
+      "code_sha256": "de1665d0c085bf6aceda1800f8ef875e3e4da10289e55a63715252ef1d533f3e",
+      "same_bytes": true
+    }
+  ],
+  "historical_only": [
+    {
+      "path": "src/docking_box_proposal.py",
+      "original_sha256": "47c7c415a8e1448203183c1c96325a1e0844b5044408d177bb5a77bd0a5ea15d",
+      "code_sha256": null,
+      "same_bytes": false
+    },
+    {
+      "path": "src/docking_candidate_heatmap.py",
+      "original_sha256": "288cf2abae0eeaafe6e1fb74f37d56e2fc88bd90de021e41c020dbb773b83c13",
+      "code_sha256": null,
+      "same_bytes": false
+    },
+    {
+      "path": "src/docking_expansion_publish.py",
+      "original_sha256": "b1ec20c8e7f332d0de5b8874b8a7df654ba6b6b3a4c05f3aab76bb867f8a719e",
+      "code_sha256": null,
+      "same_bytes": false
+    },
+    {
+      "path": "src/docking_heatmap_export.py",
+      "original_sha256": "4440afdf6fb60e8caa028fbf4aae67c8a5bc9e9c10b2561b7eeece804aea76d7",
+      "code_sha256": null,
+      "same_bytes": false
+    },
+    {
+      "path": "src/docking_prep_config.py",
+      "original_sha256": "b3f7088ca357910b2bbbc3eccd37c6379f907ebe4d90139595a219d79a0c3883",
+      "code_sha256": null,
+      "same_bytes": false
+    },
+    {
+      "path": "src/docking_receptor_prepare.py",
+      "original_sha256": "a673d811195828ec6d53756003dbcd08c8c2667ec1a43149f2b69997daed45cc",
+      "code_sha256": null,
+      "same_bytes": false
+    },
+    {
+      "path": "src/docking_refill_redocking.py",
+      "original_sha256": "a45b62a688fad725090e888138366d05f40c8103712d492235f4ecdfac1afffa",
+      "code_sha256": null,
+      "same_bytes": false
+    },
+    {
+      "path": "src/docking_top10_altloc.py",
+      "original_sha256": "e2b86de5d7b17d05c33be3e2dcc7cee5d4e09cc1d26f87ce090081a4823eb34f",
+      "code_sha256": null,
+      "same_bytes": false
+    },
+    {
+      "path": "src/docking_top10_recover.py",
+      "original_sha256": "24b990740591c50aca875ad7aab7169f788ebfff8fadf63ff0d167153f4fb324",
+      "code_sha256": null,
+      "same_bytes": false
+    }
+  ],
+  "candidate_rule": "A06.candidate_groups.1",
+  "note_zh": "24个既有科学文件保持原位置；9个未被导入的历史病例脚本不作为本轮生产入口。"
+}

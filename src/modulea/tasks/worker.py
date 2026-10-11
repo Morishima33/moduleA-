@@ -30,13 +30,18 @@ def run_continue(settings: Settings, task: dict, manager: TaskManager) -> str:
     manifest = workflow.load(task["study_id"])
     a04 = manifest.get("current", {}).get("A04")
     if a04 and workflow.active(manifest, a04) and workflow.result(manifest, a04).get("summary", {}).get("docking_candidate_source_pending"):
+        # 新名单已归档时准确显示准备关口，仍不调用旧第一轮准备入口。
+        from ..core.docking_workflow import candidate_context
+        candidates=candidate_context(workflow,manifest)
+        source_note="两梯队候选已归档；新版结构方案仍待微调与独立核查，未启动A06。" if candidates and candidates["data"] else "双分支PPI的候选分组尚未生成；请前往A06准备页，未启动A06。"
         # PPI与富集保持独立；可以重试未完成的A05，但始终不进入A06。
         a05 = manifest.get("current", {}).get("A05")
         if not a05 or not workflow.active(manifest, a05):
             run_enrichment(workflow, task["study_id"], manifest["current"]["A03"], a05 or "", "用户明确继续：生成独立A05分支")
             manager.update(task["task_id"], progress={"step_zh": "新A05图表已归档，等待人工复核", "done": 1, "total": 1})
-            return "A05已生成待复核；双分支PPI的对接候选来源未确认，未启动A06。"
-        return "双分支PPI的对接候选来源尚未确认；已停下，未启动A06。"
+            return "A05已生成待复核；"+source_note
+        manager.update(task["task_id"],progress={"step_zh":"已停在A06方案核查关口","done":1,"total":1})
+        return source_note
     # 复用冻结编排，仅将该科学子进程的PPI入口显式绑定为新版本；不修改旧模块全局。
     from types import FunctionType
     from ppi_dispatch import run_ppi
@@ -127,7 +132,15 @@ def run_a05_display(settings: Settings, task: dict, manager: TaskManager) -> str
     manager.update(task["task_id"], progress={"step_zh":"新展示已归档，仍须独立复核A05","done":1,"total":1})
     return "A05展示确认已保存并应用；生成新版本："+result["run_id"]+"。未重新计算ORA、未批准A05或启动A06。"
 
-HANDLERS = {"a05_display": run_a05_display, "a04_identity": run_a04_identity, "a04_ppi": run_a04_ppi, "continue": run_continue, "source_upload": run_source_upload, "a01_sources": run_a01_sources}
+# 只整理归档名单；不下载受体、准备配体或调用Vina。
+def run_a06_candidates(settings: Settings,task: dict,manager: TaskManager) -> str:
+    payload=json.loads(task.get("payload") or "{}")
+    manager.update(task["task_id"],progress={"step_zh":"核验已批准A04并归档两梯队","done":0,"total":1})
+    data=full_workflow(settings.data_root).generate_candidates(task["study_id"],payload)
+    manager.update(task["task_id"],progress={"step_zh":"候选已留存，真实对接未启动","done":1,"total":1})
+    return f"候选分组已生成：A组{data['counts']['a']}个、B组{data['counts']['b']}个；结构质控仍需独立核查。"
+
+HANDLERS = {"a06_candidates": run_a06_candidates, "a05_display": run_a05_display, "a04_identity": run_a04_identity, "a04_ppi": run_a04_ppi, "continue": run_continue, "source_upload": run_source_upload, "a01_sources": run_a01_sources}
 
 
 def run_task(settings: Settings, task_id: str) -> int:

@@ -229,3 +229,13 @@ ModuleView.enrichment_display新增kegg_ready:boolean与kegg_reason_zh:string，
 ## 2026-10-11 A05第三版紧凑展示
 
 原字段及确认请求契约保持，A05.display.3仍输出同源enrichment_display_tables及enrichment_graphs。前端将Description、description_zh分列，疾病核查25条分页；reason_zh仍完整归档并可展开。接口不重算BH、不改变排除或审批。专业报告第19版同步列序，旧报告继续按旧配置校验。
+
+## 2026-10-11 A06两梯队候选（用户确认）
+ModuleView新增docking_candidates，当前A04/A06_PREP/A06提供，历史页为null：
+{enabled,disabled_reason_zh,expected_a03,expected_a04,expected_a04_review,data|null,preparation_note_zh}。
+data为不可变A06.candidate_groups.1归档：group_id、source_runs、source_review、source_result、rule_zh、note_zh、degree_top15、group_a、group_b、counts；各行保留HGNC、symbol、degree、bc、cc并增加evidence_group。
+POST .../modules/{A04|A06_PREP}/actions/docking_candidates：JSON {expected_a03,expected_a04,expected_a04_review,reason}→202后台a06_candidates任务；只取已批准A04第二轮归档名单，保留边界并列，不重算PPI、不下载结构、不启动Vina、不代签。
+GET /studies/{sid}/docking_candidates/{group_id}：仅下载本研究索引中的指纹文件。
+A=Degree第二轮前十∩BC/CC第二轮前十五；B=Degree第二轮前十五去除A；身份按HGNC。A/B是本项目候选证据分组，与结构质控和临床证据等级独立。更换A03/A04或撤回/重签A04后旧分组不可作当前输入；旧归档和批准保留。候选归档不使旧A06_PREP/A06自动恢复有效。
+
+当前A04已有有效候选归档时，focus不再显示旧“对接来源待确认”，图注改为已归档A/B规则及独立结构质控提示；历史页及尚无分组时原提示保留。科学summary中的历史未定记录不回写。

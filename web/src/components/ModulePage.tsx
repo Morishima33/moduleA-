@@ -10,6 +10,7 @@ import { hrefFor } from '../lib/route';
 import { stateStyle, taskColor } from '../lib/theme';
 import { StatusPill } from './common';
 import DataTabs from './DataTabs';
+import DockingCandidates from './DockingCandidates';
 import { FlowChain, FocusSection, KnowSection, KpiGrid } from './ModuleSections';
 import EnrichmentTop from './special/EnrichmentTop';
 import EnrichmentConfirmation from './EnrichmentConfirmation';
@@ -71,6 +72,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
         </div>
       </section>
 
+      {view.docking_candidates && m.module_id !== 'A04' && <DockingCandidates studyId={studyId} moduleId={m.module_id} info={view.docking_candidates} />}
       {view.enrichment_display && <EnrichmentConfirmation studyId={studyId} info={view.enrichment_display} onPendingChange={setKeggPending} />}
       {/* 待核验事项紧接标题；证据直接展开，不藏在结果末尾。 */}
       {!view.historical && <FocusSection items={view.focus} evidence={sp.ppi_identity ? <IdentityReview studyId={studyId} view={view} data={sp.ppi_identity} /> : undefined} />}
@@ -129,6 +131,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
 
       {/* 结果明细 / 参数与版本 / 来源与追溯 */}
       <DataTabs studyId={studyId} view={view} />
+      {view.docking_candidates && m.module_id === 'A04' && <DockingCandidates studyId={studyId} moduleId={m.module_id} info={view.docking_candidates} />}
       {/* 窄屏时下游影响放在最后 */}
       {downstreamSlot}
     </div>

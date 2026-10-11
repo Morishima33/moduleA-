@@ -109,6 +109,9 @@ export const api = {
   /** A05人工确认展示范围或图表版式；后台生成新版本，不代签 */
   confirmEnrichmentDisplay: (sid: string, body: import('./types').EnrichmentDisplayRequest) =>
     request<{ task: Task; created: boolean; message_zh: string }>('POST', `/studies/${sid}/modules/A05/actions/display_confirmation`, body),
+  /** 仅生成两梯队名单，不启动对接或代签 */
+  dockingCandidates: (sid: string, mid: string, body: { expected_a03: string; expected_a04: string; expected_a04_review: string; reason: string }) =>
+    request<{ task: Task; created: boolean; message_zh: string }>('POST', '/studies/' + sid + '/modules/' + mid + '/actions/docking_candidates', body),
   /** 单个模块复核 */
   review: (sid: string, mid: string, body: { run_id: string; expected_review_id: string | null; decision: Decision; reviewer: string; note: string; after: 'save' | 'continue' }) =>
     request<ReviewResponse>('POST', `/studies/${sid}/modules/${mid}/reviews`, body),
