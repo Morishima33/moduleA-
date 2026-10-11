@@ -25,6 +25,44 @@ class DockingWorkflow(EnrichmentWorkflow):
         require(isinstance(payload.get("reason"),str) and 0<len(payload["reason"].strip())<=2000,"请填写候选分组原因")
         return manifest,binding
 
+    # 当前方案按完整来源键绑定；同运行重签、更换成分或更新分组都会使旧方案失效。
+    def current_docking_plan(self,manifest,context):
+        from science_modules.a06.plan_adapter import SCHEMA
+        for record in reversed(manifest.get("docking_plan_records",[])):
+            data=read_json(verified_file(self.location(manifest["study_id"]),record))
+            require(data.get("study_id")==manifest["study_id"] and data.get("schema_version")==SCHEMA,"方案身份或版本不一致")
+            if data["source_key"]==context["source_key"]:
+                return data,record
+        return None,None
+
+    # 只追加人工方案，不运行、下载、批准或改变任何模块当前指针。
+    def save_docking_plan(self,sid,payload):
+        from science_modules.a06.plan_adapter import source_context,validate_plan,plan_metadata
+        with write_lock(self.root):
+            require(isinstance(payload,dict) and set(payload)=={"expected_source","expected_plan_id","plan_id","confirmed","reviewer","note","plan"},"方案请求字段不完整或含未授权运行参数")
+            manifest=self.load(sid)
+            context=source_context(self,sid,manifest)
+            require(payload.get("expected_source")==context["source_key"],"方案上游或候选分组已改变，请刷新")
+            require(payload.get("confirmed") is True,"请明确确认本次结构方案")
+            require(all(isinstance(payload.get(k),str) and 0<len(payload[k].strip())<=2000 for k in ("reviewer","note")),"请填写实际核验人与结构选择依据")
+            safe_id(payload.get("plan_id"),"plan")
+            for record in manifest.get("docking_plan_records",[]):
+                saved=read_json(verified_file(self.location(sid),record))
+                if saved["plan_id"]==payload["plan_id"]:
+                    require(saved["request"]==payload,"重试方案内容不一致")
+                    return saved,record
+            previous,_=self.current_docking_plan(manifest,context)
+            require((previous["plan_id"] if previous else None)==payload.get("expected_plan_id"),"方案已更新，请刷新")
+            data={**plan_metadata(context),"plan":validate_plan(payload.get("plan"),context),
+                  "study_id":sid,"plan_id":payload["plan_id"],"created_at":now(),
+                  "reviewer":payload["reviewer"].strip(),"note":payload["note"].strip(),"request":dict(payload)}
+            path=self.location(sid)/"decisions/A06_plans"/(data["plan_id"]+".json")
+            write_json(path,data)
+            record=file_record(self.location(sid),path,"docking_two_tier_plan")
+            manifest.setdefault("docking_plan_records",[]).append(record)
+            self.save(manifest)
+            return data,record
+
     # 只有指纹核验且绑定当前批准结果的记录才展示；旧分组仍可追溯。
     def candidate_record(self,manifest,binding):
         for record in reversed(manifest.get("docking_candidate_records",[])):

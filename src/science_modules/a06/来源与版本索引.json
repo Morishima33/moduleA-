@@ -203,5 +203,29 @@
     }
   ],
   "candidate_rule": "A06.candidate_groups.1",
-  "note_zh": "24个既有科学文件保持原位置；9个未被导入的历史病例脚本不作为本轮生产入口。"
+  "note_zh": "24个既有科学文件保持原位置；9个未被导入的历史病例脚本不作为本轮生产入口。",
+  "adapter_phase": "A06.code_only.1",
+  "adapter_files": [
+    {
+      "path": "src/science_modules/a06/candidates.py",
+      "sha256": "f1a29a03d160668ef71b2a7d4b879e0fe9148954dac770c2bf6507c39d14cffd"
+    },
+    {
+      "path": "src/science_modules/a06/plan_adapter.py",
+      "sha256": "9e2d1b687b440dfe6ca61a56c85c081095f7da0b88109f97ba0be81b92c8e37d"
+    },
+    {
+      "path": "src/science_modules/a06/engine_adapter.py",
+      "sha256": "3c7a0c9b3d843db600b7af17aadfcb201e48525b2d5db4daa551bc6195ad50d0"
+    },
+    {
+      "path": "src/science_modules/a06/result_adapter.py",
+      "sha256": "c76da3af0fc1b03146af82d9e80a7a9ab927bc0bfeb573f492f98ba519aa0e9f"
+    },
+    {
+      "path": "src/modulea/core/docking_workflow.py",
+      "sha256": "03d5277de39ae804d3677efdca9262837c4e6c721bad502929029ab8f6fa34e4"
+    }
+  ],
+  "adapter_note_zh": "两梯队方案与结果元数据适配独立存放；真实计算入口关闭，24个冻结科学文件未修改。"
 }
