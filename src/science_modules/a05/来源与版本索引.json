@@ -2,7 +2,7 @@
   "schema_version": 1,
   "module": "A05",
   "checked_at": "2026-10-11",
-  "status_zh": "旧版当前科学代码已接入重构基线，等待用户微调；未新运行富集",
+  "status_zh": "旧版四个核心文件原字节保留，独立代码／数据根路径适配及隔离运行自测已通过；当前研究等待用户微调",
   "version": "A05.1",
   "source_zh": "原项目当前版本，原项目不修改",
   "scientific_run_performed": false,
@@ -32,10 +32,16 @@
       "reuse_zh": "与原项目当前版本原字节一致，不复制第二套实现"
     }
   ],
-  "runtime_adaptation_pending": [
-    "R脚本启动使用../../src/enrichment.R；重构数据根与代码根分开，调用前需适配，不复制代码到数据根",
-    "Rscript固定环境路径保持原样；本轮未启动R或核验包版本",
-    "新快照尚无environments/A05_sources.json；来源准备须后续明确启动，不隐式读原项目"
+  "runtime_adaptation_pending": [],
+  "existing_result_zh": "页面已有历史A05，其父A03已不是当前A03；标记已失效并保留，不迁成新结果",
+  "runtime_rule": "A05.separate_roots.1",
+  "runtime_checked_at": "2026-10-11",
+  "extensions": [
+    {
+      "path": "src/science_modules/a05/flow.py",
+      "sha256": "2d43f9551533c5ece75f597033ff76b8b90f17773cf2932e9e3d306e268d86f7",
+      "purpose_zh": "仅适配脚本绝对路径、首次来源目录及错误提示；统计与归档复用原实现"
+    }
   ],
-  "existing_result_zh": "页面已有历史A05，其父A03已不是当前A03；标记已失效并保留，不迁成新结果"
+  "self_test_zh": "真实R的5项检查、真实HTTP和后台子进程端到端、GO导出与KEGG官方来源初始化均通过；当前研究未计算"
 }

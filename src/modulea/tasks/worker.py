@@ -22,6 +22,7 @@ from .manager import TaskManager
 def run_continue(settings: Settings, task: dict, manager: TaskManager) -> str:
     """自动接续：导入完整科学依赖，生成下一批待复核结果。返回给用户看的中文说明。"""
     from auto_continue import continue_after_review, message
+    from science_modules.a05.flow import run_enrichment
 
     manager.update(task["task_id"], progress={"step_zh": "按依赖顺序检查并生成下一批结果", "done": 0, "total": 1})
     workflow = full_workflow(settings.data_root)
@@ -32,14 +33,14 @@ def run_continue(settings: Settings, task: dict, manager: TaskManager) -> str:
         # PPI与富集保持独立；可以重试未完成的A05，但始终不进入A06。
         a05 = manifest.get("current", {}).get("A05")
         if not a05 or not workflow.active(manifest, a05):
-            from enrichment_flow import run_enrichment
             run_enrichment(workflow, task["study_id"], manifest["current"]["A03"], a05 or "", "用户明确继续：生成独立A05分支")
+            manager.update(task["task_id"], progress={"step_zh": "新A05图表已归档，等待人工复核", "done": 1, "total": 1})
             return "A05已生成待复核；双分支PPI的对接候选来源未确认，未启动A06。"
         return "双分支PPI的对接候选来源尚未确认；已停下，未启动A06。"
     # 复用冻结编排，仅将该科学子进程的PPI入口显式绑定为新版本；不修改旧模块全局。
     from types import FunctionType
     from ppi_dispatch import run_ppi
-    continuation = FunctionType(continue_after_review.__code__, dict(continue_after_review.__globals__, run_ppi=run_ppi))
+    continuation = FunctionType(continue_after_review.__code__, dict(continue_after_review.__globals__, run_ppi=run_ppi, run_enrichment=run_enrichment))
     result = continuation(workflow, task["study_id"])
     print("自动接续结果：", result, flush=True)
     manager.update(task["task_id"], progress={"step_zh": "已停在下一人工关口", "done": 1, "total": 1})
