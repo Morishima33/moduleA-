@@ -13,7 +13,9 @@ def run_reports(workflow, study_id, expected_a07, reason, **kwargs): # 网页和
     record = selected_record(workflow,manifest) # 同时核验批准图件指纹。
     a04 = manifest.get('current', {}).get('A04')
     a05 = manifest.get('current', {}).get('A05')
-    if a04 and a05 and workflow.result(manifest,a04).get('summary',{}).get('selection_version') == 'A04.dual.3' and workflow.result(manifest,a05).get('summary',{}).get('display_version') == 'A05.display.2':
+    if a04 and a05 and workflow.result(manifest,a04).get('summary',{}).get('selection_version') == 'A04.dual.3' and workflow.result(manifest,a05).get('summary',{}).get('display_version') == 'A05.display.3':
+        from science_modules.a07.compact_enrichment_reports import run_reports as generate
+    elif a04 and a05 and workflow.result(manifest,a04).get('summary',{}).get('selection_version') == 'A04.dual.3' and workflow.result(manifest,a05).get('summary',{}).get('display_version') == 'A05.display.2':
         from science_modules.a07.enrichment_reports import run_reports as generate
     elif a04 and workflow.result(manifest, a04).get('summary', {}).get('selection_version') == 'A04.dual.3':
         from science_modules.a07.circular_reports import run_reports as generate
@@ -26,7 +28,7 @@ def run_reports(workflow, study_id, expected_a07, reason, **kwargs): # 网页和
     return generate(workflow,study_id,expected_a07,reason,**kwargs) # 完整A07仍待人工复核。
 
 def validator(root): # 新旧报告均按自身保存契约校验。
-    from science_modules.a07.enrichment_reports import validator as validate # 新校验器兼容已归档旧报告。
+    from science_modules.a07.compact_enrichment_reports import validator as validate # 新校验器兼容已归档旧报告。
     return validate(root) # 不迁移或改写历史结果。
 
 def require_alignment(workflow, manifest, run): # 完整报告批准前核对可选通路最新决定。

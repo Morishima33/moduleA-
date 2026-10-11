@@ -85,7 +85,7 @@ def full_workflow(data_root: Path) -> Workflow:
     from disease import validate_disease
     from intersection_flow import validate_intersection, validate_selection
     from ppi_dispatch import validator as ppi_validator, docking_validator
-    from science_modules.a05.display_flow import validator as enrichment_validator
+    from science_modules.a05.compact_flow import validator as enrichment_validator
     from docking_formal import prep_validator, formal_validator
     from report_dispatch import validator as report_validator
 

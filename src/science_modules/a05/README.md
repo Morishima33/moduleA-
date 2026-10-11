@@ -41,3 +41,7 @@ A05.1采用人类注释、clusterProfiler 4.14.6的ORA；GO的BP、CC、MF分别
 用户已批准展示微调和确认方案，覆盖前文等待微调的状态。本轮实际研究已执行冻结A05.1统计并生成独立新预览，待用户清单、版式和A05结果确认。新增display.py、display_flow.py、figures.py、term_translations.json、report_section.py，职责见[完整说明](../../../docs/A05富集图表与人工确认_v2_20261011.md)。GO各类图前八、表前十五；KEGG图前十五、显著性及Count两表各前十。默认不排除；科研配色同源PNG/SVG；未知译名待核译。后台接续使用display_flow.run_enrichment，生成待确认图表，validator同入口调度。flow.py只适配本A03父版本同指纹HGNC与R绝对代码路径，原四文件冻结。实际研究和审阅Word不进GitHub，完整专业报告第18版须当前A06等上游全部通过。
 
 本轮大纲增补已于2026-10-11获用户明确确认，见[已确认条目](../../../docs/A05富集图表与人工确认_v2_20261011.md)。此确认不代替具体研究的排除清单、版式和A05结果复核，不改变计算或审批状态。
+
+## 2026-10-11 第三版紧凑展示（现行）
+
+新增compact_display、compact_figures、compact_flow和compact_report_section，职责见[第三版索引](../../../docs/A05紧凑核查与中英文分列_v3_20261011.md)。旧第二版实现保留；现行确认及自动接续使用第三版，旧归档按旧版本校验。版式修订复用统计，不运行R；GO图字节保持，KEGG单蓝渐变。已有确认排除范围保留，新版式须用户确认。

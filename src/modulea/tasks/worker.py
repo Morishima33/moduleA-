@@ -22,7 +22,7 @@ from .manager import TaskManager
 def run_continue(settings: Settings, task: dict, manager: TaskManager) -> str:
     """自动接续：导入完整科学依赖，生成下一批待复核结果。返回给用户看的中文说明。"""
     from auto_continue import continue_after_review, message
-    from science_modules.a05.display_flow import run_enrichment
+    from science_modules.a05.compact_flow import run_enrichment
 
     manager.update(task["task_id"], progress={"step_zh": "按依赖顺序检查并生成下一批结果", "done": 0, "total": 1})
     workflow = full_workflow(settings.data_root)
@@ -120,7 +120,7 @@ def run_a04_identity(settings: Settings, task: dict, manager: TaskManager) -> st
 
 # A05展示确认只重绘归档，不重新计算ORA、不代签或启动后续模块。
 def run_a05_display(settings: Settings, task: dict, manager: TaskManager) -> str:
-    from science_modules.a05.display_flow import apply_confirmation
+    from science_modules.a05.compact_flow import apply_confirmation
     payload = json.loads(task.get("payload") or "{}")
     manager.update(task["task_id"], progress={"step_zh":"保存人工确认并生成同源图表","done":0,"total":1})
     result = apply_confirmation(full_workflow(settings.data_root),task["study_id"],payload)

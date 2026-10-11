@@ -85,7 +85,7 @@ def map_state(module_id: str, raw: dict, task_active: bool = False) -> ModuleSta
 
     can_review = state in ("awaiting_review", "pending", "rejected", "approved")
     label=LABELS[code]
-    if module_id=="A05" and code=="waiting" and summary.get("display_version")=="A05.display.2":
+    if module_id=="A05" and code=="waiting" and summary.get("display_version") in ("A05.display.2","A05.display.3"):
         pending=[]
         if not summary.get("display_exclusions_confirmed"):pending.append("KEGG展示范围确认")
         if not summary.get("display_layout_confirmed"):pending.append("GO/KEGG图表版式确认")

@@ -221,3 +221,7 @@ POST .../modules/A04/actions/identity_plan：{expected_a03,expected_a04,expected
 ## 2026-10-11 A04复核后的方案状态文字
 
 identity_plan.latest.status_zh在方案已应用且绑定A04被Workflow判定已批准时显示“已应用，A04已通过复核”；未批准仍显示待独立复核，保存未应用仍显示任务结果提示。不新增字段、不改变批准或门控；该文案不由任务成功直接推断批准。
+
+## 2026-10-11 A05第三版紧凑展示
+
+原字段及确认请求契约保持，A05.display.3仍输出同源enrichment_display_tables及enrichment_graphs。前端将Description、description_zh分列，疾病核查25条分页；reason_zh仍完整归档并可展开。接口不重算BH、不改变排除或审批。专业报告第19版同步列序，旧报告继续按旧配置校验。

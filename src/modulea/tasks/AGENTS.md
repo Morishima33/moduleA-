@@ -27,3 +27,7 @@ continue后台使用science_modules/a05/flow.run_enrichment，full_workflow登�
 ## A05第二版展示及人工确认
 
 现行continue使用science_modules/a05/display_flow.run_enrichment：冻结A05.1统计完成后生成A05.display.2待确认预览。新增a05_display任务接收明确清单或版式确认，归档用户决定和新展示，失败保留记录、重试复用，统计不重算，绝不自动批准A05或启动A06。full_workflow登记display_flow.validator，旧版委托flow.validator。公开接口绑定研究、A03、A05及最新决定，历史/回收站/过期/忙碌状态拒绝。
+
+## 2026-10-11 A05第三版展示入口
+
+现行continue及a05_display使用science_modules/a05/compact_flow，full_workflow登记其validator并委托旧版历史核验。用户要求的版式修订通过revise_layout复用原统计、译名和排除范围，生成A05.display.3；新版式待用户确认，不运行R、不代签A05或启动A06。未新增公开任务类型或后台监听。

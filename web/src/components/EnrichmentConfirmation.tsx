@@ -44,7 +44,9 @@ export default function EnrichmentConfirmation({ studyId, info }: { studyId: str
   // 证据行展示实际命中基因和原通路链接，查看证据不会自动确认。
   const columns = [
     { title: '排除', key: 'select', width: 70, render: (_: unknown, row: EnrichmentCatalogRow) => <Checkbox aria-label={'从展示中排除 '+row.ID} checked={selected.includes(row.ID)} disabled={!writable} onChange={e => toggle(row.ID, e.target.checked)} /> },
-    { title: '通路名称（英文＋中文）', key: 'term', render: (_: unknown, row: EnrichmentCatalogRow) => <div style={{ overflowWrap: 'anywhere' }}><strong>{row.description_zh || '中文待核译'}</strong><div className="small">{row.Description.replace(' - Homo sapiens (human)', '')}</div><span className="mono tiny muted">{row.ID}</span>{row.proposed && <Tag style={{ marginLeft: 8 }}>拟排除，待确认</Tag>}<p className="small muted" style={{ margin: '5px 0' }}>{row.reason_zh || '未列入拟排除清单；如需排除，请在核验说明中记录理由。'}</p></div> },
+    // 中文名后只保留疾病标题提示；完整理由随证据展开，避免逐行重复。
+    { title: '疾病／通路名称（中文）', key: 'term', render: (_: unknown, row: EnrichmentCatalogRow) => <div style={{ overflowWrap: 'anywhere' }}><strong>{row.description_zh || '中文待核译'}</strong>{row.proposed && <span className="tiny muted" style={{ marginLeft: 8 }}>明确的其他疾病标题</span>}</div> },
+    { title: '英文名称', key: 'english', render: (_: unknown, row: EnrichmentCatalogRow) => <span style={{ overflowWrap: 'anywhere' }}>{row.Description.replace(' - Homo sapiens (human)', '')}<span className="mono tiny muted" style={{ marginLeft: 8 }}>{row.ID}</span></span> },
     { title: 'Count', dataIndex: 'Count', width: 72 },
     { title: '校正后P值', dataIndex: 'p.adjust', width: 110, render: (p: number) => <span className="mono" title={String(p)}>{fmtP(p)}</span> },
   ];
@@ -83,6 +85,6 @@ export default function EnrichmentConfirmation({ studyId, info }: { studyId: str
       <Button disabled={!writable || !selected.length} onClick={() => { setSelected([]); setScopeChecked(false); setLayoutChecked(false); }}>全部取消勾选</Button>
     </Space>
     <p className="tiny muted">全选范围为当前筛选的全部条目，包含其他分页；切换列表不会清除已有选择。候选只是展示建议，共享机制仍须结合命中基因核查。</p>
-    <Table rowKey="ID" size="small" dataSource={filtered} columns={columns} scroll={{ x: 680 }} pagination={{ pageSize: 8, showSizeChanger: false, showTotal: total => '共 '+total+' 项' }} locale={{ emptyText: '当前筛选没有条目；可切换至全部显著通路。' }} expandable={{ expandedRowRender: row => <div><p className="small" style={{ overflowWrap: 'anywhere' }}>实际命中基因：{row.gene_symbols || '原归档未提供符号，请查明细'}</p><a href={row.evidence_url} target="_blank" rel="noreferrer">查看官方通路定义与机制依据</a></div>, columnTitle: '证据', expandIcon: ({ expanded, onExpand, record }) => <Button size="small" onClick={e => onExpand(record,e)}>{expanded ? '收起' : '查看'}</Button>, columnWidth: 65 }} />
+    <Table rowKey="ID" size="small" dataSource={filtered} columns={columns} scroll={{ x: 680 }} pagination={{ pageSize: 25, showSizeChanger: false, showTotal: total => '共 '+total+' 项' }} locale={{ emptyText: '当前筛选没有条目；可切换至全部显著通路。' }} expandable={{ expandedRowRender: row => <div>{row.reason_zh && <p className="small muted">{row.reason_zh}</p>}<p className="small" style={{ overflowWrap: 'anywhere' }}>实际命中基因：{row.gene_symbols || '原归档未提供符号，请查明细'}</p><a href={row.evidence_url} target="_blank" rel="noreferrer">查看官方通路定义与机制依据</a></div>, columnTitle: '证据', expandIcon: ({ expanded, onExpand, record }) => <Button size="small" onClick={e => onExpand(record,e)}>{expanded ? '收起' : '查看'}</Button>, columnWidth: 65 }} />
   </section>;
 }

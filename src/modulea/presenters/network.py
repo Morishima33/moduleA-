@@ -266,7 +266,7 @@ def present_a05(result: dict, ctx: dict) -> Parts:
             for r in rows
         ]
     parts.special["enrichment_top"] = top
-    if s.get("display_version") == "A05.display.2":
+    if s.get("display_version") in ("A05.display.2","A05.display.3"):
         # 新展示直接读取完整显著表派生的已归档排名，不再沿用旧前十/二十截断。
         parts.special.pop("enrichment_top")
         parts.special["enrichment_display_tables"] = {name:t.get(name,[]) for name in ("bp_top15","cc_top15","mf_top15","kegg_p_top10","kegg_count_top10","kegg_excluded")}
