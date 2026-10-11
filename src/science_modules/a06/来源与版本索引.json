@@ -225,7 +225,25 @@
     {
       "path": "src/modulea/core/docking_workflow.py",
       "sha256": "03d5277de39ae804d3677efdca9262837c4e6c721bad502929029ab8f6fa34e4"
+    },
+    {
+      "path": "src/science_modules/a06/two_pass.py",
+      "sha256": "9bd94924999aa5b32fcff9d1911aa0ce284d809cdfbe7dc4237905273634fbf8"
+    },
+    {
+      "path": "src/science_modules/a06/two_pass_plan.py",
+      "sha256": "8eecd8a68b0273e073ee2a2137edf98e79d8a88f71f938108b17638961db2213"
+    },
+    {
+      "path": "src/modulea/core/two_pass_workflow.py",
+      "sha256": "ac5f5b33583982097e2187c8da22537939dd181043474b147888b051c7c2567f"
     }
   ],
-  "adapter_note_zh": "两梯队方案与结果元数据适配独立存放；真实计算入口关闭，24个冻结科学文件未修改。"
+  "adapter_note_zh": "两遍人工方案、来源三维与新准备/结果契约独立存放；真实计算入口关闭，24个冻结科学文件未修改。",
+  "two_pass_versions": {
+    "policy": "A06.two_pass.policy.1",
+    "plan": "A06.two_pass.plan.1",
+    "preparation": "A06.two_pass.preparation.1",
+    "result": "A06.two_pass.result.1"
+  }
 }

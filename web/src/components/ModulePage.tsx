@@ -11,6 +11,8 @@ import { stateStyle, taskColor } from '../lib/theme';
 import { StatusPill } from './common';
 import DataTabs from './DataTabs';
 import DockingCandidates from './DockingCandidates';
+import CompoundSelection from './CompoundSelection';
+import DockingPreparation from './DockingPreparation';
 import { FlowChain, FocusSection, KnowSection, KpiGrid } from './ModuleSections';
 import EnrichmentTop from './special/EnrichmentTop';
 import EnrichmentConfirmation from './EnrichmentConfirmation';
@@ -72,7 +74,9 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
         </div>
       </section>
 
-      {view.docking_candidates && m.module_id !== 'A04' && <DockingCandidates studyId={studyId} moduleId={m.module_id} info={view.docking_candidates} />}
+      {view.compound_selection && <CompoundSelection studyId={studyId} info={view.compound_selection}/>}
+      {view.docking_preparation && <DockingPreparation studyId={studyId} info={view.docking_preparation}/>}
+      {view.docking_candidates && m.module_id !== 'A04'  && <DockingCandidates studyId={studyId} moduleId={m.module_id} info={view.docking_candidates} />}
       {view.enrichment_display && <EnrichmentConfirmation studyId={studyId} info={view.enrichment_display} onPendingChange={setKeggPending} />}
       {/* 待核验事项紧接标题；证据直接展开，不藏在结果末尾。 */}
       {!view.historical && <FocusSection items={view.focus} evidence={sp.ppi_identity ? <IdentityReview studyId={studyId} view={view} data={sp.ppi_identity} /> : undefined} />}

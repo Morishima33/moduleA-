@@ -16,6 +16,7 @@ from ..core.kernel import ContractError, Kernel, read_json, verified_file
 from ..core.identity_workflow import plan_view
 from ..core.enrichment_workflow import display_context
 from ..core.docking_workflow import candidate_context
+from ..core.two_pass_workflow import selection_context, preparation_context
 from ..core.status import LABELS, map_state, unavailable
 from ..presenters import present
 from ..tasks.manager import TaskManager
@@ -303,6 +304,8 @@ class Views:
             "identity_plan": plan_view(workflow, real, run, result, ppi_enabled and bool(run) and workflow.active(real, run["run_id"]), historical) if module_id == "A04" else None,
             "enrichment_display": enrichment_info,
             "docking_candidates": candidates_info,
+            "compound_selection": selection_context(workflow,real,historical,bool(self.tasks.active_for(study_id))) if module_id=="A03_SELECT" else None,
+            "docking_preparation": preparation_context(workflow,real,historical,bool(self.tasks.active_for(study_id))) if module_id=="A06_PREP" else None,
             "source_uploads": upload_context(workflow, real, module_id, result, historical, bool(self.tasks.active_for(study_id))) if not historical else None,
         }
 

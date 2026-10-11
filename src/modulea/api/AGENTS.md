@@ -239,3 +239,13 @@ GET /studies/{sid}/docking_candidates/{group_id}：仅下载本研究索引中�
 A=Degree第二轮前十∩BC/CC第二轮前十五；B=Degree第二轮前十五去除A；身份按HGNC。A/B是本项目候选证据分组，与结构质控和临床证据等级独立。更换A03/A04或撤回/重签A04后旧分组不可作当前输入；旧归档和批准保留。候选归档不使旧A06_PREP/A06自动恢复有效。
 
 当前A04已有有效候选归档时，focus不再显示旧“对接来源待确认”，图注改为已归档A/B规则及独立结构质控提示；历史页及尚无分组时原提示保留。科学summary中的历史未定记录不回写。
+
+## A06两遍方案及成分选择（2026-10-11）
+新增ModuleView.compound_selection及docking_preparation：只读当前来源、草案、资料状态和人工方案，不推算科学成功。
+POST /studies/{sid}/modules/A03_SELECT/actions/selection：{expected_a03,expected_select,selected,manual_supplements,reviewer,reason,confirmed:true}，后台a03_selection调用既有选择规则，生成待复核版本，不自动批准。
+POST /studies/{sid}/modules/A06_PREP/actions/two_pass_plan：{expected_source,expected_plan_id,confirmed_target_ids,reviewer,note,confirmed:true,plan}，后台a06_plan仅保存A06.two_pass.plan.1。plan含policy_version、compounds、receptors、package_id、pymol_executable；每受体保留first/second结构方案及原因，第二遍实验/AlphaFold，核查项不足不可批量确认。
+POST /studies/{sid}/modules/A06_PREP/actions/material：{expected_source,compound_id,cid,name,content_base64}，仅独立归档用户提供的来源SDF，身份待后续准备核验，不生成三维构象、不自动批准。
+以上写入口均核对当前研究、批准来源、过期/历史/回收站/任务忙碌，使用原令牌和同源保护。计算入口继续关闭；保存完整方案不表示严格质控或对接成功。
+
+POST .../modules/A06_PREP/actions/check_two_pass：{expected_source,plan}→{items:[{target_id,valid,bulk_allowed,reason_zh}],calculation_started:false}；无写入，只校验完整当前受体草案。valid只表示字段/来源满足人工确认要求，不能显示为科学通过。明确NA项valid=true且bulk_allowed=false；未提供资料/格式失败两者均false。
+后台任务payload沿用manager既定字段，重试使用同一内部plan_id，已保存同一请求不重复追加；更换来源/方案后旧请求阻断。结果契约需同源input_key、Vina版本和完整组合覆盖；completed必须Top-1及实际归档姿势指纹通过，NA须null评分和原因。本轮未新增真实计算入口。

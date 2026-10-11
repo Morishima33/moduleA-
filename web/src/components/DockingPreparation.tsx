@@ -1,0 +1,83 @@
+// A06两遍方案核查：显眼确认、服务端资格、跨页选择；不显示伪质控或评分。
+import {Alert,Button,Checkbox,Collapse,Form,Input,InputNumber,Modal,Select,Table,Tag,message} from 'antd';
+import {useEffect,useState} from 'react';
+import type {DockingPreparationInfo,TwoPassPlan,TwoPassRow,TwoPassCompound,StructureSpec,PlanRowCheck} from '../api/types';
+import {api,errorText} from '../api/client';
+import {useApp} from '../lib/appContext';
+import {hrefFor} from '../lib/route';
+
+// 结构表单只登记来源与口袋选择；尚未运行的置信度和RMSD不让用户填成事实。
+function StructureFields({prefix,mode,first}:{prefix:string;mode:string;first:boolean}){
+ const pocket=Form.useWatch(prefix+'_pocket');if(mode==='none')return null;
+ return <><Form.Item name={prefix+'_uniprot'} label="UniProt编号" rules={[{required:true}]}><Input/></Form.Item>
+ <Form.Item name={prefix+'_chains'} label="明确蛋白链（逗号分隔）" rules={[{required:true}]}><Input/></Form.Item>
+ {mode==='alphafold'?<><Form.Item name={prefix+'_model_id'} label="AlphaFold模型编号" rules={[{required:true}]}><Input placeholder="AF-蛋白编号-F1"/></Form.Item><Form.Item name={prefix+'_sequence_start'} label="模型序列起点" rules={[{required:true}]}><InputNumber min={1}/></Form.Item><Form.Item name={prefix+'_sequence_end'} label="模型序列终点" rules={[{required:true}]}><InputNumber min={2}/></Form.Item><Alert type="info" message="仅登记已有模型方案；后续评估首位口袋pLDDT均值≥80、各残基≥70及双向PAE≤10Å。"/></>:<>
+ <Form.Item name={prefix+'_pdb_id'} label="PDB编号" rules={[{required:true}]}><Input/></Form.Item>
+ <Form.Item name={prefix+'_pocket'} label="口袋依据" rules={[{required:true}]}><Select options={first?[{value:'reference',label:'共晶参考配体'}]:[{value:'reference',label:'共晶参考配体'},{value:'p2rank',label:'P2Rank首位预测口袋（探索）'}]}/></Form.Item>
+ <Form.Item name={prefix+'_altloc'} label="替代构象选择" rules={[{required:true}]}><Select options={[{value:'none',label:'无替代构象（后续核验）'},{value:'A',label:'构象A'},{value:'B',label:'构象B'}]}/></Form.Item>
+ {pocket==='reference'&&<><Form.Item name={prefix+'_reference_code'} label="参考配体代码" rules={[{required:true}]}><Input/></Form.Item><Form.Item name={prefix+'_reference_chain'} label="参考配体作者链" rules={[{required:true}]}><Input/></Form.Item><Form.Item name={prefix+'_reference_sequence'} label="参考配体残基编号" rules={[{required:true}]}><Input/></Form.Item></>}</>}
+ </>;
+}
+
+// 克隆编辑草案，响应轮询不覆盖用户未保存输入；身份或方案版本变更才重载。
+export default function DockingPreparation({studyId,info}:{studyId:string;info:DockingPreparationInfo}){
+ const app=useApp();const [plan,setPlan]=useState<TwoPassPlan>(info.plan);const [checks,setChecks]=useState<PlanRowCheck[]>(info.checks||[]);
+ const [checked,setChecked]=useState<string[]>([]);const [page,setPage]=useState(1);const [dirty,setDirty]=useState(false);
+ const [reviewer,setReviewer]=useState('');const [note,setNote]=useState('');const [confirmed,setConfirmed]=useState(false);const [error,setError]=useState('');const [busy,setBusy]=useState(false);
+ const [editing,setEditing]=useState<TwoPassRow|null>(null);const [compound,setCompound]=useState<TwoPassCompound|null>(null);const [form]=Form.useForm();const [ligandForm]=Form.useForm();
+ const firstMode=Form.useWatch('first_mode',form)||'none';const secondMode=Form.useWatch('second_mode',form)||'none';const unavailable=Form.useWatch('unavailable',form);
+ useEffect(()=>{setPlan(info.plan);setChecks(info.checks||[]);setChecked([]);setDirty(false);setConfirmed(false)},[info.expected_source,info.expected_plan_id]);
+ function touch(p:TwoPassPlan){setPlan(p);setDirty(true);setConfirmed(false)}
+ async function verify(p:TwoPassPlan){const result=await api.checkTwoPass(studyId,{expected_source:info.expected_source,plan:p});setChecks(result.items);return result.items}
+ function editRow(r:TwoPassRow){setError("");form.resetFields();const values:Record<string,unknown>={...r,first_mode:r.first?.source_type||'none',second_mode:r.second?.source_type||'none'};for(const key of ['first','second'] as const){const s=r[key];if(s)for(const [k,v] of Object.entries(s))values[key+'_'+k]=k==='chains'?(v as string[]).join(','):k==='altloc'?(v||'none'):v}form.setFieldsValue(values);setEditing(r)}
+ // 完整验证后才取得服务端勾选资格，编辑过的项必须重新确认。
+ async function applyRow(){try{const v=await form.validateFields();if(!editing)return;
+  function spec(prefix:string):StructureSpec|null{const mode=v[prefix+'_mode'];if(mode==='none'||v.unavailable)return null;
+   const base={source_type:mode,uniprot:v[prefix+'_uniprot'],chains:String(v[prefix+'_chains']||'').split(',').map(x=>x.trim()).filter(Boolean)};
+   return mode==='alphafold'?{...base,model_id:v[prefix+'_model_id'],pocket:'p2rank',sequence_start:v[prefix+'_sequence_start'],sequence_end:v[prefix+'_sequence_end']}:{...base,pdb_id:v[prefix+'_pdb_id'],pocket:v[prefix+'_pocket'],altloc:v[prefix+'_altloc']==='none'?null:v[prefix+'_altloc'],...(v[prefix+'_pocket']==='reference'?{reference_code:v[prefix+'_reference_code'],reference_chain:v[prefix+'_reference_chain'],reference_sequence:v[prefix+'_reference_sequence']}:{})};
+  }
+  const row:TwoPassRow={target_id:editing.target_id,symbol:editing.symbol,candidate_grade:editing.candidate_grade,first:spec('first'),second:spec('second'),first_reason:v.first_reason||'',second_reason:v.second_reason||'',unavailable:!!v.unavailable,reason:v.reason||''};
+  const next={...plan,receptors:plan.receptors.map(r=>r.target_id===row.target_id?row:r)};touch(next);setChecked(checked.filter(x=>x!==row.target_id));await verify(next);setEditing(null);
+ }catch(e){setError(errorText(e))}}
+ function editCompound(c:TwoPassCompound){setError("");ligandForm.resetFields();ligandForm.setFieldsValue(c);setCompound(c)}
+ async function applyCompound(){try{const v=await ligandForm.validateFields();if(!compound)return;const c:TwoPassCompound={compound_id:compound.compound_id,status:v.status,reason:v.reason,...(v.status==='use'?{cid:String(v.cid),protonation_policy:'pubchem_3d_as_provided_no_pH_prediction',...(v.material_id?{material_id:v.material_id}:{})}:{})};touch({...plan,compounds:plan.compounds.map(r=>r.compound_id===c.compound_id?c:r)});setCompound(null)}catch(e){setError(errorText(e))}}
+ async function upload(file:File){if(!compound)return;setBusy(true);try{const cid=ligandForm.getFieldValue('cid');const bytes=new Uint8Array(await file.arrayBuffer());if(bytes.length>600000)throw new Error('来源SDF文件不能超过600KB');let raw='';for(const b of bytes)raw+=String.fromCharCode(b);const r=await api.uploadDockingMaterial(studyId,{expected_source:info.expected_source,compound_id:compound.compound_id,cid,name:file.name,content_base64:btoa(raw)});ligandForm.setFieldValue('material_id',r.material.material_id);app.bumpRefresh();message.success(r.message_zh)}catch(e){setError(errorText(e))}finally{setBusy(false)}}
+ async function bulk(all:boolean){try{const list=await verify(plan);const allowed=list.filter(r=>r.valid&&r.bulk_allowed).map(r=>r.target_id);const visible=plan.receptors.slice((page-1)*20,page*20).map(r=>r.target_id);setChecked(Array.from(new Set([...checked,...allowed.filter(x=>all||visible.includes(x))])));setConfirmed(false)}catch(e){setError(errorText(e))}}
+ async function save(){setBusy(true);setError('');try{const result=await api.saveTwoPass(studyId,{expected_source:info.expected_source,expected_plan_id:info.expected_plan_id,confirmed_target_ids:checked,reviewer,note,confirmed,plan});app.trackTasks([result.task]);app.bumpRefresh();message.success(result.message_zh)}catch(e){setError(errorText(e))}finally{setBusy(false)}}
+ if(!info.plan)return <section className="card" id="a06-two-pass"><h2>A06 待你核查</h2><Alert type="warning" message={info.disabled_reason_zh}/><Button type="primary" href={hrefFor({page:'study',studyId,moduleId:'A03_SELECT'})}>前往成分名单核查与复核</Button></section>;
+ const checkMap=new Map(checks.map(r=>[r.target_id,r]));
+ return <section className="card" id="a06-two-pass"><h2>A06 需要你确认：成分 → 两遍受体方案</h2>
+ <Alert type="info" message={info.status_zh} description={'计划 '+info.planned_pair_count+' 个组合；当前没有执行真实准备或对接。保存方案不表示质控通过。'}/>
+ {!info.enabled&&<Alert type="warning" message={info.disabled_reason_zh}/>}
+ {info.latest&&<p className="small">已留存核验人：{info.latest.reviewer}；依据：{info.latest.note}。</p>}
+ {dirty&&<Alert type="warning" message="有未保存修改，图表和质控状态尚未生成。"/>}
+ <h3>1 对接成分与来源三维资料</h3>
+ <Table<TwoPassCompound> rowKey="compound_id" size="small" pagination={false} dataSource={plan.compounds} scroll={{x:600}} columns={[{title:'成分',render:(_,r)=>info.context.compounds.find(c=>c.compound_id===r.compound_id)?.name||r.compound_id},{title:'编号',dataIndex:'compound_id'},{title:'来源状态',render:(_,r)=>r.status==='use'?'来源三维，待身份核验':r.status==='unavailable'?'暂无法计算':'待填写'},{title:'操作',render:(_,r)=><Button disabled={!info.enabled} onClick={()=>editCompound(r)}>核查成分与三维资料</Button>}]}/>
+ <h3>2 受体两遍方案</h3><p className="small">第一遍严格；未通过者才进入第二遍。A/B候选级别与结构质控分别记录。</p>
+ <Collapse size="small" items={[{key:'policy',label:'查看严格要求及第二遍边界',children:<p>共晶Top-1重对接RMSD≤2Å；第二遍优先独立实验结构，再用已有AlphaFold模型。预测口袋为P2Rank首位，两次一致。AlphaFold口袋均值pLDDT≥80、各残基≥70、双向PAE≤10Å。严格不足5个仍可探索，主要结果条件保持。配体只接受来源三维。</p>}]}/>
+ <div className="toolbar"><Button disabled={!info.enabled||busy} onClick={()=>bulk(false)}>全选本页可确认项</Button><Button disabled={!info.enabled||busy} onClick={()=>bulk(true)}>全选全部可确认项</Button><Button onClick={()=>{setChecked([]);setConfirmed(false)}}>全部取消</Button><span>已核对 {checked.length} / {plan.receptors.length}</span></div>
+ <Table<TwoPassRow> rowKey="target_id" size="small" dataSource={plan.receptors} pagination={{pageSize:20,current:page,onChange:setPage,showSizeChanger:false}} scroll={{x:820}}
+ rowSelection={{selectedRowKeys:checked,preserveSelectedRowKeys:true,hideSelectAll:true,onChange:keys=>{setChecked(keys.map(String));setConfirmed(false)},getCheckboxProps:r=>({disabled:!info.enabled||!checkMap.get(r.target_id)?.valid})}}
+ columns={[{title:'基因 / HGNC',render:(_,r)=><>{r.symbol}<div className="tiny muted">{r.target_id}</div></>},{title:'候选级别',dataIndex:'candidate_grade',render:(v:string)=><Tag>{v}</Tag>},{title:'第一遍',render:(_,r)=>r.first?.pdb_id||r.first_reason||'待提供实验结构'},{title:'第二遍',render:(_,r)=>r.second?.model_id||r.second?.pdb_id||'未配置补救'},{title:'结构质控',render:(_,r)=>r.unavailable?'本次无法计算':'尚未计算验证'},{title:'核查与证据',render:(_,r)=><><Button size="small" disabled={!info.enabled} onClick={()=>editRow(r)}>核查方案</Button><Collapse size="small" items={[{key:'detail',label:'方案与缺口',children:<p className="small">{checkMap.get(r.target_id)?.reason_zh}<br/>{r.second_reason||r.reason}</p>}]}/></>}]}/>
+ <p className="small muted">资料缺失项不参与全选；明确暂无法计算项需单项确认，仍保留全部组合和NA原因。</p>
+ <h3>3 保存并确认方案</h3>
+ <Input aria-label="任务包编号" placeholder="明确任务包编号，例如D编号（至少三位数字）" value={plan.package_id} onChange={e=>touch({...plan,package_id:e.target.value})}/>
+ <Input aria-label="PyMOL程序路径" placeholder="PyMOL程序路径（本轮可留空，准备前再核验）" value={plan.pymol_executable} onChange={e=>touch({...plan,pymol_executable:e.target.value})}/>
+ <Input aria-label="方案核验人" placeholder="实际方案核验人" value={reviewer} onChange={e=>setReviewer(e.target.value)}/>
+ <Input.TextArea aria-label="方案核验依据" placeholder="结构、补救与无法计算项的核验依据" value={note} onChange={e=>setNote(e.target.value)}/>
+ <Checkbox checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}>已核对全部受体与配体方案，理解探索结果的限制</Checkbox>
+ <Button type="primary" loading={busy} disabled={!info.enabled||!confirmed||!reviewer.trim()||!note.trim()||checked.length!==plan.receptors.length} onClick={save}>保存并确认方案</Button>
+ {error&&<Alert type="error" message={error}/>}
+ <Modal title={editing?editing.symbol+'：两遍结构方案':''} open={!!editing} onCancel={()=>setEditing(null)} onOk={applyRow} okText="校验并更新草案" cancelText="取消" width={700}>
+ {error&&<Alert type="error" message={error}/>}<Form form={form} layout="vertical"><Form.Item name="unavailable" valuePropName="checked"><Checkbox>本次暂无法计算（保留对象与NA原因）</Checkbox></Form.Item>
+ {unavailable?<Form.Item name="reason" label="无法计算原因" rules={[{required:true}]}><Input.TextArea/></Form.Item>:<>
+ <Form.Item name="first_mode" label="第一遍结构"><Select options={[{value:'none',label:'未提供合适实验结构'},{value:'experimental',label:'实验结构＋共晶参考配体'}]}/></Form.Item><StructureFields prefix="first" mode={firstMode} first/>
+ <Form.Item name="first_reason" label="第一遍无结构时的说明" rules={firstMode==='none'?[{required:true}]:[]}><Input.TextArea/></Form.Item>
+ <Form.Item name="second_mode" label="第二遍独立补救结构"><Select options={[{value:'none',label:'暂不配置'},{value:'experimental',label:'另一个实验结构'},{value:'alphafold',label:'已有AlphaFold预测模型（探索）'}]}/></Form.Item><StructureFields prefix="second" mode={secondMode} first={false}/>
+ <Form.Item name="second_reason" label="第二遍补救依据" rules={secondMode!=='none'?[{required:true}]:[]}><Input.TextArea/></Form.Item></>}</Form>
+ </Modal>
+ <Modal title="来源三维配体核查" open={!!compound} onCancel={()=>setCompound(null)} onOk={applyCompound} okText="更新草案" cancelText="取消">
+ {error&&<Alert type="error" message={error}/>}<Form form={ligandForm} layout="vertical"><Form.Item name="status" label="本次处理" rules={[{required:true}]}><Select options={[{value:'use',label:'使用来源三维结构（后续核验）'},{value:'unavailable',label:'暂无可用来源三维结构，保留NA'}]}/></Form.Item><Form.Item name="cid" label="PubChem CID"><Input/></Form.Item><Form.Item name="material_id" label="已上传资料版本（可选）"><Select allowClear options={info.materials.filter(m=>m.compound_id===compound?.compound_id).map(m=>({value:m.material_id,label:m.name+' · '+m.state_zh}))}/></Form.Item><label>补充同一身份的来源SDF（不本地生成）<input type="file" accept=".sdf" disabled={busy} onChange={e=>{const f=e.target.files?.[0];if(f)void upload(f);e.target.value=''}}/></label><Form.Item name="reason" label="来源、身份或暂停依据" rules={[{required:true}]}><Input.TextArea/></Form.Item></Form>
+ </Modal>
+ </section>
+}

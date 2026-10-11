@@ -140,7 +140,18 @@ def run_a06_candidates(settings: Settings,task: dict,manager: TaskManager) -> st
     manager.update(task["task_id"],progress={"step_zh":"候选已留存，真实对接未启动","done":1,"total":1})
     return f"候选分组已生成：A组{data['counts']['a']}个、B组{data['counts']['b']}个；结构质控仍需独立核查。"
 
-HANDLERS = {"a06_candidates": run_a06_candidates, "a05_display": run_a05_display, "a04_identity": run_a04_identity, "a04_ppi": run_a04_ppi, "continue": run_continue, "source_upload": run_source_upload, "a01_sources": run_a01_sources}
+# 两个新任务只留存人工决定，不调用prepare/execute或自动接续。
+def run_a03_selection(settings,task,manager):
+    payload=json.loads(task.get("payload") or "{}")
+    result=full_workflow(settings.data_root).save_selection(task["study_id"],payload)
+    return "对接成分选择已保存；请在复核栏独立确认，不会自动运行对接。"
+
+def run_a06_plan(settings,task,manager):
+    payload=json.loads(task.get("payload") or "{}")
+    data=full_workflow(settings.data_root).save_two_pass(task["study_id"],payload)
+    return "两遍方案已确认并留存；真实准备、重对接与Vina未启动。"
+
+HANDLERS = {"a03_selection":run_a03_selection,"a06_plan":run_a06_plan,"a06_candidates": run_a06_candidates, "a05_display": run_a05_display, "a04_identity": run_a04_identity, "a04_ppi": run_a04_ppi, "continue": run_continue, "source_upload": run_source_upload, "a01_sources": run_a01_sources}
 
 
 def run_task(settings: Settings, task_id: str) -> int:

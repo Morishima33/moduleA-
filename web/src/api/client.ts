@@ -112,6 +112,12 @@ export const api = {
   /** 仅生成两梯队名单，不启动对接或代签 */
   dockingCandidates: (sid: string, mid: string, body: { expected_a03: string; expected_a04: string; expected_a04_review: string; reason: string }) =>
     request<{ task: Task; created: boolean; message_zh: string }>('POST', '/studies/' + sid + '/modules/' + mid + '/actions/docking_candidates', body),
+  /** 新名单生成待复核版本，保存不等于通过。 */
+  saveCompoundSelection:(sid:string,body:unknown)=>request<{task:Task;created:boolean;message_zh:string}>('POST','/studies/'+sid+'/modules/A03_SELECT/actions/selection',body),
+  /** 草案校验只返回可确认资格，不执行科学工具。 */
+  checkTwoPass:(sid:string,body:unknown)=>request<{items:import('./types').PlanRowCheck[]}>('POST','/studies/'+sid+'/modules/A06_PREP/actions/check_two_pass',body),
+  saveTwoPass:(sid:string,body:unknown)=>request<{task:Task;created:boolean;message_zh:string}>('POST','/studies/'+sid+'/modules/A06_PREP/actions/two_pass_plan',body),
+  uploadDockingMaterial:(sid:string,body:unknown)=>request<{material:import('./types').DockingMaterial;message_zh:string}>('POST','/studies/'+sid+'/modules/A06_PREP/actions/material',body),
   /** 单个模块复核 */
   review: (sid: string, mid: string, body: { run_id: string; expected_review_id: string | null; decision: Decision; reviewer: string; note: string; after: 'save' | 'continue' }) =>
     request<ReviewResponse>('POST', `/studies/${sid}/modules/${mid}/reviews`, body),

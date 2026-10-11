@@ -222,6 +222,8 @@ export interface Special {
 
 /** 模块页 */
 export interface ModuleView {
+  compound_selection?:CompoundSelectionInfo|null;
+  docking_preparation?:DockingPreparationInfo|null;
   docking_candidates?: DockingCandidatesInfo | null;
   module: { module_id: string; title_zh: string; group_zh: string; purpose_zh: string; sub: boolean; depends_on: string[] };
   state: { code: StateCode; label_zh: string; reason_zh: string | null; raw_state: string; is_empty_result: boolean; handoff_blocked: boolean; can_review: boolean };
@@ -295,3 +297,14 @@ export interface DockingCandidatesInfo {
     counts: { a: number; b: number; degree_top10: number; bc_cc_top15: number; degree_top15: number };
   };
 }
+
+/** 对接成分选择与两遍方案来自后端，字段完整不表示质控已通过。 */
+export interface CompoundChoiceRow { compound_id:string; name:string; herbs:string[]; intersection_count:number; main_rank:number; eligible:boolean; suggestion_zh:string }
+export interface CompoundSelectionInfo { enabled:boolean; disabled_reason_zh:string; expected_a03:string; expected_select:string; rows:CompoundChoiceRow[]; current_selected:string[]; previous_rows:CompoundChoiceRow[]; previous_active:boolean; rule_zh:string }
+export interface StructureSpec { source_type:'experimental'|'alphafold'; uniprot:string; chains:string[]; pocket:'reference'|'p2rank'; pdb_id?:string; model_id?:string; sequence_start?:number; sequence_end?:number; altloc?:string|null; reference_code?:string; reference_chain?:string; reference_sequence?:string }
+export interface TwoPassRow {target_id:string;symbol:string;candidate_grade:string;first:StructureSpec|null;first_reason:string;second:StructureSpec|null;second_reason:string;unavailable:boolean;reason:string}
+export interface TwoPassCompound {compound_id:string;status:'use'|'unavailable'|null;cid?:string;reason:string;protonation_policy?:string;material_id?:string}
+export interface TwoPassPlan {policy_version:string;package_id:string;pymol_executable:string;compounds:TwoPassCompound[];receptors:TwoPassRow[]}
+export interface PlanRowCheck {target_id:string;valid:boolean;bulk_allowed:boolean;reason_zh:string}
+export interface DockingMaterial {material_id:string;compound_id:string;cid:string;name:string;state_zh:string}
+export interface DockingPreparationInfo {enabled:boolean;disabled_reason_zh:string;expected_source:string;expected_plan_id:string|null;policy_version:string;plan:TwoPassPlan;checks:PlanRowCheck[];materials:DockingMaterial[];context:{receptors:DockingCandidateRow[];compounds:{compound_id:string;name:string;herbs:string[]}[]};planned_pair_count:number;execution_allowed:false;status_zh:string;latest?:{reviewer:string;note:string;created_at:string}|null}

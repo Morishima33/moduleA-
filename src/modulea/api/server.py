@@ -63,6 +63,10 @@ class App:
             ("GET", rf"/api/v1/studies/{ID}/modules/{ID}/sources", self.get_sources),
             ("GET", rf"/api/v1/studies/{ID}/modules/{ID}/sources/{ID}/template", self.get_source_template),
             ("GET", rf"/api/v1/studies/{ID}/modules/{ID}/sources/{ID}/file", self.get_source_file),
+            ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/selection", self.post_selection),
+            ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/check_two_pass", self.post_check_two_pass),
+            ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/two_pass_plan", self.post_two_pass_plan),
+            ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/material", self.post_docking_material),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/docking_candidates", self.post_docking_candidates),
             ("GET", rf"/api/v1/studies/{ID}/docking_candidates/{ID}", self.get_docking_candidates),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/run_ppi", self.post_run_ppi),
@@ -315,6 +319,48 @@ class App:
         return {"task": task, "created": created, "message_zh": "三库整理任务已提交，结果仍需独立复核。" + self._task_message(task)}, 202
 
     # 页面和后台两次核对上游版本，仅登记A04科学任务。
+# 写入口先核对同源当前页面；格式与科学规则由公开Workflow再次检查。
+    def _docking_action(self,study_id,module_id,field):
+        info=self.views.module(study_id,module_id).get(field)
+        if not info:raise not_found("该模块没有本操作")
+        if not info["enabled"]:raise ApiError(409,"GATE_BLOCKED",info["disabled_reason_zh"])
+        return info
+
+    def post_selection(self,req,study_id,module_id):
+        if module_id!="A03_SELECT":raise not_found("成分选择")
+        self._docking_action(study_id,module_id,"compound_selection");payload=req.json()
+        try:self.kernel.workflow().validate_selection_request(study_id,payload)
+        except ContractError as error:raise from_contract(str(error))
+        task,created=self.tasks.submit(study_id,"a03_selection","页面成分选择",payload)
+        if not created:raise ApiError(409,"GATE_BLOCKED","当前研究已有后台任务")
+        return {"task":task,"created":created,"message_zh":"选择已提交；保存后须在复核栏独立确认。"},202
+
+    def post_check_two_pass(self,req,study_id,module_id):
+        if module_id!="A06_PREP":raise not_found("两遍方案")
+        self._docking_action(study_id,module_id,"docking_preparation")
+        try:return self.kernel.workflow().check_two_pass(study_id,req.json()),200
+        except ContractError as error:raise from_contract(str(error))
+
+    def post_two_pass_plan(self,req,study_id,module_id):
+        if module_id!="A06_PREP":raise not_found("两遍方案")
+        info=self._docking_action(study_id,module_id,"docking_preparation");payload=req.json()
+        if payload.get("expected_source")!=info["expected_source"] or payload.get("expected_plan_id")!=info["expected_plan_id"]:raise ApiError(409,"STALE_VERSION","两遍方案已改变，请刷新")
+        if set(payload)!={"expected_source","expected_plan_id","confirmed_target_ids","reviewer","note","confirmed","plan"} or payload.get("confirmed") is not True or any(not isinstance(payload.get(k),str) or not payload[k].strip() for k in ("reviewer","note")):raise ApiError(422,"VALIDATION_FAILED","请明确确认并填写核验人与依据，不接受隐藏执行参数")
+        from science_modules.a06.two_pass_plan import validate
+        try:validate(payload.get("plan"),info["context"],payload.get("confirmed_target_ids"),info["materials"])
+        except ContractError as error:raise from_contract(str(error))
+        payload["plan_id"]="plan_"+uuid.uuid4().hex
+        task,created=self.tasks.submit(study_id,"a06_plan","页面确认两遍方案",payload)
+        if not created:raise ApiError(409,"GATE_BLOCKED","当前研究已有后台任务")
+        return {"task":task,"created":created,"message_zh":"方案已提交；只保存，不执行科学计算。"},202
+
+    def post_docking_material(self,req,study_id,module_id):
+        if module_id!="A06_PREP":raise not_found("来源三维资料")
+        self._docking_action(study_id,module_id,"docking_preparation")
+        try:data=self.kernel.workflow().save_material(study_id,req.json())
+        except ValueError as error:raise from_contract(str(error))
+        return {"material":data,"message_zh":"来源三维SDF已独立归档；化学及三维身份待后续核验。"},201
+
     def post_docking_candidates(self,req,study_id,module_id):
         if module_id not in ("A04","A06_PREP"):
             raise not_found("该模块没有候选分组操作")
