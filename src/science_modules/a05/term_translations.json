@@ -1,0 +1,1676 @@
+{
+  "GO:0009410": {
+    "english": "response to xenobiotic stimulus",
+    "zh": "对外源性化合物刺激的响应",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0009410",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0032496": {
+    "english": "response to lipopolysaccharide",
+    "zh": "对脂多糖的响应",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0032496",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0002237": {
+    "english": "response to molecule of bacterial origin",
+    "zh": "对细菌来源分子的响应",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0002237",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0042330": {
+    "english": "taxis",
+    "zh": "趋性运动",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0042330",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0006935": {
+    "english": "chemotaxis",
+    "zh": "趋化作用",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0006935",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0060326": {
+    "english": "cell chemotaxis",
+    "zh": "细胞趋化作用",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0060326",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0050900": {
+    "english": "leukocyte migration",
+    "zh": "白细胞迁移",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0050900",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0070482": {
+    "english": "response to oxygen levels",
+    "zh": "对氧水平的响应",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0070482",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0001934": {
+    "english": "positive regulation of protein phosphorylation",
+    "zh": "蛋白质磷酸化的正调控",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0001934",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0001666": {
+    "english": "response to hypoxia",
+    "zh": "对缺氧的响应",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0001666",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0036293": {
+    "english": "response to decreased oxygen levels",
+    "zh": "对氧水平降低的响应",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0036293",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0043434": {
+    "english": "response to peptide hormone",
+    "zh": "对肽类激素的响应",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0043434",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0042327": {
+    "english": "positive regulation of phosphorylation",
+    "zh": "磷酸化的正调控",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0042327",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0043410": {
+    "english": "positive regulation of MAPK cascade",
+    "zh": "MAPK级联反应的正调控",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0043410",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0097305": {
+    "english": "response to alcohol",
+    "zh": "对醇类的响应",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0097305",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0031983": {
+    "english": "vesicle lumen",
+    "zh": "囊泡腔",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0031983",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0060205": {
+    "english": "cytoplasmic vesicle lumen",
+    "zh": "细胞质囊泡腔",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0060205",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0034774": {
+    "english": "secretory granule lumen",
+    "zh": "分泌颗粒腔",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0034774",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0009897": {
+    "english": "external side of plasma membrane",
+    "zh": "质膜外侧",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0009897",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0045121": {
+    "english": "membrane raft",
+    "zh": "膜筏",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0045121",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0098857": {
+    "english": "membrane microdomain",
+    "zh": "膜微区",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0098857",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0030139": {
+    "english": "endocytic vesicle",
+    "zh": "内吞囊泡",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0030139",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0005788": {
+    "english": "endoplasmic reticulum lumen",
+    "zh": "内质网腔",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0005788",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0062023": {
+    "english": "collagen-containing extracellular matrix",
+    "zh": "含胶原的细胞外基质",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0062023",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0031968": {
+    "english": "organelle outer membrane",
+    "zh": "细胞器外膜",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0031968",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0019867": {
+    "english": "outer membrane",
+    "zh": "外膜",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0019867",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0031093": {
+    "english": "platelet alpha granule lumen",
+    "zh": "血小板α颗粒腔",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0031093",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0101002": {
+    "english": "ficolin-1-rich granule",
+    "zh": "富含ficolin-1的颗粒",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0101002",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0005775": {
+    "english": "vacuolar lumen",
+    "zh": "液泡腔",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0005775",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0031091": {
+    "english": "platelet alpha granule",
+    "zh": "血小板α颗粒",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0031091",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0004252": {
+    "english": "serine-type endopeptidase activity",
+    "zh": "丝氨酸型内肽酶活性",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0004252",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0017171": {
+    "english": "serine hydrolase activity",
+    "zh": "丝氨酸水解酶活性",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0017171",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0008236": {
+    "english": "serine-type peptidase activity",
+    "zh": "丝氨酸型肽酶活性",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0008236",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0005125": {
+    "english": "cytokine activity",
+    "zh": "细胞因子活性",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0005125",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0005126": {
+    "english": "cytokine receptor binding",
+    "zh": "细胞因子受体结合",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0005126",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0004175": {
+    "english": "endopeptidase activity",
+    "zh": "内肽酶活性",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0004175",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0001664": {
+    "english": "G protein-coupled receptor binding",
+    "zh": "G蛋白偶联受体结合",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0001664",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0008009": {
+    "english": "chemokine activity",
+    "zh": "趋化因子活性",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0008009",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0016493": {
+    "english": "C-C chemokine receptor activity",
+    "zh": "CC类趋化因子受体活性",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0016493",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0042379": {
+    "english": "chemokine receptor binding",
+    "zh": "趋化因子受体结合",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0042379",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0002020": {
+    "english": "protease binding",
+    "zh": "蛋白酶结合",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0002020",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0019957": {
+    "english": "C-C chemokine binding",
+    "zh": "CC类趋化因子结合",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0019957",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0044389": {
+    "english": "ubiquitin-like protein ligase binding",
+    "zh": "类泛素蛋白连接酶结合",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0044389",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0008083": {
+    "english": "growth factor activity",
+    "zh": "生长因子活性",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0008083",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0019956": {
+    "english": "chemokine binding",
+    "zh": "趋化因子结合",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0019956",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05417": {
+    "english": "Lipid and atherosclerosis",
+    "zh": "脂质与动脉粥样硬化",
+    "source": "https://www.kegg.jp/pathway/hsa05417",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04933": {
+    "english": "AGE-RAGE signaling pathway in diabetic complications",
+    "zh": "糖尿病并发症中的AGE-RAGE信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04933",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05167": {
+    "english": "Kaposi sarcoma-associated herpesvirus infection",
+    "zh": "卡波西肉瘤相关疱疹病毒感染",
+    "source": "https://www.kegg.jp/pathway/hsa05167",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05215": {
+    "english": "Prostate cancer",
+    "zh": "前列腺癌",
+    "source": "https://www.kegg.jp/pathway/hsa05215",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04062": {
+    "english": "Chemokine signaling pathway",
+    "zh": "趋化因子信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04062",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05418": {
+    "english": "Fluid shear stress and atherosclerosis",
+    "zh": "流体剪切应力与动脉粥样硬化",
+    "source": "https://www.kegg.jp/pathway/hsa05418",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04657": {
+    "english": "IL-17 signaling pathway",
+    "zh": "IL-17信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04657",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05161": {
+    "english": "Hepatitis B",
+    "zh": "乙型肝炎",
+    "source": "https://www.kegg.jp/pathway/hsa05161",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05163": {
+    "english": "Human cytomegalovirus infection",
+    "zh": "人巨细胞病毒感染",
+    "source": "https://www.kegg.jp/pathway/hsa05163",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05212": {
+    "english": "Pancreatic cancer",
+    "zh": "胰腺癌",
+    "source": "https://www.kegg.jp/pathway/hsa05212",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05210": {
+    "english": "Colorectal cancer",
+    "zh": "结直肠癌",
+    "source": "https://www.kegg.jp/pathway/hsa05210",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04668": {
+    "english": "TNF signaling pathway",
+    "zh": "TNF信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04668",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05207": {
+    "english": "Chemical carcinogenesis - receptor activation",
+    "zh": "化学致癌 受体激活",
+    "source": "https://www.kegg.jp/pathway/hsa05207",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04210": {
+    "english": "Apoptosis",
+    "zh": "细胞凋亡",
+    "source": "https://www.kegg.jp/pathway/hsa04210",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04061": {
+    "english": "Viral protein interaction with cytokine and cytokine receptor",
+    "zh": "病毒蛋白与细胞因子及其受体的相互作用",
+    "source": "https://www.kegg.jp/pathway/hsa04061",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05219": {
+    "english": "Bladder cancer",
+    "zh": "膀胱癌",
+    "source": "https://www.kegg.jp/pathway/hsa05219",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04151": {
+    "english": "PI3K-Akt signaling pathway",
+    "zh": "PI3K-Akt信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04151",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04066": {
+    "english": "HIF-1 signaling pathway",
+    "zh": "HIF-1信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04066",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05220": {
+    "english": "Chronic myeloid leukemia",
+    "zh": "慢性髓系白血病",
+    "source": "https://www.kegg.jp/pathway/hsa05220",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04920": {
+    "english": "Adipocytokine signaling pathway",
+    "zh": "脂肪细胞因子信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04920",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05160": {
+    "english": "Hepatitis C",
+    "zh": "丙型肝炎",
+    "source": "https://www.kegg.jp/pathway/hsa05160",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04060": {
+    "english": "Cytokine-cytokine receptor interaction",
+    "zh": "细胞因子与细胞因子受体相互作用",
+    "source": "https://www.kegg.jp/pathway/hsa04060",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04625": {
+    "english": "C-type lectin receptor signaling pathway",
+    "zh": "C型凝集素受体信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04625",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04068": {
+    "english": "FoxO signaling pathway",
+    "zh": "FoxO信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04068",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04936": {
+    "english": "Alcoholic liver disease",
+    "zh": "酒精性肝病",
+    "source": "https://www.kegg.jp/pathway/hsa04936",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05142": {
+    "english": "Chagas disease",
+    "zh": "查加斯病",
+    "source": "https://www.kegg.jp/pathway/hsa05142",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05205": {
+    "english": "Proteoglycans in cancer",
+    "zh": "癌症中的蛋白聚糖",
+    "source": "https://www.kegg.jp/pathway/hsa05205",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05235": {
+    "english": "PD-L1 expression and PD-1 checkpoint pathway in cancer",
+    "zh": "癌症中的PD-L1表达与PD-1检查点通路",
+    "source": "https://www.kegg.jp/pathway/hsa05235",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05223": {
+    "english": "Non-small cell lung cancer",
+    "zh": "非小细胞肺癌",
+    "source": "https://www.kegg.jp/pathway/hsa05223",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa01522": {
+    "english": "Endocrine resistance",
+    "zh": "内分泌治疗耐药",
+    "source": "https://www.kegg.jp/pathway/hsa01522",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05170": {
+    "english": "Human immunodeficiency virus 1 infection",
+    "zh": "人免疫缺陷病毒1型感染",
+    "source": "https://www.kegg.jp/pathway/hsa05170",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04080": {
+    "english": "Neuroactive ligand-receptor interaction",
+    "zh": "神经活性配体与受体相互作用",
+    "source": "https://www.kegg.jp/pathway/hsa04080",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05166": {
+    "english": "Human T-cell leukemia virus 1 infection",
+    "zh": "人T细胞白血病病毒1型感染",
+    "source": "https://www.kegg.jp/pathway/hsa05166",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04931": {
+    "english": "Insulin resistance",
+    "zh": "胰岛素抵抗",
+    "source": "https://www.kegg.jp/pathway/hsa04931",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05208": {
+    "english": "Chemical carcinogenesis - reactive oxygen species",
+    "zh": "化学致癌 活性氧",
+    "source": "https://www.kegg.jp/pathway/hsa05208",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04917": {
+    "english": "Prolactin signaling pathway",
+    "zh": "催乳素信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04917",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04932": {
+    "english": "Non-alcoholic fatty liver disease",
+    "zh": "非酒精性脂肪性肝病",
+    "source": "https://www.kegg.jp/pathway/hsa04932",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa01521": {
+    "english": "EGFR tyrosine kinase inhibitor resistance",
+    "zh": "EGFR酪氨酸激酶抑制剂耐药",
+    "source": "https://www.kegg.jp/pathway/hsa01521",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05221": {
+    "english": "Acute myeloid leukemia",
+    "zh": "急性髓系白血病",
+    "source": "https://www.kegg.jp/pathway/hsa05221",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04620": {
+    "english": "Toll-like receptor signaling pathway",
+    "zh": "Toll样受体信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04620",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05144": {
+    "english": "Malaria",
+    "zh": "疟疾",
+    "source": "https://www.kegg.jp/pathway/hsa05144",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05133": {
+    "english": "Pertussis",
+    "zh": "百日咳",
+    "source": "https://www.kegg.jp/pathway/hsa05133",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04926": {
+    "english": "Relaxin signaling pathway",
+    "zh": "松弛素信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04926",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04218": {
+    "english": "Cellular senescence",
+    "zh": "细胞衰老",
+    "source": "https://www.kegg.jp/pathway/hsa04218",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05162": {
+    "english": "Measles",
+    "zh": "麻疹",
+    "source": "https://www.kegg.jp/pathway/hsa05162",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa01524": {
+    "english": "Platinum drug resistance",
+    "zh": "铂类药物耐药",
+    "source": "https://www.kegg.jp/pathway/hsa01524",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05225": {
+    "english": "Hepatocellular carcinoma",
+    "zh": "肝细胞癌",
+    "source": "https://www.kegg.jp/pathway/hsa05225",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04024": {
+    "english": "cAMP signaling pathway",
+    "zh": "cAMP信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04024",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05169": {
+    "english": "Epstein-Barr virus infection",
+    "zh": "EB病毒感染",
+    "source": "https://www.kegg.jp/pathway/hsa05169",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04660": {
+    "english": "T cell receptor signaling pathway",
+    "zh": "T细胞受体信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04660",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05230": {
+    "english": "Central carbon metabolism in cancer",
+    "zh": "癌症中的中心碳代谢",
+    "source": "https://www.kegg.jp/pathway/hsa05230",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05226": {
+    "english": "Gastric cancer",
+    "zh": "胃癌",
+    "source": "https://www.kegg.jp/pathway/hsa05226",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04659": {
+    "english": "Th17 cell differentiation",
+    "zh": "Th17细胞分化",
+    "source": "https://www.kegg.jp/pathway/hsa04659",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05218": {
+    "english": "Melanoma",
+    "zh": "黑色素瘤",
+    "source": "https://www.kegg.jp/pathway/hsa05218",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05222": {
+    "english": "Small cell lung cancer",
+    "zh": "小细胞肺癌",
+    "source": "https://www.kegg.jp/pathway/hsa05222",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05164": {
+    "english": "Influenza A",
+    "zh": "甲型流感",
+    "source": "https://www.kegg.jp/pathway/hsa05164",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05213": {
+    "english": "Endometrial cancer",
+    "zh": "子宫内膜癌",
+    "source": "https://www.kegg.jp/pathway/hsa05213",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04012": {
+    "english": "ErbB signaling pathway",
+    "zh": "ErbB信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04012",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05171": {
+    "english": "Coronavirus disease",
+    "zh": "冠状病毒病",
+    "source": "https://www.kegg.jp/pathway/hsa05171",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05145": {
+    "english": "Toxoplasmosis",
+    "zh": "弓形虫病",
+    "source": "https://www.kegg.jp/pathway/hsa05145",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05415": {
+    "english": "Diabetic cardiomyopathy",
+    "zh": "糖尿病性心肌病",
+    "source": "https://www.kegg.jp/pathway/hsa05415",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04380": {
+    "english": "Osteoclast differentiation",
+    "zh": "破骨细胞分化",
+    "source": "https://www.kegg.jp/pathway/hsa04380",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05224": {
+    "english": "Breast cancer",
+    "zh": "乳腺癌",
+    "source": "https://www.kegg.jp/pathway/hsa05224",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05214": {
+    "english": "Glioma",
+    "zh": "胶质瘤",
+    "source": "https://www.kegg.jp/pathway/hsa05214",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04930": {
+    "english": "Type II diabetes mellitus",
+    "zh": "2型糖尿病",
+    "source": "https://www.kegg.jp/pathway/hsa04930",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04664": {
+    "english": "Fc epsilon RI signaling pathway",
+    "zh": "FcεRI信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04664",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05135": {
+    "english": "Yersinia infection",
+    "zh": "耶尔森菌感染",
+    "source": "https://www.kegg.jp/pathway/hsa05135",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04082": {
+    "english": "Neuroactive ligand signaling",
+    "zh": "神经活性配体信号传导",
+    "source": "https://www.kegg.jp/pathway/hsa04082",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04081": {
+    "english": "Hormone signaling",
+    "zh": "激素信号传导",
+    "source": "https://www.kegg.jp/pathway/hsa04081",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04010": {
+    "english": "MAPK signaling pathway",
+    "zh": "MAPK信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04010",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04370": {
+    "english": "VEGF signaling pathway",
+    "zh": "VEGF信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04370",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04722": {
+    "english": "Neurotrophin signaling pathway",
+    "zh": "神经营养因子信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04722",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04064": {
+    "english": "NF-kappa B signaling pathway",
+    "zh": "NF-κB信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04064",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05211": {
+    "english": "Renal cell carcinoma",
+    "zh": "肾细胞癌",
+    "source": "https://www.kegg.jp/pathway/hsa05211",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05168": {
+    "english": "Herpes simplex virus 1 infection",
+    "zh": "单纯疱疹病毒1型感染",
+    "source": "https://www.kegg.jp/pathway/hsa05168",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05203": {
+    "english": "Viral carcinogenesis",
+    "zh": "病毒致癌",
+    "source": "https://www.kegg.jp/pathway/hsa05203",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04915": {
+    "english": "Estrogen signaling pathway",
+    "zh": "雌激素信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04915",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05152": {
+    "english": "Tuberculosis",
+    "zh": "结核病",
+    "source": "https://www.kegg.jp/pathway/hsa05152",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04020": {
+    "english": "Calcium signaling pathway",
+    "zh": "钙信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04020",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04071": {
+    "english": "Sphingolipid signaling pathway",
+    "zh": "鞘脂信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04071",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04610": {
+    "english": "Complement and coagulation cascades",
+    "zh": "补体与凝血级联反应",
+    "source": "https://www.kegg.jp/pathway/hsa04610",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04148": {
+    "english": "Efferocytosis",
+    "zh": "凋亡细胞清除",
+    "source": "https://www.kegg.jp/pathway/hsa04148",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05132": {
+    "english": "Salmonella infection",
+    "zh": "沙门菌感染",
+    "source": "https://www.kegg.jp/pathway/hsa05132",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05120": {
+    "english": "Epithelial cell signaling in Helicobacter pylori infection",
+    "zh": "幽门螺杆菌感染中的上皮细胞信号传导",
+    "source": "https://www.kegg.jp/pathway/hsa05120",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05146": {
+    "english": "Amoebiasis",
+    "zh": "阿米巴病",
+    "source": "https://www.kegg.jp/pathway/hsa05146",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04014": {
+    "english": "Ras signaling pathway",
+    "zh": "Ras信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04014",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05216": {
+    "english": "Thyroid cancer",
+    "zh": "甲状腺癌",
+    "source": "https://www.kegg.jp/pathway/hsa05216",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05165": {
+    "english": "Human papillomavirus infection",
+    "zh": "人乳头瘤病毒感染",
+    "source": "https://www.kegg.jp/pathway/hsa05165",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04935": {
+    "english": "Growth hormone synthesis, secretion and action",
+    "zh": "生长激素的合成 分泌与作用",
+    "source": "https://www.kegg.jp/pathway/hsa04935",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05323": {
+    "english": "Rheumatoid arthritis",
+    "zh": "类风湿关节炎",
+    "source": "https://www.kegg.jp/pathway/hsa05323",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04211": {
+    "english": "Longevity regulating pathway",
+    "zh": "寿命调控通路",
+    "source": "https://www.kegg.jp/pathway/hsa04211",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04152": {
+    "english": "AMPK signaling pathway",
+    "zh": "AMPK信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04152",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04371": {
+    "english": "Apelin signaling pathway",
+    "zh": "Apelin信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04371",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05030": {
+    "english": "Cocaine addiction",
+    "zh": "可卡因成瘾",
+    "source": "https://www.kegg.jp/pathway/hsa05030",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05140": {
+    "english": "Leishmaniasis",
+    "zh": "利什曼病",
+    "source": "https://www.kegg.jp/pathway/hsa05140",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04015": {
+    "english": "Rap1 signaling pathway",
+    "zh": "Rap1信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04015",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05022": {
+    "english": "Pathways of neurodegeneration - multiple diseases",
+    "zh": "多种疾病的神经退行性变通路",
+    "source": "https://www.kegg.jp/pathway/hsa05022",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04115": {
+    "english": "p53 signaling pathway",
+    "zh": "p53信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04115",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04929": {
+    "english": "GnRH secretion",
+    "zh": "GnRH分泌",
+    "source": "https://www.kegg.jp/pathway/hsa04929",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05206": {
+    "english": "MicroRNAs in cancer",
+    "zh": "癌症中的微小RNA",
+    "source": "https://www.kegg.jp/pathway/hsa05206",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05321": {
+    "english": "Inflammatory bowel disease",
+    "zh": "炎症性肠病",
+    "source": "https://www.kegg.jp/pathway/hsa05321",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04650": {
+    "english": "Natural killer cell mediated cytotoxicity",
+    "zh": "自然杀伤细胞介导的细胞毒作用",
+    "source": "https://www.kegg.jp/pathway/hsa04650",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04910": {
+    "english": "Insulin signaling pathway",
+    "zh": "胰岛素信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04910",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04919": {
+    "english": "Thyroid hormone signaling pathway",
+    "zh": "甲状腺激素信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04919",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05010": {
+    "english": "Alzheimer disease",
+    "zh": "阿尔茨海默病",
+    "source": "https://www.kegg.jp/pathway/hsa05010",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04140": {
+    "english": "Autophagy - animal",
+    "zh": "自噬 动物",
+    "source": "https://www.kegg.jp/pathway/hsa04140",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04215": {
+    "english": "Apoptosis - multiple species",
+    "zh": "细胞凋亡 多物种",
+    "source": "https://www.kegg.jp/pathway/hsa04215",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05031": {
+    "english": "Amphetamine addiction",
+    "zh": "苯丙胺成瘾",
+    "source": "https://www.kegg.jp/pathway/hsa05031",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04662": {
+    "english": "B cell receptor signaling pathway",
+    "zh": "B细胞受体信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04662",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05130": {
+    "english": "Pathogenic Escherichia coli infection",
+    "zh": "致病性大肠杆菌感染",
+    "source": "https://www.kegg.jp/pathway/hsa05130",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05202": {
+    "english": "Transcriptional misregulation in cancer",
+    "zh": "癌症中的转录失调",
+    "source": "https://www.kegg.jp/pathway/hsa05202",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04630": {
+    "english": "JAK-STAT signaling pathway",
+    "zh": "JAK-STAT信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04630",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04510": {
+    "english": "Focal adhesion",
+    "zh": "黏着斑",
+    "source": "https://www.kegg.jp/pathway/hsa04510",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04725": {
+    "english": "Cholinergic synapse",
+    "zh": "胆碱能突触",
+    "source": "https://www.kegg.jp/pathway/hsa04725",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04518": {
+    "english": "Integrin signaling",
+    "zh": "整合素信号传导",
+    "source": "https://www.kegg.jp/pathway/hsa04518",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04658": {
+    "english": "Th1 and Th2 cell differentiation",
+    "zh": "Th1和Th2细胞分化",
+    "source": "https://www.kegg.jp/pathway/hsa04658",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05231": {
+    "english": "Choline metabolism in cancer",
+    "zh": "癌症中的胆碱代谢",
+    "source": "https://www.kegg.jp/pathway/hsa05231",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05131": {
+    "english": "Shigellosis",
+    "zh": "志贺菌病",
+    "source": "https://www.kegg.jp/pathway/hsa05131",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa00350": {
+    "english": "Tyrosine metabolism",
+    "zh": "酪氨酸代谢",
+    "source": "https://www.kegg.jp/pathway/hsa00350",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05143": {
+    "english": "African trypanosomiasis",
+    "zh": "非洲锥虫病",
+    "source": "https://www.kegg.jp/pathway/hsa05143",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04213": {
+    "english": "Longevity regulating pathway - multiple species",
+    "zh": "寿命调控通路 多物种",
+    "source": "https://www.kegg.jp/pathway/hsa04213",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04022": {
+    "english": "cGMP-PKG signaling pathway",
+    "zh": "cGMP-PKG信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04022",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04912": {
+    "english": "GnRH signaling pathway",
+    "zh": "GnRH信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04912",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04923": {
+    "english": "Regulation of lipolysis in adipocytes",
+    "zh": "脂肪细胞中的脂解调控",
+    "source": "https://www.kegg.jp/pathway/hsa04923",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04672": {
+    "english": "Intestinal immune network for IgA production",
+    "zh": "IgA产生的肠道免疫网络",
+    "source": "https://www.kegg.jp/pathway/hsa04672",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04922": {
+    "english": "Glucagon signaling pathway",
+    "zh": "胰高血糖素信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04922",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04621": {
+    "english": "NOD-like receptor signaling pathway",
+    "zh": "NOD样受体信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04621",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04613": {
+    "english": "Neutrophil extracellular trap formation",
+    "zh": "中性粒细胞胞外诱捕网形成",
+    "source": "https://www.kegg.jp/pathway/hsa04613",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04720": {
+    "english": "Long-term potentiation",
+    "zh": "长时程增强",
+    "source": "https://www.kegg.jp/pathway/hsa04720",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04928": {
+    "english": "Parathyroid hormone synthesis, secretion and action",
+    "zh": "甲状旁腺激素的合成 分泌与作用",
+    "source": "https://www.kegg.jp/pathway/hsa04928",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa01200": {
+    "english": "Carbon metabolism",
+    "zh": "碳代谢",
+    "source": "https://www.kegg.jp/pathway/hsa01200",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04072": {
+    "english": "Phospholipase D signaling pathway",
+    "zh": "磷脂酶D信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04072",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa00270": {
+    "english": "Cysteine and methionine metabolism",
+    "zh": "半胱氨酸和蛋氨酸代谢",
+    "source": "https://www.kegg.jp/pathway/hsa00270",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04921": {
+    "english": "Oxytocin signaling pathway",
+    "zh": "催产素信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04921",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04934": {
+    "english": "Cushing syndrome",
+    "zh": "库欣综合征",
+    "source": "https://www.kegg.jp/pathway/hsa04934",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04360": {
+    "english": "Axon guidance",
+    "zh": "轴突导向",
+    "source": "https://www.kegg.jp/pathway/hsa04360",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05134": {
+    "english": "Legionellosis",
+    "zh": "军团菌病",
+    "source": "https://www.kegg.jp/pathway/hsa05134",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05020": {
+    "english": "Prion disease",
+    "zh": "朊病毒病",
+    "source": "https://www.kegg.jp/pathway/hsa05020",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04750": {
+    "english": "Inflammatory mediator regulation of TRP channels",
+    "zh": "炎症介质对TRP通道的调控",
+    "source": "https://www.kegg.jp/pathway/hsa04750",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04728": {
+    "english": "Dopaminergic synapse",
+    "zh": "多巴胺能突触",
+    "source": "https://www.kegg.jp/pathway/hsa04728",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04726": {
+    "english": "Serotonergic synapse",
+    "zh": "血清素能突触",
+    "source": "https://www.kegg.jp/pathway/hsa04726",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04960": {
+    "english": "Aldosterone-regulated sodium reabsorption",
+    "zh": "醛固酮调控的钠重吸收",
+    "source": "https://www.kegg.jp/pathway/hsa04960",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa03320": {
+    "english": "PPAR signaling pathway",
+    "zh": "PPAR信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa03320",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04670": {
+    "english": "Leukocyte transendothelial migration",
+    "zh": "白细胞跨内皮迁移",
+    "source": "https://www.kegg.jp/pathway/hsa04670",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05330": {
+    "english": "Allograft rejection",
+    "zh": "同种异体移植排斥",
+    "source": "https://www.kegg.jp/pathway/hsa05330",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa00330": {
+    "english": "Arginine and proline metabolism",
+    "zh": "精氨酸和脯氨酸代谢",
+    "source": "https://www.kegg.jp/pathway/hsa00330",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa01523": {
+    "english": "Antifolate resistance",
+    "zh": "抗叶酸药物耐药",
+    "source": "https://www.kegg.jp/pathway/hsa01523",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04924": {
+    "english": "Renin secretion",
+    "zh": "肾素分泌",
+    "source": "https://www.kegg.jp/pathway/hsa04924",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05416": {
+    "english": "Viral myocarditis",
+    "zh": "病毒性心肌炎",
+    "source": "https://www.kegg.jp/pathway/hsa05416",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa00250": {
+    "english": "Alanine, aspartate and glutamate metabolism",
+    "zh": "丙氨酸 天冬氨酸和谷氨酸代谢",
+    "source": "https://www.kegg.jp/pathway/hsa00250",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04350": {
+    "english": "TGF-beta signaling pathway",
+    "zh": "TGF-β信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04350",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04914": {
+    "english": "Progesterone-mediated oocyte maturation",
+    "zh": "孕酮介导的卵母细胞成熟",
+    "source": "https://www.kegg.jp/pathway/hsa04914",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa00220": {
+    "english": "Arginine biosynthesis",
+    "zh": "精氨酸生物合成",
+    "source": "https://www.kegg.jp/pathway/hsa00220",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04217": {
+    "english": "Necroptosis",
+    "zh": "程序性坏死",
+    "source": "https://www.kegg.jp/pathway/hsa04217",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04730": {
+    "english": "Long-term depression",
+    "zh": "长时程抑制",
+    "source": "https://www.kegg.jp/pathway/hsa04730",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04611": {
+    "english": "Platelet activation",
+    "zh": "血小板激活",
+    "source": "https://www.kegg.jp/pathway/hsa04611",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa00982": {
+    "english": "Drug metabolism - cytochrome P450",
+    "zh": "药物代谢 细胞色素P450",
+    "source": "https://www.kegg.jp/pathway/hsa00982",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa00010": {
+    "english": "Glycolysis / Gluconeogenesis",
+    "zh": "糖酵解与糖异生",
+    "source": "https://www.kegg.jp/pathway/hsa00010",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04916": {
+    "english": "Melanogenesis",
+    "zh": "黑色素生成",
+    "source": "https://www.kegg.jp/pathway/hsa04916",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa01230": {
+    "english": "Biosynthesis of amino acids",
+    "zh": "氨基酸生物合成",
+    "source": "https://www.kegg.jp/pathway/hsa01230",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04110": {
+    "english": "Cell cycle",
+    "zh": "细胞周期",
+    "source": "https://www.kegg.jp/pathway/hsa04110",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04150": {
+    "english": "mTOR signaling pathway",
+    "zh": "mTOR信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04150",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa00360": {
+    "english": "Phenylalanine metabolism",
+    "zh": "苯丙氨酸代谢",
+    "source": "https://www.kegg.jp/pathway/hsa00360",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa00983": {
+    "english": "Drug metabolism - other enzymes",
+    "zh": "药物代谢 其他酶",
+    "source": "https://www.kegg.jp/pathway/hsa00983",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05204": {
+    "english": "Chemical carcinogenesis - DNA adducts",
+    "zh": "化学致癌 DNA加合物",
+    "source": "https://www.kegg.jp/pathway/hsa05204",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05034": {
+    "english": "Alcoholism",
+    "zh": "酒精依赖",
+    "source": "https://www.kegg.jp/pathway/hsa05034",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04540": {
+    "english": "Gap junction",
+    "zh": "缝隙连接",
+    "source": "https://www.kegg.jp/pathway/hsa04540",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04520": {
+    "english": "Adherens junction",
+    "zh": "黏着连接",
+    "source": "https://www.kegg.jp/pathway/hsa04520",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05310": {
+    "english": "Asthma",
+    "zh": "哮喘",
+    "source": "https://www.kegg.jp/pathway/hsa05310",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05017": {
+    "english": "Spinocerebellar ataxia",
+    "zh": "脊髓小脑性共济失调",
+    "source": "https://www.kegg.jp/pathway/hsa05017",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04614": {
+    "english": "Renin-angiotensin system",
+    "zh": "肾素与血管紧张素系统",
+    "source": "https://www.kegg.jp/pathway/hsa04614",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa01240": {
+    "english": "Biosynthesis of cofactors",
+    "zh": "辅因子生物合成",
+    "source": "https://www.kegg.jp/pathway/hsa01240",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05332": {
+    "english": "Graft-versus-host disease",
+    "zh": "移植物抗宿主病",
+    "source": "https://www.kegg.jp/pathway/hsa05332",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04137": {
+    "english": "Mitophagy - animal",
+    "zh": "线粒体自噬 动物",
+    "source": "https://www.kegg.jp/pathway/hsa04137",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04390": {
+    "english": "Hippo signaling pathway",
+    "zh": "Hippo信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04390",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa00980": {
+    "english": "Metabolism of xenobiotics by cytochrome P450",
+    "zh": "细胞色素P450介导的外源性物质代谢",
+    "source": "https://www.kegg.jp/pathway/hsa00980",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05033": {
+    "english": "Nicotine addiction",
+    "zh": "尼古丁成瘾",
+    "source": "https://www.kegg.jp/pathway/hsa05033",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04550": {
+    "english": "Signaling pathways regulating pluripotency of stem cells",
+    "zh": "调控干细胞多能性的信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04550",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa00140": {
+    "english": "Steroid hormone biosynthesis",
+    "zh": "类固醇激素生物合成",
+    "source": "https://www.kegg.jp/pathway/hsa00140",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04216": {
+    "english": "Ferroptosis",
+    "zh": "铁死亡",
+    "source": "https://www.kegg.jp/pathway/hsa04216",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04145": {
+    "english": "Phagocytosis",
+    "zh": "吞噬作用",
+    "source": "https://www.kegg.jp/pathway/hsa04145",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa00071": {
+    "english": "Fatty acid degradation",
+    "zh": "脂肪酸降解",
+    "source": "https://www.kegg.jp/pathway/hsa00071",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04713": {
+    "english": "Circadian entrainment",
+    "zh": "昼夜节律同步",
+    "source": "https://www.kegg.jp/pathway/hsa04713",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa00052": {
+    "english": "Galactose metabolism",
+    "zh": "半乳糖代谢",
+    "source": "https://www.kegg.jp/pathway/hsa00052",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04940": {
+    "english": "Type I diabetes mellitus",
+    "zh": "1型糖尿病",
+    "source": "https://www.kegg.jp/pathway/hsa04940",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04270": {
+    "english": "Vascular smooth muscle contraction",
+    "zh": "血管平滑肌收缩",
+    "source": "https://www.kegg.jp/pathway/hsa04270",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04666": {
+    "english": "Fc gamma R-mediated phagosome formation",
+    "zh": "Fcγ受体介导的吞噬体形成",
+    "source": "https://www.kegg.jp/pathway/hsa04666",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04913": {
+    "english": "Ovarian steroidogenesis",
+    "zh": "卵巢类固醇生成",
+    "source": "https://www.kegg.jp/pathway/hsa04913",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa00860": {
+    "english": "Porphyrin metabolism",
+    "zh": "卟啉代谢",
+    "source": "https://www.kegg.jp/pathway/hsa00860",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa00480": {
+    "english": "Glutathione metabolism",
+    "zh": "谷胱甘肽代谢",
+    "source": "https://www.kegg.jp/pathway/hsa00480",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05320": {
+    "english": "Autoimmune thyroid disease",
+    "zh": "自身免疫性甲状腺疾病",
+    "source": "https://www.kegg.jp/pathway/hsa05320",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa00380": {
+    "english": "Tryptophan metabolism",
+    "zh": "色氨酸代谢",
+    "source": "https://www.kegg.jp/pathway/hsa00380",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa00830": {
+    "english": "Retinol metabolism",
+    "zh": "视黄醇代谢",
+    "source": "https://www.kegg.jp/pathway/hsa00830",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05012": {
+    "english": "Parkinson disease",
+    "zh": "帕金森病",
+    "source": "https://www.kegg.jp/pathway/hsa05012",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa00591": {
+    "english": "Linoleic acid metabolism",
+    "zh": "亚油酸代谢",
+    "source": "https://www.kegg.jp/pathway/hsa00591",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa00520": {
+    "english": "Amino sugar and nucleotide sugar metabolism",
+    "zh": "氨基糖和核苷酸糖代谢",
+    "source": "https://www.kegg.jp/pathway/hsa00520",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04622": {
+    "english": "RIG-I-like receptor signaling pathway",
+    "zh": "RIG-I样受体信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04622",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04810": {
+    "english": "Regulation of actin cytoskeleton",
+    "zh": "肌动蛋白细胞骨架调控",
+    "source": "https://www.kegg.jp/pathway/hsa04810",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04979": {
+    "english": "Cholesterol metabolism",
+    "zh": "胆固醇代谢",
+    "source": "https://www.kegg.jp/pathway/hsa04979",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa00260": {
+    "english": "Glycine, serine and threonine metabolism",
+    "zh": "甘氨酸 丝氨酸和苏氨酸代谢",
+    "source": "https://www.kegg.jp/pathway/hsa00260",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04973": {
+    "english": "Carbohydrate digestion and absorption",
+    "zh": "碳水化合物的消化与吸收",
+    "source": "https://www.kegg.jp/pathway/hsa04973",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04640": {
+    "english": "Hematopoietic cell lineage",
+    "zh": "造血细胞谱系",
+    "source": "https://www.kegg.jp/pathway/hsa04640",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa00020": {
+    "english": "Citrate cycle (TCA cycle)",
+    "zh": "柠檬酸循环 三羧酸循环",
+    "source": "https://www.kegg.jp/pathway/hsa00020",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa00620": {
+    "english": "Pyruvate metabolism",
+    "zh": "丙酮酸代谢",
+    "source": "https://www.kegg.jp/pathway/hsa00620",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04310": {
+    "english": "Wnt signaling pathway",
+    "zh": "Wnt信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04310",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05150": {
+    "english": "Staphylococcus aureus infection",
+    "zh": "金黄色葡萄球菌感染",
+    "source": "https://www.kegg.jp/pathway/hsa05150",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05410": {
+    "english": "Hypertrophic cardiomyopathy",
+    "zh": "肥厚型心肌病",
+    "source": "https://www.kegg.jp/pathway/hsa05410",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04517": {
+    "english": "IgSF CAM signaling",
+    "zh": "免疫球蛋白超家族细胞黏附分子信号传导",
+    "source": "https://www.kegg.jp/pathway/hsa04517",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05100": {
+    "english": "Bacterial invasion of epithelial cells",
+    "zh": "细菌侵入上皮细胞",
+    "source": "https://www.kegg.jp/pathway/hsa05100",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04911": {
+    "english": "Insulin secretion",
+    "zh": "胰岛素分泌",
+    "source": "https://www.kegg.jp/pathway/hsa04911",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05217": {
+    "english": "Basal cell carcinoma",
+    "zh": "基底细胞癌",
+    "source": "https://www.kegg.jp/pathway/hsa05217",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04974": {
+    "english": "Protein digestion and absorption",
+    "zh": "蛋白质的消化与吸收",
+    "source": "https://www.kegg.jp/pathway/hsa04974",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04530": {
+    "english": "Tight junction",
+    "zh": "紧密连接",
+    "source": "https://www.kegg.jp/pathway/hsa04530",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04261": {
+    "english": "Adrenergic signaling in cardiomyocytes",
+    "zh": "心肌细胞中的肾上腺素能信号传导",
+    "source": "https://www.kegg.jp/pathway/hsa04261",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa00340": {
+    "english": "Histidine metabolism",
+    "zh": "组氨酸代谢",
+    "source": "https://www.kegg.jp/pathway/hsa00340",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa01212": {
+    "english": "Fatty acid metabolism",
+    "zh": "脂肪酸代谢",
+    "source": "https://www.kegg.jp/pathway/hsa01212",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa00051": {
+    "english": "Fructose and mannose metabolism",
+    "zh": "果糖和甘露糖代谢",
+    "source": "https://www.kegg.jp/pathway/hsa00051",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa00500": {
+    "english": "Starch and sucrose metabolism",
+    "zh": "淀粉和蔗糖代谢",
+    "source": "https://www.kegg.jp/pathway/hsa00500",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04724": {
+    "english": "Glutamatergic synapse",
+    "zh": "谷氨酸能突触",
+    "source": "https://www.kegg.jp/pathway/hsa04724",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa00030": {
+    "english": "Pentose phosphate pathway",
+    "zh": "磷酸戊糖途径",
+    "source": "https://www.kegg.jp/pathway/hsa00030",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa00061": {
+    "english": "Fatty acid biosynthesis",
+    "zh": "脂肪酸生物合成",
+    "source": "https://www.kegg.jp/pathway/hsa00061",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04714": {
+    "english": "Thermogenesis",
+    "zh": "产热",
+    "source": "https://www.kegg.jp/pathway/hsa04714",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04970": {
+    "english": "Salivary secretion",
+    "zh": "唾液分泌",
+    "source": "https://www.kegg.jp/pathway/hsa04970",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa01232": {
+    "english": "Nucleotide metabolism",
+    "zh": "核苷酸代谢",
+    "source": "https://www.kegg.jp/pathway/hsa01232",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04972": {
+    "english": "Pancreatic secretion",
+    "zh": "胰液分泌",
+    "source": "https://www.kegg.jp/pathway/hsa04972",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa01210": {
+    "english": "2-Oxocarboxylic acid metabolism",
+    "zh": "2-氧代羧酸代谢",
+    "source": "https://www.kegg.jp/pathway/hsa01210",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa00280": {
+    "english": "Valine, leucine and isoleucine degradation",
+    "zh": "缬氨酸 亮氨酸和异亮氨酸降解",
+    "source": "https://www.kegg.jp/pathway/hsa00280",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa00590": {
+    "english": "Arachidonic acid metabolism",
+    "zh": "花生四烯酸代谢",
+    "source": "https://www.kegg.jp/pathway/hsa00590",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04925": {
+    "english": "Aldosterone synthesis and secretion",
+    "zh": "醛固酮的合成与分泌",
+    "source": "https://www.kegg.jp/pathway/hsa04925",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04927": {
+    "english": "Cortisol synthesis and secretion",
+    "zh": "皮质醇的合成与分泌",
+    "source": "https://www.kegg.jp/pathway/hsa04927",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04612": {
+    "english": "Antigen processing and presentation",
+    "zh": "抗原加工与呈递",
+    "source": "https://www.kegg.jp/pathway/hsa04612",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05014": {
+    "english": "Amyotrophic lateral sclerosis",
+    "zh": "肌萎缩侧索硬化",
+    "source": "https://www.kegg.jp/pathway/hsa05014",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa05032": {
+    "english": "Morphine addiction",
+    "zh": "吗啡成瘾",
+    "source": "https://www.kegg.jp/pathway/hsa05032",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "hsa04146": {
+    "english": "Peroxisome",
+    "zh": "过氧化物酶体",
+    "source": "https://www.kegg.jp/pathway/hsa04146",
+    "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  }
+}

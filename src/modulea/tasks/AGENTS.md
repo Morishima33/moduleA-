@@ -23,3 +23,7 @@ A04专用任务a04_ppi完成后停在A04。助手修复图件时可通过私有�
 ## A05独立根目录运行接入
 
 continue后台使用science_modules/a05/flow.run_enrichment，full_workflow登记同适配层的validator。自动接续旧编排仍冻结，仅在本科学子进程绑定新PPI及A05入口；当前双分支对接来源未定时只可按原逻辑生成缺失或失效的A05，不进入A06。A05成功归档后进度1/1且结果待复核，R或来源失败保持失败，不能解释为无显著。
+
+## A05第二版展示及人工确认
+
+现行continue使用science_modules/a05/display_flow.run_enrichment：冻结A05.1统计完成后生成A05.display.2待确认预览。新增a05_display任务接收明确清单或版式确认，归档用户决定和新展示，失败保留记录、重试复用，统计不重算，绝不自动批准A05或启动A06。full_workflow登记display_flow.validator，旧版委托flow.validator。公开接口绑定研究、A03、A05及最新决定，历史/回收站/过期/忙碌状态拒绝。

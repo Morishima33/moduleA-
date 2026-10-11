@@ -12,6 +12,8 @@ import { StatusPill } from './common';
 import DataTabs from './DataTabs';
 import { FlowChain, FocusSection, KnowSection, KpiGrid } from './ModuleSections';
 import EnrichmentTop from './special/EnrichmentTop';
+import EnrichmentConfirmation from './EnrichmentConfirmation';
+import EnrichmentDisplay from './special/EnrichmentDisplay';
 import Heatmap from './special/Heatmap';
 import PpiTop from './special/PpiTop';
 import PpiDual from './special/PpiDual';
@@ -68,12 +70,13 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
         </div>
       </section>
 
+      {view.enrichment_display && <EnrichmentConfirmation studyId={studyId} info={view.enrichment_display} />}
       {/* 待核验事项紧接标题；证据直接展开，不藏在结果末尾。 */}
       {!view.historical && <FocusSection items={view.focus} evidence={sp.ppi_identity ? <IdentityReview studyId={studyId} view={view} data={sp.ppi_identity} /> : undefined} />}
       {view.historical && sp.ppi_identity && <section className="card"><h2>历史身份问题清单（只读）</h2><IdentityReview studyId={studyId} view={view} data={sp.ppi_identity} /></section>}
       {!sp.ppi_identity && view.identity_plan?.latest && <section className="card"><h2>身份核验方案与应用结果</h2><IdentityPlanStatus info={view.identity_plan} /></section>}
       {/* 窄屏时整体复核栏也在结果之前。 */}
-      {reviewSlot}
+      {reviewSlot && <div id="module-review-panel">{reviewSlot}</div>}
 
       {/* 状态说明框：失败、等待资料、空结果、已失效等 */}
       {showBox && (
@@ -118,6 +121,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       {sp.component_top && sp.component_top.length > 0 && <ComponentTop items={sp.component_top} note={sp.component_top_note_zh} />}
       {sp.ppi_dual && <PpiDual data={sp.ppi_dual} />}
       {sp.ppi_top && sp.ppi_top.length > 0 && <PpiTop items={sp.ppi_top} />}
+      {sp.enrichment_display_tables && <EnrichmentDisplay special={sp} />}
       {sp.enrichment_top && <EnrichmentTop data={sp.enrichment_top} />}
       {sp.heatmap && <Heatmap data={sp.heatmap} />}
       {(sp.conclusion_zh || sp.leads || sp.limits || sp.report_files) && <ReportSummary special={sp} studyId={studyId} />}

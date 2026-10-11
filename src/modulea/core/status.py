@@ -84,7 +84,18 @@ def map_state(module_id: str, raw: dict, task_active: bool = False) -> ModuleSta
         code, reason = "unavailable", "未知状态：" + str(state)
 
     can_review = state in ("awaiting_review", "pending", "rejected", "approved")
-    return ModuleState(code, LABELS[code], reason, state, empty, blocked, can_review)
+    label=LABELS[code]
+    if module_id=="A05" and code=="waiting" and summary.get("display_version")=="A05.display.2":
+        pending=[]
+        if not summary.get("display_exclusions_confirmed"):pending.append("KEGG展示范围确认")
+        if not summary.get("display_layout_confirmed"):pending.append("GO/KEGG图表版式确认")
+        missing=int(summary.get("display_missing_translation_count") or 0)
+        identities=int(summary.get("身份待核验数") or 0)
+        if missing:pending.append(f"{missing}个条目中文核译")
+        if identities:pending.append(f"{identities}项身份核验")
+        label="等待身份核验" if identities else ("等待中文核译" if missing else "等待确认")
+        reason="需完成："+ "、".join(pending)+"；请在标题下方处理，随后独立复核A05结果"
+    return ModuleState(code, label, reason, state, empty, blocked, can_review)
 
 
 def unavailable(reason: str) -> ModuleState:

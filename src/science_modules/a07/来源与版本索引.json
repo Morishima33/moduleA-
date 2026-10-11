@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "version": "A07.double_report.14",
+  "version": "A07.double_report.18",
   "frozen_dependencies": [
     {
       "path": "src/report_flow.py",
@@ -23,7 +23,15 @@
     {
       "path": "src/science_modules/a07/dual_reports.py",
       "sha256": "8cae761b2d096761504d95f554c853564ab99ce606c9df6ad9556cbfaeddf9ed"
+    },
+    {
+      "path": "src/science_modules/a07/enrichment_reports.py",
+      "sha256": "8de01c188da79d9065c837e88cc041a2d2fbc9bb1070631d4d1b981c0ecca830",
+      "version": "A07.double_report.18",
+      "reuse_zh": "冻结内核之外的版本化展示、适配或报告整合；说明见README"
     }
   ],
-  "pending_version": "A07.double_report.15"
+  "pending_version": "A07.double_report.15",
+  "checked_at": "2026-10-11",
+  "status_zh": "第二版展示与人工确认代码自测通过；真实预览待用户核查，原项目和历史结果保留"
 }

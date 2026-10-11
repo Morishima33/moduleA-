@@ -14,6 +14,7 @@ from ..core.source_catalog import source_intro
 from ..core.source_uploads import context as upload_context
 from ..core.kernel import ContractError, Kernel, read_json, verified_file
 from ..core.identity_workflow import plan_view
+from ..core.enrichment_workflow import display_context
 from ..core.status import LABELS, map_state, unavailable
 from ..presenters import present
 from ..tasks.manager import TaskManager
@@ -149,7 +150,10 @@ class Views:
             for module_id in registry.ORDER:
                 if states[module_id]["code"] == code:
                     title = registry.SPECS[module_id].title_zh
-                    return {"module_id": module_id, "code": code, "text_zh": NEXT_TEXT[code].format(m=f"{module_id} {title}")}
+                    text=NEXT_TEXT[code].format(m=f"{module_id} {title}")
+                    if module_id=="A05" and code=="waiting" and states[module_id]["label_zh"]!="等待资料":
+                        text=f"{module_id} {title}："+states[module_id]["label_zh"]+"，请查看页面标题下方确认区"
+                    return {"module_id": module_id, "code": code, "text_zh": text}
         if all(s["code"] in ("approved", "published") for s in states.values()):
             return {"module_id": None, "code": "done", "text_zh": "全部模块已通过，本研究流程完成"}
         return None
@@ -242,6 +246,14 @@ class Views:
             key = next((f["key"] for f in files if f["path"] == record["path"] and f["sha256"] == record["sha256"]), None)
             if key:
                 dual["network"] = {"url": f"/api/v1/studies/{study_id}/files/{key}?inline=1", "caption_zh": network["caption_zh"]}
+        # A05图片只链接本运行索引中的指纹文件，历史不会借用当前新图。
+        display_figures = ((result or {}).get("tables") or {}).get("display_figures") or []
+        if display_figures:
+            parts["special"]["enrichment_graphs"] = {}
+            for row in display_figures:
+                key = next((f["key"] for f in files if f["path"] == row["png_path"] and f["sha256"] == row["png_sha256"]),None)
+                if key:
+                    parts["special"]["enrichment_graphs"][row["group"]] = {"url":f"/api/v1/studies/{study_id}/files/{key}?inline=1","caption_zh":"GO三类各前八；中英文名称，柱长与深浅表示Count。" if row["group"]=="go" else "KEGG统计显著性前十五；横轴RichFactor，面积Count，颜色为−log10(BH校正后P值)。"}
         a03_id = real.get("current", {}).get("A03", "")
         ppi_enabled = bool(module_id == "A04" and a03_id and not historical and not real.get("trashed") and workflow.active(real, a03_id) and workflow.approved(real, a03_id) and not self.tasks.active_for(study_id))
         if run:
@@ -266,6 +278,7 @@ class Views:
             "historical": historical,
             "ppi_run": {"enabled": ppi_enabled, "disabled_reason_zh": "" if ppi_enabled else "请先通过当前A03，并等待本研究活动任务结束；历史及回收站只读。", "expected_a03": a03_id, "expected_a04": real.get("current", {}).get("A04", "")} if module_id == "A04" and not historical else None,
             "identity_plan": plan_view(workflow, real, run, result, ppi_enabled and bool(run) and workflow.active(real, run["run_id"]), historical) if module_id == "A04" else None,
+            "enrichment_display": display_context(workflow, real, run, result, historical, bool(self.tasks.active_for(study_id))) if module_id == "A05" else None,
             "source_uploads": upload_context(workflow, real, module_id, result, historical, bool(self.tasks.active_for(study_id))) if not historical else None,
         }
 
@@ -283,7 +296,14 @@ class Views:
         """把 run.json 中记录的简单配置项列为参数（来源：运行记录）。"""
         seen = {p["label_zh"] for p in existing}
         params = []
-        for key, value in (run.get("config") or {}).items():
+        config=run.get("config") or {}
+        display_rule=config.get("display_rule")
+        if display_rule:
+            for key,label in (("go_graph","GO图各类名额"),("go_table","GO表各类名额"),("kegg_graph","KEGG图名额"),("kegg_tables","KEGG两表各名额")):
+                params.append({"label_zh":label,"value":str(display_rule[key]),"origin":"run_config"})
+        for key, value in config.items():
+            if display_rule and key in ("show_GO","show_KEGG"):
+                continue  # 这是冻结统计基线的旧展示字段，当前名额读取版本化display_rule。
             if isinstance(value, (str, int, float, bool)) and key not in seen and len(params) < 30:
                 params.append({"label_zh": key, "value": value if isinstance(value, str) else str(value), "origin": "run_config"})
         return params

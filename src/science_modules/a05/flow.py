@@ -7,7 +7,7 @@ import tempfile
 from types import FunctionType
 
 from contracts import ContractError, require
-from storage import read_json
+from storage import read_json, verified_file
 import enrichment_flow as legacy
 
 # 工具环境保持现状；脚本属于代码根，输入输出仅位于调用方的数据根。
@@ -66,8 +66,42 @@ def validator(root):
     return _bound()["validator"](Path(root))
 
 
-# 发布链复用冻结实现；补齐首次来源目录，结果依旧待人工复核。
+# 三库A01与A02共用HGNC快照；只追溯本A03的实际父版本，不猜最新来源。
+def mapping_record(workflow, manifest, a03):
+    parent = workflow.run(manifest, a03)
+    a01 = workflow.run(manifest, parent["parent_runs"]["A01"])
+    summary = workflow.result(manifest, a01["run_id"])["summary"]
+    record = a01["inputs"].get("mapping_file") or a01["inputs"].get("mapping", {}).get("mapping_file")
+    if not record:
+        a02 = workflow.run(manifest, parent["parent_runs"]["A02"])
+        record = a02["inputs"].get("mapping_file")
+    require(record, "本A03的上游未绑定HGNC身份快照，请补齐来源")
+    require(not summary.get("mapping_snapshot") or record["sha256"] == summary["mapping_snapshot"], "三库A01与A05的HGNC快照不一致，不能混用")
+    verified_file(workflow.location(manifest["study_id"]), record)
+    return record
+
+
+# 仅为旧函数提供输入形状适配，原A01归档、规则和批准保持不变。
+class _InputView:
+    def __init__(self, workflow, manifest, a03):
+        self.workflow = workflow
+        self.a01 = workflow.run(manifest, a03)["parent_runs"]["A01"]
+        self.mapping = mapping_record(workflow, manifest, a03)
+
+    def __getattr__(self, name):
+        return getattr(self.workflow, name)
+
+    def run(self, manifest, rid):
+        run = self.workflow.run(manifest, rid)
+        if rid == self.a01:
+            run = dict(run, inputs=dict(run["inputs"], mapping_file=self.mapping))
+        return run
+
+
+# 发布链复用冻结实现；补齐首次来源目录及三库输入形状，不改变统计。
 def run_enrichment(workflow, sid, a03, a05, reason):
+    manifest = workflow.load(sid)
+    require(manifest["current"].get("A03") == a03 and workflow.approved(manifest, a03), "请先通过当前A03交集")
     context = _bound()
     context["source_snapshot"] = source_snapshot
-    return context["run_enrichment"](workflow, sid, a03, a05, reason)
+    return context["run_enrichment"](_InputView(workflow, manifest, a03), sid, a03, a05, reason)

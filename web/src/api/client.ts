@@ -106,6 +106,9 @@ export const api = {
   /** 人工确认补查方案后生成新的待复核A04 */
   identityPlan: (sid: string, body: import('./types').IdentityPlanRequest) =>
     request<{ task: Task; created: boolean; message_zh: string }>('POST', `/studies/${sid}/modules/A04/actions/identity_plan`, body),
+  /** A05人工确认展示范围或图表版式；后台生成新版本，不代签 */
+  confirmEnrichmentDisplay: (sid: string, body: import('./types').EnrichmentDisplayRequest) =>
+    request<{ task: Task; created: boolean; message_zh: string }>('POST', `/studies/${sid}/modules/A05/actions/display_confirmation`, body),
   /** 单个模块复核 */
   review: (sid: string, mid: string, body: { run_id: string; expected_review_id: string | null; decision: Decision; reviewer: string; note: string; after: 'save' | 'continue' }) =>
     request<ReviewResponse>('POST', `/studies/${sid}/modules/${mid}/reviews`, body),

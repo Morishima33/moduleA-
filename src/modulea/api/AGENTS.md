@@ -1,5 +1,13 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## A05第二版展示与确认（2026-10-11）
+
+ModuleView新增enrichment_display：{enabled,disabled_reason_zh,expected_a03,expected_a05,expected_decision_id,exclusions_confirmed,layout_confirmed,excluded_ids,missing_translations,catalog,retained_count,excluded_count,significant_count,latest}。catalog为本次完整显著KEGG清单，保留ID、Description、Count、p.adjust、RichFactor、gene_symbols，并附description_zh、translation_status、proposed、reason_zh、evidence_url。latest显示核验人、意见、时间、是否实际应用；保存清单不代表批准A05。
+
+POST /studies/{sid}/modules/A05/actions/display_confirmation：{expected_a03,expected_a05,expected_decision_id,action:exclusions|layout,reviewer,note,excluded_ids,confirmed:true} →202 {task,created,message_zh}。排除清单可以为空，须明确核对；版式确认仅在范围已确认且当前图表中文齐备时接受，并禁止同时修改清单。后台a05_display生成新A05展示修订，统计来源和BH不变；改变清单撤销版式确认。人工确认记录通过EnrichmentWorkflow公开方法留存，失败重试复用同一决定。
+
+special新增enrichment_display_tables：{bp_top15,cc_top15,mf_top15,kegg_p_top10,kegg_count_top10,kegg_excluded}，均为同源归档行；enrichment_graphs：{go|kegg:{url,caption_zh}}。当前版本的历史、失效、回收站和活动任务均禁用写操作。未确认展示范围／版式或中文缺失时，handoff_blocked由A05结果给出，不能选通过；确认后仍须用户独立复核。
+
 本文件是前端开发和接口修改的依据。改动任何字段前先改本文件，并保证前端同步；字段只增不删，删除或改名须用户确认。
 
 ## 1 通用约定

@@ -2,10 +2,10 @@
   "schema_version": 1,
   "module": "A05",
   "checked_at": "2026-10-11",
-  "status_zh": "旧版四个核心文件原字节保留，独立代码／数据根路径适配及隔离运行自测已通过；当前研究等待用户微调",
-  "version": "A05.1",
+  "status_zh": "第二版展示与人工确认代码自测通过；真实预览待用户核查，原项目和历史结果保留",
+  "version": "A05.display.2",
   "source_zh": "原项目当前版本，原项目不修改",
-  "scientific_run_performed": false,
+  "scientific_run_performed": true,
   "frozen_dependencies": [
     {
       "path": "src/enrichment.R",
@@ -33,14 +33,45 @@
     }
   ],
   "runtime_adaptation_pending": [],
-  "existing_result_zh": "页面已有历史A05，其父A03已不是当前A03；标记已失效并保留，不迁成新结果",
+  "existing_result_zh": "旧失效A05不复用为当前结果；新统计及展示独立归档，清单、版式和整体复核待用户确认",
   "runtime_rule": "A05.separate_roots.1",
   "runtime_checked_at": "2026-10-11",
   "extensions": [
     {
       "path": "src/science_modules/a05/flow.py",
-      "sha256": "2d43f9551533c5ece75f597033ff76b8b90f17773cf2932e9e3d306e268d86f7",
-      "purpose_zh": "仅适配脚本绝对路径、首次来源目录及错误提示；统计与归档复用原实现"
+      "sha256": "31dd5c592fe90a7951073e63561bdbcb57b1dbf60145636a7f8c1336d36abb4a",
+      "version": "A05.display.2",
+      "reuse_zh": "冻结内核之外的版本化展示、适配或报告整合；说明见README"
+    },
+    {
+      "path": "src/science_modules/a05/display.py",
+      "sha256": "247c1d5c8d6b97677723b5d510ff622c65e82af604b903da1bfe43427610950a",
+      "version": "A05.display.2",
+      "reuse_zh": "冻结内核之外的版本化展示、适配或报告整合；说明见README"
+    },
+    {
+      "path": "src/science_modules/a05/display_flow.py",
+      "sha256": "7fd6634f4d278479855cd0a8651fc37a83fa386f1e93244ad3fca3c957d1c0d4",
+      "version": "A05.display.2",
+      "reuse_zh": "冻结内核之外的版本化展示、适配或报告整合；说明见README"
+    },
+    {
+      "path": "src/science_modules/a05/figures.py",
+      "sha256": "c99e835dee33c72f2eb908e66f1939aa78a5deb00f601e42b639b9e2af85c831",
+      "version": "A05.display.2",
+      "reuse_zh": "冻结内核之外的版本化展示、适配或报告整合；说明见README"
+    },
+    {
+      "path": "src/science_modules/a05/report_section.py",
+      "sha256": "fb6f6430f153c078200a5f941cd0d1fc4a1520cfe1ab219937c09517ffbccd6a",
+      "version": "A05.display.2",
+      "reuse_zh": "冻结内核之外的版本化展示、适配或报告整合；说明见README"
+    },
+    {
+      "path": "src/science_modules/a05/term_translations.json",
+      "sha256": "afb4079bf07b33b913c848d8cdf64d2f9ed4f684ff1209e4d20c166c0fb3c86e",
+      "version": "A05.display.2",
+      "reuse_zh": "冻结内核之外的版本化展示、适配或报告整合；说明见README"
     }
   ],
   "self_test_zh": "真实R的5项检查、真实HTTP和后台子进程端到端、GO导出与KEGG官方来源初始化均通过；当前研究未计算"

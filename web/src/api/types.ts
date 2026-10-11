@@ -210,6 +210,8 @@ export interface Special {
   ppi_identity?: PpiIdentity;
 
   enrichment_top?: Record<string, EnrichItem[]>;
+  enrichment_display_tables?: Record<string, EnrichmentCatalogRow[]>;
+  enrichment_graphs?: Partial<Record<'go' | 'kegg', { url: string; caption_zh: string }>>;
   heatmap?: Heatmap;
   conclusion_zh?: string;
   leads?: Lead[];
@@ -246,6 +248,7 @@ export interface ModuleView {
   source_uploads?: SourceUploadInfo | null;
   ppi_run?: PpiRunInfo | null;
   identity_plan?: IdentityPlanInfo | null;
+  enrichment_display?: EnrichmentDisplayInfo | null;
 }
 
 /** 明细表分页返回 */
@@ -271,4 +274,9 @@ export interface PpiIdentity { total: number; source_table: string; note_zh: str
 
 // 保存的是人工补查方案；身份与模块是否可通过仍由科学归档和Workflow决定。
 export interface IdentityPlanInfo { enabled: boolean; disabled_reason_zh: string; expected_a03: string; expected_a04: string; expected_decision_id: string | null; latest: { decision_id: string; reviewer: string; note_zh: string; created_at: string; check_ids: string[]; omit_ids: string[]; applied_run_id: string | null; pending_count: number | null; evidence_url?: string | null; error_zh?: string; status_zh: string } | null }
+// A05确认绑定研究运行；候选、排名和是否可写均来自归档接口。
+export interface EnrichmentCatalogRow { ID: string; Description: string; description_zh: string; translation_status: string; Count: number; 'p.adjust': number; RichFactor: number; gene_symbols: string; proposed?: boolean; reason_zh?: string; evidence_url?: string }
+export interface EnrichmentDisplayInfo { enabled: boolean; disabled_reason_zh: string; expected_a03: string; expected_a05: string; expected_decision_id: string | null; exclusions_confirmed: boolean; layout_confirmed: boolean; excluded_ids: string[]; missing_translations: string[]; catalog: EnrichmentCatalogRow[]; retained_count: number; excluded_count: number; significant_count: number; latest: { reviewer: string; note_zh: string; created_at: string; applied: boolean; status_zh: string } | null }
+export interface EnrichmentDisplayRequest { expected_a03: string; expected_a05: string; expected_decision_id: string | null; action: 'exclusions' | 'layout'; reviewer: string; note: string; excluded_ids: string[]; confirmed: true }
+
 export interface IdentityPlanRequest { expected_a03: string; expected_a04: string; expected_decision_id: string | null; reviewer: string; note: string; check_ids: string[]; omit_ids: string[]; confirmed: true }

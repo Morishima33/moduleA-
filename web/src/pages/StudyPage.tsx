@@ -245,7 +245,7 @@ export default function StudyPage({ studyId, moduleId, runId }: { studyId: strin
 
         {/* 右侧复核栏（宽屏） */}
         {wide && (
-          <aside className="side-sticky" aria-label="复核决定">
+          <aside id="module-review-panel" className="side-sticky" aria-label="复核决定">
             {reviewPanel}
             {downstream}
           </aside>

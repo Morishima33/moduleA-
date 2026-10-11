@@ -22,7 +22,7 @@ from .manager import TaskManager
 def run_continue(settings: Settings, task: dict, manager: TaskManager) -> str:
     """自动接续：导入完整科学依赖，生成下一批待复核结果。返回给用户看的中文说明。"""
     from auto_continue import continue_after_review, message
-    from science_modules.a05.flow import run_enrichment
+    from science_modules.a05.display_flow import run_enrichment
 
     manager.update(task["task_id"], progress={"step_zh": "按依赖顺序检查并生成下一批结果", "done": 0, "total": 1})
     workflow = full_workflow(settings.data_root)
@@ -118,7 +118,16 @@ def run_a04_identity(settings: Settings, task: dict, manager: TaskManager) -> st
     count = result["summary"].get("身份待核验数", 0)
     return f"身份补查方案已保存并应用，生成新A04：{result['run_id']}；仍有{count}项待核验。旧版本保留，新结果未自动批准；请核查图表和剩余问题。"
 
-HANDLERS = {"a04_identity": run_a04_identity, "a04_ppi": run_a04_ppi, "continue": run_continue, "source_upload": run_source_upload, "a01_sources": run_a01_sources}
+# A05展示确认只重绘归档，不重新计算ORA、不代签或启动后续模块。
+def run_a05_display(settings: Settings, task: dict, manager: TaskManager) -> str:
+    from science_modules.a05.display_flow import apply_confirmation
+    payload = json.loads(task.get("payload") or "{}")
+    manager.update(task["task_id"], progress={"step_zh":"保存人工确认并生成同源图表","done":0,"total":1})
+    result = apply_confirmation(full_workflow(settings.data_root),task["study_id"],payload)
+    manager.update(task["task_id"], progress={"step_zh":"新展示已归档，仍须独立复核A05","done":1,"total":1})
+    return "A05展示确认已保存并应用；生成新版本："+result["run_id"]+"。未重新计算ORA、未批准A05或启动A06。"
+
+HANDLERS = {"a05_display": run_a05_display, "a04_identity": run_a04_identity, "a04_ppi": run_a04_ppi, "continue": run_continue, "source_upload": run_source_upload, "a01_sources": run_a01_sources}
 
 
 def run_task(settings: Settings, task_id: str) -> int:

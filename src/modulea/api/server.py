@@ -65,6 +65,7 @@ class App:
             ("GET", rf"/api/v1/studies/{ID}/modules/{ID}/sources/{ID}/file", self.get_source_file),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/run_ppi", self.post_run_ppi),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/identity_plan", self.post_identity_plan),
+            ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/display_confirmation", self.post_display_confirmation),
             ("GET", rf"/api/v1/studies/{ID}/modules/A04/identity_evidence/{ID}", self.get_identity_evidence),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/upload", self.post_source_upload),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/process_sources", self.post_source_process),
@@ -380,6 +381,27 @@ class App:
             "message_zh": "方案已提交后台保存与应用，请查看任务结果；尚未批准A04。"
             + self._task_message(task),
         }, 202
+
+    # 同研究同版本的人工展示确认立即提交后台；所有必填项由服务端再次验证。
+    def post_display_confirmation(self, req, study_id, module_id):
+        if module_id != "A05":
+            raise not_found("该模块没有富集展示确认")
+        body = req.json()
+        info = self.views.module(study_id,module_id).get("enrichment_display")
+        if not info or any(body.get(k) != info[k] for k in ("expected_a03","expected_a05","expected_decision_id")):
+            raise ApiError(409,"STALE_VERSION","富集结果或确认版本已改变，请刷新")
+        if not info["enabled"]:
+            raise ApiError(409,"GATE_BLOCKED",info["disabled_reason_zh"])
+        payload = {k:body.get(k) for k in ("expected_a03","expected_a05","expected_decision_id","action","reviewer","note","excluded_ids","confirmed")}
+        payload["decision_id"]="decision_"+uuid.uuid4().hex
+        try:
+            self.kernel.workflow().validate_display_confirmation(study_id,payload)
+        except ContractError as error:
+            raise from_contract(str(error))
+        task,created = self.tasks.submit(study_id,"a05_display",payload["reviewer"].strip(),payload)
+        if not created:
+            raise ApiError(409,"GATE_BLOCKED","当前研究已有后台任务，本次确认未提交")
+        return {"task":task,"created":created,"message_zh":"确认已提交后台保存与重绘，请查看应用结果；尚未批准A05。"+self._task_message(task)},202
 
     # ------------------------------------------------------------------ 分派
     def dispatch(self, method: str, path: str, req):

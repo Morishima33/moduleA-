@@ -266,6 +266,16 @@ def present_a05(result: dict, ctx: dict) -> Parts:
             for r in rows
         ]
     parts.special["enrichment_top"] = top
+    if s.get("display_version") == "A05.display.2":
+        # 新展示直接读取完整显著表派生的已归档排名，不再沿用旧前十/二十截断。
+        parts.special.pop("enrichment_top")
+        parts.special["enrichment_display_tables"] = {name:t.get(name,[]) for name in ("bp_top15","cc_top15","mf_top15","kegg_p_top10","kegg_count_top10","kegg_excluded")}
+        if not s.get("display_exclusions_confirmed"):
+            parts.focus.append(focus("确认KEGG展示范围","在标题下方核对拟排除清单，勾选后点击“确认排除清单并生成图表”；不排除任何条目也须明确确认。未确认将阻断A05通过。",blocks=["A07"]))
+        elif not s.get("display_layout_confirmed"):
+            parts.focus.append(focus("确认GO与KEGG图表版式","检查中英文、配色、图例和排序，随后点击标题下方“确认当前图表版式”。确认后仍须独立复核A05结果。",blocks=["A07"]))
+        if s.get("display_missing_translation_count"):
+            parts.focus.append(focus("图表中文待核译",f"{s['display_missing_translation_count']}个实际入图入表条目待核译；不能用缺译图表确认版式。",blocks=["A07"]))
     parts.params = clean(
         [param("显著性", pick(s, "主显著性"))]
     )  # 其余实际参数由通用视图从 run.json 的 config 中列出
