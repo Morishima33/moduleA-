@@ -222,6 +222,7 @@ export interface Special {
 
 /** 模块页 */
 export interface ModuleView {
+  docking_review?:DockingReviewInfo|null;
   compound_selection?:CompoundSelectionInfo|null;
   docking_preparation?:DockingPreparationInfo|null;
   docking_candidates?: DockingCandidatesInfo | null;
@@ -299,7 +300,7 @@ export interface DockingCandidatesInfo {
 }
 
 /** 对接成分选择与两遍方案来自后端，字段完整不表示质控已通过。 */
-export interface CompoundChoiceRow { compound_id:string; name:string; herbs:string[]; intersection_count:number; main_rank:number; eligible:boolean; suggestion_zh:string }
+export interface CompoundChoiceRow { compound_id:string; name:string; herbs:string[]|string; intersection_count:number; main_rank:number; eligible:boolean; suggestion_zh:string }
 export interface CompoundSelectionInfo { enabled:boolean; disabled_reason_zh:string; expected_a03:string; expected_select:string; rows:CompoundChoiceRow[]; current_selected:string[]; previous_rows:CompoundChoiceRow[]; previous_active:boolean; rule_zh:string }
 export interface StructureSpec { source_type:'experimental'|'alphafold'; uniprot:string; chains:string[]; pocket:'reference'|'p2rank'; pdb_id?:string; model_id?:string; sequence_start?:number; sequence_end?:number; altloc?:string|null; reference_code?:string; reference_chain?:string; reference_sequence?:string }
 export interface TwoPassRow {target_id:string;symbol:string;candidate_grade:string;first:StructureSpec|null;first_reason:string;second:StructureSpec|null;second_reason:string;unavailable:boolean;reason:string}
@@ -308,3 +309,13 @@ export interface TwoPassPlan {policy_version:string;package_id:string;pymol_exec
 export interface PlanRowCheck {target_id:string;valid:boolean;bulk_allowed:boolean;reason_zh:string}
 export interface DockingMaterial {material_id:string;compound_id:string;cid:string;name:string;state_zh:string}
 export interface DockingPreparationInfo {enabled:boolean;disabled_reason_zh:string;expected_source:string;expected_plan_id:string|null;policy_version:string;plan:TwoPassPlan;checks:PlanRowCheck[];materials:DockingMaterial[];context:{receptors:DockingCandidateRow[];compounds:{compound_id:string;name:string;herbs:string[]}[]};planned_pair_count:number;execution_allowed:false;status_zh:string;latest?:{reviewer:string;note:string;created_at:string}|null}
+
+// 研究核查草案与同批矩阵只读，身份预核查不代替人工确认。
+export interface DockingReviewCompound extends CompoundChoiceRow {name_zh:string;cid:string;identity_prechecked:boolean;identity_state_zh:string;source_3d_state_zh:string;evidence_zh:string;manual_reason_zh:string}
+export interface DockingMatrixCell {compound_id:string;target_id:string;state:string;score:number|null;reason_zh:string;color:string;text_color:string}
+export interface DockingMatrixSlice {rows:DockingReviewCompound[];columns:(DockingCandidateRow&{candidate_grade:string;quality_zh:string})[];cells:DockingMatrixCell[][]}
+export interface DockingMatrixInfo {ready:boolean;status_zh:string;full_pair_count:number;score_range:[number|null,number|null]|null;result_version:string|null;heatmap:DockingMatrixSlice;table:DockingMatrixSlice}
+export interface DockingReviewInfo {enabled:boolean;reason_zh:string;review_id:string|null;proposal:{acetic_trace?:SourceIdentityTrace;compounds:DockingReviewCompound[];excluded:{compound_id:string;name_zh:string;reason_zh:string}[];note_zh:string;receptors:DockingCandidateRow[]}|null;matrix:DockingMatrixInfo|null}
+
+// 来源冲突追溯只读；计数及逐行映射来自归档，不在网页重新归属靶点。
+export interface SourceIdentityTrace {bulk:Record<string,string>;detail:Record<string,string>;official:{cid:string;url:string;properties:{MolecularFormula:string;InChIKey:string}}[];raw_rows:number;normalized_rows:number;unique_targets:number;intersection_targets:number;outside_intersection:number;trace:{source_row:number;raw_target_id:string;raw_symbol:string;database_source_titles:string[];target_id:string;symbol:string;in_current_intersection:boolean}[];live_confirmation?:{same_as_archived:boolean;cas_query_cid:number}}

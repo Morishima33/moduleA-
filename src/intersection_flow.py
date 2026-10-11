@@ -126,9 +126,11 @@ def validate_selection(run, summary, tables, anomalies, outcome):  # 选择结�
     expected, expected_tables = select_build(run["inputs"])  # 不仅检查数量。
     require(summary == expected and tables == expected_tables and outcome == ("success" if tables["selected"] else "empty"), "主候选结果校验失败")  # 无候选不能伪造成功名单。
 
-def run_selection(workflow, study_id, expected_a03, expected_select, selected, reviewer, reason, confirmed, manual_supplements=None):  # 保存独立选择版本。
+def run_selection(workflow, study_id, expected_a03, expected_select, selected, reviewer, reason, confirmed, manual_supplements=None, request_guard=None):  # 保存独立选择版本。
     with write_lock(workflow.root):  # 防止同时修改候选。
         manifest = workflow.load(study_id)  # 获取当前研究。
+        # 新核查草案的身份与版本在同一写锁内再次验证，旧调用保持原样。
+        if request_guard is not None:request_guard()
         require(manifest["current"].get("A03") == expected_a03 and manifest["current"].get("A03_SELECT", "") == expected_select, "候选页面版本改变，请刷新")  # 旧页不能覆盖新选择。
         require(workflow.approved(manifest, expected_a03), "请先复核交集结果")  # 选择依赖明确交集版本。
         payload = workflow.run(manifest, expected_a03)["inputs"]["payload"]  # 不重新取另一个研究的成分。

@@ -139,3 +139,6 @@ a:hover { color: #0A4350; }
 .identity-review-downloads { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
 .identity-review .ant-table-thead > tr > th { background: #FFF0D6; color: #7A4100; }
 .identity-review .ant-table-cell { overflow-wrap: anywhere; }
+
+/* 对接名单的勾选只是本地选择，用浅色保持身份和资料状态可读。 */
+.docking-compound-table .ant-table-tbody > tr.ant-table-row-selected > td { background: #eaf3fa !important; }

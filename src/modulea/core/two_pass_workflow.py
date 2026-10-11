@@ -5,12 +5,13 @@ import base64,re
 from contracts import require,safe_id
 from storage import write_lock,write_json,read_json,verified_file,file_record,now
 from .docking_workflow import DockingWorkflow
+from .docking_review import DockingReviewMixin
 from science_modules.a06.plan_adapter import source_context
 from science_modules.a06.two_pass_plan import SCHEMA,blank,row_check,validate
 from science_modules.a06.two_pass import POLICY,CONFIDENCE
 
 # 与旧方案并存的新版本，唯一研究索引及锁沿用原Workflow。
-class TwoPassWorkflow(DockingWorkflow):
+class TwoPassWorkflow(DockingReviewMixin,DockingWorkflow):
     def selection_binding(self,sid):
         manifest=self.load(sid);a03=manifest["current"].get("A03")
         require(not manifest.get("trashed") and a03 and self.approved(manifest,a03),"请先通过当前A03；回收站只读")
@@ -19,19 +20,26 @@ class TwoPassWorkflow(DockingWorkflow):
     # 只检查来源和请求格式；科学资格交给后台既有选择内核。
     def validate_selection_request(self,sid,payload):
         binding=self.selection_binding(sid)
-        require(isinstance(payload,dict) and set(payload)=={"expected_a03","expected_select","selected","manual_supplements","reviewer","reason","confirmed"},"成分选择请求字段不完整或含未授权参数")
+        require(isinstance(payload,dict) and set(payload) in ({"expected_a03","expected_select","selected","manual_supplements","reviewer","reason","confirmed"},{"expected_a03","expected_select","selected","manual_supplements","reviewer","reason","confirmed","expected_docking_review"}),"成分选择请求字段不完整或含未授权参数")
         require(all(payload.get(k)==v for k,v in binding.items()),"成分选择版本已改变，请刷新")
         require(payload.get("confirmed") is True,"请明确确认成分身份")
         require(isinstance(payload.get("selected"),list) and payload["selected"] and all(isinstance(x,str) for x in payload["selected"]) and len(set(payload["selected"]))==len(payload["selected"]),"请选择不重复的成分编号")
         require(all(isinstance(payload.get(k),str) and 0<len(payload[k].strip())<=2000 for k in ("reviewer","reason")),"请填写核验人与成分选择依据")
         require(isinstance(payload.get("manual_supplements",{}),dict),"人工补充理由须逐项填写")
+        # 当前草案版本及身份预核对同时保护API和后台任务，不能凭勾选绕过缺口。
+        draft=self.current_docking_review(self.load(sid))
+        if draft:
+            require(payload.get("expected_docking_review")==draft["review_id"],"成分核查草案已改变，请刷新")
+            blocked={r["compound_id"] for r in draft["compounds"] if not r["identity_prechecked"]}
+            blocked.update(r["compound_id"] for r in draft["excluded"])
+            require(not set(payload["selected"])&blocked,"所选成分存在身份或来源待补，不能确认为已核对")
         return binding
 
     # 仅生成待复核选择；既有模块复核栏负责独立批准。
     def save_selection(self,sid,payload):
         self.validate_selection_request(sid,payload)
         from intersection_flow import run_selection
-        return run_selection(self,sid,payload["expected_a03"],payload["expected_select"],payload["selected"],payload["reviewer"],payload["reason"],payload["confirmed"],payload.get("manual_supplements") or None)
+        return run_selection(self,sid,payload["expected_a03"],payload["expected_select"],payload["selected"],payload["reviewer"],payload["reason"],payload["confirmed"],payload.get("manual_supplements") or None,request_guard=lambda:self.validate_selection_request(sid,payload))
 
     # 新人工方案只追加版本，历史保存与本研究引用都逐字节核对。
     def latest_two_pass(self,manifest,context):
@@ -101,14 +109,25 @@ class TwoPassWorkflow(DockingWorkflow):
 # 成分页只展示当前A03归档，旧选择单独对照；不会自动选中旧版本。
 def selection_context(workflow,manifest,historical=False,busy=False):
     if historical:return None
-    try:binding=workflow.selection_binding(manifest["study_id"]);reason="请等待当前研究后台任务结束" if busy else ""
+    try:
+        binding=workflow.selection_binding(manifest["study_id"]);draft=workflow.current_docking_review(manifest)
+        reason="请等待当前研究后台任务结束" if busy else ""
     except ValueError as error:return {"enabled":False,"disabled_reason_zh":str(error),"rows":[]}
     result=workflow.result(manifest,binding["expected_a03"]);tables=result["tables"]
     suggested={r["compound_id"]:r.get("group","") for r in tables.get("suggestions",[])}
     rows=[{**r,"suggestion_zh":suggested.get(r["compound_id"],"需逐项说明人工补充理由"),"eligible":bool(r.get("in_network"))} for r in tables.get("ranking",[])]
+    # 身份待补不可通过批量选择；三维资料缺失另外提示，不冒充准备完成。
+    if draft:
+        pending={r["compound_id"] for r in draft["compounds"] if not r["identity_prechecked"]}|{r["compound_id"] for r in draft["excluded"]}
+        for row in rows:
+            if row["compound_id"] in pending:row.update(eligible=False,suggestion_zh="身份或来源待补，暂不能确认")
     old=workflow.result(manifest,binding["expected_select"]) if binding["expected_select"] else None
     current=bool(old and workflow.active(manifest,binding["expected_select"]))
-    return {**binding,"enabled":not reason,"disabled_reason_zh":reason,"rows":rows,"current_selected":[r["compound_id"] for r in (old or {}).get("tables",{}).get("selected",[])] if current else [],"previous_rows":(old or {}).get("tables",{}).get("selected",[]),"previous_active":current,"rule_zh":"沿用当前A03候选、边界并列、药味代表及逐项人工补充规则；保存后仍须独立复核。"}
+    # 旧展示档缺编号时保持只读；不能根据成分名称猜测选择身份。
+    previous=(old or {}).get("tables",{}).get("selected",[])
+    if current and any(not isinstance(r.get("compound_id"),str) or not r["compound_id"] for r in previous):
+        reason="当前选择归档缺少成分编号，不能按名称确认身份；请核查来源资料"
+    return {**binding,"enabled":not reason,"disabled_reason_zh":reason,"rows":rows,"current_selected":[r["compound_id"] for r in previous] if current and not reason else [],"previous_rows":(old or {}).get("tables",{}).get("selected",[]),"previous_active":current,"rule_zh":"沿用当前A03候选、边界并列、药味代表及逐项人工补充规则；保存后仍须独立复核。"}
 
 # A06顶部核查入口，当前研究无来源时明确提示成分关口而不借用旧结果。
 def preparation_context(workflow,manifest,historical=False,busy=False):

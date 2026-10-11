@@ -249,3 +249,13 @@ POST /studies/{sid}/modules/A06_PREP/actions/material：{expected_source,compoun
 
 POST .../modules/A06_PREP/actions/check_two_pass：{expected_source,plan}→{items:[{target_id,valid,bulk_allowed,reason_zh}],calculation_started:false}；无写入，只校验完整当前受体草案。valid只表示字段/来源满足人工确认要求，不能显示为科学通过。明确NA项valid=true且bulk_allowed=false；未提供资料/格式失败两者均false。
 后台任务payload沿用manager既定字段，重试使用同一内部plan_id，已保存同一请求不重复追加；更换来源/方案后旧请求阻断。结果契约需同源input_key、Vina版本和完整组合覆盖；completed必须Top-1及实际归档姿势指纹通过，NA须null评分和原因。本轮未新增真实计算入口。
+
+## A06成分核查与矩阵展示 v1
+ModuleView新增docking_review（A03_SELECT/A06_PREP/A06当前页；历史页null）。
+字段为enabled、reason_zh、review_id、proposal（研究级不可变资料；schema_version、study_id、binding、compounds、excluded、display、source_files、note_zh、planned_pairs）、matrix（status_zh、ready、heatmap/table的rows/columns/cells、full_pair_count、score_range）。
+compounds逐项包含compound_id、name、name_zh、cid、herbs、intersection_count、main_rank、identity_prechecked、identity_state_zh、source_3d_state_zh、manual_reason_zh、evidence_zh。预核对不表示人工批准；数据缺失/冲突不可全选为已核对。
+display记录heatmap_compounds/heatmap_targets/table_compounds/table_targets以及A优先、Degree降序、HGNC编号稳定展示的规则；完整受体仍保留，展示裁切不改变计算范围。
+selection请求兼容旧字段；存在本轮草案时须额外传expected_docking_review，API与后台均核验草案编号、源版本及身份预核对资格，拒绝旧草案和未核实身份。保存仍生成待复核结果。
+草案通过Workflow公开方法在写锁内追加docking_review_records；不改current/runs/reviews，不签署身份、不执行科学工具。结果适配仅接受当前批准成分与完整A/B受体、同源准备输入和完整结果契约，检查真实Top-1姿势指纹；无本轮评分仅显示待计算。
+新矩阵科研单蓝渐变，越负越深；NA灰色，不填零，不隐去无评分行列。旧热图规则及历史版本保持。
+可选proposal.acetic_trace提供当前来源冲突对照（bulk/detail/official）、归档计数与逐行trace；网页只读显示原始基因、来源条目、HGNC映射及当前交集成员，不重新归属靶点。planned_pairs保存全部待确认组合，评分为null；matrix.result_version、score_range、cells.color/text_color仅从同一有效结果生成。
