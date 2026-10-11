@@ -34,6 +34,25 @@ class IdentityApplyTests(unittest.TestCase):
         ):
             return run_identity(self.w, self.sid, self.payload)
 
+    # 方案成功与人工通过分别显示；模拟确认不能改变旧结果或替真实研究代签。
+    def test_plan_status_follows_actual_workflow_approval(self):
+        result = self.simulate()
+        manifest = self.w.load(self.sid)
+        run = self.w.run(manifest, result["run_id"])
+        info = plan_view(self.w, manifest, run, result, True)
+        self.assertEqual(info["latest"]["status_zh"], "已应用，新A04仍待独立复核")
+        with synthetic_snapshot():
+            self.w.review(self.sid, result["run_id"], "approved", "虚构核验人", "仅测试通过状态")
+        manifest = self.w.load(self.sid)
+        info = plan_view(self.w, manifest, run, result, True)
+        self.assertEqual(info["latest"]["status_zh"], "已应用，A04已通过复核")
+        self.assertEqual(
+            (self.w.location(self.sid) / "runs/A04" / self.payload["expected_a04"] / "result.json").read_bytes(),
+            self.original_bytes,
+        )
+        self.assertNotIn("A05", manifest["current"])
+        self.assertNotIn("A06", manifest["current"])
+
     def test_save_then_apply_removes_only_evidence_resolved_issue_without_approving(self):
         result = self.simulate()
         manifest = self.w.load(self.sid)

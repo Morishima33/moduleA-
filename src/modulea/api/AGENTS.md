@@ -209,3 +209,7 @@ POST .../modules/A04/actions/identity_plan：{expected_a03,expected_a04,expected
 补查请求及原响应（含失败前已经返回的原文）经Workflow公开方法追加至decisions/A04_identity/，manifest.identity_evidence仅记录文件指纹；不完整取证明确error_zh，不能作为成功空响应。latest新增evidence_url、error_zh。GET .../modules/A04/identity_evidence/{evidence_id}仅下载本研究索引登记且指纹完整的原文；不能指定任意路径。历史页只展示原决定的证据。
 
 同一A03的逐项补查保留已应用的人工范围，新选择追加；决定记录引用原已应用方案，旧运行继续按原决定独立复算。再次计算A04沿用当前结果已绑定的同上游方案，不重复签署；更换A03不继承。
+
+## 2026-10-11 A04复核后的方案状态文字
+
+identity_plan.latest.status_zh在方案已应用且绑定A04被Workflow判定已批准时显示“已应用，A04已通过复核”；未批准仍显示待独立复核，保存未应用仍显示任务结果提示。不新增字段、不改变批准或门控；该文案不由任务成功直接推断批准。

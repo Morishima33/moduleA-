@@ -234,7 +234,10 @@ def plan_view(workflow, manifest, run, result, enabled, historical=False):
             if probe
             else None,
             "error_zh": probe.get("error_zh", "") if probe else "",
-            "status_zh": "已应用，新A04仍待独立复核"
+            # 通过状态只读取Workflow的实际批准关系，不把保存方案视为模块通过。
+            "status_zh": "已应用，A04已通过复核"
+            if applied and workflow.approved(manifest, applied["run_id"])
+            else "已应用，新A04仍待独立复核"
             if applied
             else "方案已保存，尚未成功生成新A04；请查看任务结果",
         }

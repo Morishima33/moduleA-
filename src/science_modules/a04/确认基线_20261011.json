@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "module": "A04",
+  "confirmed_at": "2026-10-11",
+  "status_zh": "用户确认完毕，当前页面人工复核记录已核对；规则、布局、顺序及身份方案固定",
+  "code_base_commit": "2bb5f53b4668791b7590796997dd4c8aaa948f9a",
+  "versions": [
+    "A04.dual.3",
+    "A04.identity_apply.1",
+    "A04.degree_round2_circular.1",
+    "A04.equal_rank.1",
+    "A07.double_report.17"
+  ],
+  "display_order_zh": [
+    "第一轮Degree前十及边界并列五列表",
+    "第二轮Degree全部候选圆形网络图及图注",
+    "第二轮BC/CC前十五及边界并列表"
+  ],
+  "rules_zh": [
+    "Degree首轮≥全网参与节点中位数2倍，次轮≥首轮候选中位数",
+    "BC/CC两轮均同时严格高于对应范围各自中位数，指标不重算",
+    "Degree表五列为基因、HGNC、Degree、Betweenness、Closeness，无名次",
+    "网络仅第二轮前十及边界并列标红，其余蓝色，节点大小取完整网络Degree",
+    "身份有限处理必须人工确认且全部稳定编号成功无命中，仅影响本次PPI，A03及富集输入保留",
+    "后续对接来源尚未确认，不自动启动A06"
+  ],
+  "frozen_files": [
+    {
+      "path": "src/science_modules/a04/circular_figures.py",
+      "sha256": "ee8233bb746ed192220957a5f06b2ca7087351aaa046d7a8dc0a43012bf5dad8"
+    },
+    {
+      "path": "src/science_modules/a04/figure_labels.py",
+      "sha256": "85d4fc192200ced762ac7ff27eb1c2ca818b24484325be452cac520b20b03fbb"
+    },
+    {
+      "path": "src/science_modules/a04/figures.py",
+      "sha256": "c735103f2cbb5729e418fccb06ad01f793551820bee2ccadb9ad4cc156280896"
+    },
+    {
+      "path": "src/science_modules/a04/flow.py",
+      "sha256": "f08573747133fd2f9f44ed339cdd8a6e62020f96921fb9635a30cf6e6645695f"
+    },
+    {
+      "path": "src/science_modules/a04/flow_v2.py",
+      "sha256": "f34f23286d3f5235a74145e7b0a8d7a046dbded19ca62733734cd050329da25f"
+    },
+    {
+      "path": "src/science_modules/a04/flow_v3.py",
+      "sha256": "4d9f467586a72b52b2c3e31ccf6fa562b3473689ca403901c95d333d1fc85833"
+    },
+    {
+      "path": "src/science_modules/a04/identity_flow.py",
+      "sha256": "d234fe550950fcfece99b43ab6f3ba503ebe3fd5196cb27416ddd4dbc37db532"
+    },
+    {
+      "path": "src/science_modules/a04/selection.py",
+      "sha256": "e144a380461eb94c99ed0a60a82eec92b8410c84477fda6d0f69567c33b901a5"
+    },
+    {
+      "path": "src/science_modules/a04/selection_v2.py",
+      "sha256": "e7f75a44720debb86726a62086626e3d2a73b8b066a3ebd3fb7fb097957bf58b"
+    },
+    {
+      "path": "src/science_modules/a04/selection_v3.py",
+      "sha256": "d4dfff1b72ade697a7f1a755fd9912084e5e2c5133089eafb7006e7f49a69818"
+    },
+    {
+      "path": "src/science_modules/a04/source_io.py",
+      "sha256": "63223e6e3732f945d81f6b236c229fb436fc5f655276b850222b1cf26b075b80"
+    },
+    {
+      "path": "src/ppi_dispatch.py",
+      "sha256": "279c3382b7b598a0225ecc5aee57db590099374c7a282fa1896e840cfc5ed3d9"
+    },
+    {
+      "path": "src/modulea/core/identity_workflow.py",
+      "sha256": "cc7f5f5c4279c32ac53f8f84af3904c6eedec6dd74efe7886fc297eb031d85b9"
+    },
+    {
+      "path": "src/modulea/presenters/network.py",
+      "sha256": "b831cf6bc4805f9243243ebce50b0d9d1d1729908726fca02d8892db3930eae3"
+    },
+    {
+      "path": "web/src/components/IdentityReview.tsx",
+      "sha256": "2c2a0ac0b221906a252eb51e2d8ced980cfd3e3e41943c03592f08c26ef5b223"
+    },
+    {
+      "path": "web/src/components/special/PpiDual.tsx",
+      "sha256": "07e64c25605bcc9947acedf008542cd5917d7ae94334e5bef7aa26e307172a95"
+    },
+    {
+      "path": "src/science_modules/a07/circular_reports.py",
+      "sha256": "901f36feef35bca197296e4e155783d67929b9aa259d121de8a2482c6091908a"
+    },
+    {
+      "path": "src/modulea/api/views.py",
+      "sha256": "89424d67fabfe5460dae42d463b9083df39e93c9f71fe4eee6083f866d392423"
+    }
+  ],
+  "research_records_zh": "实际运行及审批编号只读核对，证据留在仓库外核查目录；不重写研究文件",
+  "display_status_zh": "方案应用提示读取实际Workflow批准状态；已批准时显示已通过复核"
+}
