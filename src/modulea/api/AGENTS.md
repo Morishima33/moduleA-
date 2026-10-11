@@ -222,6 +222,10 @@ POST .../modules/A04/actions/identity_plan：{expected_a03,expected_a04,expected
 
 identity_plan.latest.status_zh在方案已应用且绑定A04被Workflow判定已批准时显示“已应用，A04已通过复核”；未批准仍显示待独立复核，保存未应用仍显示任务结果提示。不新增字段、不改变批准或门控；该文案不由任务成功直接推断批准。
 
+## 2026-10-11 KEGG排除应用后才展示
+
+ModuleView.enrichment_display新增kegg_ready:boolean与kegg_reason_zh:string，由已归档排除确认、最新决定是否已应用和活动任务给出。未确认范围、决定待应用或任务进行中时，special.enrichment_graphs不含kegg，enrichment_display_tables不含kegg_p_top10/kegg_count_top10；GO及完整追溯资料保留。前端本地勾选发生改动时临时隐藏KEGG图表，恢复原选择或新归档应用后解除。原图和统计不覆盖，不重算ORA/BH，不自动批准。
+
 ## 2026-10-11 A05第三版紧凑展示
 
 原字段及确认请求契约保持，A05.display.3仍输出同源enrichment_display_tables及enrichment_graphs。前端将Description、description_zh分列，疾病核查25条分页；reason_zh仍完整归档并可展开。接口不重算BH、不改变排除或审批。专业报告第19版同步列序，旧报告继续按旧配置校验。

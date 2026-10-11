@@ -2,7 +2,7 @@
 // 状态、后台任务、
 // （窄屏时）复核栏、需要知悉、关键数字、数量变化、模块专属图、三个页签、（窄屏时）下游影响。
 import { Alert, Button, Progress, Tooltip } from 'antd';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { ModuleView } from '../api/types';
 import { useApp } from '../lib/appContext';
 import { fmtTime } from '../lib/format';
@@ -31,6 +31,7 @@ const BOXED = new Set(['idle', 'ready', 'running', 'incomplete', 'failed', 'wait
 export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }: {
   studyId: string; view: ModuleView; reviewSlot?: ReactNode; downstreamSlot?: ReactNode;
 }) {
+  const [keggPending, setKeggPending] = useState(false); // 本地未保存勾选只控制旧图可见性。
   const app = useApp(); // 全局上下文（打开任务面板）
   const m = view.module; // 模块信息
   const st = view.state; // 状态
@@ -70,7 +71,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
         </div>
       </section>
 
-      {view.enrichment_display && <EnrichmentConfirmation studyId={studyId} info={view.enrichment_display} />}
+      {view.enrichment_display && <EnrichmentConfirmation studyId={studyId} info={view.enrichment_display} onPendingChange={setKeggPending} />}
       {/* 待核验事项紧接标题；证据直接展开，不藏在结果末尾。 */}
       {!view.historical && <FocusSection items={view.focus} evidence={sp.ppi_identity ? <IdentityReview studyId={studyId} view={view} data={sp.ppi_identity} /> : undefined} />}
       {view.historical && sp.ppi_identity && <section className="card"><h2>历史身份问题清单（只读）</h2><IdentityReview studyId={studyId} view={view} data={sp.ppi_identity} /></section>}
@@ -121,7 +122,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       {sp.component_top && sp.component_top.length > 0 && <ComponentTop items={sp.component_top} note={sp.component_top_note_zh} />}
       {sp.ppi_dual && <PpiDual data={sp.ppi_dual} />}
       {sp.ppi_top && sp.ppi_top.length > 0 && <PpiTop items={sp.ppi_top} />}
-      {sp.enrichment_display_tables && <EnrichmentDisplay special={sp} />}
+      {sp.enrichment_display_tables && <EnrichmentDisplay special={sp} info={view.enrichment_display} pending={keggPending} />}
       {sp.enrichment_top && <EnrichmentTop data={sp.enrichment_top} />}
       {sp.heatmap && <Heatmap data={sp.heatmap} />}
       {(sp.conclusion_zh || sp.leads || sp.limits || sp.report_files) && <ReportSummary special={sp} studyId={studyId} />}

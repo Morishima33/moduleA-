@@ -7,7 +7,7 @@ import { useApp } from '../lib/appContext';
 import { fmtP, fmtTime } from '../lib/format';
 
 // 每个研究和运行使用自己的已保存清单，刷新后恢复归档值，不从其他研究继承。
-export default function EnrichmentConfirmation({ studyId, info }: { studyId: string; info: EnrichmentDisplayInfo }) {
+export default function EnrichmentConfirmation({ studyId, info, onPendingChange }: { studyId: string; info: EnrichmentDisplayInfo; onPendingChange?: (pending: boolean) => void }) {
   const app = useApp();
   const [selected, setSelected] = useState<string[]>(info.excluded_ids);
   const [mode, setMode] = useState<'proposed' | 'all'>('proposed');
@@ -24,6 +24,8 @@ export default function EnrichmentConfirmation({ studyId, info }: { studyId: str
   }, [studyId, info.expected_a05]);
   const filtered = useMemo(() => info.catalog.filter(r => (mode === 'all' || r.proposed) && (r.ID+' '+r.Description+' '+r.description_zh).toLowerCase().includes(query.trim().toLowerCase())), [info.catalog, mode, query]);
   const sameScope = selected.length === info.excluded_ids.length && selected.every(id => info.excluded_ids.includes(id));
+  // 本地名单修改或提交中暂时隐藏旧KEGG图，不将未保存选择当成已归档排除。
+  useEffect(() => { onPendingChange?.(!sameScope || !!busy); }, [sameScope, busy, info.expected_a05, onPendingChange]);
   const writable = info.enabled && !busy;
   const filled = !!reviewer.trim() && !!note.trim();
   // 两个动作都要求用户明确勾选和填写；任何全选都不调用保存接口。

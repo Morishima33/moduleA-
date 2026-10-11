@@ -90,6 +90,16 @@ class EnrichmentWorkflow(IdentityWorkflow):
             return result
 
 
+# 只依据已保存范围与应用记录判断图表能否展示，不改变科学结果或模块审批。
+def kegg_display_status(meta, decision, run_id, historical=False, busy=False):
+    if not meta.get("exclusions_confirmed"):
+        return {"kegg_ready":False,"kegg_reason_zh":"请先确认排除清单，应用完成后再显示KEGG图和两张表。"}
+    pending = bool(decision and decision.get("a05_run")==run_id and decision.get("decision_id")!=meta.get("decision_id"))
+    if not historical and (busy or pending):
+        return {"kegg_ready":False,"kegg_reason_zh":"排除清单正在应用或尚未成功应用，暂不显示旧KEGG图表；请查看后台任务，失败时重试。"}
+    return {"kegg_ready":True,"kegg_reason_zh":""}
+
+
 # 只读界面绑定当前运行、人工确认及同源图；任务成功不等于A05复核通过。
 def display_context(workflow, manifest, run, result, historical, busy):
     meta = metadata((result or {}).get("tables", {}))
@@ -98,4 +108,4 @@ def display_context(workflow, manifest, run, result, historical, busy):
     enabled = bool(not historical and not manifest.get("trashed") and not busy and workflow.active(manifest, run["run_id"]))
     decision, _ = workflow.display_decision(manifest, run["parent_runs"]["A03"], meta["base_run"])
     applied = bool(decision and decision["decision_id"] == meta.get("decision_id"))
-    return {"enabled": enabled, "disabled_reason_zh": "" if enabled else "历史及回收站只读；请使用当前有效结果并等待后台任务结束。", "expected_a03": run["parent_runs"]["A03"], "expected_a05": run["run_id"], "expected_decision_id": decision["decision_id"] if decision else None, "exclusions_confirmed": bool(meta.get("exclusions_confirmed")), "layout_confirmed": bool(meta.get("layout_confirmed")), "excluded_ids": meta["excluded_ids"], "missing_translations": meta["missing_translations"], "catalog": result["tables"]["kegg_catalog"], "retained_count": meta["retained_count"], "excluded_count": meta["excluded_count"], "significant_count": meta["significant_count"], "latest": {"reviewer": decision["reviewer"], "note_zh": decision["note"], "created_at": decision["created_at"], "applied": applied, "status_zh": "确认已应用，A05结果仍须独立复核" if applied else "确认已保存但尚未应用，请查看后台任务并重试"} if decision else None}
+    return {**kegg_display_status(meta,decision,run["run_id"],historical,busy), "enabled": enabled, "disabled_reason_zh": "" if enabled else "历史及回收站只读；请使用当前有效结果并等待后台任务结束。", "expected_a03": run["parent_runs"]["A03"], "expected_a05": run["run_id"], "expected_decision_id": decision["decision_id"] if decision else None, "exclusions_confirmed": bool(meta.get("exclusions_confirmed")), "layout_confirmed": bool(meta.get("layout_confirmed")), "excluded_ids": meta["excluded_ids"], "missing_translations": meta["missing_translations"], "catalog": result["tables"]["kegg_catalog"], "retained_count": meta["retained_count"], "excluded_count": meta["excluded_count"], "significant_count": meta["significant_count"], "latest": {"reviewer": decision["reviewer"], "note_zh": decision["note"], "created_at": decision["created_at"], "applied": applied, "status_zh": "确认已应用，A05结果仍须独立复核" if applied else "确认已保存但尚未应用，请查看后台任务并重试"} if decision else None}
