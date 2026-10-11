@@ -2,12 +2,13 @@
 from copy import deepcopy
 from contracts import require
 from .two_pass import validate_result
+from .matrix_palette import VERSION as ICE_BERRY_VERSION,PALETTE,LEGACY,color,text_color
 
 VERSION="A06.matrix.display.1"
 
 # 展示配置来自研究决定，重复、越界或空维度均不能悄悄补足。
 def check_display(config,compounds,receptors):
-    require(config.get("version")==VERSION,"矩阵展示规则版本不匹配")
+    require(config.get("version") in (VERSION,ICE_BERRY_VERSION),"矩阵展示规则版本不匹配")
     cids=[r["compound_id"] for r in compounds];tids=[r["target_id"] for r in receptors]
     require(len(cids)==len(set(cids)) and len(tids)==len(set(tids)),"完整候选名单有重复")
     for key,pool in (("heatmap_compounds",cids),("table_compounds",cids),("heatmap_targets",tids),("table_targets",tids)):
@@ -27,6 +28,8 @@ def matrix_view(config,compounds,receptors,packet=None,prep=None,root=None,expec
     check_display(config,compounds,receptors)
     cmap={r["compound_id"]:r for r in compounds};rmap={r["target_id"]:r for r in receptors}
     out={"ready":False,"status_zh":"待计算：本轮无已核验的真实评分","full_pair_count":len(compounds)*len(receptors),"score_range":None,"result_version":None}
+    palette=PALETTE if config["version"]==ICE_BERRY_VERSION else LEGACY
+    out["palette"]=deepcopy(palette);out["display_version"]=config["version"];out["heatmap_svg"]=None
     pairs={}
     quality={}
     if packet is not None:
@@ -46,7 +49,10 @@ def matrix_view(config,compounds,receptors,packet=None,prep=None,root=None,expec
                 line=[]
                 for t in ts:
                     r=pairs[(c,t)]
-                    line.append({"compound_id":c,"target_id":t,"state":r["state"],"score":r.get("score"),"reason_zh":r.get("reason_zh",""),"color":blue(r["score"],low,high) if r["state"]=="completed" else "#DCE1E5","text_color":"#FFFFFF" if r["state"]=="completed" and high!=low and (high-r["score"])/(high-low)>.6 else "#10253C"})
+                    line.append({"compound_id":c,"target_id":t,"state":r["state"],"score":r.get("score"),"reason_zh":r.get("reason_zh",""),"color":(color(r["score"],low,high) if config["version"]==ICE_BERRY_VERSION else blue(r["score"],low,high)) if r["state"]=="completed" else "#DCE1E5","text_color":(text_color(color(r["score"],low,high)) if r["state"]=="completed" else "#10253C") if config["version"]==ICE_BERRY_VERSION else ("#FFFFFF" if r["state"]=="completed" and high!=low and (high-r["score"])/(high-low)>.6 else "#10253C")})
                 view["cells"].append(line)
         out[name]=view
+    if out["ready"]:
+        from .matrix_exports import heatmap_svg
+        out["heatmap_svg"]=heatmap_svg(out)
     return out

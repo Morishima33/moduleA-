@@ -259,3 +259,13 @@ selection请求兼容旧字段；存在本轮草案时须额外传expected_docki
 草案通过Workflow公开方法在写锁内追加docking_review_records；不改current/runs/reviews，不签署身份、不执行科学工具。结果适配仅接受当前批准成分与完整A/B受体、同源准备输入和完整结果契约，检查真实Top-1姿势指纹；无本轮评分仅显示待计算。
 新矩阵科研单蓝渐变，越负越深；NA灰色，不填零，不隐去无评分行列。旧热图规则及历史版本保持。
 可选proposal.acetic_trace提供当前来源冲突对照（bulk/detail/official）、归档计数与逐行trace；网页只读显示原始基因、来源条目、HGNC映射及当前交集成员，不重新归属靶点。planned_pairs保存全部待确认组合，评分为null；matrix.result_version、score_range、cells.color/text_color仅从同一有效结果生成。
+
+
+## A06受体资料核查包（2026-10-11）
+ModuleView.docking_preparation新增可选metadata_review：{review_id,created_at,note_zh,execution_allowed:false,approval:null,compounds,receptors}。compounds为当前已批准成分的中文名、CID、来源三维状态和指纹证据；receptors为完整当前A/B名单、UniProt、官方身份说明、第一/二遍待核查状态、候选实验结构摘要和历史失败。候选含PDB、官方链接、方法、分辨率、目标作者链及序列长度、共晶组分及作者链；这些仅为元数据，不能据此显示严格/探索质控通过。检索范围和未核实的突变、结合域、配体定位/共价关系必须说明。
+核查包通过Workflow.save_receptor_review公开方法在写锁内追加至decisions/A06_receptor_review，并由manifest.receptor_review_records索引。绑定当前source_key，核对已批准名单、A/B、来源文件、禁用执行及未批准状态；历史/回收站不提供操作，上游变更后旧包不展示。结构准备、P2Rank、AlphaFold模型、重对接和Vina均不触发。原two_pass_plan与material写接口不变。
+
+
+## A06矩阵配色第二版（用户于2026-10-11确认）
+新增A06.matrix.display.2：冰蓝#A7D5E5→莓果红#B7326B，越负越偏莓果红，NA灰色。旧display.1单蓝版本保留。matrix新增palette{id,high_color,low_color,na_color,unit,label_zh}及heatmap_svg:string|null；SVG使用同批完整score_range，含实际色标、单位与NA说明。无真实评分时SVG为null；恒值使用中间色，全部NA不编造数值范围。前端只显示服务端色值/说明并下载同源SVG和PNG，不推算科学评分。
+通过Workflow.save_matrix_display公开方法只追加展示配置至decisions/A06_matrix_display和manifest.matrix_display_records，绑定已批准成分和当前source_key、核查草案编号；展示窗口保持，名单和审批不变。过期配置不回退旧配色，明确待重新绑定。导出与专业报告A06章节共用matrix_exports和matrix_report_section，验证同批矩阵与色值。

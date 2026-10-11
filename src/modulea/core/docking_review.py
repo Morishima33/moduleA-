@@ -65,7 +65,13 @@ def review_context(workflow,manifest,historical=False):
     if historical or not manifest.get("docking_review_records"):return None
     try:
         data=workflow.current_docking_review(manifest)
-        matrix=matrix_view(data["display"],data["compounds"],data["receptors"])
+        config=data["display"]
+        if manifest.get("matrix_display_records"):
+            ctx=source_context(workflow,manifest["study_id"],manifest)
+            display=workflow.current_matrix_display(manifest,ctx,data)
+            require(display is not None,"矩阵展示配色来源已改变，请重新绑定")
+            config=display["config"]
+        matrix=matrix_view(config,data["compounds"],data["receptors"])
         selected=manifest["current"].get("A03_SELECT")
         if selected and workflow.approved(manifest,selected):
             ctx=source_context(workflow,manifest["study_id"],manifest)
@@ -77,7 +83,7 @@ def review_context(workflow,manifest,historical=False):
                 prep=result.get("docking_matrix_preparation")
                 if packet is not None:
                     require([r["compound_id"] for r in ctx["compounds"]]==[r["compound_id"] for r in data["compounds"]],"批准成分与展示草案不符")
-                    matrix=matrix_view(data["display"],data["compounds"],data["receptors"],packet,prep,workflow.location(manifest["study_id"]),ctx["source_key"])
+                    matrix=matrix_view(config,data["compounds"],data["receptors"],packet,prep,workflow.location(manifest["study_id"]),ctx["source_key"])
         return {"enabled":True,"reason_zh":"","review_id":data["review_id"],"proposal":data,"matrix":matrix}
     except (ValueError,KeyError,TypeError) as error:
         return {"enabled":False,"reason_zh":str(error),"review_id":None,"proposal":None,"matrix":None}

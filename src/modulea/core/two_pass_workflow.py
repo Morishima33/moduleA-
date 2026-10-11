@@ -6,12 +6,13 @@ from contracts import require,safe_id
 from storage import write_lock,write_json,read_json,verified_file,file_record,now
 from .docking_workflow import DockingWorkflow
 from .docking_review import DockingReviewMixin
+from .receptor_review import ReceptorReviewMixin
 from science_modules.a06.plan_adapter import source_context
 from science_modules.a06.two_pass_plan import SCHEMA,blank,row_check,validate
 from science_modules.a06.two_pass import POLICY,CONFIDENCE
 
 # 与旧方案并存的新版本，唯一研究索引及锁沿用原Workflow。
-class TwoPassWorkflow(DockingReviewMixin,DockingWorkflow):
+class TwoPassWorkflow(ReceptorReviewMixin,DockingReviewMixin,DockingWorkflow):
     def selection_binding(self,sid):
         manifest=self.load(sid);a03=manifest["current"].get("A03")
         require(not manifest.get("trashed") and a03 and self.approved(manifest,a03),"请先通过当前A03；回收站只读")
@@ -136,4 +137,4 @@ def preparation_context(workflow,manifest,historical=False,busy=False):
     except ValueError as error:return {"enabled":False,"disabled_reason_zh":str(error),"policy_version":POLICY,"execution_allowed":False}
     latest,_=workflow.latest_two_pass(manifest,context);plan=latest["plan"] if latest else blank(context)
     checks=[{"target_id":r["target_id"],**row_check(r,s,context)} for r,s in zip(plan["receptors"],context["receptors"])]
-    return {"enabled":not busy,"disabled_reason_zh":"请等待当前研究后台任务结束" if busy else "","expected_source":context["source_key"],"expected_plan_id":latest["plan_id"] if latest else None,"policy_version":POLICY,"confidence_thresholds":CONFIDENCE,"context":context,"plan":plan,"checks":checks,"latest":latest,"materials":workflow.materials(manifest,context),"planned_pair_count":len(context["receptors"])*len(context["compounds"]),"execution_allowed":False,"status_zh":"方案已确认，仍待准备与质控" if latest else "待核对成分及受体结构方案"}
+    return {"enabled":not busy,"disabled_reason_zh":"请等待当前研究后台任务结束" if busy else "","expected_source":context["source_key"],"expected_plan_id":latest["plan_id"] if latest else None,"policy_version":POLICY,"confidence_thresholds":CONFIDENCE,"context":context,"plan":plan,"checks":checks,"latest":latest,"metadata_review":workflow.current_receptor_review(manifest,context),"materials":workflow.materials(manifest,context),"planned_pair_count":len(context["receptors"])*len(context["compounds"]),"execution_allowed":False,"status_zh":"方案已确认，仍待准备与质控" if latest else "待核对成分及受体结构方案"}
