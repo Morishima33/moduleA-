@@ -83,6 +83,13 @@ export default function IdentityReview({ studyId, view, data }: { studyId: strin
     <Modal open={planOpen} title="确认身份补查方案" onCancel={() => !busy && setPlanOpen(false)} footer={null} width={760} destroyOnClose maskClosable={!busy}>
       <Alert type="info" showIcon message="按官方稳定编号核验，证据一致才采用" description="使用HGNC官方快照中的全部UniProt／Ensembl编号向STRING补查。缺编号、查询失败或编号冲突不会被当作无命中，也不会自动通过A04。" />
       <p>选择本次补查范围。同一A03中已应用的补查范围继续保留，本次追加所选项目。右侧选项需你明确同意：只有全部稳定编号补查均成功且无命中，才仅对本次PPI暂不采用；A03交集与富集输入保留。</p>
+      {/* 批量授权仅作用于左侧已选补查项；打开窗口时保持未勾选，不提交任何请求。 */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+        <span>成功无命中时仅本次PPI暂不采用：</span>
+        <Button size="small" disabled={busy || !ids.length} onClick={() => setOmitted([...ids])}>全部勾选</Button>
+        <Button size="small" disabled={busy || !omitted.length} onClick={() => setOmitted([])}>全部取消</Button>
+        <span className="small muted">仅作用于左侧已选补查项</span>
+      </div>
       <Table<PpiIdentityRow> size="small" rowKey="target_id" pagination={false} dataSource={data.rows} scroll={{ x: 620, y: 245 }}
         rowSelection={{ selectedRowKeys: ids, onChange: keys => { const next = keys.map(String); setIds(next); setOmitted(old => old.filter(id => next.includes(id))); } }} columns={[
           { title: '输入基因', dataIndex: 'symbol', width: 120 },
