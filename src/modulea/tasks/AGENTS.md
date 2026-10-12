@@ -36,3 +36,8 @@ continue后台使用science_modules/a05/flow.run_enrichment，full_workflow登�
 新增a06_candidates：只经DockingWorkflow.generate_candidates读取当前已批准A04归档并追加分组，不重算PPI、不下载结构、不启动Vina、不代签。continue仍停在A06来源/结构准备关口，不能将分组生成视为结构质控通过。
 
 已有有效两梯队归档时，continue准确提示“结构方案待微调与核查”，不再称候选来源未确定；A05独立分支仍保留。此入口不会调用旧第一轮准备、不会启动真实对接。
+
+
+## A06第四版覆盖核查与集中采用
+
+a06_coverage按已登记授权执行资料质控或final_audit证据审计；审计不重算评分，追加新版技术准备。a06_coverage_confirm只留存用户选择与采用范围，不代签模块。continue对本版本停在明确批量计算授权关口；草案同步登记，确认返回202并可跟踪后台成功/失败。

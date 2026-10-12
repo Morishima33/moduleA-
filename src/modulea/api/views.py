@@ -68,7 +68,16 @@ class Views:
         """读取一项研究的完整状态；归档核验失败时返回 (None, 错误说明)。"""
         workflow = self.kernel.display_workflow()
         try:
-            return workflow, workflow.view(study_id), None
+            snapshot = workflow.view(study_id)
+            # 此Workflow只属于本次只读请求；复用已完整指纹核验的不可变归档。
+            # 下一次请求由Kernel新建实例，写入口仍重新读取版本与文件。
+            workflow._view_cache = {
+                "runs": {m["run"]["run_id"]: m["run"] for m in snapshot["modules"] if m["run"]},
+                "results": {m["result"]["run_id"]: m["result"] for m in snapshot["modules"] if m["result"]},
+                "reviews": {m["result"]["artifact_id"]: m["review"] for m in snapshot["modules"] if m["result"]},
+                "active": {}, "approved": {},
+            }
+            return workflow, snapshot, None
         except ContractError as error:
             return workflow, None, str(error)
         except FileNotFoundError:
@@ -283,6 +292,7 @@ class Views:
         ppi_enabled = bool(module_id == "A04" and a03_id and not historical and not real.get("trashed") and workflow.active(real, a03_id) and workflow.approved(real, a03_id) and not self.tasks.active_for(study_id))
         if run:
             parts["params"] = parts["params"] + self._config_params(run, parts["params"])
+        coverage_info = workflow.coverage_info(real, bool(self.tasks.active_for(study_id))) if module_id == "A06_PREP" and not historical else None
         return {
             "module": {"module_id": module_id, "title_zh": spec.title_zh, "group_zh": spec.group_zh, "purpose_zh": source_intro(module_id, real, result) + ("STRING人类功能关联网络；两分支独立两轮；Degree图展示第二轮候选，Degree表展示第一轮前十，BC＋CC表展示第二轮前十五。" if module_id == "A04" and result and result.get("summary", {}).get("selection_version") == "A04.dual.3" else ("STRING人类功能关联网络；Degree与BC＋CC两分支独立进行两轮筛选，Degree图表显示第一轮前十，BC＋CC表显示第二轮前十五。" if module_id == "A04" and result and result.get("summary", {}).get("selection_version") == "A04.dual.2" else ("STRING人类功能关联网络；双分支独立两轮，显示第二轮排名。" if module_id == "A04" and result and result.get("summary", {}).get("selection_version") == "A04.dual.1" else spec.purpose_zh))),
                        "sub": spec.sub, "depends_on": list(spec.depends_on)},
@@ -307,7 +317,8 @@ class Views:
             "docking_candidates": candidates_info,
             "docking_review": review_context(workflow,real,historical) if module_id in ("A03_SELECT","A06_PREP","A06") else None,
             "compound_selection": selection_context(workflow,real,historical,bool(self.tasks.active_for(study_id))) if module_id=="A03_SELECT" else None,
-            "docking_preparation": preparation_context(workflow,real,historical,bool(self.tasks.active_for(study_id))) if module_id=="A06_PREP" else None,
+            "docking_coverage": coverage_info,
+            "docking_preparation": preparation_context(workflow,real,historical,bool(self.tasks.active_for(study_id))) if module_id=="A06_PREP" and not coverage_info else None,
             "source_uploads": upload_context(workflow, real, module_id, result, historical, bool(self.tasks.active_for(study_id))) if not historical else None,
         }
 

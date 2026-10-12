@@ -28,6 +28,11 @@ def run_continue(settings: Settings, task: dict, manager: TaskManager) -> str:
     workflow = full_workflow(settings.data_root)
     # 新双分支的对接来源未确认时停下，不启动旧候选准备和计算。
     manifest = workflow.load(task["study_id"])
+    prep=manifest.get("current",{}).get("A06_PREP")
+    if prep and workflow.run(manifest,prep).get("config",{}).get("version") in (
+            "A06.coverage.execution.4","A06.coverage.confirmed.4"):
+        manager.update(task["task_id"],progress={"step_zh":"已停在明确批量计算授权关口","done":1,"total":1})
+        return "本轮A06技术／采用资料已留存；真实批量结合能仍待用户明确授权，未启动计算。"
     a04 = manifest.get("current", {}).get("A04")
     if a04 and workflow.active(manifest, a04) and workflow.result(manifest, a04).get("summary", {}).get("docking_candidate_source_pending"):
         # 新名单已归档时准确显示准备关口，仍不调用旧第一轮准备入口。
@@ -162,7 +167,7 @@ def run_a06_quality(settings, task, manager):
     request, output = folder / "request.json", folder / "result.json"
     request.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
     command = [sys.executable, "-I", "-S", "-B",
-               str(settings.project_root / "tools/run_a06_quality.py"),
+               str(settings.project_root / ("tools/run_a06_coverage.py" if task["kind"]=="a06_coverage" else "tools/run_a06_quality.py")),
                "--request-file", str(request), "--result-file", str(output),
                "--tools-root", payload["tools_root"], "--data-root", str(settings.data_root),
                "--study", task["study_id"]]
@@ -184,7 +189,13 @@ def run_a06_quality(settings, task, manager):
             +str(summary["严格质控通过受体数"])+"个，待集中核查"
             +str(summary["等待集中核查受体数"])+"个；未自动批准、未计算批量结合能。")
 
-HANDLERS = {"a06_quality":run_a06_quality,"a03_selection":run_a03_selection,"a06_plan":run_a06_plan,"a06_candidates": run_a06_candidates, "a05_display": run_a05_display, "a04_identity": run_a04_identity, "a04_ppi": run_a04_ppi, "continue": run_continue, "source_upload": run_source_upload, "a01_sources": run_a01_sources}
+def run_a06_coverage_confirm(settings,task,manager):
+    """后台追加采用确认准备版本，独立结果审批和批量执行仍关闭。"""
+    data=full_workflow(settings.data_root).save_coverage_selection(
+        task["study_id"],json.loads(task.get("payload") or "{}"))
+    return data["message_zh"]
+
+HANDLERS = {"a06_coverage_confirm":run_a06_coverage_confirm,"a06_coverage":run_a06_quality,"a06_quality":run_a06_quality,"a03_selection":run_a03_selection,"a06_plan":run_a06_plan,"a06_candidates": run_a06_candidates, "a05_display": run_a05_display, "a04_identity": run_a04_identity, "a04_ppi": run_a04_ppi, "continue": run_continue, "source_upload": run_source_upload, "a01_sources": run_a01_sources}
 
 
 def run_task(settings: Settings, task_id: str) -> int:

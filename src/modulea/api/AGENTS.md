@@ -292,3 +292,12 @@ GET /studies/{sid}/source_reviews/{review_id}/files/{file_key}仅下载该研究
 新增私有任务a06_quality，仅接受当前研究已登记A06.quality.authorization.1授权与方案、来源版本，执行来源三维准备、受体准备、P2Rank与参考配体Top-1重对接。没有新增网页启动或批量评分端点；不能通过hidden参数解锁研究成分对接。任务经Workflow生产入口发布A06.two_pass.execution.1新版A06_PREP，预测口袋证据未人工确认及环境待核定时handoff_blocked保持；不代签结果。旧科学结果校验保持。任务进度、日志、失败、取消和版本过期按既有接口处理。
 
 DockingPreparationInfo新增quality_status_zh：仅从绑定当前已确认方案的真实A06_PREP归档或活动任务读取。未完成、过期与已归档分别说明；前端不根据已确认方案推算质控通过。
+
+## A06扩大覆盖与集中采用（第二版）
+ModuleView新增docking_coverage：{enabled,disabled_reason_zh,expected_run,expected_source,campaign_id,expected_decision_id,confirmed,draft,rows,counts,batch_docking_allowed:false,note_zh}。counts分别为strict、exploration、unavailable、receptors，技术资格与人工采用分开；rows包含target_id、symbol、candidate_grade、ppi_order、pdb_id、rmsd_A、quality_zh、status_zh、reason_zh、eligible、adopted、selected、spec及可折叠的attempts摘要。仅完整证据可确认；第一遍失败不靠更换同一结构口袋绕过。
+POST .../modules/A06_PREP/actions/coverage_selection：{expected_run,expected_source,campaign_id,expected_decision_id,selected_target_ids,reviewer,note,confirmed:boolean}。false仅追加草案并刷新恢复；true需核验人、依据和非空可用范围，追加人工采用决定及A06.coverage.confirmed.4准备版本。未解决项只阻断对应组合；主要五仍需至少五个已采用严格受体。采用确认不批准结果、不运行批量评分。安全、写锁、忙碌/回收站/来源与版本检查均保留。
+新增私有a06_coverage任务：仅用研究索引登记的A06.coverage.authorization.2执行独立候选资料与结构质控，产生A06.coverage.execution.4。技术候选全部待采纳，旧证据和失败历史保留；没有公开批量计算端点。
+
+采用确认POST返回202后台a06_coverage_confirm，接口只读校验、后台由完整校验器产生新准备版本；草案返回201。任务失败保留原技术归档，旧请求不自动重签。
+
+第四版追加最终证据审计：原位点相关范围与必要伙伴/金属再核对，单体模型不能绕过环境；当前输入包含实际采用证据及历史完整包指纹，失败历史不回写。conditions给出main_results、exploration与prepared_pairs，均由后端归档读取。只读请求内复用已核验不可变数据，写入/下一请求重新核验；旧窗口expected_run先阻断，不重复构造整张页面。

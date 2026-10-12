@@ -67,6 +67,7 @@ class App:
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/check_two_pass", self.post_check_two_pass),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/two_pass_plan", self.post_two_pass_plan),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/two_pass_draft", self.post_two_pass_draft),
+            ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/coverage_selection", self.post_coverage_selection),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/material", self.post_docking_material),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/docking_candidates", self.post_docking_candidates),
             ("GET", rf"/api/v1/studies/{ID}/docking_candidates/{ID}", self.get_docking_candidates),
@@ -353,6 +354,25 @@ class App:
         try:data=self.kernel.workflow().save_two_pass_draft(study_id,payload)
         except ContractError as error:raise from_contract(str(error))
         return {"draft":{k:data[k] for k in ("draft_id","created_at","reviewer","note","checked_target_ids")},"message_zh":"核查草案已保存；刷新可继续填写，尚未确认完整方案。"},201
+
+    def post_coverage_selection(self,req,study_id,module_id):
+        """集中采用的结果生成走后台，接口进程只读取与登记，不能载入科学依赖。"""
+        if module_id!="A06_PREP":raise not_found("本轮可用范围")
+        body=req.json()
+        if not isinstance(body,dict):
+            raise ApiError(422,"VALIDATION_FAILED","范围请求必须为对象")
+        if self.tasks.active_for(study_id):
+            raise ApiError(409,"GATE_BLOCKED","请等待当前研究后台任务结束")
+        try:
+            # 内核校验保留身份、归档、回收站与过期阻断；不额外构造整张只读页面。
+            workflow=self.kernel.workflow()
+            if body.get("confirmed") is False:
+                return workflow.save_coverage_selection(study_id,body),201
+            workflow.validate_coverage_selection(study_id,body)
+        except ContractError as error:raise from_contract(str(error))
+        task,created=self.tasks.submit(study_id,"a06_coverage_confirm","页面集中确认可用范围",body)
+        if not created:raise ApiError(409,"GATE_BLOCKED","当前研究已有后台任务")
+        return {"task":task,"created":created,"message_zh":"本轮采用范围已提交，后台留存准备版本；不运行批量结合能。"},202
 
     def post_two_pass_plan(self,req,study_id,module_id):
         if module_id!="A06_PREP":raise not_found("两遍方案")

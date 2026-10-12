@@ -225,6 +225,7 @@ export interface ModuleView {
   docking_review?:DockingReviewInfo|null;
   compound_selection?:CompoundSelectionInfo|null;
   docking_preparation?:DockingPreparationInfo|null;
+  docking_coverage?:DockingCoverageInfo|null;
   docking_candidates?: DockingCandidatesInfo | null;
   module: { module_id: string; title_zh: string; group_zh: string; purpose_zh: string; sub: boolean; depends_on: string[] };
   state: { code: StateCode; label_zh: string; reason_zh: string | null; raw_state: string; is_empty_result: boolean; handoff_blocked: boolean; can_review: boolean };
@@ -333,3 +334,8 @@ export interface ReceptorMetadataCandidate {source_rejected?:boolean;source_reas
 export interface ReceptorPlanProposal {route_zh:string;domain_zh:string;first_pdb_id:string|null;second_pdb_id:string|null;reference_zh:string;reason_zh:string;pending_zh:string[];alternatives:{pdb_id:string;url:string;state_zh:string;same_target:boolean}[];model_metadata?:{entry_id:string;uniprot:string;sequence_start:number;sequence_end:number;model_version:number;state_zh:string}[]}
 export interface ReceptorMetadataRow {source_audit?:SourceInspectionRow;plan_proposal?:ReceptorPlanProposal;target_id:string;symbol:string;candidate_grade:string;uniprot:string;sequence_length:number;protein_name:string;identity_state_zh:string;identity_url:string;first_state_zh:string;second_state_zh:string;search_total:number;inspected_entry_count:number;candidates:ReceptorMetadataCandidate[];historical:{pdb_id:string;status_zh:string;reason_zh:string;rmsd_A:number|null;current_passed:false}|null;limitations_zh:string;current_qc_zh:string;alphafold_url:string}
 export interface ReceptorMetadataReview {review_id:string;created_at:string;note_zh:string;execution_allowed:false;approval:null;compounds:{compound_id:string;name:string;name_zh:string;cid:string;herbs:string;identity_prechecked:boolean;source_3d_state_zh:string;source_3d_evidence:{path:string;sha256:string;bytes:number;is_3d:boolean}[]}[];receptors:ReceptorMetadataRow[]}
+
+// 本轮技术核查与人工采用分别由后端记录，不在前端推算可用资格。
+export interface CoverageAttempt {site_coverage?:{note_zh:string};round:number;spec:StructureSpec;reason_zh:string;top1_rmsd?:number;pocket?:{runs:Record<string,unknown>[]};confidence_facts?:{mean_plddt:number;min_plddt:number;max_bidirectional_pae_A:number};environment_audit?:{box_environment:{chain:string;residue:string;sequence:string;reason_zh:string}[]}}
+export interface DockingCoverageRow {target_id:string;symbol:string;candidate_grade:string;ppi_order:number;pdb_id:string;rmsd_A:number|null;quality_zh:string;status_zh:string;reason_zh:string;eligible:boolean;adopted:boolean;selected:boolean;spec:StructureSpec|null;attempts:CoverageAttempt[]}
+export interface DockingCoverageInfo {enabled:boolean;disabled_reason_zh:string;expected_run:string;expected_source:string;campaign_id:string;expected_decision_id:string|null;confirmed:boolean;draft:{selected_target_ids:string[];reviewer:string;note:string}|null;rows:DockingCoverageRow[];counts:{strict:number;exploration:number;unavailable:number;receptors:number};conditions:{main_results:boolean;exploration:boolean;prepared_pairs:number};batch_docking_allowed:false;note_zh:string}

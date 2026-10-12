@@ -1,0 +1,15 @@
+{
+  "execution": "A06.coverage.execution.4",
+  "confirmation": "A06.coverage.confirmed.4",
+  "geometry": "A06.pocket_environment.3",
+  "batch_calculation_allowed": false,
+  "note_zh": "技术核查、最终原位点及必要环境审计、采用确认分别归档；旧科学文件及来源索引不修改",
+  "files": [
+    "coverage_sources.py",
+    "coverage_geometry.py",
+    "coverage_engine.py",
+    "coverage_refinement.py",
+    "coverage_final_audit.py",
+    "coverage_flow.py"
+  ]
+}
