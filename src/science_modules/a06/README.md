@@ -45,3 +45,6 @@ two_pass_plan.py负责人工方案校验；two_pass.py负责严格/探索两遍�
 
 ## 获准来源原件核查（2026-10-12）
 source_inspection.py复用冻结的ligand_identity、receptor_identity、inspect_structure及inspect_reference_site，仅核对与清点，不调用准备、P2Rank或Vina。modulea/core/source_review.py独立归档版本和原件，现有方案绑定新来源，不复用不匹配字节或旧确认。[使用与核查边界](../../../docs/A06来源原件核查与集中方案选择_v9_20261012.md)。
+
+## 获准真实质控执行（2026-10-12）
+quality_engine.py复用冻结的来源配体参数化、蛋白链/构象提取、参考外包络、Meeko、P2Rank两次首位及Top-1重对接；Windows目录单独映射HGNC编号，科学编号不变。quality_flow.py以A06.two_pass.execution.1注册新准备校验及Workflow生产入口，旧版本仍委托原校验；固定源码和真实工具证据归档。modulea/core/quality_workflow.py保存执行授权，启动和发布两次核对方案/原件/复核版本。engine_adapter.py的旧code_only入口继续关闭，真实执行只走新授权任务a06_quality。此阶段不运行成分×受体批量评分，不自动批准预测口袋或科研模块。

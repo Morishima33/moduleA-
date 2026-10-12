@@ -56,9 +56,20 @@ def present_a06_prep(result: dict, ctx: dict) -> Parts:
     ])
     parts.flow_note_zh = "无参考配体的受体不伪造 RMSD；失败受体保留记录，不自动换结构或调参。"
     parts.table = table([("PPI顺序", "PPI 顺序"), ("受体", "受体"), ("PDB", "PDB"), ("RMSD_A", "重对接 RMSD（Å）"), ("质控状态", "质控状态")], rows, "receptor_diagnostics")
+    if t.get("quality_packet"):
+        # 两遍实际诊断直接显示归档理由，RMSD失败不能被通用环境说明掩盖。
+        parts.kpis.append(kpi("待集中核查", pick(s, "等待集中核查受体数")))
+        columns = [("PPI顺序", "PPI顺序"), ("受体", "受体"), ("候选级别", "A/B候选"),
+                   ("PDB", "PDB"), ("RMSD_A", "Top-1 RMSD（Å）"),
+                   ("质控状态", "实际质控状态"), ("第一遍", "第一遍诊断"), ("第二遍", "第二遍诊断")]
+        parts.table = table(columns, rows, "receptor_diagnostics")
+        parts.flow_note_zh = "A/B为候选依据；实际结构质控独立记录。预测口袋待确认或必要环境未解决时保持待核查，未计算成分×受体结合能。"
     for row in rows:
         if "失败" in str(row.get("质控状态") or ""):
-            parts.focus.append(focus(f"{row.get('受体')} 结构准备失败", str(row.get("结构限制") or row.get("质控状态")), tier="should_know"))
+            reason = str(row.get("结构限制") or row.get("质控状态"))
+            if t.get("quality_packet"):
+                reason = "第一遍：" + str(row.get("第一遍") or "") + "；第二遍：" + str(row.get("第二遍") or "")
+            parts.focus.append(focus(f"{row.get('受体')} 结构准备失败", reason, tier="should_know"))
     return parts
 
 

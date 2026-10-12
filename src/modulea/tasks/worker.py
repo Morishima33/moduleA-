@@ -151,7 +151,40 @@ def run_a06_plan(settings,task,manager):
     data=full_workflow(settings.data_root).save_two_pass(task["study_id"],payload)
     return "两遍方案已确认并留存；真实准备、重对接与Vina未启动。"
 
-HANDLERS = {"a03_selection":run_a03_selection,"a06_plan":run_a06_plan,"a06_candidates": run_a06_candidates, "a05_display": run_a05_display, "a04_identity": run_a04_identity, "a04_ppi": run_a04_ppi, "continue": run_continue, "source_upload": run_source_upload, "a01_sources": run_a01_sources}
+# 获明确授权的质控走隔离科学子进程；暂停在实际证据核查，不计算研究成分组合。
+def run_a06_quality(settings, task, manager):
+    """父任务记录进度、支持整树取消；实际科学依赖由-I -S子进程加载。"""
+    import subprocess
+    import sys
+    payload = json.loads(task.get("payload") or "{}")
+    folder = settings.runtime_dir / "a06_quality_requests" / task["task_id"]
+    folder.mkdir(parents=True, exist_ok=False)
+    request, output = folder / "request.json", folder / "result.json"
+    request.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    command = [sys.executable, "-I", "-S", "-B",
+               str(settings.project_root / "tools/run_a06_quality.py"),
+               "--request-file", str(request), "--result-file", str(output),
+               "--tools-root", payload["tools_root"], "--data-root", str(settings.data_root),
+               "--study", task["study_id"]]
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                               text=True, encoding="utf-8", errors="replace",
+                               env=dict(os.environ,TEMP=str(folder),TMP=str(folder),
+                                        PYTHONDONTWRITEBYTECODE="1",PYTHONUTF8="1"))
+    for line in process.stdout:
+        print(line, end="", flush=True)
+        if line.startswith("PROGRESS "):
+            manager.update(task["task_id"], progress={"step_zh":line[9:].strip(), "done":0, "total":1})
+    code = process.wait()
+    if code != 0 or not output.is_file():
+        raise ValueError("隔离质控执行未完整结束；请查看任务日志，已有原件和运行均保留")
+    result = json.loads(output.read_text(encoding="utf-8"))
+    summary = result["summary"]
+    manager.update(task["task_id"], progress={"step_zh":"本轮质控证据已归档，等待集中核查", "done":1, "total":1})
+    return ("新版A06准备已归档："+result["run_id"]+"；严格通过"
+            +str(summary["严格质控通过受体数"])+"个，待集中核查"
+            +str(summary["等待集中核查受体数"])+"个；未自动批准、未计算批量结合能。")
+
+HANDLERS = {"a06_quality":run_a06_quality,"a03_selection":run_a03_selection,"a06_plan":run_a06_plan,"a06_candidates": run_a06_candidates, "a05_display": run_a05_display, "a04_identity": run_a04_identity, "a04_ppi": run_a04_ppi, "continue": run_continue, "source_upload": run_source_upload, "a01_sources": run_a01_sources}
 
 
 def run_task(settings: Settings, task_id: str) -> int:

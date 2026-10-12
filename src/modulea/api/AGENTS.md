@@ -286,3 +286,9 @@ docking_preparation新增source_review（当前同上游A06.source_review.1原�
 草案和完整方案请求新增可选expected_source_review_id；当前有来源原件核查包时必传并核对，旧无核查包请求兼容。原件更新使旧草案或完整方案不再作为当前确认，历史保留。所有研究写入仍经公开Workflow，当前source_key、名单、来源CID、原件字节及版本全部核对。资料获取授权不等于方案确认或真实计算授权。
 
 GET /studies/{sid}/source_reviews/{review_id}/files/{file_key}仅下载该研究索引内已归档且指纹完整的原件，无任意路径参数；旧版本可只读追溯。source_review.choices为{kind:altloc|route,target_id,symbol,pdb_id,round:first|second,options,reason_zh,proposal?}。原始缺失记录仅供核查，不按数量自动判定口袋完整。
+
+## A06真实结构质控任务（2026-10-12用户明确继续）
+
+新增私有任务a06_quality，仅接受当前研究已登记A06.quality.authorization.1授权与方案、来源版本，执行来源三维准备、受体准备、P2Rank与参考配体Top-1重对接。没有新增网页启动或批量评分端点；不能通过hidden参数解锁研究成分对接。任务经Workflow生产入口发布A06.two_pass.execution.1新版A06_PREP，预测口袋证据未人工确认及环境待核定时handoff_blocked保持；不代签结果。旧科学结果校验保持。任务进度、日志、失败、取消和版本过期按既有接口处理。
+
+DockingPreparationInfo新增quality_status_zh：仅从绑定当前已确认方案的真实A06_PREP归档或活动任务读取。未完成、过期与已归档分别说明；前端不根据已确认方案推算质控通过。
