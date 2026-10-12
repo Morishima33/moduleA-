@@ -11,7 +11,7 @@ SCHEMA="A06.receptor_review.1"
 # 官方JSON只用于来源证明；限定摘要来源，不接收执行参数或坐标文件。
 def source_url(value):
     parts=urlsplit(value)
-    require(parts.scheme=="https" and parts.hostname in {"rest.uniprot.org","www.uniprot.org","search.rcsb.org","data.rcsb.org","www.rcsb.org","alphafold.ebi.ac.uk"} and not parts.username and not parts.password,"受体摘要须引用官方HTTPS来源")
+    require(parts.scheme=="https" and (parts.hostname in {"rest.uniprot.org","www.uniprot.org","search.rcsb.org","data.rcsb.org","www.rcsb.org","alphafold.ebi.ac.uk"} or (parts.hostname=="www.ebi.ac.uk" and parts.path.startswith("/pdbe/api/"))) and not parts.username and not parts.password,"受体摘要须引用官方HTTPS来源")
 
 # 新核查包只追加；保留原始摘要、既有文件指纹及当前已批准成分来源。
 class ReceptorReviewMixin:

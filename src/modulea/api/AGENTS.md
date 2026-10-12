@@ -269,3 +269,9 @@ ModuleView.docking_preparation新增可选metadata_review：{review_id,created_a
 ## A06矩阵配色第二版（用户于2026-10-11确认）
 新增A06.matrix.display.2：冰蓝#A7D5E5→莓果红#B7326B，越负越偏莓果红，NA灰色。旧display.1单蓝版本保留。matrix新增palette{id,high_color,low_color,na_color,unit,label_zh}及heatmap_svg:string|null；SVG使用同批完整score_range，含实际色标、单位与NA说明。无真实评分时SVG为null；恒值使用中间色，全部NA不编造数值范围。前端只显示服务端色值/说明并下载同源SVG和PNG，不推算科学评分。
 通过Workflow.save_matrix_display公开方法只追加展示配置至decisions/A06_matrix_display和manifest.matrix_display_records，绑定已批准成分和当前source_key、核查草案编号；展示窗口保持，名单和审批不变。过期配置不回退旧配色，明确待重新绑定。导出与专业报告A06章节共用matrix_exports和matrix_report_section，验证同批矩阵与色值。
+
+
+## A06核查草案暂存（2026-10-12）
+POST .../modules/A06_PREP/actions/two_pass_draft：{expected_source,expected_plan_id,expected_draft_id,plan,checked_target_ids,reviewer,note}→201 {draft,message_zh}。允许来源绑定且身份范围完整的未完成字段，只暂存人工输入，不生成运行、不批准方案、不启动计算；核验人/说明可暂空。服务端追加decisions/A06_two_pass_draft和manifest.two_pass_draft_records，保存原请求，重试内容一致才返回旧记录。未知字段、质控/评分/执行字段、跨研究、旧来源或过期草案均阻断。
+docking_preparation新增expected_draft_id及draft|null（draft_id、created_at、reviewer、note、checked_target_ids），plan优先显示与当前来源及完整方案版本一致的最新草案。刷新可恢复填写与合法逐项勾选；整体确认框永不自动恢复勾选。新完整方案使旧草案成为历史；上游改变后不回退早期草案。
+存在有效草案时，two_pass_plan确认请求必须额外携带expected_draft_id并与最新版本匹配；无草案的旧请求仍兼容。完整确认、结构质控与结果批准保持原规则，草案不因字段齐全被视为已确认。

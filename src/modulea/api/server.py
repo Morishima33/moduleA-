@@ -66,6 +66,7 @@ class App:
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/selection", self.post_selection),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/check_two_pass", self.post_check_two_pass),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/two_pass_plan", self.post_two_pass_plan),
+            ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/two_pass_draft", self.post_two_pass_draft),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/material", self.post_docking_material),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/docking_candidates", self.post_docking_candidates),
             ("GET", rf"/api/v1/studies/{ID}/docking_candidates/{ID}", self.get_docking_candidates),
@@ -341,11 +342,23 @@ class App:
         try:return self.kernel.workflow().check_two_pass(study_id,req.json()),200
         except ContractError as error:raise from_contract(str(error))
 
+    # 不完整草案只经公开Workflow方法暂存，复用同源、令牌和研究锁保护。
+    def post_two_pass_draft(self,req,study_id,module_id):
+        if module_id!="A06_PREP":raise not_found("两遍核查草案")
+        info=self._docking_action(study_id,module_id,"docking_preparation");body=req.json()
+        require_keys={"expected_source","expected_plan_id","expected_draft_id","plan","checked_target_ids","reviewer","note"}
+        if not isinstance(body,dict) or set(body)!=require_keys:raise ApiError(422,"VALIDATION_FAILED","草案请求字段不完整或包含隐藏参数")
+        payload={**body,"draft_id":"draft_"+uuid.uuid4().hex}
+        try:data=self.kernel.workflow().save_two_pass_draft(study_id,payload)
+        except ContractError as error:raise from_contract(str(error))
+        return {"draft":{k:data[k] for k in ("draft_id","created_at","reviewer","note","checked_target_ids")},"message_zh":"核查草案已保存；刷新可继续填写，尚未确认完整方案。"},201
+
     def post_two_pass_plan(self,req,study_id,module_id):
         if module_id!="A06_PREP":raise not_found("两遍方案")
         info=self._docking_action(study_id,module_id,"docking_preparation");payload=req.json()
         if payload.get("expected_source")!=info["expected_source"] or payload.get("expected_plan_id")!=info["expected_plan_id"]:raise ApiError(409,"STALE_VERSION","两遍方案已改变，请刷新")
-        if set(payload)!={"expected_source","expected_plan_id","confirmed_target_ids","reviewer","note","confirmed","plan"} or payload.get("confirmed") is not True or any(not isinstance(payload.get(k),str) or not payload[k].strip() for k in ("reviewer","note")):raise ApiError(422,"VALIDATION_FAILED","请明确确认并填写核验人与依据，不接受隐藏执行参数")
+        if set(payload) not in ({"expected_source","expected_plan_id","confirmed_target_ids","reviewer","note","confirmed","plan"},{"expected_source","expected_plan_id","expected_draft_id","confirmed_target_ids","reviewer","note","confirmed","plan"}) or payload.get("confirmed") is not True or any(not isinstance(payload.get(k),str) or not payload[k].strip() for k in ("reviewer","note")):raise ApiError(422,"VALIDATION_FAILED","请明确确认并填写核验人与依据，不接受隐藏执行参数")
+        if info.get("expected_draft_id") and payload.get("expected_draft_id")!=info["expected_draft_id"]:raise ApiError(409,"STALE_VERSION","核查草案已更新，请刷新后确认完整方案")
         from science_modules.a06.two_pass_plan import validate
         try:validate(payload.get("plan"),info["context"],payload.get("confirmed_target_ids"),info["materials"])
         except ContractError as error:raise from_contract(str(error))
