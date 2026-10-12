@@ -42,3 +42,6 @@ two_pass_plan.py负责人工方案校验；two_pass.py负责严格/探索两遍�
 
 ## 集中核对入口（2026-10-12）
 新外壳通过modulea/core/two_pass_confirmation.py复用本模块的完整方案校验，汇总缺口；主页面同窗口一次确认，NA仍明确核对。科学内核及既有版本保持。[使用与代码索引](../../../docs/A06集中核对与一次确认_v8_20261012.md)。
+
+## 获准来源原件核查（2026-10-12）
+source_inspection.py复用冻结的ligand_identity、receptor_identity、inspect_structure及inspect_reference_site，仅核对与清点，不调用准备、P2Rank或Vina。modulea/core/source_review.py独立归档版本和原件，现有方案绑定新来源，不复用不匹配字节或旧确认。[使用与核查边界](../../../docs/A06来源原件核查与集中方案选择_v9_20261012.md)。

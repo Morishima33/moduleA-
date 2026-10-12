@@ -279,3 +279,10 @@ docking_preparation新增expected_draft_id及draft|null（draft_id、created_at�
 
 ## 2026-10-12 A06集中核对与一次提交
 现有check_two_pass响应和docking_preparation新增confirmation：{ready,receptor_count,compound_count,planned_pair_count,normal_target_ids,pending,unavailable,execution_allowed:false,note_zh}。pending与unavailable逐项为{kind,id,label_zh,reason_zh}，使用既有完整校验器生成；字段齐全不是结构质控通过。确认窗口只在用户主动勾选整体核对后提交正常受体完整ID；明确NA项在同一窗口逐项核对，不参与全选。未完成时只显示缺口，可保存草案，不提交完整确认。原完整方案请求、研究版本、令牌和独立审批保持。
+
+
+## A06获准来源原件核查（2026-10-12）
+docking_preparation新增source_review（当前同上游A06.source_review.1原件及只读核查，approval:null、execution_allowed:false）。既有metadata_review显示已取同身份三维及原始坐标清点，不能显示当前质控通过。source_review.choices仅是需用户核对的替代构象或路线建议，未选择不代填。
+草案和完整方案请求新增可选expected_source_review_id；当前有来源原件核查包时必传并核对，旧无核查包请求兼容。原件更新使旧草案或完整方案不再作为当前确认，历史保留。所有研究写入仍经公开Workflow，当前source_key、名单、来源CID、原件字节及版本全部核对。资料获取授权不等于方案确认或真实计算授权。
+
+GET /studies/{sid}/source_reviews/{review_id}/files/{file_key}仅下载该研究索引内已归档且指纹完整的原件，无任意路径参数；旧版本可只读追溯。source_review.choices为{kind:altloc|route,target_id,symbol,pdb_id,round:first|second,options,reason_zh,proposal?}。原始缺失记录仅供核查，不按数量自动判定口袋完整。

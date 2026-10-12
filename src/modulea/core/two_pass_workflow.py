@@ -9,12 +9,13 @@ from .docking_review import DockingReviewMixin
 from .receptor_review import ReceptorReviewMixin
 from .two_pass_draft import TwoPassDraftMixin
 from .two_pass_confirmation import confirmation_summary
+from .source_review import SourceReviewMixin, merged_metadata, source_row_checks, source_compound_issues
 from science_modules.a06.plan_adapter import source_context
 from science_modules.a06.two_pass_plan import SCHEMA,blank,row_check,validate
 from science_modules.a06.two_pass import POLICY,CONFIDENCE
 
 # 与旧方案并存的新版本，唯一研究索引及锁沿用原Workflow。
-class TwoPassWorkflow(TwoPassDraftMixin,ReceptorReviewMixin,DockingReviewMixin,DockingWorkflow):
+class TwoPassWorkflow(SourceReviewMixin,TwoPassDraftMixin,ReceptorReviewMixin,DockingReviewMixin,DockingWorkflow):
     def selection_binding(self,sid):
         manifest=self.load(sid);a03=manifest["current"].get("A03")
         require(not manifest.get("trashed") and a03 and self.approved(manifest,a03),"请先通过当前A03；回收站只读")
@@ -49,7 +50,10 @@ class TwoPassWorkflow(TwoPassDraftMixin,ReceptorReviewMixin,DockingReviewMixin,D
         for record in reversed(manifest.get("two_pass_plan_records",[])):
             data=read_json(verified_file(self.location(manifest["study_id"]),record))
             require(data["study_id"]==manifest["study_id"] and data["schema_version"]==SCHEMA,"两遍方案身份或版本不符")
-            if data["source_key"]==context["source_key"]:return data,record
+            if data["source_key"]==context["source_key"]:
+                source=self.current_source_review(manifest,context)
+                if source and data.get("source_review_id")!=source["review_id"]:continue
+                return data,record
         return None,None
 
     # 手工提供来源三维SDF，原件单独归档；这里不宣称化学身份已通过。
@@ -83,19 +87,24 @@ class TwoPassWorkflow(TwoPassDraftMixin,ReceptorReviewMixin,DockingReviewMixin,D
     def check_two_pass(self,sid,payload):
         manifest=self.load(sid);context=source_context(self,sid,manifest)
         require(payload.get("expected_source")==context["source_key"],"两遍方案来源已改变，请刷新")
+        source=self.guard_source_review(manifest,context,payload)
         plan=payload.get("plan",{})
         require(isinstance(plan,dict),"方案须为对象")
         rows=plan.get("receptors",[])
         require(isinstance(rows,list) and all(isinstance(r,dict) for r in rows) and [r.get("target_id") for r in rows]==[r["target_id"] for r in context["receptors"]],"草案受体范围不符")
         checks=[{"target_id":r["target_id"],**row_check(r,s,context)} for r,s in zip(rows,context["receptors"])]
+        checks=source_row_checks(source,plan,checks)
         summary=confirmation_summary(plan,context,checks,self.materials(manifest,context),self.current_receptor_review(manifest,context))
+        issues=source_compound_issues(source,plan,self.materials(manifest,context))
+        summary["pending"].extend(issues);summary["ready"]=summary["ready"] and not issues
         return {"items":checks,"confirmation":summary,"calculation_started":False}
 
     # 保存完整名单需要明确确认；不创建运行、不审批、不解除计算关闭状态。
     def save_two_pass(self,sid,payload):
         with write_lock(self.root):
             manifest=self.load(sid);context=source_context(self,sid,manifest)
-            require(set(payload) in ({"expected_source","expected_plan_id","plan_id","confirmed_target_ids","reviewer","note","confirmed","plan"},{"expected_source","expected_plan_id","expected_draft_id","plan_id","confirmed_target_ids","reviewer","note","confirmed","plan"}),"方案请求字段不完整或含未授权执行参数")
+            require(set(payload)-{"expected_draft_id","expected_source_review_id"}=={"expected_source","expected_plan_id","plan_id","confirmed_target_ids","reviewer","note","confirmed","plan"},"方案请求字段不完整或含未授权执行参数")
+            self.guard_source_review(manifest,context,payload)
             require(payload["expected_source"]==context["source_key"],"两遍方案来源已改变，请刷新")
             safe_id(payload["plan_id"],"plan")
             require(payload["confirmed"] is True and all(isinstance(payload[k],str) and 0<len(payload[k].strip())<=2000 for k in ("reviewer","note")),"请明确确认并填写核验人与依据")
@@ -108,7 +117,9 @@ class TwoPassWorkflow(TwoPassDraftMixin,ReceptorReviewMixin,DockingReviewMixin,D
             draft=self.current_two_pass_draft(manifest,context,latest)
             require(draft is None or payload.get("expected_draft_id")==draft["draft_id"],"核查草案已改变，请刷新后确认完整方案")
             plan=validate(payload["plan"],context,payload["confirmed_target_ids"],self.materials(manifest,context))
-            data={"schema_version":SCHEMA,"policy_version":POLICY,"study_id":sid,"plan_id":payload["plan_id"],"source_key":context["source_key"],"source_binding":{k:deepcopy(v) for k,v in context.items() if k not in ("receptors","compounds")},"plan":plan,"execution_allowed":False,"status_zh":"方案已确认；尚未实际准备或质控","reviewer":payload["reviewer"].strip(),"note":payload["note"].strip(),"created_at":now(),"request":deepcopy(payload)}
+            verified=self.check_two_pass(sid,payload)
+            require(verified["confirmation"]["ready"],"来源原件选择未核对或已改变")
+            data={"source_review_id":payload.get("expected_source_review_id"),"schema_version":SCHEMA,"policy_version":POLICY,"study_id":sid,"plan_id":payload["plan_id"],"source_key":context["source_key"],"source_binding":{k:deepcopy(v) for k,v in context.items() if k not in ("receptors","compounds")},"plan":plan,"execution_allowed":False,"status_zh":"方案已确认；尚未实际准备或质控","reviewer":payload["reviewer"].strip(),"note":payload["note"].strip(),"created_at":now(),"request":deepcopy(payload)}
             path=self.location(sid)/"decisions/A06_two_pass"/(data["plan_id"]+".json");write_json(path,data)
             manifest.setdefault("two_pass_plan_records",[]).append(file_record(self.location(sid),path,"two_pass_plan"));self.save(manifest)
             return data
@@ -143,6 +154,10 @@ def preparation_context(workflow,manifest,historical=False,busy=False):
     except ValueError as error:return {"enabled":False,"disabled_reason_zh":str(error),"policy_version":POLICY,"execution_allowed":False}
     latest,_=workflow.latest_two_pass(manifest,context);draft=workflow.current_two_pass_draft(manifest,context,latest);plan=draft["plan"] if draft else latest["plan"] if latest else blank(context)
     checks=[{"target_id":r["target_id"],**row_check(r,s,context)} for r,s in zip(plan["receptors"],context["receptors"])]
-    metadata=workflow.current_receptor_review(manifest,context);materials=workflow.materials(manifest,context)
+    source=workflow.current_source_review(manifest,context)
+    checks=source_row_checks(source,plan,checks)
+    metadata=merged_metadata(workflow.current_receptor_review(manifest,context),source);materials=workflow.materials(manifest,context)
     confirmation=confirmation_summary(plan,context,checks,materials,metadata)
-    return {"enabled":not busy,"disabled_reason_zh":"请等待当前研究后台任务结束" if busy else "","expected_source":context["source_key"],"expected_plan_id":latest["plan_id"] if latest else None,"expected_draft_id":draft["draft_id"] if draft else None,"draft":{k:deepcopy(draft[k]) for k in ("draft_id","created_at","reviewer","note","checked_target_ids")} if draft else None,"policy_version":POLICY,"confidence_thresholds":CONFIDENCE,"context":context,"plan":plan,"checks":checks,"latest":latest,"metadata_review":metadata,"materials":materials,"confirmation":confirmation,"planned_pair_count":len(context["receptors"])*len(context["compounds"]),"execution_allowed":False,"status_zh":"核查草案已保存，尚未确认完整方案" if draft else "方案已确认，仍待准备与质控" if latest else "待核对成分及受体结构方案"}
+    issues=source_compound_issues(source,plan,materials)
+    confirmation["pending"].extend(issues);confirmation["ready"]=confirmation["ready"] and not issues
+    return {"enabled":not busy,"disabled_reason_zh":"请等待当前研究后台任务结束" if busy else "","expected_source":context["source_key"],"expected_plan_id":latest["plan_id"] if latest else None,"expected_draft_id":draft["draft_id"] if draft else None,"draft":{k:deepcopy(draft[k]) for k in ("draft_id","created_at","reviewer","note","checked_target_ids")} if draft else None,"policy_version":POLICY,"confidence_thresholds":CONFIDENCE,"context":context,"plan":plan,"checks":checks,"latest":latest,"source_review":source,"expected_source_review_id":source["review_id"] if source else None,"metadata_review":metadata,"materials":materials,"confirmation":confirmation,"planned_pair_count":len(context["receptors"])*len(context["compounds"]),"execution_allowed":False,"status_zh":"核查草案已保存，尚未确认完整方案" if draft else "方案已确认，仍待准备与质控" if latest else "待核对成分及受体结构方案"}

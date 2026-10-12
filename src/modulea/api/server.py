@@ -70,6 +70,7 @@ class App:
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/material", self.post_docking_material),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/docking_candidates", self.post_docking_candidates),
             ("GET", rf"/api/v1/studies/{ID}/docking_candidates/{ID}", self.get_docking_candidates),
+            ("GET", rf"/api/v1/studies/{ID}/source_reviews/{ID}/files/{ID}", self.get_review_source_file),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/run_ppi", self.post_run_ppi),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/identity_plan", self.post_identity_plan),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/display_confirmation", self.post_display_confirmation),
@@ -347,7 +348,7 @@ class App:
         if module_id!="A06_PREP":raise not_found("两遍核查草案")
         info=self._docking_action(study_id,module_id,"docking_preparation");body=req.json()
         require_keys={"expected_source","expected_plan_id","expected_draft_id","plan","checked_target_ids","reviewer","note"}
-        if not isinstance(body,dict) or set(body)!=require_keys:raise ApiError(422,"VALIDATION_FAILED","草案请求字段不完整或包含隐藏参数")
+        if not isinstance(body,dict) or set(body)-{"expected_source_review_id"}!=require_keys:raise ApiError(422,"VALIDATION_FAILED","草案请求字段不完整或包含隐藏参数")
         payload={**body,"draft_id":"draft_"+uuid.uuid4().hex}
         try:data=self.kernel.workflow().save_two_pass_draft(study_id,payload)
         except ContractError as error:raise from_contract(str(error))
@@ -357,10 +358,14 @@ class App:
         if module_id!="A06_PREP":raise not_found("两遍方案")
         info=self._docking_action(study_id,module_id,"docking_preparation");payload=req.json()
         if payload.get("expected_source")!=info["expected_source"] or payload.get("expected_plan_id")!=info["expected_plan_id"]:raise ApiError(409,"STALE_VERSION","两遍方案已改变，请刷新")
-        if set(payload) not in ({"expected_source","expected_plan_id","confirmed_target_ids","reviewer","note","confirmed","plan"},{"expected_source","expected_plan_id","expected_draft_id","confirmed_target_ids","reviewer","note","confirmed","plan"}) or payload.get("confirmed") is not True or any(not isinstance(payload.get(k),str) or not payload[k].strip() for k in ("reviewer","note")):raise ApiError(422,"VALIDATION_FAILED","请明确确认并填写核验人与依据，不接受隐藏执行参数")
+        if set(payload)-{"expected_draft_id","expected_source_review_id"}!={"expected_source","expected_plan_id","confirmed_target_ids","reviewer","note","confirmed","plan"} or payload.get("confirmed") is not True or any(not isinstance(payload.get(k),str) or not payload[k].strip() for k in ("reviewer","note")):raise ApiError(422,"VALIDATION_FAILED","请明确确认并填写核验人与依据，不接受隐藏执行参数")
         if info.get("expected_draft_id") and payload.get("expected_draft_id")!=info["expected_draft_id"]:raise ApiError(409,"STALE_VERSION","核查草案已更新，请刷新后确认完整方案")
+        if info.get("expected_source_review_id") and payload.get("expected_source_review_id")!=info["expected_source_review_id"]:raise ApiError(409,"STALE_VERSION","来源原件核查版本已更新，请刷新")
         from science_modules.a06.two_pass_plan import validate
-        try:validate(payload.get("plan"),info["context"],payload.get("confirmed_target_ids"),info["materials"])
+        try:
+            validate(payload.get("plan"),info["context"],payload.get("confirmed_target_ids"),info["materials"])
+            verified=self.kernel.workflow().check_two_pass(study_id,payload)
+            if not verified["confirmation"]["ready"]:raise ContractError("来源原件选择未核对或已改变")
         except ContractError as error:raise from_contract(str(error))
         payload["plan_id"]="plan_"+uuid.uuid4().hex
         task,created=self.tasks.submit(study_id,"a06_plan","页面确认两遍方案",payload)
@@ -396,6 +401,20 @@ class App:
         return {"task":task,"created":created,"message_zh":"候选分组已提交；不运行真实分子对接。"+self._task_message(task)},202
 
     # 下载只查本研究索引，拒绝任意路径与跨研究编号。
+    # 仅下载当前研究明确登记的原件，历史亦校验指纹，不接收任意路径。
+    def get_review_source_file(self,req,study_id,review_id,file_key):
+        workflow=self.kernel.workflow()
+        if not (workflow.location(study_id)/"manifest.json").is_file():raise not_found("研究")
+        manifest=workflow.load(study_id)
+        for record in manifest.get("source_review_records",[]):
+            data=read_json(verified_file(workflow.location(study_id),record))
+            if data.get("study_id")==study_id and data.get("review_id")==review_id:
+                for item in data["files"]:
+                    if item["key"]==file_key:
+                        path=verified_file(workflow.location(study_id),item["file"])
+                        return ("file",path,item["name"],"application/octet-stream",False)
+        raise not_found("本研究已归档的来源原件")
+
     def get_docking_candidates(self,req,study_id,group_id):
         workflow=self.kernel.workflow()
         manifest=workflow.load(study_id)

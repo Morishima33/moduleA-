@@ -7,6 +7,7 @@ from storage import write_lock,write_json,read_json,verified_file,file_record,no
 from science_modules.a06.plan_adapter import source_context
 from science_modules.a06.two_pass_plan import blank,row_check
 from science_modules.a06.two_pass import POLICY
+from .source_review import source_row_checks
 SCHEMA="A06.two_pass.draft.1"
 
 # 草案允许缺字段；禁用未知执行/评分字段，真实完整校验仍使用既有科学契约。
@@ -43,6 +44,8 @@ class TwoPassDraftMixin:
         data=read_json(verified_file(self.location(manifest["study_id"]),records[-1]))
         require(data.get("schema_version")==SCHEMA and data.get("study_id")==manifest["study_id"] and data.get("execution_allowed") is False and data.get("approval") is None,"核查草案身份或版本无效")
         if data["source_key"]!=context["source_key"] or data["base_plan_id"]!=(latest["plan_id"] if latest else None):return None
+        source=self.current_source_review(manifest,context)
+        if source and data.get("source_review_id")!=source["review_id"]:return None
         if data.get("metadata_source"):verified_file(self.location(manifest["study_id"]),data["metadata_source"])
         validate_partial(data["plan"],context)
         return data
@@ -50,12 +53,14 @@ class TwoPassDraftMixin:
     # 已过期页面不能覆盖新版；确认勾选只保留已填写且校验合格的人工行。
     def validate_two_pass_draft_request(self,sid,payload):
         manifest=self.load(sid);context=source_context(self,sid,manifest)
-        require(isinstance(payload,dict) and set(payload)=={"expected_source","expected_plan_id","expected_draft_id","draft_id","plan","checked_target_ids","reviewer","note"},"草案请求字段不完整或含执行参数")
+        require(isinstance(payload,dict) and set(payload)-{"expected_source_review_id"}=={"expected_source","expected_plan_id","expected_draft_id","draft_id","plan","checked_target_ids","reviewer","note"},"草案请求字段不完整或含执行参数")
         require(payload["expected_source"]==context["source_key"],"核查草案来源已改变，请刷新")
+        source=self.guard_source_review(manifest,context,payload)
         safe_id(payload["draft_id"],"draft")
         require(all(isinstance(payload[k],str) and len(payload[k])<=2000 for k in ("reviewer","note")),"草案核验文字格式无效")
         plan=validate_partial(payload["plan"],context);checked=payload["checked_target_ids"]
-        eligible={r["target_id"] for r,s in zip(plan["receptors"],context["receptors"]) if row_check(r,s,context)["valid"]}
+        facts=[{"target_id":r["target_id"],**row_check(r,s,context)} for r,s in zip(plan["receptors"],context["receptors"])]
+        eligible={r["target_id"] for r in source_row_checks(source,plan,facts) if r["valid"]}
         require(isinstance(checked,list) and all(isinstance(x,str) for x in checked) and len(checked)==len(set(checked)) and set(checked)<=eligible,"草案勾选含未填齐或越界的受体")
         require(len(json.dumps(payload,ensure_ascii=False))<=200000,"草案过大")
         latest,_=self.latest_two_pass(manifest,context)
@@ -75,7 +80,7 @@ class TwoPassDraftMixin:
             if retry:return retry
             latest,_=self.latest_two_pass(manifest,context);current=self.current_two_pass_draft(manifest,context,latest)
             if current and all(current[k]==payload[k] for k in ("plan","checked_target_ids","reviewer","note")):return current
-            data={"schema_version":SCHEMA,"study_id":sid,"draft_id":payload["draft_id"],"source_key":context["source_key"],"base_plan_id":payload["expected_plan_id"],"metadata_source":deepcopy(manifest.get("receptor_review_records",[])[-1]) if manifest.get("receptor_review_records") else None,"plan":plan,"checked_target_ids":deepcopy(payload["checked_target_ids"]),"reviewer":payload["reviewer"],"note":payload["note"],"approval":None,"execution_allowed":False,"created_at":now(),"request":deepcopy(payload)}
+            data={"source_review_id":payload.get("expected_source_review_id"),"schema_version":SCHEMA,"study_id":sid,"draft_id":payload["draft_id"],"source_key":context["source_key"],"base_plan_id":payload["expected_plan_id"],"metadata_source":deepcopy(manifest.get("receptor_review_records",[])[-1]) if manifest.get("receptor_review_records") else None,"plan":plan,"checked_target_ids":deepcopy(payload["checked_target_ids"]),"reviewer":payload["reviewer"],"note":payload["note"],"approval":None,"execution_allowed":False,"created_at":now(),"request":deepcopy(payload)}
             path=self.location(sid)/"decisions/A06_two_pass_draft"/(data["draft_id"]+".json");write_json(path,data)
             manifest.setdefault("two_pass_draft_records",[]).append(file_record(self.location(sid),path,"two_pass_draft"));self.save(manifest)
             return data

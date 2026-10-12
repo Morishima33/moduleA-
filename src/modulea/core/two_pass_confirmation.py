@@ -61,7 +61,7 @@ def confirmation_summary(plan, context, checks, materials=(), metadata=None):
     # 完整校验检查顺序、范围与配置，保留所有原门控。
     try:
         validate(plan, context, [r["target_id"] for r in context["receptors"]], materials)
-        ready = not pending
+        ready = not pending and all(r["valid"] for r in checks)
     except (ValueError, KeyError, TypeError) as error:
         ready = False
         if not pending:
