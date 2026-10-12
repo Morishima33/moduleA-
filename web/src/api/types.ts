@@ -307,9 +307,11 @@ export interface TwoPassRow {target_id:string;symbol:string;candidate_grade:stri
 export interface TwoPassCompound {compound_id:string;status:'use'|'unavailable'|null;cid?:string;reason:string;protonation_policy?:string;material_id?:string}
 export interface TwoPassPlan {policy_version:string;package_id:string;pymol_executable:string;compounds:TwoPassCompound[];receptors:TwoPassRow[]}
 export interface PlanRowCheck {target_id:string;valid:boolean;bulk_allowed:boolean;reason_zh:string}
+export interface ConfirmationItem {kind:"receptor"|"compound"|"configuration";id:string;label_zh:string;reason_zh:string}
+export interface TwoPassConfirmation {ready:boolean;receptor_count:number;compound_count:number;planned_pair_count:number;normal_target_ids:string[];pending:ConfirmationItem[];unavailable:ConfirmationItem[];execution_allowed:false;note_zh:string}
 export interface DockingMaterial {material_id:string;compound_id:string;cid:string;name:string;state_zh:string}
 export interface TwoPassDraftInfo {draft_id:string;created_at:string;reviewer:string;note:string;checked_target_ids:string[]}
-export interface DockingPreparationInfo {expected_draft_id?:string|null;draft?:TwoPassDraftInfo|null;metadata_review?:ReceptorMetadataReview|null;enabled:boolean;disabled_reason_zh:string;expected_source:string;expected_plan_id:string|null;policy_version:string;plan:TwoPassPlan;checks:PlanRowCheck[];materials:DockingMaterial[];context:{receptors:DockingCandidateRow[];compounds:{compound_id:string;name:string;herbs:string[]}[]};planned_pair_count:number;execution_allowed:false;status_zh:string;latest?:{reviewer:string;note:string;created_at:string}|null}
+export interface DockingPreparationInfo {confirmation:TwoPassConfirmation;expected_draft_id?:string|null;draft?:TwoPassDraftInfo|null;metadata_review?:ReceptorMetadataReview|null;enabled:boolean;disabled_reason_zh:string;expected_source:string;expected_plan_id:string|null;policy_version:string;plan:TwoPassPlan;checks:PlanRowCheck[];materials:DockingMaterial[];context:{receptors:DockingCandidateRow[];compounds:{compound_id:string;name:string;herbs:string[]}[]};planned_pair_count:number;execution_allowed:false;status_zh:string;latest?:{reviewer:string;note:string;created_at:string}|null}
 
 // 研究核查草案与同批矩阵只读，身份预核查不代替人工确认。
 export interface DockingReviewCompound extends CompoundChoiceRow {name_zh:string;cid:string;identity_prechecked:boolean;identity_state_zh:string;source_3d_state_zh:string;evidence_zh:string;manual_reason_zh:string}

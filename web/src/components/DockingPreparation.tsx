@@ -1,7 +1,7 @@
 // A06两遍方案核查：显眼确认、服务端资格、跨页选择；不显示伪质控或评分。
 import {Alert,Button,Checkbox,Collapse,Form,Input,InputNumber,Modal,Select,Table,Tag,message} from 'antd';
 import {useEffect,useState} from 'react';
-import type {DockingPreparationInfo,TwoPassPlan,TwoPassRow,TwoPassCompound,StructureSpec,PlanRowCheck} from '../api/types';
+import type {DockingPreparationInfo,TwoPassPlan,TwoPassRow,TwoPassCompound,StructureSpec,PlanRowCheck,TwoPassConfirmation} from '../api/types';
 import {api,errorText} from '../api/client';
 import {useApp} from '../lib/appContext';
 import {hrefFor} from '../lib/route';
@@ -27,13 +27,14 @@ function StructureFields({prefix,mode,first}:{prefix:string;mode:string;first:bo
 export default function DockingPreparation({studyId,info}:{studyId:string;info:DockingPreparationInfo}){
  const app=useApp();const [plan,setPlan]=useState<TwoPassPlan>(info.plan);const [checks,setChecks]=useState<PlanRowCheck[]>(info.checks||[]);
  const [draftId,setDraftId]=useState<string|null>(info.expected_draft_id||null);const [checked,setChecked]=useState<string[]>([]);const [page,setPage]=useState(1);const [dirty,setDirty]=useState(false);
+ const [reviewOpen,setReviewOpen]=useState(false);const [summary,setSummary]=useState<TwoPassConfirmation>(info.confirmation);const [naChecks,setNaChecks]=useState<string[]>([]);
  const [reviewer,setReviewer]=useState('');const [note,setNote]=useState('');const [confirmed,setConfirmed]=useState(false);const [error,setError]=useState('');const [busy,setBusy]=useState(false);
  const [editing,setEditing]=useState<TwoPassRow|null>(null);const [compound,setCompound]=useState<TwoPassCompound|null>(null);const [form]=Form.useForm();const [ligandForm]=Form.useForm();
  const firstPdb=Form.useWatch("first_pdb_id",form);const secondPdb=Form.useWatch("second_pdb_id",form);const metadataRow=info.metadata_review?.receptors.find(r=>r.target_id===editing?.target_id);
  const firstMode=Form.useWatch('first_mode',form)||'none';const secondMode=Form.useWatch('second_mode',form)||'none';const unavailable=Form.useWatch('unavailable',form);
- useEffect(()=>{setPlan(info.plan);setChecks(info.checks||[]);setChecked(info.draft?.checked_target_ids||[]);setDraftId(info.expected_draft_id||null);setReviewer(info.draft?.reviewer||'');setNote(info.draft?.note||'');setDirty(false);setConfirmed(false);setError('')},[info.expected_source,info.expected_plan_id,info.expected_draft_id]);
- function touch(p:TwoPassPlan){setPlan(p);setDirty(true);setConfirmed(false)}
- async function verify(p:TwoPassPlan){const result=await api.checkTwoPass(studyId,{expected_source:info.expected_source,plan:p});setChecks(result.items);return result.items}
+ useEffect(()=>{setPlan(info.plan);setChecks(info.checks||[]);setChecked(info.draft?.checked_target_ids||[]);setDraftId(info.expected_draft_id||null);setReviewer(info.draft?.reviewer||'');setNote(info.draft?.note||'');setDirty(false);setConfirmed(false);setError('');setSummary(info.confirmation);setReviewOpen(false);setNaChecks([])},[info.expected_source,info.expected_plan_id,info.expected_draft_id]);
+ function touch(p:TwoPassPlan){setPlan(p);setDirty(true);setConfirmed(false);setNaChecks([]);setReviewOpen(false)}
+ async function verify(p:TwoPassPlan){const result=await api.checkTwoPass(studyId,{expected_source:info.expected_source,plan:p});setChecks(result.items);setSummary(result.confirmation);return result.items}
  function editRow(r:TwoPassRow){setError("");form.resetFields();const values:Record<string,unknown>={...r,first_mode:r.first?.source_type||'none',second_mode:r.second?.source_type||'none'};for(const key of ['first','second'] as const){const s=r[key];if(s)for(const [k,v] of Object.entries(s))values[key+'_'+k]=k==='chains'?(v as string[]).join(','):k==='altloc'?(v||'none'):v}form.setFieldsValue(values);setEditing(r)}
  // 完整验证后才取得服务端勾选资格，编辑过的项必须重新确认。
  // 载入公开摘要只减少重复输入；口袋、配体定位与替代构象仍需明确核查。
@@ -52,34 +53,47 @@ export default function DockingPreparation({studyId,info}:{studyId:string;info:D
  async function bulk(all:boolean){setBusy(true);setConfirmed(false);try{const list=await verify(plan);const allowed=list.filter(r=>r.valid&&r.bulk_allowed).map(r=>r.target_id);if(!allowed.length)message.info('尚无字段齐全的受体方案；可先保存核查草案，补齐后再确认。');const visible=plan.receptors.slice((page-1)*20,page*20).map(r=>r.target_id);setChecked(Array.from(new Set([...checked,...allowed.filter(x=>all||visible.includes(x))])));setConfirmed(false)}catch(e){setError(inputError(e))}finally{setBusy(false)}}
  // 暂存按钮允许未填齐，写入独立草案；整体确认始终由用户另行勾选。
  async function saveDraft(p=plan,selection=checked){setBusy(true);setError('');try{const result=await api.saveTwoPassDraft(studyId,{expected_source:info.expected_source,expected_plan_id:info.expected_plan_id,expected_draft_id:draftId,checked_target_ids:selection,reviewer,note,plan:p});setDraftId(result.draft.draft_id);setPlan(p);setChecked(selection);setDirty(false);setConfirmed(false);app.bumpRefresh();message.success(result.message_zh)}catch(e){setError(inputError(e));throw e}finally{setBusy(false)}}
- async function save(){setBusy(true);setError('');try{const result=await api.saveTwoPass(studyId,{expected_source:info.expected_source,expected_plan_id:info.expected_plan_id,expected_draft_id:draftId,confirmed_target_ids:checked,reviewer,note,confirmed,plan});app.trackTasks([result.task]);app.bumpRefresh();message.success(result.message_zh)}catch(e){setError(inputError(e))}finally{setBusy(false)}}
+ // 用户只在汇总窗口核对一次；正常受体ID来自服务端，NA项仍须明确确认。
+ async function openReview(){setBusy(true);setError('');setConfirmed(false);setNaChecks([]);try{await verify(plan);setReviewOpen(true)}catch(e){setError(inputError(e))}finally{setBusy(false)}}
+ async function save(){setBusy(true);setError('');try{const result=await api.saveTwoPass(studyId,{expected_source:info.expected_source,expected_plan_id:info.expected_plan_id,expected_draft_id:draftId,confirmed_target_ids:[...summary.normal_target_ids,...summary.unavailable.filter(r=>r.kind==='receptor'&&naChecks.includes(r.kind+':'+r.id)).map(r=>r.id)],reviewer,note,confirmed,plan});app.trackTasks([result.task]);setReviewOpen(false);setConfirmed(false);app.bumpRefresh();message.success(result.message_zh)}catch(e){setError(inputError(e))}finally{setBusy(false)}}
  if(!info.plan)return <section className="card" id="a06-two-pass"><h2>A06 待你核查</h2><Alert type="warning" message={info.disabled_reason_zh}/><Button type="primary" href={hrefFor({page:'study',studyId,moduleId:'A03_SELECT'})}>前往成分名单核查与复核</Button></section>;
  const checkMap=new Map(checks.map(r=>[r.target_id,r]));
- return <section className="card" id="a06-two-pass"><h2>A06 需要你确认：成分 → 两遍受体方案</h2>
- <div className="toolbar"><Button type="primary" disabled={!info.enabled||busy} onClick={()=>{void saveDraft().catch(()=>{})}}>保存核查草案</Button><span className="small">允许未填完；保存不确认完整方案、不启动计算。</span></div>
+ return <section className="card" id="a06-two-pass"><h2>A06 对接方案：集中核对，一次提交</h2>
+ <div className="toolbar"><Button type="primary" disabled={!info.enabled||busy} onClick={()=>{void openReview()}}>查看汇总与确认</Button><Button disabled={!info.enabled||busy} onClick={()=>{void saveDraft().catch(()=>{})}}>保存核查草案</Button></div>
+ <p className="small">助手整理成分与受体资料后，你在同一窗口核对并提交。未完成可先保存，缺口不会因勾选而通过。</p>
+ <Alert type={summary?.ready&&!dirty?'info':'warning'} message={summary?.ready&&!dirty?'方案字段齐全，可打开汇总核对；仍待实际质控':dirty?'有修改，请打开汇总重新核查':'资料尚未齐全，先补齐后再作一次确认'} description="方案确认、结构质控及最终结果分别留痕；本页提交不会启动计算。"/>
+ {summary&&!summary.ready&&!dirty&&<Collapse size="small" items={[{key:'gaps',label:'查看集中待补清单（'+summary.pending.length+'项）',children:<Table rowKey={r=>r.kind+':'+r.id} size="small" pagination={false} dataSource={summary.pending} columns={[{title:'对象',dataIndex:'label_zh'},{title:'待补内容',dataIndex:'reason_zh'}]}/>}]} /> }
  {info.draft&&<p className="small">草案已保存：{new Date(info.draft.created_at).toLocaleString('zh-CN',{hour12:false,timeZone:'Asia/Shanghai'})}，刷新后可继续核查。</p>}
  <Alert type="info" message={info.status_zh} description={'计划 '+info.planned_pair_count+' 个组合；当前没有执行真实准备或对接。保存方案不表示质控通过。'}/>
  {!info.enabled&&<Alert type="warning" message={info.disabled_reason_zh}/>}
  {info.latest&&<p className="small">已留存核验人：{info.latest.reviewer}；依据：{info.latest.note}。</p>}
  {dirty&&<Alert type="warning" message="有未保存修改，图表和质控状态尚未生成。"/>}
- {info.metadata_review&&<ReceptorMetadata review={info.metadata_review}/>}
+ {info.metadata_review&&<Collapse size="small" items={[{key:"sources",label:"展开官方来源及受体证据",children:<ReceptorMetadata review={info.metadata_review}/>}]} /> }
  <h3>1 对接成分与来源三维资料</h3>
  {info.metadata_review&&<Alert type="warning" message={'已确认 '+info.metadata_review.compounds.length+' 个成分：'+info.metadata_review.compounds.filter(c=>c.source_3d_evidence.length>0).length+' 项已有来源三维，'+info.metadata_review.compounds.filter(c=>c.source_3d_evidence.length===0).length+' 项待补'} description="已有文件仍需准备阶段核验；待补项保留，未生成评分。"/>}
  <Table<TwoPassCompound> rowKey="compound_id" size="small" pagination={false} dataSource={plan.compounds} scroll={{x:600}} columns={[{title:'成分',render:(_,r)=>info.metadata_review?.compounds.find(c=>c.compound_id===r.compound_id)?.name_zh||info.context.compounds.find(c=>c.compound_id===r.compound_id)?.name||r.compound_id},{title:'CID',render:(_,r)=>info.metadata_review?.compounds.find(c=>c.compound_id===r.compound_id)?.cid||'待核查'},{title:'已有来源三维',render:(_,r)=>info.metadata_review?.compounds.find(c=>c.compound_id===r.compound_id)?.source_3d_state_zh||'待核对来源'},{title:'方案状态',render:(_,r)=>r.status==='use'?'来源三维，待身份核验':r.status==='unavailable'?'暂无法计算':'待填写'},{title:'操作',render:(_,r)=><Button disabled={busy||!info.enabled} onClick={()=>editCompound(r)}>核查成分与三维资料</Button>}]}/>
  <h3>2 受体两遍方案</h3><p className="small">当前没有运行对接任务。“已核对”是人工确认数量；待补项不会因等待自动完成，可先保存草案。</p><p className="small">第一遍严格；未通过者才进入第二遍。A/B候选级别与结构质控分别记录。</p>
  <Collapse size="small" items={[{key:'policy',label:'查看严格要求及第二遍边界',children:<p>共晶Top-1重对接RMSD≤2Å；第二遍优先独立实验结构，再用已有AlphaFold模型。预测口袋为P2Rank首位，两次一致。AlphaFold口袋均值pLDDT≥80、各残基≥70、双向PAE≤10Å。严格不足5个仍可探索，主要结果条件保持。配体只接受来源三维。</p>}]}/>
- <div className="toolbar"><Button disabled={!info.enabled||busy} onClick={()=>bulk(false)}>全选本页可确认项</Button><Button disabled={!info.enabled||busy} onClick={()=>bulk(true)}>全选全部可确认项</Button><Button disabled={busy} onClick={()=>{setChecked([]);setConfirmed(false)}}>全部取消</Button><span>已核对 {checked.length} / {plan.receptors.length}</span>{busy&&<span role="status">正在核查或保存，请稍候</span>}</div>
+ <Collapse size="small" items={[{key:'advanced',label:'逐项编辑与辅助勾选（可选）',children:<>
+ <div className="toolbar"><Button disabled={!info.enabled||busy} onClick={()=>bulk(false)}>全选本页可确认项</Button><Button disabled={!info.enabled||busy} onClick={()=>bulk(true)}>全选全部可确认项</Button><Button disabled={busy} onClick={()=>{setChecked([]);setConfirmed(false)}}>全部取消</Button><span>辅助勾选 {checked.length} / {plan.receptors.length}</span>{busy&&<span role="status">正在核查或保存，请稍候</span>}</div>
  <Table<TwoPassRow> rowKey="target_id" size="small" dataSource={plan.receptors} pagination={{pageSize:20,current:page,onChange:setPage,showSizeChanger:false}} scroll={{x:820}}
  rowSelection={{selectedRowKeys:checked,preserveSelectedRowKeys:true,hideSelectAll:true,onChange:keys=>{setChecked(keys.map(String));setConfirmed(false)},getCheckboxProps:r=>({disabled:busy||!info.enabled||!checkMap.get(r.target_id)?.valid})}}
  columns={[{title:'基因 / HGNC',render:(_,r)=><>{r.symbol}<div className="tiny muted">{r.target_id}</div></>},{title:'候选级别',dataIndex:'candidate_grade',render:(v:string)=><Tag>{v}</Tag>},{title:'第一遍',render:(_,r)=>r.first?.pdb_id||(r.first_reason?'依据见展开':'待提供实验结构')},{title:'第二遍',render:(_,r)=>r.second?.model_id||r.second?.pdb_id||'未配置补救'},{title:'结构质控',render:(_,r)=>r.unavailable?'本次无法计算':'尚未计算验证'},{title:'核查与证据',render:(_,r)=><><Button size="small" disabled={busy||!info.enabled} onClick={()=>editRow(r)}>核查方案</Button><Collapse size="small" items={[{key:'detail',label:'方案与缺口',children:<p className="small">{checkMap.get(r.target_id)?.reason_zh}<br/>{r.first_reason}<br/>{r.second_reason||r.reason}</p>}]}/></>}]}/>
- <p className="small muted">资料缺失项不参与全选；明确暂无法计算项需单项确认，仍保留全部组合和NA原因。</p>
- <h3>3 确认完整方案</h3><p className="small">仅在全部受体方案、成分处理和任务编号填写完整后确认。未完成进度请用上方“保存核查草案”。</p>
- <Input aria-label="任务包编号" placeholder="明确任务包编号，例如D编号（至少三位数字）" value={plan.package_id} onChange={e=>touch({...plan,package_id:e.target.value})}/>
- <Input aria-label="PyMOL程序路径" placeholder="PyMOL程序路径（本轮可留空，准备前再核验）" value={plan.pymol_executable} onChange={e=>touch({...plan,pymol_executable:e.target.value})}/>
- <Input aria-label="方案核验人" placeholder="实际方案核验人" value={reviewer} onChange={e=>setReviewer(e.target.value)}/>
- <Input.TextArea aria-label="方案核验依据" placeholder="结构、补救与无法计算项的核验依据" value={note} onChange={e=>setNote(e.target.value)}/>
- <Checkbox disabled={busy} checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}>已核对全部受体与配体方案，理解探索结果的限制</Checkbox>
- <Button type="primary" loading={busy} disabled={!info.enabled||!confirmed||!reviewer.trim()||!note.trim()||checked.length!==plan.receptors.length} onClick={save}>保存并确认方案</Button>
+ <p className="small muted">辅助勾选可保存进度；正常项目无需逐项勾选，可在顶部汇总窗口一次确认。无法计算项在同一窗口明确核对，全部组合留存。</p>
+ </>}]} />
+ <Collapse size="small" items={[{key:'config',label:'编辑任务编号与工具路径（助手整理，未填完可暂存）',children:<><Input aria-label="任务包编号" placeholder="明确任务包编号，例如D编号（至少三位数字）" value={plan.package_id} onChange={e=>touch({...plan,package_id:e.target.value})}/><Input aria-label="PyMOL程序路径" placeholder="PyMOL程序路径（本轮可留空，准备前再核验）" value={plan.pymol_executable} onChange={e=>touch({...plan,pymol_executable:e.target.value})}/></>}]} />
+ <Modal title="A06 方案集中核对" open={reviewOpen} onCancel={()=>{if(!busy){setReviewOpen(false);setConfirmed(false)}}} width={850} style={{top:24}} styles={{body:{maxHeight:'65vh',overflowY:'auto'}}} maskClosable={!busy} closable={!busy} footer={<><Button disabled={busy} onClick={()=>{setReviewOpen(false);setConfirmed(false)}}>返回</Button><Button disabled={busy} onClick={()=>{void saveDraft().then(()=>setReviewOpen(false)).catch(()=>{})}}>保存未完成草案</Button><Button type="primary" loading={busy} disabled={!info.enabled||!summary?.ready||!confirmed||!reviewer.trim()||!note.trim()||summary.unavailable.some(r=>!naChecks.includes(r.kind+':'+r.id))} onClick={()=>{void save()}}>一次确认完整方案</Button></>}>
+ {error&&<Alert type="error" message={error}/>}
+ <p>成分 {summary?.compound_count} 项；受体 {summary?.receptor_count} 项；完整保留 {summary?.planned_pair_count} 个组合。</p>
+ <p className="small">{summary?.note_zh}</p>
+ {!summary?.ready&&<Alert type="warning" message="资料未齐，当前可以保存草案；请先补齐下列内容，无需反复确认。"/>}
+ {!!summary?.pending.length&&<Table rowKey={r=>r.kind+':'+r.id} size="small" pagination={false} dataSource={summary.pending} columns={[{title:'对象',dataIndex:'label_zh'},{title:'待补内容',dataIndex:'reason_zh'}]} />}
+ <Collapse size="small" items={[{key:'receptors',label:'核对受体结构与补救清单',children:<Table rowKey="target_id" size="small" pagination={false} dataSource={plan.receptors} columns={[{title:'基因',dataIndex:'symbol'},{title:'梯队',dataIndex:'candidate_grade'},{title:'第一遍',render:(_,r)=>r.first?.pdb_id||r.first_reason||'待补'},{title:'第二遍',render:(_,r)=>r.second?.pdb_id||r.second?.model_id||r.second_reason||'未配置'},{title:'依据',render:(_,r)=>[r.first_reason,r.second_reason,r.reason].filter(Boolean).join('；')}]} />},{key:'compounds',label:'核对成分与来源三维清单',children:<Table rowKey="compound_id" size="small" pagination={false} dataSource={plan.compounds} columns={[{title:'成分',render:(_,r)=>info.metadata_review?.compounds.find(c=>c.compound_id===r.compound_id)?.name_zh||info.context.compounds.find(c=>c.compound_id===r.compound_id)?.name||r.compound_id},{title:'CID',dataIndex:'cid'},{title:'处理',render:(_,r)=>r.status==='use'?'来源三维，后续核验':r.status==='unavailable'?'无法计算，保留NA':'待补'},{title:'依据',dataIndex:'reason'}]} />}]} />
+ {!!summary?.unavailable.length&&<><h4>无法计算项：在本窗口逐项核对原因</h4>{summary.unavailable.map(r=><p key={r.kind+':'+r.id}><Checkbox disabled={busy||!summary.ready} checked={naChecks.includes(r.kind+':'+r.id)} onChange={e=>{const id=r.kind+':'+r.id;setNaChecks(e.target.checked?[...naChecks,id]:naChecks.filter(x=>x!==id));setConfirmed(false)}}>同意 {r.label_zh} 本次保留NA：{r.reason_zh}</Checkbox></p>)}</>}
+ <Input aria-label="方案核验人" placeholder="实际方案核验人" disabled={!summary?.ready||busy} value={reviewer} onChange={e=>{setReviewer(e.target.value);setConfirmed(false)}}/>
+ <Input.TextArea aria-label="方案核验依据" placeholder="简要填写本轮核验依据" disabled={!summary?.ready||busy} value={note} onChange={e=>{setNote(e.target.value);setConfirmed(false)}}/>
+ <Checkbox disabled={busy||!summary?.ready||summary.unavailable.some(r=>!naChecks.includes(r.kind+':'+r.id))} checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}>我已核对本窗口全部成分、受体与处理依据，确认本轮完整方案；不启动计算</Checkbox>
+ </Modal>
  {error&&<Alert type="error" message={error}/>}
  <Modal title={editing?editing.symbol+'：两遍结构方案':''} open={!!editing} onCancel={()=>setEditing(null)} onOk={()=>applyRow()} okText="校验并更新草案" cancelText="取消" width={700} footer={<><Button onClick={()=>setEditing(null)}>取消</Button><Button disabled={busy} onClick={()=>{void applyRow(false)}}>暂存此项</Button><Button type="primary" disabled={busy} onClick={()=>{void applyRow()}}>校验并更新草案</Button></>}>
  {error&&<Alert type="error" message={error}/>}<Form form={form} layout="vertical"><Form.Item name="unavailable" valuePropName="checked"><Checkbox>本次暂无法计算（保留对象与NA原因）</Checkbox></Form.Item>

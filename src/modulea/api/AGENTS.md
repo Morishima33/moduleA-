@@ -275,3 +275,7 @@ ModuleView.docking_preparation新增可选metadata_review：{review_id,created_a
 POST .../modules/A06_PREP/actions/two_pass_draft：{expected_source,expected_plan_id,expected_draft_id,plan,checked_target_ids,reviewer,note}→201 {draft,message_zh}。允许来源绑定且身份范围完整的未完成字段，只暂存人工输入，不生成运行、不批准方案、不启动计算；核验人/说明可暂空。服务端追加decisions/A06_two_pass_draft和manifest.two_pass_draft_records，保存原请求，重试内容一致才返回旧记录。未知字段、质控/评分/执行字段、跨研究、旧来源或过期草案均阻断。
 docking_preparation新增expected_draft_id及draft|null（draft_id、created_at、reviewer、note、checked_target_ids），plan优先显示与当前来源及完整方案版本一致的最新草案。刷新可恢复填写与合法逐项勾选；整体确认框永不自动恢复勾选。新完整方案使旧草案成为历史；上游改变后不回退早期草案。
 存在有效草案时，two_pass_plan确认请求必须额外携带expected_draft_id并与最新版本匹配；无草案的旧请求仍兼容。完整确认、结构质控与结果批准保持原规则，草案不因字段齐全被视为已确认。
+
+
+## 2026-10-12 A06集中核对与一次提交
+现有check_two_pass响应和docking_preparation新增confirmation：{ready,receptor_count,compound_count,planned_pair_count,normal_target_ids,pending,unavailable,execution_allowed:false,note_zh}。pending与unavailable逐项为{kind,id,label_zh,reason_zh}，使用既有完整校验器生成；字段齐全不是结构质控通过。确认窗口只在用户主动勾选整体核对后提交正常受体完整ID；明确NA项在同一窗口逐项核对，不参与全选。未完成时只显示缺口，可保存草案，不提交完整确认。原完整方案请求、研究版本、令牌和独立审批保持。

@@ -115,7 +115,7 @@ export const api = {
   /** 新名单生成待复核版本，保存不等于通过。 */
   saveCompoundSelection:(sid:string,body:unknown)=>request<{task:Task;created:boolean;message_zh:string}>('POST','/studies/'+sid+'/modules/A03_SELECT/actions/selection',body),
   /** 草案校验只返回可确认资格，不执行科学工具。 */
-  checkTwoPass:(sid:string,body:unknown)=>request<{items:import('./types').PlanRowCheck[]}>('POST','/studies/'+sid+'/modules/A06_PREP/actions/check_two_pass',body),
+  checkTwoPass:(sid:string,body:unknown)=>request<{items:import('./types').PlanRowCheck[];confirmation:import('./types').TwoPassConfirmation}>('POST','/studies/'+sid+'/modules/A06_PREP/actions/check_two_pass',body),
   saveTwoPassDraft:(sid:string,body:unknown)=>request<{draft:import('./types').TwoPassDraftInfo;message_zh:string}>('POST','/studies/'+sid+'/modules/A06_PREP/actions/two_pass_draft',body),
   saveTwoPass:(sid:string,body:unknown)=>request<{task:Task;created:boolean;message_zh:string}>('POST','/studies/'+sid+'/modules/A06_PREP/actions/two_pass_plan',body),
   uploadDockingMaterial:(sid:string,body:unknown)=>request<{material:import('./types').DockingMaterial;message_zh:string}>('POST','/studies/'+sid+'/modules/A06_PREP/actions/material',body),

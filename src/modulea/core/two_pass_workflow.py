@@ -8,6 +8,7 @@ from .docking_workflow import DockingWorkflow
 from .docking_review import DockingReviewMixin
 from .receptor_review import ReceptorReviewMixin
 from .two_pass_draft import TwoPassDraftMixin
+from .two_pass_confirmation import confirmation_summary
 from science_modules.a06.plan_adapter import source_context
 from science_modules.a06.two_pass_plan import SCHEMA,blank,row_check,validate
 from science_modules.a06.two_pass import POLICY,CONFIDENCE
@@ -86,7 +87,9 @@ class TwoPassWorkflow(TwoPassDraftMixin,ReceptorReviewMixin,DockingReviewMixin,D
         require(isinstance(plan,dict),"方案须为对象")
         rows=plan.get("receptors",[])
         require(isinstance(rows,list) and all(isinstance(r,dict) for r in rows) and [r.get("target_id") for r in rows]==[r["target_id"] for r in context["receptors"]],"草案受体范围不符")
-        return {"items":[{"target_id":r["target_id"],**row_check(r,s,context)} for r,s in zip(rows,context["receptors"])],"calculation_started":False}
+        checks=[{"target_id":r["target_id"],**row_check(r,s,context)} for r,s in zip(rows,context["receptors"])]
+        summary=confirmation_summary(plan,context,checks,self.materials(manifest,context),self.current_receptor_review(manifest,context))
+        return {"items":checks,"confirmation":summary,"calculation_started":False}
 
     # 保存完整名单需要明确确认；不创建运行、不审批、不解除计算关闭状态。
     def save_two_pass(self,sid,payload):
@@ -140,4 +143,6 @@ def preparation_context(workflow,manifest,historical=False,busy=False):
     except ValueError as error:return {"enabled":False,"disabled_reason_zh":str(error),"policy_version":POLICY,"execution_allowed":False}
     latest,_=workflow.latest_two_pass(manifest,context);draft=workflow.current_two_pass_draft(manifest,context,latest);plan=draft["plan"] if draft else latest["plan"] if latest else blank(context)
     checks=[{"target_id":r["target_id"],**row_check(r,s,context)} for r,s in zip(plan["receptors"],context["receptors"])]
-    return {"enabled":not busy,"disabled_reason_zh":"请等待当前研究后台任务结束" if busy else "","expected_source":context["source_key"],"expected_plan_id":latest["plan_id"] if latest else None,"expected_draft_id":draft["draft_id"] if draft else None,"draft":{k:deepcopy(draft[k]) for k in ("draft_id","created_at","reviewer","note","checked_target_ids")} if draft else None,"policy_version":POLICY,"confidence_thresholds":CONFIDENCE,"context":context,"plan":plan,"checks":checks,"latest":latest,"metadata_review":workflow.current_receptor_review(manifest,context),"materials":workflow.materials(manifest,context),"planned_pair_count":len(context["receptors"])*len(context["compounds"]),"execution_allowed":False,"status_zh":"核查草案已保存，尚未确认完整方案" if draft else "方案已确认，仍待准备与质控" if latest else "待核对成分及受体结构方案"}
+    metadata=workflow.current_receptor_review(manifest,context);materials=workflow.materials(manifest,context)
+    confirmation=confirmation_summary(plan,context,checks,materials,metadata)
+    return {"enabled":not busy,"disabled_reason_zh":"请等待当前研究后台任务结束" if busy else "","expected_source":context["source_key"],"expected_plan_id":latest["plan_id"] if latest else None,"expected_draft_id":draft["draft_id"] if draft else None,"draft":{k:deepcopy(draft[k]) for k in ("draft_id","created_at","reviewer","note","checked_target_ids")} if draft else None,"policy_version":POLICY,"confidence_thresholds":CONFIDENCE,"context":context,"plan":plan,"checks":checks,"latest":latest,"metadata_review":metadata,"materials":materials,"confirmation":confirmation,"planned_pair_count":len(context["receptors"])*len(context["compounds"]),"execution_allowed":False,"status_zh":"核查草案已保存，尚未确认完整方案" if draft else "方案已确认，仍待准备与质控" if latest else "待核对成分及受体结构方案"}
