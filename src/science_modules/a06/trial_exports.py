@@ -6,7 +6,15 @@ from pathlib import Path
 from storage import write_json
 
 from .matrix_exports import export_heatmap
-from .matrix_palette import PALETTE, color, text_color
+from .matrix_palette import color, text_color
+from .trial_presentation import (
+    LEGEND,
+    PALETTE,
+    THRESHOLD,
+    VERSION,
+    highlighted,
+    score_label,
+)
 from .trial_rules import validate_matrix
 
 MODE_ZH = {
@@ -39,7 +47,7 @@ def matrix(packet):
             for receptor in receptors:
                 pair = pairmap[(compound["compound_id"], receptor["target_id"])]
                 fill = (
-                    color(pair["score"], low, high)
+                    color(pair["score"], low, high, PALETTE)
                     if pair["score"] is not None
                     else PALETTE["na_color"]
                 )
@@ -62,7 +70,8 @@ def matrix(packet):
         "full_pair_count": 225,
         "heatmap": part(heat_compounds, heat_targets),
         "table": part(packet["compounds"], targets),
-        "display_version": "A06.trial.display.1",
+        "display_version": VERSION,
+        "annotation": {"threshold": THRESHOLD, "symbol": "**", "legend_zh": LEGEND},
     }
 
 
@@ -142,6 +151,10 @@ def create_export_data(packet, directory):
         "trial_id": packet["trial_id"],
         "matrix_headers": headers,
         "matrix_rows": rows,
+        "matrix_marks": [
+            [highlighted(p["score"]) for p in line] for line in view["table"]["cells"]
+        ],
+        "annotation_legend": LEGEND,
         "receptor_headers": receptor_headers,
         "receptor_rows": receptor_rows,
         "region_headers": region_headers,
@@ -185,7 +198,7 @@ def append_professional_trial(document, packet, png):
     )
     document.add_picture(str(png), width=Cm(18))
     document.add_paragraph(
-        "图 A06 01 重点8×8热图。冰蓝至莓果红，越负越偏红；"
+        "图 A06 01 重点8×8热图。恢复浅蓝至深蓝渐变，越负蓝色越深；"
         "色标取同批完整225格的有效评分范围，NA为灰色。A/B为候选梯队。"
     )
     document.add_page_break()
@@ -202,8 +215,7 @@ def append_professional_trial(document, packet, png):
     for col, width in zip(table.columns, widths):
         col.width = Cm(width)
     values = [
-        [c["name_zh"]]
-        + ["NA" if cell["score"] is None else f"{cell['score']:.2f}" for cell in line]
+        [c["name_zh"]] + [score_label(cell["score"], mark=True) for cell in line]
         for c, line in zip(packet["compounds"], view["table"]["cells"])
     ]
     for line in values:
@@ -242,6 +254,7 @@ def append_professional_trial(document, packet, png):
                     run.font.color.rgb = RGBColor.from_string(
                         "FFFFFF" if i == 0 else "10253C"
                     )
+    document.add_paragraph(LEGEND)
     document.add_paragraph(
         "预先固定位点与多区域最低值的搜索范围不同，跨受体分数不能直接解释为亲和力优劣。"
         "原重对接失败及其他质控记录保留，试算不表示严格验证通过。"

@@ -3,21 +3,25 @@
 from pathlib import Path
 
 from contracts import ContractError, require
+from science_modules.a06.matrix_palette import color as palette_color
 from science_modules.a06.matrix_palette import text_color
-from science_modules.a06.trial_rules import PALETTE, validate_matrix
+from science_modules.a06.trial_presentation import (
+    LEGEND,
+    PALETTE,
+    THRESHOLD,
+    VERSION,
+    highlighted,
+    score_label,
+)
+from science_modules.a06.trial_rules import validate_matrix
 from storage import read_json, verified_file, within
 
 
 def color(score, low, high):
-    """越负越偏莓果红；无真实评分使用灰色。"""
+    """恢复上一版蓝色渐变；无真实评分使用灰色。"""
     if score is None:
-        return PALETTE["NA"]
-    ratio = 0.5 if high == low else (high - score) / (high - low)
-    weak = tuple(int(PALETTE["weak"][i : i + 2], 16) for i in (1, 3, 5))
-    strong = tuple(int(PALETTE["strong"][i : i + 2], 16) for i in (1, 3, 5))
-    return "#" + "".join(
-        f"{round(a + (b - a) * ratio):02X}" for a, b in zip(weak, strong)
-    )
+        return PALETTE["na_color"]
+    return palette_color(score, low, high, PALETTE)
 
 
 def trial_info(workflow, manifest, busy=False):
@@ -132,6 +136,9 @@ def trial_info(workflow, manifest, busy=False):
         "heatmap_compounds": packet["display"]["config"]["heatmap_compounds"],
         "heatmap_targets": packet["display"]["config"]["heatmap_targets"],
         "palette": PALETTE,
+        "display_version": VERSION,
+        "annotation_legend": LEGEND,
+        "annotation_threshold": THRESHOLD,
     }
     for compound in packet["compounds"]:
         row = {"id": compound["compound_id"], "label": compound["name_zh"], "cells": []}
@@ -141,7 +148,8 @@ def trial_info(workflow, manifest, busy=False):
                 {
                     "target_id": receptor["target_id"],
                     "score": pair["score"],
-                    "display_score": "NA" if pair["score"] is None else f"{pair['score']:.2f}",
+                    "display_score": score_label(pair["score"]),
+                    "highlight": highlighted(pair["score"]),
                     "state": pair["state"],
                     "color": color(pair["score"], low, high),
                     "text_color": text_color(color(pair["score"], low, high)),
@@ -152,9 +160,17 @@ def trial_info(workflow, manifest, busy=False):
                 }
             )
         info["matrix"]["rows"].append(row)
+    latest_export = next(
+        (
+            str(Path(r["path"]).parent)
+            for r in reversed(record.get("files", []))
+            if r["path"].endswith("/export_validation.json")
+        ),
+        None,
+    )
     for i, rec in enumerate(record.get("files", [])):
         suffix = Path(rec["path"]).suffix.lower()
-        if "/exports/" in rec["path"] and suffix in {
+        if str(Path(rec["path"]).parent) == latest_export and suffix in {
             ".xlsx",
             ".csv",
             ".png",

@@ -25,7 +25,8 @@ function Scores({info, heatmap = false}: {info: DockingTrialInfo; heatmap?: bool
           `${cell.score} kcal/mol；${modeLabel[cell.mode]}；${cell.region_id}${cell.partial_regions ? '；部分区域失败' : ''}`}
           style={{textAlign: 'center', padding: 8, border: '1px solid #DCE1E5',
             background: heatmap ? cell.color : undefined,
-            color: heatmap ? cell.text_color : undefined}}>{cell.display_score ?? (cell.score == null ? 'NA' : cell.score.toFixed(2))}</td>;
+            color: heatmap ? cell.text_color : undefined}}>{cell.display_score ?? (cell.score == null ? 'NA' : cell.score.toFixed(2))}
+            {!heatmap && cell.highlight && <sup style={{marginLeft: 2}}>**</sup>}</td>;
       })}</tr>)}</tbody></table></div>;
 }
 
@@ -81,9 +82,10 @@ export default function DockingTrial({studyId, info}: {studyId: string; info: Do
       <p><Tag color="blue">真实评分 {info.summary?.completed}/225</Tag><Tag>NA {info.summary?.NA}</Tag>
         <Button type="primary" onClick={() => setOpen(true)}>集中核查试算与保存</Button></p>
       <h4>重点展示：8×8热图</h4><Scores info={info} heatmap/>
-      <p className="small">冰蓝 → 莓果红，评分越负越偏红；NA灰色。完整同批范围：
+      <p className="small">浅蓝 → 深蓝，评分越负蓝色越深；NA灰色。完整同批范围：
         {info.matrix?.score_range?.join(' ～ ') || '无有效评分'} kcal/mol。</p>
       <h4>扩展筛查：15×15表</h4><Scores info={info}/>
+      <p className="small">{info.matrix?.annotation_legend}</p>
       <p>{info.downloads.map(file => <Button key={file.url} href={file.url}>{file.name}</Button>)}</p>
       {info.review && <Alert type="success" message={info.review.confirmed ?
         '试算核查已保存；正式科研结果仍独立复核。' : '核查草案已保存，可继续填写。'}/>}

@@ -354,8 +354,8 @@ export interface DockingTrialInfo {
  receptors:TrialReceptor[];downloads:{name:string;url:string}[];
  summary?:{completed:number;NA:number};
  review?:{review_id:string;reviewer:string;note:string;confirmed:boolean}|null;
- matrix?:{columns:{id:string;label:string;grade:string}[];score_range:number[]|null;
+ matrix?:{annotation_legend?:string;columns:{id:string;label:string;grade:string}[];score_range:number[]|null;
  heatmap_compounds:string[];heatmap_targets:string[];
- rows:{id:string;label:string;cells:{target_id:string;score:number|null;display_score?:string;state:string;color:string;text_color:string;
+ rows:{id:string;label:string;cells:{target_id:string;score:number|null;display_score?:string;highlight?:boolean;state:string;color:string;text_color:string;
  reason_zh:string;region_id:string|null;mode:string;partial_regions:boolean}[]}[]}|null;
 }

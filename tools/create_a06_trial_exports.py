@@ -39,6 +39,9 @@ def main():
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument("--study", required=True)
     parser.add_argument("--trial", required=True)
+    parser.add_argument(
+        "--operation-kind", choices=("create", "edit"), default="create"
+    )
     args = parser.parse_args()
     from uuid import uuid4
 
@@ -49,6 +52,7 @@ def main():
         append_professional_trial,
         create_export_data,
     )
+    from science_modules.a06.trial_presentation import VERSION, highlighted, score_label
     from storage import file_record, read_json, verified_file, write_json
 
     safe_id(args.study, "study")
@@ -120,7 +124,7 @@ def main():
                 config["node"],
                 config["xlsx_marker"],
                 "--operation-kind",
-                "create",
+                args.operation_kind,
                 "--expected-output-count",
                 "1",
                 "--output-format",
@@ -154,6 +158,14 @@ def main():
     ]
     if actual != data["matrix_rows"]:
         raise ValueError("保存后的Excel与实际225格原值不一致")
+    marked = 0
+    for i, row in enumerate(data["matrix_rows"]):
+        for j, value in enumerate(row[1:]):
+            expected_mark = highlighted(value)
+            actual_mark = "**" in book["15×15试算"].cell(i + 6, j + 2).number_format
+            if actual_mark != expected_mark:
+                raise ValueError("Excel标记与原始评分阈值不一致")
+            marked += expected_mark
     book.close()
     if config.get("docx_marker") and not (qa / "docx-marker.done").exists():
         execute(
@@ -161,7 +173,7 @@ def main():
                 config["node"],
                 config["docx_marker"],
                 "--operation-kind",
-                "create",
+                args.operation_kind,
                 "--expected-output-count",
                 "1",
                 "--output-format",
@@ -188,7 +200,7 @@ def main():
     saved = Document(docx)
     score_tables = [t for t in saved.tables if len(t.columns) == 16]
     expected = [
-        [r[0]] + ["NA" if v == "NA" else f"{v:.2f}" for v in r[1:]]
+        [r[0]] + [score_label(None if v == "NA" else v, mark=True) for v in r[1:]]
         for r in data["matrix_rows"]
     ]
     if (
@@ -224,7 +236,8 @@ def main():
     )
     proof = {
         "trial_id": args.trial,
-        "display_version": "A06.trial.display.1",
+        "display_version": VERSION,
+        "marked_cells_checked": marked,
         "matrix_cells_checked": 225,
         "xlsx_raw_precision_matches": True,
         "professional_table_matches": True,

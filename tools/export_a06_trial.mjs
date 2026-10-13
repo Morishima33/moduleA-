@@ -37,7 +37,7 @@ function sheet(name, title, headers, rows, widths) {
 const main = sheet('15×15试算', '15×15结合能试算表', data.matrix_headers, data.matrix_rows,
                    [30, ...Array(15).fill(13)]);
 main.getRange('A3:P3').merge();
-main.getRange('A3').values = [['Vina对接评分，kcal/mol。同批结果，非实测结合自由能。']];
+main.getRange('A3').values = [['Vina对接评分，kcal/mol。' + data.annotation_legend]];
 main.getRange('A3').format.font = {name: 'Microsoft YaHei', size: 10, italic: true};
 main.getRange('B6:P20').setNumberFormat('0.00');
 main.getRange('B6:P20').format.horizontalAlignment = 'right';
@@ -50,6 +50,7 @@ const regions = sheet('区域明细', '实际区域Top-1及评分来源', data.r
 regions.getRangeByIndexes(5, 4, data.region_rows.length, 1).setNumberFormat('0.000000');
 // 数值配色使用完整225格同批范围，NA保持灰色；不为Excel重新计算评分。
 for (let row = 0; row < 15; row++) for (let col = 0; col < 15; col++) {
+  if (data.matrix_marks[row][col]) main.getCell(row + 5, col + 1).setNumberFormat('0.00"**"');
   main.getCell(row + 5, col + 1).format.fill = data.cell_colors[row][col];
   main.getCell(row + 5, col + 1).format.font.color = data.cell_text_colors[row][col];
 }

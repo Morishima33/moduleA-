@@ -103,10 +103,23 @@ class TrialRulesTests(unittest.TestCase):
                 validate_matrix(copy)
 
     def test_palette_full_batch_direction_constant_and_na(self):
-        self.assertEqual(color(-10, -10, -3), "#B7326B")
-        self.assertEqual(color(-3, -10, -3), "#A7D5E5")
+        self.assertEqual(color(-10, -10, -3), "#08519C")
+        self.assertEqual(color(-3, -10, -3), "#EFF6FF")
         self.assertEqual(color(None, None, None), "#DCE1E5")
         self.assertTrue(color(-6, -6, -6).startswith("#"))
+
+    def test_annotation_uses_unrounded_boundary_and_keeps_na(self):
+        from science_modules.a06.trial_presentation import highlighted, score_label
+
+        self.assertTrue(highlighted(-8.0))
+        self.assertTrue(highlighted(-8.00001))
+        self.assertFalse(highlighted(-7.99999))
+        self.assertEqual(score_label(-7.99999, mark=True), "-8.00")
+        self.assertEqual(score_label(-8.0, mark=True), "-8.00**")
+        self.assertEqual(score_label(-8.0), "-8.00")
+        self.assertEqual(score_label(None, mark=True), "NA")
+        for value in (None, float("nan"), float("inf"), float("-inf"), True):
+            self.assertFalse(highlighted(value))
 
 
 if __name__ == "__main__":

@@ -195,5 +195,16 @@ class TrialWorkflow(CoverageWorkflow):
                 )
                 names.add(rec["path"])
             rows[0]["files"].extend(records)
-            rows[0]["display_version"] = "A06.trial.display.1"
+            validations = [
+                r for r in records if r["path"].endswith("/export_validation.json")
+            ]
+            require(len(validations) == 1, "展示产物必须绑定唯一核验版本")
+            version = read_json(verified_file(self.location(sid), validations[0]))[
+                "display_version"
+            ]
+            require(
+                version in {"A06.trial.display.1", "A06.trial.display.2"},
+                "未知展示版本",
+            )
+            rows[0]["display_version"] = version
             self.save(manifest)
