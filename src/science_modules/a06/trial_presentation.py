@@ -1,12 +1,12 @@
-"""试算展示第二版：恢复历史蓝色渐变，原评分阈值仅用于表格标记。"""
+"""试算展示第三版：参考图红蓝渐变，原评分阈值仅用于表格标记。"""
 
 import math
 from copy import deepcopy
 
-from .matrix_palette import LEGACY
+from .matrix_palette import RED_BLUE
 
-VERSION = "A06.trial.display.2"
-PALETTE = deepcopy(LEGACY)
+VERSION = "A06.trial.display.3"
+PALETTE = deepcopy(RED_BLUE)
 THRESHOLD = -8.0
 SYMBOL = "**"
 LEGEND = "**：原始Vina评分≤−8 kcal/mol，仅为本表数值标记，不表示统计显著性。"

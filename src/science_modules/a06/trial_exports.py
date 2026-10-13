@@ -198,7 +198,7 @@ def append_professional_trial(document, packet, png):
     )
     document.add_picture(str(png), width=Cm(18))
     document.add_paragraph(
-        "图 A06 01 重点8×8热图。恢复浅蓝至深蓝渐变，越负蓝色越深；"
+        "图 A06 01 重点8×8热图。红蓝渐变，评分越负红色越深，越不负蓝色越深；"
         "色标取同批完整225格的有效评分范围，NA为灰色。A/B为候选梯队。"
     )
     document.add_page_break()

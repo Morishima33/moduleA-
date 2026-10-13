@@ -2,9 +2,14 @@
 VERSION="A06.matrix.display.2"
 PALETTE={"id":"ice_berry_v1","high_color":"#A7D5E5","low_color":"#B7326B","na_color":"#DCE1E5","unit":"kcal/mol","label_zh":"冰蓝→莓果红；评分越负越偏莓果红，NA为灰色"}
 LEGACY={"id":"blue_v1","high_color":"#eff6ff","low_color":"#08519c","na_color":"#DCE1E5","unit":"kcal/mol","label_zh":"评分越负蓝色越深；NA为灰色"}
+RED_BLUE={"id":"red_blue_v1","high_color":"#2166AC","low_color":"#B2182B","transition_colors":["#EFA9AE","#A4C7E0"],"na_color":"#DCE1E5","unit":"kcal/mol","label_zh":"红蓝渐变：评分越负红色越深，越不负蓝色越深；NA为灰色"}
 
 # 使用完整同批范围；恒值用中间色，不设置零点或通用阈值。
 def color(score,low,high,palette=PALETTE):
+    if palette==RED_BLUE:
+        from docking_formal import _heat_color
+        channels=_heat_color(score,low,high)[4:-1].split(',')
+        return '#'+''.join(f'{int(v):02X}' for v in channels)
     fraction=(high-score)/(high-low) if high!=low else .5
     light=tuple(int(palette["high_color"][i:i+2],16) for i in (1,3,5))
     dark=tuple(int(palette["low_color"][i:i+2],16) for i in (1,3,5))

@@ -82,7 +82,7 @@ export default function DockingTrial({studyId, info}: {studyId: string; info: Do
       <p><Tag color="blue">真实评分 {info.summary?.completed}/225</Tag><Tag>NA {info.summary?.NA}</Tag>
         <Button type="primary" onClick={() => setOpen(true)}>集中核查试算与保存</Button></p>
       <h4>重点展示：8×8热图</h4><Scores info={info} heatmap/>
-      <p className="small">浅蓝 → 深蓝，评分越负蓝色越深；NA灰色。完整同批范围：
+      <p className="small">红蓝渐变：评分越负红色越深，越不负蓝色越深；NA灰色。完整同批范围：
         {info.matrix?.score_range?.join(' ～ ') || '无有效评分'} kcal/mol。</p>
       <h4>扩展筛查：15×15表</h4><Scores info={info}/>
       <p className="small">{info.matrix?.annotation_legend}</p>

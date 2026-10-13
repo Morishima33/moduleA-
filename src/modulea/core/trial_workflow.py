@@ -203,7 +203,7 @@ class TrialWorkflow(CoverageWorkflow):
                 "display_version"
             ]
             require(
-                version in {"A06.trial.display.1", "A06.trial.display.2"},
+                version in {"A06.trial.display.1", "A06.trial.display.2", "A06.trial.display.3"},
                 "未知展示版本",
             )
             rows[0]["display_version"] = version

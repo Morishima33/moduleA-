@@ -103,8 +103,8 @@ class TrialRulesTests(unittest.TestCase):
                 validate_matrix(copy)
 
     def test_palette_full_batch_direction_constant_and_na(self):
-        self.assertEqual(color(-10, -10, -3), "#08519C")
-        self.assertEqual(color(-3, -10, -3), "#EFF6FF")
+        self.assertEqual(color(-10, -10, -3), "#B2182B")
+        self.assertEqual(color(-3, -10, -3), "#2166AC")
         self.assertEqual(color(None, None, None), "#DCE1E5")
         self.assertTrue(color(-6, -6, -6).startswith("#"))
 

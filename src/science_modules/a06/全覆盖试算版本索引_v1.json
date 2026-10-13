@@ -1,7 +1,7 @@
 {
   "schema_version": "A06.trial.version.1",
   "rules": "A06.trial.rules.1",
-  "display": "A06.trial.display.2",
+  "display": "A06.trial.display.3",
   "branch": "A06_TRIAL",
   "formal_approval": false,
   "files": [
@@ -16,6 +16,7 @@
   "historical_science_files": "不改来源与版本索引.json及冻结旧源码",
   "display_history": [
     "A06.trial.display.1",
-    "A06.trial.display.2"
+    "A06.trial.display.2",
+    "A06.trial.display.3"
   ]
 }

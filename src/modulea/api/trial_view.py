@@ -18,7 +18,7 @@ from storage import read_json, verified_file, within
 
 
 def color(score, low, high):
-    """恢复上一版蓝色渐变；无真实评分使用灰色。"""
+    """参考图红蓝渐变：越负越红；无真实评分使用灰色。"""
     if score is None:
         return PALETTE["na_color"]
     return palette_color(score, low, high, PALETTE)

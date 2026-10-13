@@ -3,12 +3,12 @@ from pathlib import Path
 from html import escape
 from math import isfinite
 from contracts import require
-from .matrix_palette import color,PALETTE,LEGACY
+from .matrix_palette import color,PALETTE,LEGACY,RED_BLUE
 
 # 检查已经过结果契约核验的视图，拒绝被替换的颜色、范围或不完整单元格。
 def validate_matrix(matrix):
     require(matrix.get("ready") is True,"没有本轮真实评分，不能导出结果图")
-    palette=matrix["palette"];require(palette in (PALETTE,LEGACY),"未知热图配色")
+    palette=matrix["palette"];require(palette in (PALETTE,LEGACY,RED_BLUE),"未知热图配色")
     low,high=matrix["score_range"]
     require((low is None and high is None) or (all(isinstance(x,(int,float)) and isfinite(x) for x in (low,high)) and low<=high),"色标范围无效")
     for name in ("heatmap","table"):
@@ -47,6 +47,10 @@ def label(matrix):
 def heatmap_svg(matrix):
     validate_matrix(matrix);h=matrix["heatmap"];g=layout(matrix);p=matrix["palette"];low,high=matrix["score_range"];x,y=g["left"],g["top"];bottom=y+len(h["rows"])*g["rh"]
     pieces=[f'<svg xmlns="http://www.w3.org/2000/svg" width="{g["width"]}" height="{g["height"]}" viewBox="0 0 {g["width"]} {g["height"]}" role="img" aria-label="重点结合能热图">', '<rect width="100%" height="100%" fill="white"/>',f'<defs><linearGradient id="scores"><stop offset="0%" stop-color="{p["high_color"]}"/><stop offset="100%" stop-color="{p["low_color"]}"/></linearGradient></defs>']
+    # 色标与单元格共用函数；红蓝使用历史平滑分段，不能只线性连接两个端点。
+    if low is not None:
+        stops=''.join(f'<stop offset="{i}%" stop-color="{color(high-(high-low)*i/100,low,high,p)}"/>' for i in range(101))
+        pieces[2]=f'<defs><linearGradient id="scores">{stops}</linearGradient></defs>'
     def text(tx,ty,value,size=13,anchor="start",fill="#10253C"):
         pieces.append(f'<text x="{tx}" y="{ty}" font-family="Microsoft YaHei,Arial,sans-serif" font-size="{size}" text-anchor="{anchor}" fill="{fill}">{escape(str(value))}</text>')
     text(g["width"]/2,30,f'重点结合能热图 {len(h["rows"])}×{len(h["columns"])}',18,"middle")
