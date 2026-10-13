@@ -15,6 +15,7 @@ import CompoundSelection from './CompoundSelection';
 import DockingMatrix from './DockingMatrix';
 import DockingPreparation from './DockingPreparation';
 import DockingCoverage from './DockingCoverage';
+import DockingTrial from './DockingTrial';
 import { FlowChain, FocusSection, KnowSection, KpiGrid } from './ModuleSections';
 import EnrichmentTop from './special/EnrichmentTop';
 import EnrichmentConfirmation from './EnrichmentConfirmation';
@@ -81,9 +82,10 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
 
       {view.compound_selection && <CompoundSelection studyId={studyId} info={view.compound_selection} review={view.docking_review}/>}
       {/* 对接人工关口紧接标题，先核对方案，再阅读矩阵。 */}
-      {view.docking_coverage && <DockingCoverage studyId={studyId} info={view.docking_coverage}/>}
+      {view.docking_trial && <DockingTrial studyId={studyId} info={view.docking_trial}/>}
+      {view.docking_coverage && (view.docking_trial ? <Collapse items={[{key:'strict-history',label:'原严格准备与历史核查（保留）',children:<DockingCoverage studyId={studyId} info={view.docking_coverage}/>}]}/> : <DockingCoverage studyId={studyId} info={view.docking_coverage}/>)}
       {view.docking_preparation && !view.docking_coverage && <DockingPreparation studyId={studyId} info={view.docking_preparation}/>}
-      {view.docking_review && m.module_id !== 'A03_SELECT' && <DockingMatrix info={view.docking_review}/>}
+      {view.docking_review && !view.docking_trial && m.module_id !== 'A03_SELECT' && <DockingMatrix info={view.docking_review}/>}
       {view.docking_candidates && m.module_id !== 'A04'  && <DockingCandidates studyId={studyId} moduleId={m.module_id} info={view.docking_candidates} />}
       {view.enrichment_display && <EnrichmentConfirmation studyId={studyId} info={view.enrichment_display} onPendingChange={setKeggPending} />}
       {/* 待核验事项紧接标题；证据直接展开，不藏在结果末尾。 */}

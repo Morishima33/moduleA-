@@ -222,6 +222,7 @@ export interface Special {
 
 /** 模块页 */
 export interface ModuleView {
+  docking_trial?: DockingTrialInfo | null;
   docking_review?:DockingReviewInfo|null;
   compound_selection?:CompoundSelectionInfo|null;
   docking_preparation?:DockingPreparationInfo|null;
@@ -339,3 +340,22 @@ export interface ReceptorMetadataReview {review_id:string;created_at:string;note
 export interface CoverageAttempt {site_coverage?:{note_zh:string};round:number;spec:StructureSpec;reason_zh:string;top1_rmsd?:number;pocket?:{runs:Record<string,unknown>[]};confidence_facts?:{mean_plddt:number;min_plddt:number;max_bidirectional_pae_A:number};environment_audit?:{box_environment:{chain:string;residue:string;sequence:string;reason_zh:string}[]}}
 export interface DockingCoverageRow {target_id:string;symbol:string;candidate_grade:string;ppi_order:number;pdb_id:string;rmsd_A:number|null;quality_zh:string;status_zh:string;reason_zh:string;eligible:boolean;adopted:boolean;selected:boolean;spec:StructureSpec|null;attempts:CoverageAttempt[]}
 export interface DockingCoverageInfo {enabled:boolean;disabled_reason_zh:string;expected_run:string;expected_source:string;campaign_id:string;expected_decision_id:string|null;confirmed:boolean;draft:{selected_target_ids:string[];reviewer:string;note:string}|null;rows:DockingCoverageRow[];counts:{strict:number;exploration:number;unavailable:number;receptors:number};conditions:{main_results:boolean;exploration:boolean;prepared_pairs:number};batch_docking_allowed:false;note_zh:string}
+
+/** 独立扩展试算，不替换严格结果及审批；原值来自服务端。 */
+export interface TrialReceptor {
+ target_id:string;symbol:string;candidate_grade:string;structure_id?:string;state:string;mode:string;
+ processing_zh?:string;reason_zh?:string;history_quality_zh?:string;history_rmsd_A?:number|null;
+ source?:{path:string}|null;spec?:unknown;regions?:unknown[];environment?:unknown;attempts?:unknown[];
+ repair?:{added_atoms:unknown[];original_coordinates_unchanged:boolean}|null;
+}
+export interface DockingTrialInfo {
+ trial_id:string;state:string;stale:boolean;enabled:boolean;note_zh:string;
+ progress:{step_zh:string;pairs_done:number;pairs_total:number;regions_done:number;regions_total:number};
+ receptors:TrialReceptor[];downloads:{name:string;url:string}[];
+ summary?:{completed:number;NA:number};
+ review?:{review_id:string;reviewer:string;note:string;confirmed:boolean}|null;
+ matrix?:{columns:{id:string;label:string;grade:string}[];score_range:number[]|null;
+ heatmap_compounds:string[];heatmap_targets:string[];
+ rows:{id:string;label:string;cells:{target_id:string;score:number|null;display_score?:string;state:string;color:string;text_color:string;
+ reason_zh:string;region_id:string|null;mode:string;partial_regions:boolean}[]}[]}|null;
+}

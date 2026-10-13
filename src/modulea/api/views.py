@@ -317,6 +317,7 @@ class Views:
             "docking_candidates": candidates_info,
             "docking_review": review_context(workflow,real,historical) if module_id in ("A03_SELECT","A06_PREP","A06") else None,
             "compound_selection": selection_context(workflow,real,historical,bool(self.tasks.active_for(study_id))) if module_id=="A03_SELECT" else None,
+            "docking_trial": __import__("modulea.api.trial_view", fromlist=["trial_info"]).trial_info(workflow,real,bool(self.tasks.active_for(study_id))) if module_id in ("A06_PREP","A06") and not historical else None,
             "docking_coverage": coverage_info,
             "docking_preparation": preparation_context(workflow,real,historical,bool(self.tasks.active_for(study_id))) if module_id=="A06_PREP" and not coverage_info else None,
             "source_uploads": upload_context(workflow, real, module_id, result, historical, bool(self.tasks.active_for(study_id))) if not historical else None,
@@ -488,6 +489,23 @@ class Views:
 
     def file(self, study_id: str, key: str) -> tuple[Path, str, str]:
         run_id, _, index = key.rpartition(".")
+        if run_id.startswith("trial_") and index.isdigit():
+            workflow = self.kernel.workflow()
+            manifest = self._manifest(study_id)
+            rows = [r for r in manifest.get("docking_trial_records", []) if r["trial_id"] == run_id]
+            if len(rows) != 1 or rows[0]["state"] != "completed":
+                raise not_found("试算归档")
+            records = rows[0].get("files", [])
+            position = int(index)
+            if position >= len(records):
+                raise not_found("试算文件")
+            record = records[position]
+            try:
+                path = verified_file(workflow.location(study_id), record)
+            except ContractError as error:
+                raise from_contract(str(error))
+            mime = INLINE_TYPES.get(Path(record["path"]).suffix.lower()) or mimetypes.guess_type(record["path"])[0] or "application/octet-stream"
+            return path, Path(record["path"]).name, mime
         from_report_table = index.startswith("r") and index[1:].isdigit()
         if not run_id.startswith("run_") or not (index.isdigit() or from_report_table):
             raise ApiError(400, "BAD_REQUEST", "文件编号格式不正确")

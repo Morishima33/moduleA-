@@ -120,6 +120,7 @@ export const api = {
   saveTwoPass:(sid:string,body:unknown)=>request<{task:Task;created:boolean;message_zh:string}>('POST','/studies/'+sid+'/modules/A06_PREP/actions/two_pass_plan',body),
   uploadDockingMaterial:(sid:string,body:unknown)=>request<{material:import('./types').DockingMaterial;message_zh:string}>('POST','/studies/'+sid+'/modules/A06_PREP/actions/material',body),
   /** 保存本轮核查草案或集中采用，保持令牌和统一错误处理。 */
+  saveTrialReview:(sid:string,body:unknown)=>request<{message_zh:string}>('POST','/studies/'+sid+'/modules/A06_PREP/actions/trial_review',body),
   saveCoverageSelection:(sid:string,body:unknown)=>request<{message_zh:string;task?:Task}>('POST','/studies/'+sid+'/modules/A06_PREP/actions/coverage_selection',body),
   /** 单个模块复核 */
   review: (sid: string, mid: string, body: { run_id: string; expected_review_id: string | null; decision: Decision; reviewer: string; note: string; after: 'save' | 'continue' }) =>

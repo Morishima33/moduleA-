@@ -48,3 +48,7 @@ source_inspection.py复用冻结的ligand_identity、receptor_identity、inspect
 
 ## 获准真实质控执行（2026-10-12）
 quality_engine.py复用冻结的来源配体参数化、蛋白链/构象提取、参考外包络、Meeko、P2Rank两次首位及Top-1重对接；Windows目录单独映射HGNC编号，科学编号不变。quality_flow.py以A06.two_pass.execution.1注册新准备校验及Workflow生产入口，旧版本仍委托原校验；固定源码和真实工具证据归档。modulea/core/quality_workflow.py保存执行授权，启动和发布两次核对方案/原件/复核版本。engine_adapter.py的旧code_only入口继续关闭，真实执行只走新授权任务a06_quality。此阶段不运行成分×受体批量评分，不自动批准预测口袋或科研模块。
+
+
+## 2026-10-13 获准15×15独立试算
+用户已明确批准：十五个已确认成分×十五个受体完成准备和225组合Vina试算，另存A06_TRIAL，不替换严格结果或审批。有限侧链修补保持已解析重原子坐标、不重建主链；位点预先固定，预测多口袋或分区盲搜按批准规则取区域Top-1最低值。Vina参数、身份、成分名单及A/B保持；旧失败记录保留。8×8热图和15×15矩阵同批，统一冰蓝至莓果红。集中保存的是试算核查，不能代签科研批准。源码、前端及独立版本详见[操作与大纲增补](../../../docs/A06全覆盖试算与15乘15矩阵_v13_20261013.md)。

@@ -67,6 +67,7 @@ class App:
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/check_two_pass", self.post_check_two_pass),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/two_pass_plan", self.post_two_pass_plan),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/two_pass_draft", self.post_two_pass_draft),
+            ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/trial_review", self.post_trial_review),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/coverage_selection", self.post_coverage_selection),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/material", self.post_docking_material),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/docking_candidates", self.post_docking_candidates),
@@ -354,6 +355,21 @@ class App:
         try:data=self.kernel.workflow().save_two_pass_draft(study_id,payload)
         except ContractError as error:raise from_contract(str(error))
         return {"draft":{k:data[k] for k in ("draft_id","created_at","reviewer","note","checked_target_ids")},"message_zh":"核查草案已保存；刷新可继续填写，尚未确认完整方案。"},201
+
+    def post_trial_review(self,req,study_id,module_id):
+        """试算核查独立保存；不触发正式批准或隐藏计算。"""
+        if module_id not in ("A06_PREP", "A06"):
+            raise not_found("试算核查")
+        body = req.json()
+        if not isinstance(body,dict) or set(body) != {"trial_id","reviewer","note","confirmed"} or not isinstance(body["confirmed"],bool):
+            raise ApiError(422,"VALIDATION_FAILED","试算核查字段非法")
+        if self.tasks.active_for(study_id):
+            raise ApiError(409,"GATE_BLOCKED","请等待本研究任务结束再保存核查")
+        try:
+            value = self.kernel.workflow().save_trial_review(study_id,body["trial_id"],body["note"],body["reviewer"],body["confirmed"])
+        except ContractError as error:
+            raise from_contract(str(error))
+        return {"review":value,"message_zh":"试算核查已保存；未批准正式科研结果。"},201
 
     def post_coverage_selection(self,req,study_id,module_id):
         """集中采用的结果生成走后台，接口进程只读取与登记，不能载入科学依赖。"""

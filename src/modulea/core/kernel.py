@@ -29,7 +29,7 @@ _ensure_legacy_path()
 from contracts import MODULES, ContractError  # noqa: E402
 from storage import read_json, verified_file  # noqa: E402
 from workflow import Workflow  # noqa: E402
-from .coverage_workflow import CoverageWorkflow as DockingWorkflow  # noqa: E402
+from .trial_workflow import TrialWorkflow as DockingWorkflow  # noqa: E402
 
 __all__ = ["Kernel", "ContractError", "MODULES", "read_json", "verified_file", "full_workflow"]
 

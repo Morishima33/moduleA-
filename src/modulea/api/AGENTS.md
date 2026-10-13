@@ -301,3 +301,6 @@ POST .../modules/A06_PREP/actions/coverage_selection：{expected_run,expected_so
 采用确认POST返回202后台a06_coverage_confirm，接口只读校验、后台由完整校验器产生新准备版本；草案返回201。任务失败保留原技术归档，旧请求不自动重签。
 
 第四版追加最终证据审计：原位点相关范围与必要伙伴/金属再核对，单体模型不能绕过环境；当前输入包含实际采用证据及历史完整包指纹，失败历史不回写。conditions给出main_results、exploration与prepared_pairs，均由后端归档读取。只读请求内复用已核验不可变数据，写入/下一请求重新核验；旧窗口expected_run先阻断，不重复构造整张页面。
+
+## A06独立全覆盖试算（2026-10-13用户明确授权真实计算）
+新增私有a06_trial后台任务，通过TrialWorkflow.begin_trial/finish_trial独立账本发布15×15真实试算；不更换current、正式结果或reviews。绑定已批准来源、准备、方案、来源原件与展示名单；失败重试沿用私有请求并重新检查版本。ModuleView.docking_trial只读返回225格、服务端色值、两位小数展示所需原始精度、组合/区域进度、受体处理证据及索引下载。未完整完成时无评分矩阵。GET files/trial_ID.index仅访问该研究已完成试算索引且指纹匹配的文件，无任意路径。POST actions/trial_review仅接受trial_id、reviewer、note、confirmed，保存独立核查；不代签正式A06、不运行计算，回收站/过期/忙碌阻断。页面支持现有任务日志、取消、失败重试。

@@ -195,7 +195,42 @@ def run_a06_coverage_confirm(settings,task,manager):
         task["study_id"],json.loads(task.get("payload") or "{}"))
     return data["message_zh"]
 
-HANDLERS = {"a06_coverage_confirm":run_a06_coverage_confirm,"a06_coverage":run_a06_quality,"a06_quality":run_a06_quality,"a03_selection":run_a03_selection,"a06_plan":run_a06_plan,"a06_candidates": run_a06_candidates, "a05_display": run_a05_display, "a04_identity": run_a04_identity, "a04_ppi": run_a04_ppi, "continue": run_continue, "source_upload": run_source_upload, "a01_sources": run_a01_sources}
+def run_a06_trial(settings, task, manager):
+    """真实试算的后台包装；区域进度由科学子进程回报，支持日志与整树取消。"""
+    import subprocess
+    import sys
+    payload = json.loads(task.get("payload") or "{}")
+    payload["task_id"] = task["task_id"]
+    folder = settings.runtime_dir / "a06_trial_requests" / task["task_id"]
+    folder.mkdir(parents=True, exist_ok=False)
+    request, output = folder / "request.json", folder / "result.json"
+    request.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    command = [sys.executable, "-I", "-S", "-B", str(settings.project_root / "tools/run_a06_trial.py"),
+               "--request-file", str(request), "--result-file", str(output),
+               "--tools-root", payload["tools_root"], "--data-root", str(settings.data_root),
+               "--study", task["study_id"]]
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                               text=True, encoding="utf-8", errors="replace",
+                               env=dict(os.environ, TEMP=str(folder), TMP=str(folder),
+                                        PYTHONDONTWRITEBYTECODE="1", PYTHONUTF8="1"))
+    for line in process.stdout:
+        print(line, end="", flush=True)
+        if line.startswith("PROGRESS "):
+            state = json.loads(line[9:])
+            manager.update(task["task_id"], progress={"step_zh": state["step_zh"],
+                "done": state["pairs_done"], "total": state["pairs_total"],
+                "regions_done": state["regions_done"], "regions_total": state["regions_total"]})
+    if process.wait() != 0 or not output.is_file():
+        workflow = full_workflow(settings.data_root)
+        for record in workflow.load(task["study_id"]).get("docking_trial_records", []):
+            if record.get("payload", {}).get("task_id") == task["task_id"]:
+                workflow.stop_trial(task["study_id"], record["trial_id"], "后台试算失败，原始输出保留")
+        raise ValueError("试算未完整结束，原始资料及失败输出保留，请查看日志")
+    result = json.loads(output.read_text(encoding="utf-8"))
+    return "试算已归档：" + result["trial_id"] + "；真实评分" + str(result["summary"]["completed"]) + "/225，未批准正式科研结果"
+
+
+HANDLERS = {"a06_trial":run_a06_trial,"a06_coverage_confirm":run_a06_coverage_confirm,"a06_coverage":run_a06_quality,"a06_quality":run_a06_quality,"a03_selection":run_a03_selection,"a06_plan":run_a06_plan,"a06_candidates": run_a06_candidates, "a05_display": run_a05_display, "a04_identity": run_a04_identity, "a04_ppi": run_a04_ppi, "continue": run_continue, "source_upload": run_source_upload, "a01_sources": run_a01_sources}
 
 
 def run_task(settings: Settings, task_id: str) -> int:

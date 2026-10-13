@@ -1,0 +1,16 @@
+{
+  "schema_version": "A06.trial.version.1",
+  "rules": "A06.trial.rules.1",
+  "display": "A06.trial.display.1",
+  "branch": "A06_TRIAL",
+  "formal_approval": false,
+  "files": [
+    "trial_rules.py",
+    "trial_prepare.py",
+    "trial_sources.py",
+    "trial_compute.py",
+    "trial_evidence.py",
+    "trial_exports.py"
+  ],
+  "historical_science_files": "不改来源与版本索引.json及冻结旧源码"
+}
