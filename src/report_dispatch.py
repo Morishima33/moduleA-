@@ -12,7 +12,7 @@ def run_reports(workflow, study_id, expected_a07, reason, **kwargs): # 网页和
     manifest = workflow.load(study_id) # 读取本次科学与审批版本。
     a06 = manifest.get('current', {}).get('A06')
     if a06 and workflow.run(manifest, a06).get('config', {}).get('schema_version') == 'A06.trial.handoff.1':
-        from science_modules.a07.trial_reports import run_reports as generate
+        from science_modules.a07.commented_reports import run_reports as generate
         return generate(workflow, study_id, expected_a07, reason, **kwargs)
     record = selected_record(workflow,manifest) # 同时核验批准图件指纹。
     a04 = manifest.get('current', {}).get('A04')
@@ -38,9 +38,18 @@ def run_reports(workflow, study_id, expected_a07, reason, **kwargs): # 网页和
 def validator(root): # 新旧报告均按自身保存契约校验。
     from science_modules.a07.matrix_reports import validator as validate # 新校验器兼容已归档旧报告。
     from science_modules.a07.trial_reports import validator as trial_validator
-    return trial_validator(root, validate(root)) # 新试算报告独立协议，历史校验不改。
+    from science_modules.a07.commented_reports import validator as commented_validator
+    return commented_validator(root, trial_validator(root, validate(root))) # 新批注报告保留各版历史校验。
 
 def require_alignment(workflow, manifest, run): # 完整报告批准前核对可选通路最新决定。
+    if run.get('config',{}).get('schema_version')=='A07.report.config.22':
+        from science_modules.a07.trial_reports import current_export
+        require(run['inputs']['a06_trial_export']==current_export(workflow,manifest,'export_validation.json'), '本批原评分图表已更新，请重新生成报告后复核')
+        maps = workflow.ranked_maps_for(manifest,run['parent_runs']['A05'])
+        require(run['inputs']['a05_ranked_maps']==(maps['record'] if maps else None), '排名通路图已改变，请重新生成报告后复核')
+        for record in run['inputs']['compound_name_sources']:
+            from storage import verified_file
+            verified_file(workflow.location(manifest['study_id']),record)
     if run.get('config',{}).get('schema_version')=='A07.report.config.21':
         from science_modules.a07.trial_reports import current_export
         require(run['inputs']['a06_trial_export']==current_export(workflow,manifest,'export_validation.json'), '本批图表已更新，请重新生成报告后复核')

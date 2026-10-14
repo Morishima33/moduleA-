@@ -1,6 +1,15 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-10-14 A05排名首位命中定位图
+
+ModuleView新增可选`ranked_pathway_maps`：`{enabled,expected_a05,disabled_reason_zh,semantics_zh,items}`；items为`{ranking,id,name_en,name_zh,count,adjusted_p,not_in_current_kgml,png_url,caption_zh}`。统计显著性与Count两个Top1直接取当前已确认A05展示排名，命中身份与数值保留；无显著条目不补图。
+POST `/studies/{sid}/modules/A05/actions/ranked_pathway_maps` JSON`{expected_a05}`→202后台`a05_pathway_maps`。只制作两张KEGG原生图，使用固定pathview1.46.0；红色表示本批命中，不表示表达方向、激活或疗效。官方KGML/底图原件、下载URL/时间/指纹、命中表与节点映射独立归档。
+GET `/studies/{sid}/files/ranked_maps_ID.序号`仅下载该研究登记并核验指纹的文件。历史/失效/回收站只读；新图绑定A05结果及确认展示，不更换current/runs/reviews，不代签既有机制通路推荐审批。
+
 ## 2026-10-14 A06出图资料与A07顶部下载
+
+中英显示第四版：DrawingPair新增可选`compound_name_en`；DockingTrialInfo.matrix.rows新增`label_zh,label_en`，matrix新增`display_version,heatmap_svg`。名称按稳定compound_id连接同源A03与已归档核查，缺译不猜译。SVG与PNG共用紧凑矩阵几何及右侧纵向色标，8×8范围、完整225格评分范围、原评分、红蓝配色和A/B保持。
+`bilingual_display_records`独立附件绑定A06、trial_packet与名称证据，由后台Workflow公开方法只追加PNG/SVG/XLSX/CSV；不更换current/runs/reviews，历史、失效及回收站不能生成新版本。下载键`bilingual_display_ID.序号`仅读取登记文件并核对指纹；trial_view只显示与当前A06及trial_packet同源的最新附件。
 
 ModuleView新增可选`docking_artifacts`：`{enabled,disabled_reason_zh,expected_a06,eligible_count,ready_count,pairs,images,bundles}`。
 组合行`{pair_key,compound_id,compound_name_zh,target_id,target_zh,score,eligible,package_url}`；资格以同源原始评分≤−8为本轮整理范围，不是科学通过阈值。未达范围及NA不自动生成包。

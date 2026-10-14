@@ -15,6 +15,8 @@ from science_modules.a06.trial_presentation import (
 )
 from science_modules.a06.trial_rules import validate_matrix
 from storage import read_json, verified_file, within
+from modulea.core.compound_names import compound_names
+from science_modules.a06.bilingual_heatmap import matrix as bilingual_matrix, heatmap_svg, VERSION as BILINGUAL_VERSION
 
 
 def color(score, low, high):
@@ -84,6 +86,8 @@ def trial_info(workflow, manifest, busy=False):
             if receptor.get("source"):
                 verified_file(root, receptor["source"])
     validate_matrix(packet)
+    names = compound_names(workflow, manifest, packet=packet)
+    bilingual_downloads = workflow.bilingual_display_downloads(manifest, packet) if hasattr(workflow, "bilingual_display_downloads") else []
     values = [p["score"] for p in packet["pairs"] if p["state"] == "completed"]
     low, high = (min(values), max(values)) if values else (None, None)
     pairmap = {(p["compound_id"], p["target_id"]): p for p in packet["pairs"]}
@@ -136,12 +140,15 @@ def trial_info(workflow, manifest, busy=False):
         "heatmap_compounds": packet["display"]["config"]["heatmap_compounds"],
         "heatmap_targets": packet["display"]["config"]["heatmap_targets"],
         "palette": PALETTE,
-        "display_version": VERSION,
+        "display_version": BILINGUAL_VERSION if bilingual_downloads else VERSION,
+        "heatmap_svg": heatmap_svg(bilingual_matrix(packet, names)) if bilingual_downloads else None,
         "annotation_legend": LEGEND,
         "annotation_threshold": THRESHOLD,
     }
     for compound in packet["compounds"]:
-        row = {"id": compound["compound_id"], "label": compound["name_zh"], "cells": []}
+        name = names.get(compound["compound_id"], {})
+        row = {"id": compound["compound_id"], "label": compound["name_zh"],
+               "label_zh": compound["name_zh"], "label_en": name.get("name_en", ""), "cells": []}
         for receptor in packet["receptors"]:
             pair = pairmap[(compound["compound_id"], receptor["target_id"])]
             row["cells"].append(
@@ -183,4 +190,5 @@ def trial_info(workflow, manifest, busy=False):
                     "url": f"/api/v1/studies/{sid}/files/{record['trial_id']}.{i}",
                 }
             )
+    info["downloads"].extend(bilingual_downloads)
     return info

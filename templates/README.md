@@ -1,6 +1,8 @@
 # 双报告模板实施说明
 
-旧模板参考副本在references/legacy_templates，原文件未修改。当前双报告采用程序化模板，由`src/report_flow.py`生成；模板版本随每次报告写入`report_index.json`，当前为`A07.double_report.4`。本目录保存结构和文字边界说明，不另放一份会与代码脱节的Word母版。
+旧模板参考副本在references/legacy_templates，原文件未修改。双报告采用程序化模板，经`src/report_dispatch.py`按来源协议分派；扩展A06结果当前进入`science_modules/a07/commented_reports.py`，模板为`A07.double_report.22`，第21版及更早代码保留。模板版本、同源事实与图件随每次修订写入`report_index.json`。本目录保存结构和文字边界说明，不另放一份会与代码脱节的Word母版。
+
+第22版落实用户附加Word的16条批注及已确认方案；专业版GO/KEGG各按摘要→表→图，增加统计显著性/Count首位命中图；简略版共用核心事实，完整组合清单与两个大通路图放专业版。内部编号仅在机器索引中保留。详见[已确认批注清单](../docs/报告批注与精确选择实施清单_v22_20261014.md)。
 
 ## 详细版
 

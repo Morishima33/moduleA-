@@ -153,6 +153,7 @@ export interface FileItem { key: string; role: string; name: string; path: strin
 
 /** 同版本对接出图包与用户回传图片，资格及数量均由后端提供。 */
 export interface DrawingPair {
+  compound_name_en?: string;
   pair_key: string; compound_id: string; compound_name_zh: string; target_id: string; target_zh: string;
   score: number | null; eligible: boolean; package_url: string | null;
 }
@@ -234,6 +235,7 @@ export interface Special {
 
 /** 模块页 */
 export interface ModuleView {
+  ranked_pathway_maps?: RankedPathwayMapsInfo | null;
   docking_artifacts?: DockingArtifactInfo | null;
   trial_preparation?: TrialPreparationInfo | null;
   trial_handoff?: {run_id:string;active:boolean;trial_id:string;review_url:string;note_zh:string;reviewer:string;note:string}|null;
@@ -270,6 +272,13 @@ export interface ModuleView {
   ppi_run?: PpiRunInfo | null;
   identity_plan?: IdentityPlanInfo | null;
   enrichment_display?: EnrichmentDisplayInfo | null;
+}
+
+/** 当前A05两种排名首位的同源命中定位图。 */
+export interface RankedPathwayMapsInfo {
+  enabled: boolean; expected_a05: string; disabled_reason_zh: string; semantics_zh: string;
+  items: {ranking: 'statistical_significance' | 'count'; id: string; name_en: string; name_zh: string;
+    count: number; adjusted_p: number; not_in_current_kgml: string[]; png_url: string; caption_zh: string}[];
 }
 
 /** 明细表分页返回 */
@@ -381,8 +390,8 @@ export interface DockingTrialInfo {
  receptors:TrialReceptor[];downloads:{name:string;url:string}[];
  summary?:{completed:number;NA:number};
  review?:{review_id:string;reviewer:string;note:string;confirmed:boolean}|null;
- matrix?:{annotation_legend?:string;columns:{id:string;label:string;grade:string}[];score_range:number[]|null;
+ matrix?:{display_version?:string;heatmap_svg?:string;annotation_legend?:string;columns:{id:string;label:string;grade:string}[];score_range:number[]|null;
  heatmap_compounds:string[];heatmap_targets:string[];
- rows:{id:string;label:string;cells:{target_id:string;score:number|null;display_score?:string;highlight?:boolean;state:string;color:string;text_color:string;
+ rows:{id:string;label:string;label_zh?:string;label_en?:string;cells:{target_id:string;score:number|null;display_score?:string;highlight?:boolean;state:string;color:string;text_color:string;
  reason_zh:string;region_id:string|null;mode:string;partial_regions:boolean}[]}[]}|null;
 }

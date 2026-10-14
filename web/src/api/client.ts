@@ -81,6 +81,9 @@ function qs(params: Record<string, string | number | undefined | null>): string 
 
 // 各端点的薄封装；路径与契约第 3 节一致
 export const api = {
+  /** 明确点击后制作当前确认范围两个首位通路命中图。 */
+  rankedPathwayMaps: (sid: string, expected_a05: string) =>
+    request<{task: Task; message_zh: string}>('POST', `/studies/${sid}/modules/A05/actions/ranked_pathway_maps`, {expected_a05}),
   /** 上传用户制作的PNG/JPEG，后台验证后绑定A06另存。 */
   uploadDockingFigure: (sid: string, body: FormData) =>
     request<{task: Task; message_zh: string}>('POST', `/studies/${sid}/modules/A06/actions/figure`, body),

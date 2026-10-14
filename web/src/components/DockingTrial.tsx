@@ -13,13 +13,18 @@ const modeLabel: Record<string, string> = {
 function Scores({info, heatmap = false}: {info: DockingTrialInfo; heatmap?: boolean}) {
   const matrix = info.matrix;
   if (!matrix) return null;
+  if (heatmap && matrix.heatmap_svg) return <div style={{overflowX: 'auto'}}>
+    <div style={{minWidth: 670, maxWidth: 940, margin: '0 auto'}}
+      className="bilingual-heatmap" dangerouslySetInnerHTML={{__html: matrix.heatmap_svg}}/>
+  </div>;
   const targets = heatmap ? matrix.columns.filter(c => matrix.heatmap_targets.includes(c.id)) : matrix.columns;
   const rows = heatmap ? matrix.rows.filter(r => matrix.heatmap_compounds.includes(r.id)) : matrix.rows;
   return <div style={{overflowX: 'auto'}}><table style={{borderCollapse: 'collapse', fontSize: 12, width: '100%'}}>
     <thead><tr><th style={{background: '#0F5E6E', color: 'white', padding: 8, minWidth: 130}}>成分</th>
       {targets.map(c => <th key={c.id} style={{background: '#0F5E6E', color: 'white', padding: 7, minWidth: 66}}>
         {c.label}<br/>{c.grade}</th>)}</tr></thead>
-    <tbody>{rows.map(row => <tr key={row.id}><td style={{padding: 7, border: '1px solid #DCE1E5'}}>{row.label}</td>
+    <tbody>{rows.map(row => <tr key={row.id}><td style={{padding: 7, border: '1px solid #DCE1E5'}}>{row.label_zh || row.label}
+      {row.label_en && <div style={{fontSize: 10, color: '#586B75', maxWidth: 280}}>{row.label_en}</div>}</td>
       {targets.map(c => {const cell = row.cells.find(v => v.target_id === c.id)!;
         return <td key={c.id} title={cell.score == null ? cell.reason_zh :
           `${cell.score} kcal/mol；${modeLabel[cell.mode]}；${cell.region_id}${cell.partial_regions ? '；部分区域失败' : ''}`}

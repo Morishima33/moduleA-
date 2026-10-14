@@ -309,6 +309,8 @@ class Views:
         if trial_info and handoff and handoff["active"]:
             trial_info["note_zh"] = "本批225组合已接入A06扩展结果复核；既有严格结果及批准留存。请使用顶部正式复核入口，无需重复保存试算核查。"
         response = {
+            "ranked_pathway_maps": workflow.ranked_map_context(real, run["run_id"], historical,
+                bool(self.tasks.active_for(study_id))) if module_id == "A05" and run else None,
             "docking_artifacts": workflow.docking_artifact_context(real, run["run_id"], historical,
                                      bool(self.tasks.active_for(study_id))) if module_id == "A06" and run else None,
             "module": {"module_id": module_id, "title_zh": spec.title_zh, "group_zh": spec.group_zh, "purpose_zh": source_intro(module_id, real, result) + ("STRING人类功能关联网络；两分支独立两轮；Degree图展示第二轮候选，Degree表展示第一轮前十，BC＋CC表展示第二轮前十五。" if module_id == "A04" and result and result.get("summary", {}).get("selection_version") == "A04.dual.3" else ("STRING人类功能关联网络；Degree与BC＋CC两分支独立进行两轮筛选，Degree图表显示第一轮前十，BC＋CC表显示第二轮前十五。" if module_id == "A04" and result and result.get("summary", {}).get("selection_version") == "A04.dual.2" else ("STRING人类功能关联网络；双分支独立两轮，显示第二轮排名。" if module_id == "A04" and result and result.get("summary", {}).get("selection_version") == "A04.dual.1" else spec.purpose_zh))),
@@ -518,6 +520,23 @@ class Views:
 
     def file(self, study_id: str, key: str) -> tuple[Path, str, str]:
         run_id, _, index = key.rpartition(".")
+        if run_id.startswith("ranked_maps_") and index.isdigit():
+            workflow = self.kernel.workflow()
+            manifest = self._manifest(study_id)
+            try:
+                path = workflow.ranked_map_file(manifest, run_id, int(index))
+            except ContractError as error:
+                raise from_contract(str(error))
+            return path, path.name, mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+        if run_id.startswith("bilingual_display_") and index.isdigit():
+            workflow = self.kernel.workflow()
+            manifest = self._manifest(study_id)
+            rows = manifest.get("bilingual_display_records", [])
+            row = next((r for r in rows if r["display_id"] == run_id), None)
+            if not row or row["binding"]["study_id"] != study_id or int(index) >= len(row["files"]):
+                raise not_found("双语显示文件")
+            path = verified_file(workflow.location(study_id), row["files"][int(index)])
+            return path, path.name, mimetypes.guess_type(path.name)[0] or "application/octet-stream"
         if run_id.startswith("dock_artifact_") and index.isdigit():
             workflow = self.kernel.workflow()
             manifest = self._manifest(study_id)

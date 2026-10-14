@@ -8,6 +8,7 @@ from pathlib import Path
 from contracts import require
 from storage import file_record, new_id, now, read_json, verified_file, write_json, write_lock
 from .trial_preparation_workflow import TrialPreparationWorkflow
+from .compound_names import compound_names
 
 VERSION = "A06.drawing.artifacts.1"
 
@@ -32,6 +33,7 @@ def catalog(workflow, manifest, a06):
     if packet_record:
         packet = read_json(verified_file(root, packet_record))
         binding["trial_packet"] = deepcopy(packet_record)
+        names = compound_names(workflow, manifest, run.get("parent_runs", {}).get("A03"), packet)
         compounds = {c["compound_id"]: c for c in packet["compounds"]}
         receptors = {r["target_id"]: r for r in packet["receptors"]}
         for pair in packet["pairs"]:
@@ -50,6 +52,7 @@ def catalog(workflow, manifest, a06):
                     "compound_id": pair["compound_id"],
                     "target_id": pair["target_id"],
                     "compound_name_zh": compound["name_zh"],
+                    "compound_name_en": names.get(pair["compound_id"], {}).get("name_en", ""),
                     "target_zh": receptor["symbol"],
                     "score": pair["score"],
                     "region": deepcopy(region),
@@ -70,6 +73,7 @@ def catalog(workflow, manifest, a06):
                     "compound_id": row["compound_id"],
                     "target_id": row["target"],
                     "compound_name_zh": row.get("compound_name") or row["compound_id"],
+                    "compound_name_en": row.get("compound_name_en", ""),
                     "target_zh": row["target"],
                     "score": row["score_kcal_mol"],
                     "generic_row": deepcopy(row),
@@ -258,6 +262,7 @@ class DockingArtifactWorkflow(TrialPreparationWorkflow):
                     "pair_key",
                     "compound_id",
                     "compound_name_zh",
+                    "compound_name_en",
                     "target_id",
                     "target_zh",
                     "score",

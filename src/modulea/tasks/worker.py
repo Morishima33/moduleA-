@@ -244,6 +244,8 @@ HANDLERS = {"a06_trial":run_a06_trial,"a06_coverage_confirm":run_a06_coverage_co
 
 
 from .drawing import run_figure, run_packages, run_bundle
+from .ranked_pathway_maps import run_ranked_maps
+HANDLERS["a05_pathway_maps"] = run_ranked_maps
 HANDLERS.update({"a06_figure": run_figure, "a06_pair_packages": run_packages, "a06_pair_bundle": run_bundle})
 
 

@@ -71,6 +71,7 @@ class App:
             ("POST", rf"/api/v1/studies/{ID}/modules/A06/actions/figure", self.post_docking_figure),
             ("POST", rf"/api/v1/studies/{ID}/modules/A06/actions/pair_packages", self.post_pair_packages),
             ("POST", rf"/api/v1/studies/{ID}/modules/A06/actions/pair_bundle", self.post_pair_bundle),
+            ("POST", rf"/api/v1/studies/{ID}/modules/A05/actions/ranked_pathway_maps", self.post_ranked_pathway_maps),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/coverage_selection", self.post_coverage_selection),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/material", self.post_docking_material),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/docking_candidates", self.post_docking_candidates),
@@ -563,6 +564,11 @@ class App:
         """通过令牌验证后将图片验证提交独立后台任务。"""
         from .drawing_actions import upload_figure
         return upload_figure(self, req, study_id)
+
+    def post_ranked_pathway_maps(self, req, study_id):
+        """显式点击生成两个排名首位图件，不代签机制通路审批。"""
+        from .ranked_pathway_actions import ranked_map_task
+        return ranked_map_task(self, req, study_id)
 
     def post_pair_packages(self, req, study_id):
         """只制作原始评分≤−8的选中组合，不运行Vina。"""

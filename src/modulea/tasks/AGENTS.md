@@ -1,5 +1,9 @@
 # tasks/ — 后台任务
 
+## 2026-10-14 A05排名首位命中图
+
+`a05_pathway_maps`仅接收当前A05版本，从已确认的统计显著性/Count排名提取首位及原命中Entrez身份，使用pathview1.46.0制作两张原生定位图。Rscript读取`MODULEA_RSCRIPT`或runtime/pathway_runtime.json；原件、命中表、节点映射和软件日志全部另存，经Workflow公开方法锁内绑定并追加索引。统计、正式运行、复核及机制推荐审批保持原记录；失败草案保留不作为成品下载。
+
 ## 2026-10-14 对接出图附件
 
 `a06_figure`验证私有暂存SHA-256，完整解码PNG/JPEG并检查16MiB/4000万像素限制，然后通过Workflow追加图片和索引。`a06_pair_packages`复用旧PyMOL脚本，只制作页面明确选中且原始评分≤−8的组合，并自动形成所选下载合集；不运行Vina、不预先批量制作。必须带接口登记的`A06.drawing.on_demand.2`请求标记，旧批量请求拒绝重试。逐项发布后可安全复用，失败/取消草案保留。`a06_pair_bundle`只汇集本版本已准备的所选包。三项均绑定当前有效A06、锁内重验、回收站只读，不改科研运行、复核及报告。PyMOL位置读取环境变量或runtime/drawing_runtime.json；个人路径不上传。
@@ -48,4 +52,4 @@ a06_coverage按已登记授权执行资料质控或final_audit证据审计；审
 
 
 ## A06扩展结果接续（2026-10-14）
-continue识别A06.trial.handoff.1：未正式批准时停止；批准后仅生成第21版双报告，停在A07待复核，不运行旧严格准备或Vina。该显式版本分支先于旧coverage/candidates阻断，旧协议行为保持。报告绑定本批评分、核查及展示原件，新展示改变时须重新生成；不自动批准A06或A07。
+continue识别A06.trial.handoff.1：未正式批准时停止；批准后经report_dispatch生成当前第22版双报告，停在A07待复核，不运行旧严格准备或Vina。第21版及更早协议保留。该显式版本分支先于旧coverage/candidates阻断，旧协议行为保持。报告绑定本批评分、核查、名称证据及当前排名通路图，新来源改变时须重新生成；不自动批准A06或A07。

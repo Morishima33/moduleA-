@@ -29,7 +29,7 @@ _ensure_legacy_path()
 from contracts import MODULES, ContractError  # noqa: E402
 from storage import read_json, verified_file  # noqa: E402
 from workflow import Workflow  # noqa: E402
-from .docking_artifacts import DockingArtifactWorkflow as DockingWorkflow  # noqa: E402
+from .ranked_pathway_workflow import RankedPathwayWorkflow as DockingWorkflow  # noqa: E402
 
 __all__ = ["Kernel", "ContractError", "MODULES", "read_json", "verified_file", "full_workflow"]
 
