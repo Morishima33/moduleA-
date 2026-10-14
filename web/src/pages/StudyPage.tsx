@@ -127,7 +127,7 @@ export default function StudyPage({ studyId, moduleId, runId }: { studyId: strin
           {s.herbs_zh.join('、')}{s.disease.mesh_ui ? ` · MeSH ${s.disease.mesh_ui}` : ''}
         </div>
         <ProgressSegs segments={segments} height={6} />
-        <div className="small muted">{study.progress.approved} / {study.progress.total} 已通过</div>
+        <div className="small muted">{study.progress.scope_confirmed ? <>{study.progress.completed} / {study.progress.total} 关口已完成<br/>{study.progress.approved}项正式通过 · {study.progress.scope_confirmed}项准备已核查</> : <>{study.progress.approved} / {study.progress.total} 已通过</>}</div>
       </div>
       {/* 模块列表 */}
       <nav className="card" aria-label="流程导航" style={{ padding: 8, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -139,13 +139,13 @@ export default function StudyPage({ studyId, moduleId, runId }: { studyId: strin
               const st = stateStyle(m.code); // 状态配色
               return (
                 <a key={m.module_id} href={hrefFor({ page: 'study', studyId, moduleId: m.module_id })} onClick={() => setNavOpen(false)}
-                  className={'nav-item' + (on ? ' on' : '') + (m.sub ? ' sub' : '')} aria-current={on ? 'page' : undefined} style={{ textDecoration: 'none' }}>
+                  className={'nav-item' + (on ? ' on' : '') + (m.sub ? ' sub' : '')} aria-current={on ? 'page' : undefined} style={{ textDecoration: 'none', ...(m.code === 'scope_confirmed' ? {display:'grid',gridTemplateColumns:'8px minmax(0,1fr)'} : {}) }}>
                   <span className="dot" style={{ background: st.dot }} aria-hidden="true" />
                   <span className="txt">
                     <span className="code">{m.module_id}</span>
                     <span className="title" style={{ fontWeight: on ? 700 : 400 }}>{m.title_zh}</span>
                   </span>
-                  <StatusPill code={m.code} label={m.label_zh} />
+                  {m.code === 'scope_confirmed' ? <span style={{gridColumn:2}}><StatusPill code={m.code} label={m.label_zh}/></span> : <StatusPill code={m.code} label={m.label_zh} />}
                 </a>
               );
             })}

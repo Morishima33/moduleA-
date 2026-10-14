@@ -145,7 +145,7 @@ class Views:
             "purpose": self._purpose(view, self._intake(study_id, manifest)),
             "archive_ok": view is not None,
             "archive_error_zh": error,
-            "progress": {"approved": approved, "total": len(states),
+            "progress": {"approved": approved, "completed": approved + sum(s["code"] == "scope_confirmed" for s in states.values()), "scope_confirmed": sum(s["code"] == "scope_confirmed" for s in states.values()), "total": len(states),
                          "segments": [{"module_id": m, "code": states[m]["code"], "label_zh": states[m]["label_zh"]} for m in registry.ORDER]},
             "next_step": next_step,
             "todo_count": sum(1 for s in states.values() if s["code"] in ("review", "hold", "returned", "waiting", "failed")),
@@ -183,8 +183,8 @@ class Views:
                     if module_id=="A05" and code=="waiting" and states[module_id]["label_zh"]!="等待资料":
                         text=f"{module_id} {title}："+states[module_id]["label_zh"]+"，请查看页面标题下方确认区"
                     return {"module_id": module_id, "code": code, "text_zh": text}
-        if all(s["code"] in ("approved", "published") for s in states.values()):
-            return {"module_id": None, "code": "done", "text_zh": "全部模块已通过，本研究流程完成"}
+        if all(s["code"] in ("approved", "published", "scope_confirmed") for s in states.values()):
+            return {"module_id": None, "code": "done", "text_zh": "本批流程已完成；准备范围按扩展试算核查。" if any(s["code"] == "scope_confirmed" for s in states.values()) else "全部模块已通过，本研究流程完成"}
         return None
 
     def study(self, study_id: str) -> dict:
@@ -193,7 +193,7 @@ class Views:
         states = self._states(study_id, view, error, bool(manifest.get("trashed")))
         nav = []
         for group in registry.GROUP_ORDER:
-            items = [{"module_id": m, "title_zh": registry.SPECS[m].title_zh, "sub": registry.SPECS[m].sub,
+            items = [{"module_id": m, "title_zh": "本批对接准备" if m == "A06_PREP" and view and view.get("trial_preparation") else registry.SPECS[m].title_zh, "sub": registry.SPECS[m].sub,
                       "code": states[m]["code"], "label_zh": states[m]["label_zh"]}
                      for m in registry.ORDER if registry.SPECS[m].group_zh == group]
             if items:
@@ -204,7 +204,7 @@ class Views:
             "purpose": self._purpose(view, self._intake(study_id, manifest)),
             "archive_ok": view is not None,
             "archive_error_zh": error,
-            "progress": {"approved": approved, "total": len(states)},
+            "progress": {"approved": approved, "completed": approved + sum(s["code"] == "scope_confirmed" for s in states.values()), "scope_confirmed": sum(s["code"] == "scope_confirmed" for s in states.values()), "total": len(states)},
             "nav": nav,
             "next_step": self._next_step(states),
             "inbox": [{"module_id": m, "code": states[m]["code"], "label_zh": states[m]["label_zh"],
@@ -249,7 +249,8 @@ class Views:
         spec = registry.SPECS[module_id]
 
         # 查看历史版本：只读，不提供复核
-        historical = bool(run_id and run_id != manifest["current"].get(module_id))
+        historical = bool(run_id and (run_id != manifest["current"].get(module_id) or (module_id == "A06_PREP" and view.get("trial_preparation"))))
+        preparation_page = module_id == "A06_PREP" and not historical and bool(view.get("trial_preparation"))
         if historical:
             if run_id not in manifest["runs"] or workflow.run(manifest, run_id)["module_id"] != module_id:
                 raise not_found("运行 " + run_id)
@@ -262,7 +263,7 @@ class Views:
         state = states[module_id]
         results = {m["module_id"]: m["result"] for m in view["modules"] if m.get("result")}
         ctx = {"workflow_profile": manifest.get("workflow_profile"), "state_code": state["code"], "results": results, "study_id": study_id}
-        parts = present(module_id, result, ctx) if result else {"kpis": [], "flow": [], "flow_note_zh": "", "focus": [], "params": [], "table": None, "special": {}}
+        parts = present(module_id, result, ctx) if result and not preparation_page else {"kpis": [], "flow": [], "flow_note_zh": "", "focus": [], "params": [], "table": None, "special": {}}
 
         history = self.runs(study_id, module_id, workflow=workflow, manifest=manifest)
         files = self._files(run, result)
@@ -285,17 +286,17 @@ class Views:
                     parts["special"]["enrichment_graphs"][row["group"]] = {"url":f"/api/v1/studies/{study_id}/files/{key}?inline=1","caption_zh":"GO三类各前八；中英文名称，柱长与深浅表示Count。" if row["group"]=="go" else "KEGG统计显著性前十五；横轴RichFactor，面积Count，颜色为−log10(BH校正后P值)。"}
         enrichment_info = display_context(workflow, real, run, result, historical, bool(self.tasks.active_for(study_id))) if module_id == "A05" else None
         hide_pending_kegg(parts["special"],enrichment_info)
-        candidates_info = candidate_context(workflow,real,historical,bool(self.tasks.active_for(study_id))) if module_id in ("A04","A06_PREP","A06") else None
+        candidates_info = candidate_context(workflow,real,historical,bool(self.tasks.active_for(study_id))) if module_id in ("A04","A06_PREP","A06") and not preparation_page else None
         if module_id == "A04":
             apply_candidate_context(parts,candidates_info)
         a03_id = real.get("current", {}).get("A03", "")
         ppi_enabled = bool(module_id == "A04" and a03_id and not historical and not real.get("trashed") and workflow.active(real, a03_id) and workflow.approved(real, a03_id) and not self.tasks.active_for(study_id))
         if run:
             parts["params"] = parts["params"] + self._config_params(run, parts["params"])
-        coverage_info = workflow.coverage_info(real, bool(self.tasks.active_for(study_id))) if module_id == "A06_PREP" and not historical else None
+        coverage_info = workflow.coverage_info(real, bool(self.tasks.active_for(study_id))) if module_id == "A06_PREP" and not historical and not preparation_page else None
         handoff = None
         handoff_id = real.get("current", {}).get("A06")
-        if module_id in ("A06_PREP", "A06") and handoff_id and not historical:
+        if module_id in ("A06_PREP", "A06") and handoff_id and not historical and not preparation_page:
             handoff_run = workflow.run(real, handoff_id)
             if handoff_run.get("config", {}).get("schema_version") == "A06.trial.handoff.1":
                 trial_review = read_json(verified_file(workflow.location(study_id), handoff_run["inputs"]["trial_review"]))
@@ -304,10 +305,10 @@ class Views:
                            "review_url": f"#/studies/{study_id}/A06",
                            "note_zh": "本批225组合已接入A06扩展结果复核。原严格准备及失败记录保留；通过仅允许扩展筛查与报告使用。",
                            "reviewer": trial_review["reviewer"], "note": trial_review["note"]}
-        trial_info = __import__("modulea.api.trial_view", fromlist=["trial_info"]).trial_info(workflow,real,bool(self.tasks.active_for(study_id))) if module_id in ("A06_PREP","A06") and not historical else None
+        trial_info = __import__("modulea.api.trial_view", fromlist=["trial_info"]).trial_info(workflow,real,bool(self.tasks.active_for(study_id))) if module_id in ("A06_PREP","A06") and not historical and not preparation_page else None
         if trial_info and handoff and handoff["active"]:
             trial_info["note_zh"] = "本批225组合已接入A06扩展结果复核；既有严格结果及批准留存。请使用顶部正式复核入口，无需重复保存试算核查。"
-        return {
+        response = {
             "module": {"module_id": module_id, "title_zh": spec.title_zh, "group_zh": spec.group_zh, "purpose_zh": source_intro(module_id, real, result) + ("STRING人类功能关联网络；两分支独立两轮；Degree图展示第二轮候选，Degree表展示第一轮前十，BC＋CC表展示第二轮前十五。" if module_id == "A04" and result and result.get("summary", {}).get("selection_version") == "A04.dual.3" else ("STRING人类功能关联网络；Degree与BC＋CC两分支独立进行两轮筛选，Degree图表显示第一轮前十，BC＋CC表显示第二轮前十五。" if module_id == "A04" and result and result.get("summary", {}).get("selection_version") == "A04.dual.2" else ("STRING人类功能关联网络；双分支独立两轮，显示第二轮排名。" if module_id == "A04" and result and result.get("summary", {}).get("selection_version") == "A04.dual.1" else spec.purpose_zh))),
                        "sub": spec.sub, "depends_on": list(run["parent_runs"]) if module_id == "A06" and run and run.get("config", {}).get("schema_version") == "A06.trial.handoff.1" else list(spec.depends_on)},
             "state": state if not historical else {**state, "code": "history", "label_zh": "历史版本（只读）", "can_review": False},
@@ -329,14 +330,25 @@ class Views:
             "identity_plan": plan_view(workflow, real, run, result, ppi_enabled and bool(run) and workflow.active(real, run["run_id"]), historical) if module_id == "A04" else None,
             "enrichment_display": enrichment_info,
             "docking_candidates": candidates_info,
-            "docking_review": review_context(workflow,real,historical) if module_id in ("A03_SELECT","A06_PREP","A06") else None,
+            "docking_review": review_context(workflow,real,historical) if module_id in ("A03_SELECT","A06_PREP","A06") and not preparation_page else None,
             "compound_selection": selection_context(workflow,real,historical,bool(self.tasks.active_for(study_id))) if module_id=="A03_SELECT" else None,
             "docking_trial": trial_info,
             "docking_coverage": coverage_info,
             "trial_handoff": handoff,
-            "docking_preparation": preparation_context(workflow,real,historical,bool(self.tasks.active_for(study_id))) if module_id=="A06_PREP" and not coverage_info else None,
+            "docking_preparation": preparation_context(workflow,real,historical,bool(self.tasks.active_for(study_id))) if module_id=="A06_PREP" and not coverage_info and not preparation_page else None,
             "source_uploads": upload_context(workflow, real, module_id, result, historical, bool(self.tasks.active_for(study_id))) if not historical else None,
         }
+        preparation = view.get("trial_preparation") if module_id == "A06_PREP" and not historical else None
+        if preparation:
+            from .trial_preparation_view import present_context
+            response["trial_preparation"] = present_context(study_id, preparation)
+            response["module"].update(title_zh="本批对接准备", purpose_zh="沿用本批已确认的结构、位点与准备证据；扩展用途与严格质控分别记录。")
+            response["review"].update(can_review=False, allowed_decisions=[], already_approved=False)
+            response["review"]["continue"]["available"] = False
+            response["downstream"] = {"note_zh": "准备关联只用于本批资料核查，已确认A06及A07报告保持。", "modules": []}
+            for key in ("docking_trial", "docking_coverage", "docking_preparation", "docking_candidates", "docking_review", "trial_handoff"):
+                response[key] = None
+        return response
 
     @staticmethod
     def _run_info(workflow, manifest, run, result, history) -> dict:
@@ -504,6 +516,16 @@ class Views:
 
     def file(self, study_id: str, key: str) -> tuple[Path, str, str]:
         run_id, _, index = key.rpartition(".")
+        if run_id.startswith("prep_link_") and index.isdigit():
+            workflow = self.kernel.workflow()
+            manifest = self._manifest(study_id)
+            matches = [read_json(verified_file(workflow.location(study_id), r)) for r in manifest.get("trial_preparation_link_records", [])]
+            link = next((r for r in matches if r["link_id"] == run_id), None)
+            if not link or link["binding"]["study_id"] != study_id or int(index) >= len(link["files"]):
+                raise not_found("准备关联文件")
+            record = link["files"][int(index)]
+            path = verified_file(workflow.location(study_id), record)
+            return path, Path(record["path"]).name, mimetypes.guess_type(record["path"])[0] or "application/octet-stream"
         if run_id.startswith("trial_") and index.isdigit():
             workflow = self.kernel.workflow()
             manifest = self._manifest(study_id)

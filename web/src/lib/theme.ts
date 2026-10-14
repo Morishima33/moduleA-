@@ -48,6 +48,7 @@ const P: Record<string, StateStyle> = {
   history: { bg: '#ECEFF1', fg: '#26323C', border: '1px solid #A9B5BF', boxBg: '#F6F8F9', boxLine: '#DCE1E5', dot: '#8C969E' },
 };
 P.hold = P.review; // “暂存待定”与“待你复核”同色
+P.scope_confirmed = P.approved; // 仅复用完成配色，标签与正式批准分别显示。
 
 /** 取某个状态的样式；未知状态按“未开始”显示 */
 export function stateStyle(code: StateCode | string | null | undefined): StateStyle {
@@ -57,6 +58,7 @@ export function stateStyle(code: StateCode | string | null | undefined): StateSt
 /** 导航图例（只做颜色说明） */
 export const LEGEND: { code: StateCode; text: string }[] = [
   { code: 'approved', text: '已通过' },
+  { code: 'scope_confirmed', text: '准备已核查（扩展）' },
   { code: 'review', text: '待复核' },
   { code: 'running', text: '运行中' },
   { code: 'failed', text: '执行失败' },

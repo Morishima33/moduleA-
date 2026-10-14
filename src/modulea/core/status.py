@@ -29,6 +29,7 @@ LABELS = {
     "stale": "已失效",
     "published": "已发布",
     "unavailable": "归档未就绪",
+    "scope_confirmed": "准备范围已核查（扩展试算）",
 }
 
 
@@ -49,6 +50,8 @@ class ModuleState:
 def map_state(module_id: str, raw: dict, task_active: bool = False) -> ModuleState:
     """raw 是 Workflow.view() 返回的单个模块条目。"""
     state = raw["state"]
+    if state == "scope_confirmed":
+        return ModuleState(state, LABELS[state], None, state, False, False, False)
     result = raw.get("result") or {}
     summary = result.get("summary") or {}
     outcome = result.get("outcome")
@@ -84,6 +87,9 @@ def map_state(module_id: str, raw: dict, task_active: bool = False) -> ModuleSta
         code, reason = "unavailable", "未知状态：" + str(state)
 
     can_review = state in ("awaiting_review", "pending", "rejected", "approved")
+    if state == "stale" and raw.get("preparation_scope"):
+        reason = raw["preparation_scope"]["reason_zh"]
+        blocked = False
     label=LABELS[code]
     if module_id=="A05" and code=="waiting" and summary.get("display_version") in ("A05.display.2","A05.display.3"):
         pending=[]

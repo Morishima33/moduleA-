@@ -157,7 +157,7 @@ function StudyCardView({ card }: { card: StudyCard }) {
         {!card.archive_ok && <ArchiveAlert error={card.archive_error_zh} compact />}
         {/* 进度分段条 */}
         <ProgressSegs segments={card.progress.segments} />
-        <div className="small muted">{card.progress.approved} / {card.progress.total} 已通过</div>
+        <div className="small muted">{card.progress.scope_confirmed ? <>{card.progress.completed} / {card.progress.total} 关口已完成 · {card.progress.approved}项正式通过 · {card.progress.scope_confirmed}项准备已核查</> : <>{card.progress.approved} / {card.progress.total} 已通过</>}</div>
         {/* 活动任务 */}
         {t && (
           <div className="small">

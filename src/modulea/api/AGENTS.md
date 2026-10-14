@@ -308,3 +308,8 @@ POST .../modules/A06_PREP/actions/coverage_selection：{expected_run,expected_so
 
 ## A06扩展试算交接（2026-10-14）
 当前A06/A06_PREP新增可选trial_handoff：{run_id,active,trial_id,review_url,note_zh,reviewer,note}。仅A06.trial.handoff.1当前运行提供，历史页面不提供。review_url跳转本批A06；reviewer/note取绑定的已确认试算核查，仅预填不预选决定。新A06依赖显示其实际parent_runs（A03/A03_SELECT/A04），全局旧依赖契约保持；正式可复核性仍来自内核。
+
+
+## 本批准备关联（2026-10-14）
+ModuleView新增可选trial_preparation，仅当前A06_PREP页提供：{link_id,created_at,active,read_only,reason_zh,a06_run_id,trial_id,result_url,source_url,reviewer,reviewed_at,note,a06_reviewer,a06_reviewed_at,receptors,compounds,history_rows,legacy_run_id}。数据来自Workflow核验的独立A06.trial.preparation_link.1关联及同批归档；不更换current或新增科研reviews。历史页面不提供当前关联。GET files/{prep_link_id}.{index}仅下载研究索引内关联的files，逐字节验证；包括原件、准备文件及原核查记录，无任意路径。
+新增状态scope_confirmed，中文“准备范围已核查（扩展试算）”；不等于approved，不开放复核或自动继续。原准备状态留在历史区。导航、标题与待办均使用Workflow视图；关联失效为stale，不自动沿用。progress新增completed（正式批准及本批准备已核查的关口数）与scope_confirmed，approved保持原含义；仅有关联的研究显示完成关口及数量明细。

@@ -16,6 +16,7 @@ import DockingMatrix from './DockingMatrix';
 import DockingPreparation from './DockingPreparation';
 import DockingCoverage from './DockingCoverage';
 import DockingTrial from './DockingTrial';
+import TrialPreparation from './TrialPreparation';
 import { FlowChain, FocusSection, KnowSection, KpiGrid } from './ModuleSections';
 import EnrichmentTop from './special/EnrichmentTop';
 import EnrichmentConfirmation from './EnrichmentConfirmation';
@@ -41,6 +42,9 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
 }) {
   const [keggPending, setKeggPending] = useState(false); // 本地未保存勾选只控制旧图可见性。
   const app = useApp(); // 全局上下文（打开任务面板）
+  if (view.trial_preparation && !view.historical) {
+    return <><TrialPreparation info={view.trial_preparation} label={view.state.label_zh}/>{reviewSlot}{downstreamSlot}</>;
+  }
   const m = view.module; // 模块信息
   const oldSelection = !view.historical && ((m.module_id === 'A03_SELECT' && !view.compound_selection?.previous_active) || (['A06', 'A06_PREP'].includes(m.module_id) && !!view.docking_review && !view.docking_review.matrix?.ready && stIsStale(view)));
   const st = view.state; // 状态

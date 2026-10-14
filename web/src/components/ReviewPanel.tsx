@@ -9,6 +9,7 @@ import { fmtTime } from '../lib/format';
 import { stateStyle } from '../lib/theme';
 import BatchReviewModal from './BatchReviewModal';
 import DecisionPicker from './DecisionPicker';
+import {PreparationSource} from './TrialPreparation';
 
 // 契约第 2 节：这些状态不显示复核表单
 const NO_FORM = new Set(['idle', 'ready', 'running', 'incomplete', 'failed', 'stale', 'unavailable', 'history']);
@@ -125,6 +126,11 @@ export default function ReviewPanel({ studyId, view, onSaved, onStale }: Props) 
     }
   };
 
+  if (view.trial_preparation && !view.historical) {
+    const prep = view.trial_preparation;
+    return <Box title="本批准备核查来源"><Alert type={prep.active?'success':'warning'} showIcon message={prep.active?'已沿用本批核查，无需重复确认':'准备关联已失效'} description={prep.active?'本页为扩展试算准备核查，不表示全部受体严格质控通过。':prep.reason_zh}/>
+      <p>{prep.reviewer} · {fmtTime(prep.reviewed_at)}</p><PreparationSource info={prep}/><Button type="primary" href={prep.result_url}>{prep.active?'前往已确认A06结果':'查看关联A06版本'}</Button></Box>;
+  }
   if (view.module.module_id === 'A06_PREP' && view.trial_handoff?.active && !view.historical) {
     return <Box title="本批结果复核入口">
       <Alert type="info" showIcon message="当前225组合在A06结果页复核" description={view.trial_handoff.note_zh}/>

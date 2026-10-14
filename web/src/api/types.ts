@@ -4,7 +4,7 @@
 /** 状态码：与契约第 2 节一致 */
 export type StateCode =
   | 'idle' | 'ready' | 'running' | 'incomplete' | 'failed' | 'waiting' | 'empty'
-  | 'review' | 'hold' | 'returned' | 'approved' | 'stale' | 'published' | 'unavailable' | 'history';
+  | 'review' | 'hold' | 'returned' | 'approved' | 'stale' | 'published' | 'unavailable' | 'history' | 'scope_confirmed';
 
 /** 复核决定的三种取值 */
 export type Decision = 'approved' | 'rejected' | 'pending';
@@ -74,7 +74,7 @@ export interface StudyCard {
   purpose: Purpose | null;
   archive_ok: boolean;
   archive_error_zh: string | null;
-  progress: { approved: number; total: number; segments: { module_id: string; code: StateCode; label_zh: string }[] };
+  progress: { approved: number; completed?: number; scope_confirmed?: number; total: number; segments: { module_id: string; code: StateCode; label_zh: string }[] };
   next_step: NextStep | null;
   todo_count: number;
   active_task: Task | null;
@@ -109,7 +109,7 @@ export interface StudyView {
   purpose: Purpose | null;
   archive_ok: boolean;
   archive_error_zh: string | null;
-  progress: { approved: number; total: number };
+  progress: { approved: number; completed?: number; scope_confirmed?: number; total: number };
   nav: { group_zh: string; modules: NavModule[] }[];
   next_step: NextStep | null;
   inbox: InboxEntry[];
@@ -222,6 +222,7 @@ export interface Special {
 
 /** 模块页 */
 export interface ModuleView {
+  trial_preparation?: TrialPreparationInfo | null;
   trial_handoff?: {run_id:string;active:boolean;trial_id:string;review_url:string;note_zh:string;reviewer:string;note:string}|null;
   docking_trial?: DockingTrialInfo | null;
   docking_review?:DockingReviewInfo|null;
@@ -348,6 +349,18 @@ export interface TrialReceptor {
  processing_zh?:string;reason_zh?:string;history_quality_zh?:string;history_rmsd_A?:number|null;
  source?:{path:string}|null;spec?:unknown;regions?:unknown[];environment?:unknown;attempts?:unknown[];
  repair?:{added_atoms:unknown[];original_coordinates_unchanged:boolean}|null;
+}
+
+/** 同批准备关联只读呈现，不新增人工审批。 */
+export interface PreparationFile {path:string;sha256:string;bytes:number;role?:string;url?:string|null}
+export interface TrialPreparationInfo {
+ link_id:string;created_at:string;active:boolean;read_only:boolean;reason_zh:string;
+ a06_run_id:string;trial_id:string;result_url:string;source_url:string;
+ reviewer:string;reviewed_at:string|null;note:string;a06_reviewer:string;a06_reviewed_at:string;
+ legacy_run_id:string;history_rows:Record<string,unknown>[];
+ receptors:(TrialReceptor & {source?:PreparationFile|null;receptor:PreparationFile;spec?:unknown})[];
+ compounds:{compound_id:string;name_zh:string;cid:string;state:string;files:PreparationFile[];
+   preparation:{identity?:{identity_check?:string;inchi_key?:string;formula?:string};[key:string]:unknown}}[];
 }
 export interface DockingTrialInfo {
  trial_id:string;state:string;stale:boolean;enabled:boolean;note_zh:string;
