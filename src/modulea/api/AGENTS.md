@@ -304,3 +304,7 @@ POST .../modules/A06_PREP/actions/coverage_selection：{expected_run,expected_so
 
 ## A06独立全覆盖试算（2026-10-13用户明确授权真实计算）
 新增私有a06_trial后台任务，通过TrialWorkflow.begin_trial/finish_trial独立账本发布15×15真实试算；不更换current、正式结果或reviews。绑定已批准来源、准备、方案、来源原件与展示名单；失败重试沿用私有请求并重新检查版本。ModuleView.docking_trial只读返回225格、服务端色值、两位小数展示所需原始精度、组合/区域进度、受体处理证据及索引下载。未完整完成时无评分矩阵。GET files/trial_ID.index仅访问该研究已完成试算索引且指纹匹配的文件，无任意路径。POST actions/trial_review仅接受trial_id、reviewer、note、confirmed，保存独立核查；不代签正式A06、不运行计算，回收站/过期/忙碌阻断。页面支持现有任务日志、取消、失败重试。
+
+
+## A06扩展试算交接（2026-10-14）
+当前A06/A06_PREP新增可选trial_handoff：{run_id,active,trial_id,review_url,note_zh,reviewer,note}。仅A06.trial.handoff.1当前运行提供，历史页面不提供。review_url跳转本批A06；reviewer/note取绑定的已确认试算核查，仅预填不预选决定。新A06依赖显示其实际parent_runs（A03/A03_SELECT/A04），全局旧依赖契约保持；正式可复核性仍来自内核。

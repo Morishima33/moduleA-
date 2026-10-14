@@ -41,3 +41,7 @@ continue后台使用science_modules/a05/flow.run_enrichment，full_workflow登�
 ## A06第四版覆盖核查与集中采用
 
 a06_coverage按已登记授权执行资料质控或final_audit证据审计；审计不重算评分，追加新版技术准备。a06_coverage_confirm只留存用户选择与采用范围，不代签模块。continue对本版本停在明确批量计算授权关口；草案同步登记，确认返回202并可跟踪后台成功/失败。
+
+
+## A06扩展结果接续（2026-10-14）
+continue识别A06.trial.handoff.1：未正式批准时停止；批准后仅生成第21版双报告，停在A07待复核，不运行旧严格准备或Vina。该显式版本分支先于旧coverage/candidates阻断，旧协议行为保持。报告绑定本批评分、核查及展示原件，新展示改变时须重新生成；不自动批准A06或A07。

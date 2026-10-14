@@ -222,6 +222,7 @@ export interface Special {
 
 /** 模块页 */
 export interface ModuleView {
+  trial_handoff?: {run_id:string;active:boolean;trial_id:string;review_url:string;note_zh:string;reviewer:string;note:string}|null;
   docking_trial?: DockingTrialInfo | null;
   docking_review?:DockingReviewInfo|null;
   compound_selection?:CompoundSelectionInfo|null;

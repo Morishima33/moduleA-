@@ -82,6 +82,11 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
 
       {view.compound_selection && <CompoundSelection studyId={studyId} info={view.compound_selection} review={view.docking_review}/>}
       {/* 对接人工关口紧接标题，先核对方案，再阅读矩阵。 */}
+      {view.trial_handoff && <div className="card" style={{border:'2px solid #0F5E6E',marginBottom:12}}>
+        <strong>当前A06复核：225组合扩展试算结果</strong><p>{view.trial_handoff.note_zh}</p>
+        {m.module_id === 'A06' ? <Button type="primary" onClick={() => document.getElementById('module-review-panel')?.scrollIntoView({behavior:'smooth',block:'start'})}>定位正式复核按钮</Button> :
+          <Button type="primary" href={view.trial_handoff.review_url}>前往A06结果复核</Button>}
+      </div>}
       {view.docking_trial && <DockingTrial studyId={studyId} info={view.docking_trial}/>}
       {view.docking_coverage && (view.docking_trial ? <Collapse items={[{key:'strict-history',label:'原严格准备与历史核查（保留）',children:<DockingCoverage studyId={studyId} info={view.docking_coverage}/>}]}/> : <DockingCoverage studyId={studyId} info={view.docking_coverage}/>)}
       {view.docking_preparation && !view.docking_coverage && <DockingPreparation studyId={studyId} info={view.docking_preparation}/>}

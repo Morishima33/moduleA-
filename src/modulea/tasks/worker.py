@@ -28,6 +28,16 @@ def run_continue(settings: Settings, task: dict, manager: TaskManager) -> str:
     workflow = full_workflow(settings.data_root)
     # 新双分支的对接来源未确认时停下，不启动旧候选准备和计算。
     manifest = workflow.load(task["study_id"])
+    a06 = manifest.get("current", {}).get("A06")
+    if a06 and workflow.run(manifest, a06).get("config", {}).get("schema_version") == "A06.trial.handoff.1":
+        with workflow.handoff_read_cache():
+            approved = workflow.approved(manifest, a06)
+        if not approved:
+            return "本批扩展A06尚待正式复核，未生成报告或启动计算。"
+        from report_dispatch import run_reports
+        result = run_reports(workflow, task["study_id"], manifest["current"].get("A07", ""), "用户通过扩展A06后接续双报告")
+        manager.update(task["task_id"], progress={"step_zh": "双报告已生成，等待A07独立复核", "done": 1, "total": 1})
+        return "本批扩展评分已接入新双报告：" + result["run_id"] + "；未重算Vina，未自动批准A07。"
     prep=manifest.get("current",{}).get("A06_PREP")
     if prep and workflow.run(manifest,prep).get("config",{}).get("version") in (
             "A06.coverage.execution.4","A06.coverage.confirmed.4"):

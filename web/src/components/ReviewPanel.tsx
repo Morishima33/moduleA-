@@ -77,7 +77,8 @@ export default function ReviewPanel({ studyId, view, onSaved, onStale }: Props) 
     setError(null);
     setSuccess(null);
     setTaskFailed(false);
-    form.setFieldsValue({ decision: undefined, note: '', reviewer: rememberedReviewer() });
+    const prior = view.module.module_id === 'A06' && view.trial_handoff?.active ? view.trial_handoff : undefined;
+    form.setFieldsValue({ decision: undefined, note: prior?.note || '', reviewer: rememberedReviewer() || prior?.reviewer || '' });
   }, [view.module.module_id, view.run?.run_id, form]);
 
   /** 提交单个模块复核 */
@@ -124,6 +125,13 @@ export default function ReviewPanel({ studyId, view, onSaved, onStale }: Props) 
     }
   };
 
+  if (view.module.module_id === 'A06_PREP' && view.trial_handoff?.active && !view.historical) {
+    return <Box title="本批结果复核入口">
+      <Alert type="info" showIcon message="当前225组合在A06结果页复核" description={view.trial_handoff.note_zh}/>
+      <Button type="primary" href={view.trial_handoff.review_url}>前往本批A06结果复核</Button>
+      <span className="small">此页保留原严格准备记录，当前批次无需重复在这里确认。</span>
+    </Box>;
+  }
   // —— 不显示表单的状态 ——
   if (NO_FORM.has(code) || view.historical) {
     return (

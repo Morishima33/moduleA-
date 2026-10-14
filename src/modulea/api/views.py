@@ -293,9 +293,23 @@ class Views:
         if run:
             parts["params"] = parts["params"] + self._config_params(run, parts["params"])
         coverage_info = workflow.coverage_info(real, bool(self.tasks.active_for(study_id))) if module_id == "A06_PREP" and not historical else None
+        handoff = None
+        handoff_id = real.get("current", {}).get("A06")
+        if module_id in ("A06_PREP", "A06") and handoff_id and not historical:
+            handoff_run = workflow.run(real, handoff_id)
+            if handoff_run.get("config", {}).get("schema_version") == "A06.trial.handoff.1":
+                trial_review = read_json(verified_file(workflow.location(study_id), handoff_run["inputs"]["trial_review"]))
+                handoff = {"run_id": handoff_id, "active": workflow.active(real, handoff_id),
+                           "trial_id": handoff_run["inputs"]["trial_id"],
+                           "review_url": f"#/studies/{study_id}/A06",
+                           "note_zh": "本批225组合已接入A06扩展结果复核。原严格准备及失败记录保留；通过仅允许扩展筛查与报告使用。",
+                           "reviewer": trial_review["reviewer"], "note": trial_review["note"]}
+        trial_info = __import__("modulea.api.trial_view", fromlist=["trial_info"]).trial_info(workflow,real,bool(self.tasks.active_for(study_id))) if module_id in ("A06_PREP","A06") and not historical else None
+        if trial_info and handoff and handoff["active"]:
+            trial_info["note_zh"] = "本批225组合已接入A06扩展结果复核；既有严格结果及批准留存。请使用顶部正式复核入口，无需重复保存试算核查。"
         return {
             "module": {"module_id": module_id, "title_zh": spec.title_zh, "group_zh": spec.group_zh, "purpose_zh": source_intro(module_id, real, result) + ("STRING人类功能关联网络；两分支独立两轮；Degree图展示第二轮候选，Degree表展示第一轮前十，BC＋CC表展示第二轮前十五。" if module_id == "A04" and result and result.get("summary", {}).get("selection_version") == "A04.dual.3" else ("STRING人类功能关联网络；Degree与BC＋CC两分支独立进行两轮筛选，Degree图表显示第一轮前十，BC＋CC表显示第二轮前十五。" if module_id == "A04" and result and result.get("summary", {}).get("selection_version") == "A04.dual.2" else ("STRING人类功能关联网络；双分支独立两轮，显示第二轮排名。" if module_id == "A04" and result and result.get("summary", {}).get("selection_version") == "A04.dual.1" else spec.purpose_zh))),
-                       "sub": spec.sub, "depends_on": list(spec.depends_on)},
+                       "sub": spec.sub, "depends_on": list(run["parent_runs"]) if module_id == "A06" and run and run.get("config", {}).get("schema_version") == "A06.trial.handoff.1" else list(spec.depends_on)},
             "state": state if not historical else {**state, "code": "history", "label_zh": "历史版本（只读）", "can_review": False},
             "purpose": self._purpose(view),
             "run": self._run_info(workflow, manifest, run, result, history) if run else None,
@@ -317,8 +331,9 @@ class Views:
             "docking_candidates": candidates_info,
             "docking_review": review_context(workflow,real,historical) if module_id in ("A03_SELECT","A06_PREP","A06") else None,
             "compound_selection": selection_context(workflow,real,historical,bool(self.tasks.active_for(study_id))) if module_id=="A03_SELECT" else None,
-            "docking_trial": __import__("modulea.api.trial_view", fromlist=["trial_info"]).trial_info(workflow,real,bool(self.tasks.active_for(study_id))) if module_id in ("A06_PREP","A06") and not historical else None,
+            "docking_trial": trial_info,
             "docking_coverage": coverage_info,
+            "trial_handoff": handoff,
             "docking_preparation": preparation_context(workflow,real,historical,bool(self.tasks.active_for(study_id))) if module_id=="A06_PREP" and not coverage_info else None,
             "source_uploads": upload_context(workflow, real, module_id, result, historical, bool(self.tasks.active_for(study_id))) if not historical else None,
         }

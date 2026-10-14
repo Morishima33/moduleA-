@@ -10,6 +10,10 @@ def selected_record(workflow, manifest): # 未准备或未批准时不纳入可�
 
 def run_reports(workflow, study_id, expected_a07, reason, **kwargs): # 网页和自动衔接共用可选通路分派。
     manifest = workflow.load(study_id) # 读取本次科学与审批版本。
+    a06 = manifest.get('current', {}).get('A06')
+    if a06 and workflow.run(manifest, a06).get('config', {}).get('schema_version') == 'A06.trial.handoff.1':
+        from science_modules.a07.trial_reports import run_reports as generate
+        return generate(workflow, study_id, expected_a07, reason, **kwargs)
     record = selected_record(workflow,manifest) # 同时核验批准图件指纹。
     a04 = manifest.get('current', {}).get('A04')
     a05 = manifest.get('current', {}).get('A05')
@@ -33,9 +37,13 @@ def run_reports(workflow, study_id, expected_a07, reason, **kwargs): # 网页和
 
 def validator(root): # 新旧报告均按自身保存契约校验。
     from science_modules.a07.matrix_reports import validator as validate # 新校验器兼容已归档旧报告。
-    return validate(root) # 不迁移或改写历史结果。
+    from science_modules.a07.trial_reports import validator as trial_validator
+    return trial_validator(root, validate(root)) # 新试算报告独立协议，历史校验不改。
 
 def require_alignment(workflow, manifest, run): # 完整报告批准前核对可选通路最新决定。
+    if run.get('config',{}).get('schema_version')=='A07.report.config.21':
+        from science_modules.a07.trial_reports import current_export
+        require(run['inputs']['a06_trial_export']==current_export(workflow,manifest,'export_validation.json'), '本批图表已更新，请重新生成报告后复核')
     if run.get('config',{}).get('schema_version')=='A07.report.config.20':
         require(bool(manifest.get('matrix_display_records')) and run['inputs'].get('a06_matrix_display_source')==manifest['matrix_display_records'][-1], '热图配色版本已改变，请重新生成报告后复核')
     bound = run['inputs'].get('selected_pathway_metadata') # 当前报告实际绑定的通路版本。
