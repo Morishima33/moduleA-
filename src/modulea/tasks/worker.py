@@ -243,6 +243,10 @@ def run_a06_trial(settings, task, manager):
 HANDLERS = {"a06_trial":run_a06_trial,"a06_coverage_confirm":run_a06_coverage_confirm,"a06_coverage":run_a06_quality,"a06_quality":run_a06_quality,"a03_selection":run_a03_selection,"a06_plan":run_a06_plan,"a06_candidates": run_a06_candidates, "a05_display": run_a05_display, "a04_identity": run_a04_identity, "a04_ppi": run_a04_ppi, "continue": run_continue, "source_upload": run_source_upload, "a01_sources": run_a01_sources}
 
 
+from .drawing import run_figure, run_packages, run_bundle
+HANDLERS.update({"a06_figure": run_figure, "a06_pair_packages": run_packages, "a06_pair_bundle": run_bundle})
+
+
 def run_task(settings: Settings, task_id: str) -> int:
     manager = TaskManager(settings)
     task = manager._raw(task_id)

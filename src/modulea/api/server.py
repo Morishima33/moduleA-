@@ -68,6 +68,9 @@ class App:
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/two_pass_plan", self.post_two_pass_plan),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/two_pass_draft", self.post_two_pass_draft),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/trial_review", self.post_trial_review),
+            ("POST", rf"/api/v1/studies/{ID}/modules/A06/actions/figure", self.post_docking_figure),
+            ("POST", rf"/api/v1/studies/{ID}/modules/A06/actions/pair_packages", self.post_pair_packages),
+            ("POST", rf"/api/v1/studies/{ID}/modules/A06/actions/pair_bundle", self.post_pair_bundle),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/coverage_selection", self.post_coverage_selection),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/material", self.post_docking_material),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/docking_candidates", self.post_docking_candidates),
@@ -220,6 +223,10 @@ class App:
             raise not_found("任务")
 
     def post_retry(self, req, task_id):
+        old = self.tasks._raw(task_id)
+        if (old and old["kind"] == "a06_pair_packages"
+                and json.loads(old.get("payload") or "{}").get("request_version") != "A06.drawing.on_demand.2"):
+            raise ApiError(409, "GATE_BLOCKED", "旧批量整理已停止，请在A06页面重新选择需要的组合")
         try:
             task, created = self.tasks.retry(task_id, "重试")
         except KeyError:
@@ -552,6 +559,21 @@ class App:
         return {"task":task,"created":created,"message_zh":"确认已提交后台保存与重绘，请查看应用结果；尚未批准A05。"+self._task_message(task)},202
 
     # ------------------------------------------------------------------ 分派
+    def post_docking_figure(self, req, study_id):
+        """通过令牌验证后将图片验证提交独立后台任务。"""
+        from .drawing_actions import upload_figure
+        return upload_figure(self, req, study_id)
+
+    def post_pair_packages(self, req, study_id):
+        """只制作原始评分≤−8的选中组合，不运行Vina。"""
+        from .drawing_actions import pair_task
+        return pair_task(self, req, study_id, "a06_pair_packages")
+
+    def post_pair_bundle(self, req, study_id):
+        """将已准备组合包按本次选择整理为下载合集。"""
+        from .drawing_actions import pair_task
+        return pair_task(self, req, study_id, "a06_pair_bundle")
+
     def dispatch(self, method: str, path: str, req):
         for route_method, pattern, handler in self.compiled:
             match = pattern.match(path)

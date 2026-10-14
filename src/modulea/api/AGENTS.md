@@ -1,5 +1,17 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-10-14 A06出图资料与A07顶部下载
+
+ModuleView新增可选`docking_artifacts`：`{enabled,disabled_reason_zh,expected_a06,eligible_count,ready_count,pairs,images,bundles}`。
+组合行`{pair_key,compound_id,compound_name_zh,target_id,target_zh,score,eligible,package_url}`；资格以同源原始评分≤−8为本轮整理范围，不是科学通过阈值。未达范围及NA不自动生成包。
+图片行`{artifact_id,name_zh,caption_zh,pair_key,created_at,url,width,height}`，同A06版本追加留存；历史和回收站只读。图片不自动纳入已批准报告。
+
+POST `/studies/{sid}/modules/A06/actions/figure`：multipart单一`upload`（PNG/JPEG，≤16MiB），字段`expected_a06,caption,pair_key`（组合可留空）→202后台`a06_figure`完整解码并归档。
+POST `/studies/{sid}/modules/A06/actions/pair_packages`：JSON`{expected_a06,pair_keys}`→202后台`a06_pair_packages`仅为选中且原值≤−8的组合生成PDB/PSE/PML、同源Top-1、输入及参数，然后自动形成所选下载合集；不运行Vina。重复请求复用已完成包，失败保留资料供重试。用户已更正为只提供按需按钮，不预先批量制作；接口内部登记`request_version=A06.drawing.on_demand.2`，旧批量请求不得恢复执行。
+POST `/studies/{sid}/modules/A06/actions/pair_bundle`：同样JSON→202后台`a06_pair_bundle`只打包已有组合包，未准备组合拒绝；下载包仅含选中组合。
+GET `/studies/{sid}/files/dock_artifact_ID.序号`只接受该研究归档索引中的文件，逐字节核验，不接受任意路径。所有写入经Workflow公开方法和写锁，绑定当前有效A06；不更换运行、批准和报告。
+A07下载卡置于标题之后、结论之前；报告下载键及内容保持原契约。
+
 ## A05第二版展示与确认（2026-10-11）
 
 ModuleView新增enrichment_display：{enabled,disabled_reason_zh,expected_a03,expected_a05,expected_decision_id,exclusions_confirmed,layout_confirmed,excluded_ids,missing_translations,catalog,retained_count,excluded_count,significant_count,latest}。catalog为本次完整显著KEGG清单，保留ID、Description、Count、p.adjust、RichFactor、gene_symbols，并附description_zh、translation_status、proposed、reason_zh、evidence_url。latest显示核验人、意见、时间、是否实际应用；保存清单不代表批准A05。

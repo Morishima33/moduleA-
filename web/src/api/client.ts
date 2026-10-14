@@ -81,6 +81,12 @@ function qs(params: Record<string, string | number | undefined | null>): string 
 
 // 各端点的薄封装；路径与契约第 3 节一致
 export const api = {
+  /** 上传用户制作的PNG/JPEG，后台验证后绑定A06另存。 */
+  uploadDockingFigure: (sid: string, body: FormData) =>
+    request<{task: Task; message_zh: string}>('POST', `/studies/${sid}/modules/A06/actions/figure`, body),
+  /** 只整理或汇集明确选中的对接组合。 */
+  drawingPackages: (sid: string, action: 'pair_packages' | 'pair_bundle', body: {expected_a06: string; pair_keys: string[]}) =>
+    request<{task: Task; message_zh: string}>('POST', `/studies/${sid}/modules/A06/actions/${action}`, body),
   /** 首页研究卡片 */
   studies: () => request<{ items: StudyCard[] }>('GET', '/studies'),
   /** 回收站研究卡片 */

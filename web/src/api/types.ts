@@ -150,6 +150,18 @@ export interface ReviewInfo {
 }
 /** 归档文件 */
 export interface FileItem { key: string; role: string; name: string; path: string; bytes: number | null; sha256: string | null; inline: boolean }
+
+/** 同版本对接出图包与用户回传图片，资格及数量均由后端提供。 */
+export interface DrawingPair {
+  pair_key: string; compound_id: string; compound_name_zh: string; target_id: string; target_zh: string;
+  score: number | null; eligible: boolean; package_url: string | null;
+}
+export interface DockingArtifactInfo {
+  enabled: boolean; disabled_reason_zh: string; expected_a06: string; eligible_count: number; ready_count: number;
+  pairs: DrawingPair[];
+  images: {artifact_id: string; name_zh: string; caption_zh: string; pair_key: string; created_at: string; url: string; width: number; height: number}[];
+  bundles: {artifact_id: string; name_zh: string; url: string; pair_keys: string[]}[];
+}
 /** 可分页明细表的索引 */
 export interface TableIndex { name: string; kind: 'rows' | 'object'; row_count: number | null; columns: string[] }
 /** 运行历史条目 */
@@ -222,6 +234,7 @@ export interface Special {
 
 /** 模块页 */
 export interface ModuleView {
+  docking_artifacts?: DockingArtifactInfo | null;
   trial_preparation?: TrialPreparationInfo | null;
   trial_handoff?: {run_id:string;active:boolean;trial_id:string;review_url:string;note_zh:string;reviewer:string;note:string}|null;
   docking_trial?: DockingTrialInfo | null;

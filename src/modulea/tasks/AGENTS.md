@@ -1,5 +1,9 @@
 # tasks/ — 后台任务
 
+## 2026-10-14 对接出图附件
+
+`a06_figure`验证私有暂存SHA-256，完整解码PNG/JPEG并检查16MiB/4000万像素限制，然后通过Workflow追加图片和索引。`a06_pair_packages`复用旧PyMOL脚本，只制作页面明确选中且原始评分≤−8的组合，并自动形成所选下载合集；不运行Vina、不预先批量制作。必须带接口登记的`A06.drawing.on_demand.2`请求标记，旧批量请求拒绝重试。逐项发布后可安全复用，失败/取消草案保留。`a06_pair_bundle`只汇集本版本已准备的所选包。三项均绑定当前有效A06、锁内重验、回收站只读，不改科研运行、复核及报告。PyMOL位置读取环境变量或runtime/drawing_runtime.json；个人路径不上传。
+
 - 任务在子进程中执行：`python -m modulea task-run <task_id>`，解释器取 `config/local.toml` 的 `science_python`（默认与工作台相同）。
 - 状态：`queued → running → succeeded | failed | cancelled | interrupted`。索引在 `<runtime_dir>/tasks.sqlite`，日志在 `<runtime_dir>/task_logs/`；二者都是运行时信息，可删除，研究事实以 `studies/` 为准。
 

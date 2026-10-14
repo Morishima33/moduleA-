@@ -14,7 +14,7 @@ function paragraphs(text: string): string[] {
 }
 
 /** A07 报告专属区块 */
-export default function ReportSummary({ special, studyId }: { special: Special; studyId: string }) {
+export default function ReportSummary({ special, studyId, downloadsOnly = false }: { special: Special; studyId: string; downloadsOnly?: boolean }) {
   const leads = special.leads || []; // 研究线索
   const limits = special.limits || []; // 限制边界
   const pathways = special.pathway || []; // 纳入通路
@@ -22,7 +22,7 @@ export default function ReportSummary({ special, studyId }: { special: Special; 
   return (
     <>
       {/* ① 共同结论 */}
-      {special.conclusion_zh && (
+      {!downloadsOnly && special.conclusion_zh && (
         <section className="card">
           <SectionHead title="① 共同结论（两份报告共用）" />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 14, color: '#26323C' }}>
@@ -31,7 +31,7 @@ export default function ReportSummary({ special, studyId }: { special: Special; 
         </section>
       )}
       {/* ② 研究线索 */}
-      {leads.length > 0 && (
+      {!downloadsOnly && leads.length > 0 && (
         <section className="card">
           <SectionHead title={`② ${leads.length} 条研究线索`} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -46,7 +46,7 @@ export default function ReportSummary({ special, studyId }: { special: Special; 
         </section>
       )}
       {/* ③ 限制边界 */}
-      {limits.length > 0 && (
+      {!downloadsOnly && limits.length > 0 && (
         <section className="card">
           <SectionHead title="③ 限制边界" />
           <ul style={{ margin: 0, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14 }}>
@@ -55,7 +55,7 @@ export default function ReportSummary({ special, studyId }: { special: Special; 
         </section>
       )}
       {/* 纳入报告的通路 */}
-      {pathways.length > 0 && (
+      {!downloadsOnly && pathways.length > 0 && (
         <section className="card">
           <SectionHead title="纳入报告的通路" />
           {pathways.map((p) => (
@@ -70,7 +70,7 @@ export default function ReportSummary({ special, studyId }: { special: Special; 
         </section>
       )}
       {/* 报告下载 */}
-      {files.length > 0 && (
+      {downloadsOnly && files.length > 0 && (
         <section className="card">
           <SectionHead title="报告下载" />
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>

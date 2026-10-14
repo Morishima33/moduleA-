@@ -16,6 +16,7 @@ import DockingMatrix from './DockingMatrix';
 import DockingPreparation from './DockingPreparation';
 import DockingCoverage from './DockingCoverage';
 import DockingTrial from './DockingTrial';
+import DockingArtifacts from './DockingArtifacts';
 import TrialPreparation from './TrialPreparation';
 import { FlowChain, FocusSection, KnowSection, KpiGrid } from './ModuleSections';
 import EnrichmentTop from './special/EnrichmentTop';
@@ -84,6 +85,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
         </div>
       </section>
 
+      {m.module_id === 'A07' && <ReportSummary special={sp} studyId={studyId} downloadsOnly />}
       {view.compound_selection && <CompoundSelection studyId={studyId} info={view.compound_selection} review={view.docking_review}/>}
       {/* 对接人工关口紧接标题，先核对方案，再阅读矩阵。 */}
       {view.trial_handoff && <div className="card" style={{border:'2px solid #0F5E6E',marginBottom:12}}>
@@ -92,6 +94,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
           <Button type="primary" href={view.trial_handoff.review_url}>前往A06结果复核</Button>}
       </div>}
       {view.docking_trial && <DockingTrial studyId={studyId} info={view.docking_trial}/>}
+      {view.docking_artifacts && <DockingArtifacts studyId={studyId} info={view.docking_artifacts}/>}
       {view.docking_coverage && (view.docking_trial ? <Collapse items={[{key:'strict-history',label:'原严格准备与历史核查（保留）',children:<DockingCoverage studyId={studyId} info={view.docking_coverage}/>}]}/> : <DockingCoverage studyId={studyId} info={view.docking_coverage}/>)}
       {view.docking_preparation && !view.docking_coverage && <DockingPreparation studyId={studyId} info={view.docking_preparation}/>}
       {view.docking_review && !view.docking_trial && m.module_id !== 'A03_SELECT' && <DockingMatrix info={view.docking_review}/>}

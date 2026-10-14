@@ -28,6 +28,10 @@ ACTIVE = ("queued", "running")
 KINDS = {"a06_trial": "15×15全覆盖结合能试算","a06_coverage_confirm":"留存已确认可用范围（不计算结合能）","a06_coverage":"扩大受体可用范围技术核查（不计算批量结合能）","a06_quality":"两遍结构准备与质控（不计算批量结合能）","a03_selection":"保存对接成分候选，等待复核","a06_plan":"确认并保存A06两遍方案","a06_candidates": "生成A06两梯队候选名单", "a05_display": "确认并生成A05展示图表", "a04_identity": "确认并应用A04身份补查方案", "continue": "自动推进到下一人工关口", "source_upload": "分库资料上传与校验", "a01_sources": "整理已上传三库资料", "a04_ppi": "计算A04双分支PPI"}
 
 
+KINDS.update({"a06_figure": "验证并保存对接结果图片", "a06_pair_packages": "整理所选对接出图包",
+              "a06_pair_bundle": "汇集所选对接包下载"})
+
+
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
