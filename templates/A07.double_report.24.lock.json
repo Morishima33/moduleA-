@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "template_version": "A07.double_report.24",
+  "report_config": "A07.report.config.24",
+  "frozen_date": "2026-10-15",
+  "source_commit": "525c018ed4679ebee91e2dd12dc8cfbc5c03168f",
+  "authorization_zh": "用户明确要求修改好之后固定当前模板，修改大纲，核查上传，再开始新疾病验证",
+  "implementation_scope": {
+    "verified_a06_schema": [
+      "A06.trial.handoff.1"
+    ],
+    "other_protocols_zh": "保留原科学协议；新研究A07前验证样式适配，不以改标试算套用模板，也不静默回退旧样式",
+    "scientific_approval_included": false
+  },
+  "display_contract": {
+    "detailed_sections": [
+      "主要结论",
+      "关键数量与完成情况",
+      "数据来源与方法",
+      "交集、成分与PPI网络",
+      "GO与KEGG富集结果",
+      "分子对接结果",
+      "待进一步核验的研究线索",
+      "结果复核说明",
+      "主要方法参考文献"
+    ],
+    "appendix_title": "附录 术语与方法说明",
+    "appendix_in_both_reports": true,
+    "body_duplicate_ppi": false,
+    "structure_summary_maximum_pairs": 10,
+    "structure_order": "original_score_ascending_then_stable_identity",
+    "go_tables_each": 15,
+    "kegg_tables_each": 10,
+    "go_graph_each": 8,
+    "kegg_graph": 15,
+    "graph_and_caption_before_corresponding_tables": true,
+    "concise_body_target_pages": 2,
+    "appendix_separate_pages": true,
+    "heatmap_labels": "complete_bilingual_wrapped",
+    "heatmap_footer": "Word_appendix",
+    "heatmap_alignment": "center_with_measured_label_width",
+    "figures_generated_only_on_explicit_click": true,
+    "study_counts_and_names_not_template_defaults": true
+  },
+  "change_policy_zh": "第24版及其排版依赖按清单固定；修改展示规则时新建版本，并保留旧实现与旧报告。分派入口和研究输入不属于冻结数据。",
+  "files": [
+    {
+      "path": "src/report_figures.py",
+      "sha256": "eb8774874b9efac8d282c47291112030c7d9353dd7e75e612e6bf924253dd04b"
+    },
+    {
+      "path": "src/report_flow.py",
+      "sha256": "eef9efcf2609c77f7fc1a8d2c6469cf88c34597ac135e69adfadab6085abe49a"
+    },
+    {
+      "path": "src/report_flow_pathway.py",
+      "sha256": "9d32fd55faf5b545a768b1058575c978c721c2a8fb77de4a4480a30c7b6a0756"
+    },
+    {
+      "path": "src/report_pathway.py",
+      "sha256": "803311e5a5c96aab4763d6c8ca7f9e3a468613795614c9d4e9c2aab10a14cafb"
+    },
+    {
+      "path": "src/science_modules/a05/compact_report_section.py",
+      "sha256": "14c1d4dcc4201bcbbc58a2c253d7bdd2c06778cbad8b5cfe6c1e62e4276a49c2"
+    },
+    {
+      "path": "src/science_modules/a06/bilingual_heatmap.py",
+      "sha256": "b770175955275843aa0efc52a04afa6a5345184015904aa8bf70958f9b30cb50"
+    },
+    {
+      "path": "src/science_modules/a06/matrix_exports.py",
+      "sha256": "192007dd8a3d279dfa0e5a8f181fe996164c0140e5459639ac20545351d6000d"
+    },
+    {
+      "path": "src/science_modules/a06/matrix_palette.py",
+      "sha256": "78cf12b8f6e0dec0e505415b92f92f39478107d115c4930e3999479fdae3baa3"
+    },
+    {
+      "path": "src/science_modules/a06/trial_exports.py",
+      "sha256": "c4356efb195fdc244ebb67cc9afa6b9e590acf08a38ecde4353708ff2331f49a"
+    },
+    {
+      "path": "src/science_modules/a06/trial_presentation.py",
+      "sha256": "3972f9ff79b83bb5cbd937de40a39b16d8c0e65c5bfe7cff50289bec35514f7c"
+    },
+    {
+      "path": "src/science_modules/a07/__init__.py",
+      "sha256": "66d6290ba498fb4fd2ab7dce6f776ee649ffec451a3c6a21b543ef82c98c88c6"
+    },
+    {
+      "path": "src/science_modules/a07/appendix_documents.py",
+      "sha256": "b0ed3691f96864f34969e9c1483a9127591a438e9be1aaf783776ab086d97302"
+    },
+    {
+      "path": "src/science_modules/a07/appendix_heatmap.py",
+      "sha256": "b44a7fb19372324106c95672a2414a274c480d42e13fc4bb6a2403c31cac833c"
+    },
+    {
+      "path": "src/science_modules/a07/appendix_reports.py",
+      "sha256": "eb5d79125b3fb36d77f95889c8297c3b875e40e19553ea4395475e60aed9749f"
+    },
+    {
+      "path": "src/science_modules/a07/circular_reports.py",
+      "sha256": "901f36feef35bca197296e4e155783d67929b9aa259d121de8a2482c6091908a"
+    },
+    {
+      "path": "src/science_modules/a07/commented_documents.py",
+      "sha256": "e5803aeb7a71653f3bc070397f181874d8068370fd6dec90b2fb3a94ed82cf82"
+    },
+    {
+      "path": "src/science_modules/a07/commented_facts.py",
+      "sha256": "398174dcc7548e194dc556b0458bc956c95acc13f5219cd5d4527e8f5ba3e682"
+    },
+    {
+      "path": "src/science_modules/a07/commented_reports.py",
+      "sha256": "ea1465e75a889f32b077be17edbb1216b6265667adf5d868eea24b01856b708d"
+    },
+    {
+      "path": "src/science_modules/a07/compact_enrichment_reports.py",
+      "sha256": "ae9e53770c780a3c520a2c82ee7419f6b7210c85e0b2ef2969e913dec5ac160c"
+    },
+    {
+      "path": "src/science_modules/a07/dual_reports.py",
+      "sha256": "8cae761b2d096761504d95f554c853564ab99ce606c9df6ad9556cbfaeddf9ed"
+    },
+    {
+      "path": "src/science_modules/a07/enrichment_reports.py",
+      "sha256": "8de01c188da79d9065c837e88cc041a2d2fbc9bb1070631d4d1b981c0ecca830"
+    },
+    {
+      "path": "src/science_modules/a07/first_round_reports.py",
+      "sha256": "f29c0bf3b544130ba12bc238e0cb41bb322492ee78780544e344409aedf2085f"
+    },
+    {
+      "path": "src/science_modules/a07/matrix_reports.py",
+      "sha256": "1f7c4172a3aac1b5a1222f6080d3f808115dfa8a5959cb9c369f461a2c0fb47a"
+    },
+    {
+      "path": "src/science_modules/a07/refined_documents.py",
+      "sha256": "b6095b91ae0dbd73d879b5acf5b2ff2fa9a6fd77f7b9e4fb95dec4c6c8bf3a1c"
+    },
+    {
+      "path": "src/science_modules/a07/refined_reports.py",
+      "sha256": "4424edb168d3ca1a09f4990137ac2f6512565a08bb98018bc35d5e87145079bb"
+    },
+    {
+      "path": "src/science_modules/a07/report_heatmap.py",
+      "sha256": "ee7182ef0e7aac5ce9fa37e36367411ae940e174d865efb143871560b56a5eb0"
+    },
+    {
+      "path": "src/science_modules/a07/reports.py",
+      "sha256": "2c729ac05acf8b07b5f291af6fc475395ae02aac0622d2fe1f528a58df905865"
+    },
+    {
+      "path": "src/science_modules/a07/trial_reports.py",
+      "sha256": "b8ec2c7a63ee9fadaaa36d729158db381edacd69d0b882ebb0743d884ade591e"
+    }
+  ]
+}
