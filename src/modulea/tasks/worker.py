@@ -33,7 +33,25 @@ def run_continue(settings: Settings, task: dict, manager: TaskManager) -> str:
         with workflow.handoff_read_cache():
             approved = workflow.approved(manifest, a06)
         if not approved:
+            manager.update(task["task_id"], progress={"step_zh": "等待A06独立复核", "done": 1, "total": 1})
             return "本批扩展A06尚待正式复核，未生成报告或启动计算。"
+        # 接续只补缺失或失效的报告，不替换正在复核或已经发布的同源版本。
+        with workflow.handoff_read_cache():
+            a05 = manifest["current"].get("A05")
+            if not a05 or not workflow.approved(manifest, a05):
+                manager.update(task["task_id"], progress={"step_zh": "等待A05独立复核", "done": 1, "total": 1})
+                return "本批A06已通过；请完成A05复核后再生成双报告，未启动计算。"
+            a07 = manifest["current"].get("A07")
+            if a07 and workflow.active(manifest, a07):
+                published = workflow.approved(manifest, a07)
+                step = "流程完成，保留已发布双报告" if published else "保留已有双报告，等待A07独立复核"
+                manager.update(task["task_id"], progress={"step_zh": step, "done": 1, "total": 1})
+                return step + "；未重复生成报告，未重新运行对接。"
+            if workflow.ranked_maps_for(manifest, a05) is None:
+                tables = workflow.result(manifest, a05)["tables"]
+                if tables.get("kegg_p_top10") or tables.get("kegg_count_top10"):
+                    manager.update(task["task_id"], progress={"step_zh": "等待A05首位命中图", "done": 1, "total": 1})
+                    return "双报告尚需当前A05首位命中图；请在A05生成图件后继续，未启动对接或生成部分报告。"
         from report_dispatch import run_reports
         result = run_reports(workflow, task["study_id"], manifest["current"].get("A07", ""), "用户通过扩展A06后接续双报告")
         manager.update(task["task_id"], progress={"step_zh": "双报告已生成，等待A07独立复核", "done": 1, "total": 1})

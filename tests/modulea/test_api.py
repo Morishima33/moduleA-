@@ -163,12 +163,19 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(view["state"]["code"], "hold")
 
     def test_trash_roundtrip(self):
+        # 在虚构研究预置一个失败任务，核查回收站中的继续/重试不会启动子进程。
+        with patch.object(self.app.tasks, "_spawn", side_effect=OSError("隔离验收不启动")):
+            old_task, _ = self.app.tasks.submit(self.study, "continue", "回收站验收")
         status, study = self.call("GET", f"/api/v1/studies/{self.study}")
         expected = study["management"]["expected_action_id"]
         status, body = self.call("POST", f"/api/v1/studies/{self.study}:trash", {"operator": "测试", "reason": "测试", "expected_action_id": expected})
         self.assertEqual(status, 422)  # 未勾选确认
         status, body = self.call("POST", f"/api/v1/studies/{self.study}:trash", {"operator": "测试", "reason": "测试", "expected_action_id": expected, "confirm": True})
         self.assertEqual(status, 201, body)
+        for path in (f"/api/v1/studies/{self.study}:continue", f"/api/v1/tasks/{old_task['task_id']}:retry"):
+            status, body = self.call("POST", path)
+            self.assertEqual(status, 423, body)
+            self.assertEqual(body["error"]["code"], "TRASHED_READONLY")
         status, body = self.call("GET", "/api/v1/trash")
         self.assertEqual(len(body["items"]), 1)
         # 回收站中照常显示原状态（不是“已失效”），但不能复核

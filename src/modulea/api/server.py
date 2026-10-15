@@ -197,7 +197,9 @@ class App:
 
     def post_continue(self, req, study_id):
         """手动触发“推进到下一人工关口”（与保存并继续相同的后台任务）。"""
-        self.views._manifest(study_id)
+        manifest = self.views._manifest(study_id)
+        if manifest.get("trashed"):
+            raise ApiError(423, "TRASHED_READONLY", "研究在回收站中，不能继续；请先恢复")
         task, created = self.tasks.submit(study_id, "continue", "手动继续")
         return {"task": task, "created": created}, 202
 
@@ -225,6 +227,8 @@ class App:
 
     def post_retry(self, req, task_id):
         old = self.tasks._raw(task_id)
+        if old and self.views._manifest(old["study_id"]).get("trashed"):
+            raise ApiError(423, "TRASHED_READONLY", "研究在回收站中，不能重试任务；请先恢复")
         if (old and old["kind"] == "a06_pair_packages"
                 and json.loads(old.get("payload") or "{}").get("request_version") != "A06.drawing.on_demand.2"):
             raise ApiError(409, "GATE_BLOCKED", "旧批量整理已停止，请在A06页面重新选择需要的组合")

@@ -1,5 +1,9 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-10-15 初版验收的接续与回收站边界
+
+既有`POST /studies/{sid}:continue`与`POST /tasks/{tid}:retry`在研究处于回收站时返回423 `TRASHED_READONLY`，不建立新任务；恢复后才可显式继续或重试。后台对扩展A06只在A05已批准、所需首位命中图齐备且A07缺失/失效时生成报告。已有有效A07待复核时保持版本，已发布时返回流程完成，不重复生成或撤销现有发布。无显著KEGG时不要求补图。仍无新的研究创建或批量计算端点。
+
 ## 2026-10-14 A05排名首位命中定位图
 
 ModuleView新增可选`ranked_pathway_maps`：`{enabled,expected_a05,disabled_reason_zh,semantics_zh,items}`；items为`{ranking,id,name_en,name_zh,count,adjusted_p,not_in_current_kgml,png_url,caption_zh}`。统计显著性与Count两个Top1直接取当前已确认A05展示排名，命中身份与数值保留；无显著条目不补图。
