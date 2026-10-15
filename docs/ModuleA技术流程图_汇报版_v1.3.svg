@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="2050" viewBox="0 0 1600 2050">
+<title>Module A 方剂与疾病研究流程</title>
+<desc>六阶段目的导向流程。方剂和疾病来源分别核对，完整交集进入独立PPI与富集分支，确认成分与结构方案后按授权对接，用户复核同源双报告。</desc>
+<rect width="100%" height="100%" fill="white"/>
+<text x="800" y="51" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="43" font-weight="700" fill="#233F59">Module A 方剂与疾病研究流程</text>
+<text x="865" y="102" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="24" font-weight="400" fill="#233F59">以共同靶点为线索  以网络与结构为依据  以人工复核后发布为终点</text>
+<rect x="32" y="145" width="112" height="1794" rx="18" fill="#F7EDDF" stroke="#B5874E" stroke-width="2"/>
+<rect x="32" y="145" width="112" height="86" rx="18" fill="#B5874E" stroke="none" stroke-width="2"/>
+<text x="88" y="174" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="23" font-weight="700" fill="#FFFFFF">保留全程</text>
+<text x="88" y="206" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="23" font-weight="700" fill="#FFFFFF">研究依据</text>
+<polyline points="88,250 88,1885" fill="none" stroke="#B5874E" stroke-width="3"/>
+<rect x="43" y="370" width="90" height="80" rx="10" fill="#FFFFFF" stroke="#B5874E" stroke-width="2"/>
+<text x="88" y="395" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="23" font-weight="400" fill="#233F59">原始</text>
+<text x="88" y="426" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="23" font-weight="400" fill="#233F59">资料</text>
+<rect x="43" y="700" width="90" height="80" rx="10" fill="#FFFFFF" stroke="#B5874E" stroke-width="2"/>
+<text x="88" y="725" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="23" font-weight="400" fill="#233F59">参数</text>
+<text x="88" y="756" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="23" font-weight="400" fill="#233F59">版本</text>
+<rect x="43" y="1030" width="90" height="80" rx="10" fill="#FFFFFF" stroke="#B5874E" stroke-width="2"/>
+<text x="88" y="1055" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="23" font-weight="400" fill="#233F59">人工</text>
+<text x="88" y="1086" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="23" font-weight="400" fill="#233F59">复核</text>
+<rect x="43" y="1360" width="90" height="80" rx="10" fill="#FFFFFF" stroke="#B5874E" stroke-width="2"/>
+<text x="88" y="1385" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="23" font-weight="400" fill="#233F59">文件</text>
+<text x="88" y="1416" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="23" font-weight="400" fill="#233F59">指纹</text>
+<rect x="43" y="1690" width="90" height="80" rx="10" fill="#FFFFFF" stroke="#B5874E" stroke-width="2"/>
+<text x="88" y="1715" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="23" font-weight="400" fill="#233F59">历史</text>
+<text x="88" y="1746" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="23" font-weight="400" fill="#233F59">结果</text>
+<polyline points="515,292 515,302 865,302 865,310" fill="none" stroke="#6E9FB9" stroke-width="3"/>
+<polygon points="865,310 872.0,297.0 858.0,297.0" fill="#6E9FB9"/>
+<polyline points="1215,292 1215,302 865,302" fill="none" stroke="#6E9FB9" stroke-width="3"/>
+<polyline points="865,354 865,366 515,366 515,446" fill="none" stroke="#6E9FB9" stroke-width="3"/>
+<polygon points="515,446 522.0,433.0 508.0,433.0" fill="#6E9FB9"/>
+<polyline points="865,366 1215,366 1215,446" fill="none" stroke="#6E9FB9" stroke-width="3"/>
+<polygon points="1215,446 1222.0,433.0 1208.0,433.0" fill="#6E9FB9"/>
+<polyline points="515,546 515,556 865,556 865,567" fill="none" stroke="#6E9FB9" stroke-width="3"/>
+<polygon points="865,567 872.0,554.0 858.0,554.0" fill="#6E9FB9"/>
+<polyline points="1215,546 1215,556 865,556" fill="none" stroke="#6E9FB9" stroke-width="3"/>
+<polyline points="865,641 865,648" fill="none" stroke="#6E9FB9" stroke-width="3"/>
+<polygon points="865,648 872.0,635.0 858.0,635.0" fill="#6E9FB9"/>
+<polyline points="865,692 865,782" fill="none" stroke="#A36E99" stroke-width="3"/>
+<polygon points="865,782 872.0,769.0 858.0,769.0" fill="#A36E99"/>
+<polyline points="865,882 865,904 515,904 515,981" fill="none" stroke="#A36E99" stroke-width="3"/>
+<polygon points="515,981 522.0,968.0 508.0,968.0" fill="#A36E99"/>
+<polyline points="865,904 1215,904 1215,981" fill="none" stroke="#A36E99" stroke-width="3"/>
+<polygon points="1215,981 1222.0,968.0 1208.0,968.0" fill="#A36E99"/>
+<polyline points="205,832 166,832 166,1263 205,1263" fill="none" stroke="#7BA65F" stroke-width="3"/>
+<polygon points="205,1263 192.0,1256.0 192.0,1270.0" fill="#7BA65F"/>
+<polyline points="515,1121 515,1141 1215,1141 1215,1222" fill="none" stroke="#7BA65F" stroke-width="3"/>
+<polygon points="1215,1222 1222.0,1209.0 1208.0,1209.0" fill="#7BA65F"/>
+<polyline points="1525,1051 1573,1051 1573,1830 1375,1830" fill="none" stroke="#A36E99" stroke-width="3"/>
+<polygon points="1375,1830 1388.0,1837.0 1388.0,1823.0" fill="#A36E99"/>
+<polyline points="515,1304 515,1315 865,1315 865,1326" fill="none" stroke="#7BA65F" stroke-width="3"/>
+<polygon points="865,1326 872.0,1313.0 858.0,1313.0" fill="#7BA65F"/>
+<polyline points="1215,1304 1215,1315 865,1315" fill="none" stroke="#7BA65F" stroke-width="3"/>
+<polyline points="865,1370 865,1393" fill="none" stroke="#7BA65F" stroke-width="3"/>
+<polygon points="865,1393 872.0,1380.0 858.0,1380.0" fill="#7BA65F"/>
+<polyline points="865,1467 865,1489" fill="none" stroke="#7BA65F" stroke-width="3"/>
+<polygon points="865,1489 872.0,1476.0 858.0,1476.0" fill="#7BA65F"/>
+<polyline points="865,1563 865,1590 515,1590 515,1668" fill="none" stroke="#7BA65F" stroke-width="3"/>
+<polygon points="515,1668 522.0,1655.0 508.0,1655.0" fill="#7BA65F"/>
+<polyline points="865,1590 1215,1590 1215,1668" fill="none" stroke="#7BA65F" stroke-width="3"/>
+<polygon points="1215,1668 1222.0,1655.0 1208.0,1655.0" fill="#7BA65F"/>
+<polyline points="515,1768 515,1777 865,1777 865,1788" fill="none" stroke="#7BA65F" stroke-width="3"/>
+<polygon points="865,1788 872.0,1775.0 858.0,1775.0" fill="#7BA65F"/>
+<polyline points="865,1872 865,1895" fill="none" stroke="#7BA65F" stroke-width="3"/>
+<polygon points="865,1895 872.0,1882.0 858.0,1882.0" fill="#7BA65F"/>
+<rect x="180" y="145" width="1370" height="48" rx="11" fill="#6E9FB9" stroke="none" stroke-width="2"/>
+<text x="865" y="169" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="33" font-weight="700" fill="#FFFFFF">明确研究对象</text>
+<rect x="205" y="214" width="620" height="78" rx="12" fill="#E5F0F6" stroke="#6E9FB9" stroke-width="2"/>
+<text x="515.0" y="238.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="29" font-weight="700" fill="#233F59">确定方剂组成</text>
+<text x="515.0" y="268.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="26" font-weight="400" fill="#233F59">方剂与药味  处方来源与研究版本</text>
+<rect x="905" y="214" width="620" height="78" rx="12" fill="#E5F0F6" stroke="#6E9FB9" stroke-width="2"/>
+<text x="1215.0" y="238.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="29" font-weight="700" fill="#233F59">界定疾病范围</text>
+<text x="1215.0" y="268.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="26" font-weight="400" fill="#233F59">疾病中文名与MeSH  官方核对  仅本病</text>
+<rect x="335" y="310" width="1060" height="44" rx="10" fill="#FFF4D3" stroke="#B5874E" stroke-width="2"/>
+<text x="865" y="332" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="27" font-weight="400" fill="#233F59">确认研究对象与范围  独立建档</text>
+<rect x="180" y="382" width="1370" height="48" rx="11" fill="#6E9FB9" stroke="none" stroke-width="2"/>
+<text x="865" y="406" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="33" font-weight="700" fill="#FFFFFF">汇集可靠靶点</text>
+<rect x="205" y="446" width="620" height="100" rx="12" fill="#E5F0F6" stroke="#6E9FB9" stroke-width="2"/>
+<text x="515.0" y="466.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="29" font-weight="700" fill="#233F59">汇集方剂靶点</text>
+<text x="515.0" y="496.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="26" font-weight="400" fill="#233F59">TCMSP  HERB  BATMAN-TCM</text>
+<text x="515.0" y="526.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="26" font-weight="400" fill="#233F59">仅TCMSP采用OB≥30%、DL≥0.18</text>
+<rect x="905" y="446" width="620" height="100" rx="12" fill="#E5F0F6" stroke="#6E9FB9" stroke-width="2"/>
+<text x="1215.0" y="466.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="29" font-weight="700" fill="#233F59">汇集疾病靶点</text>
+<text x="1215.0" y="496.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="26" font-weight="400" fill="#233F59">GeneCards  OMIM  TTD</text>
+<text x="1215.0" y="526.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="26" font-weight="400" fill="#233F59">PharmGKB  Open Targets  分库留存</text>
+<rect x="335" y="567" width="1060" height="74" rx="12" fill="#E5F0F6" stroke="#6E9FB9" stroke-width="2"/>
+<text x="865.0" y="589.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="29" font-weight="700" fill="#233F59">统一分子与基因身份</text>
+<text x="865.0" y="619.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="26" font-weight="400" fill="#233F59">完整InChIKey核对成分  HGNC统一人类基因  来源并集去重</text>
+<rect x="335" y="648" width="1060" height="44" rx="10" fill="#FFF4D3" stroke="#B5874E" stroke-width="2"/>
+<text x="865" y="670" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="27" font-weight="400" fill="#233F59">确认来源与身份  歧义及资料缺口分别处理</text>
+<rect x="180" y="716" width="1370" height="48" rx="11" fill="#A36E99" stroke="none" stroke-width="2"/>
+<text x="865" y="740" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="33" font-weight="700" fill="#FFFFFF">筛选候选对象</text>
+<rect x="205" y="782" width="1320" height="100" rx="12" fill="#F0E6F0" stroke="#A36E99" stroke-width="2"/>
+<text x="865.0" y="802.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="29" font-weight="700" fill="#233F59">定位共同靶点并优选成分</text>
+<text x="865.0" y="832.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="26" font-weight="400" fill="#233F59">交集I = T ∩ D  交集靶点数主排序  混合Degree仅作参考</text>
+<text x="865.0" y="862.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="26" font-weight="400" fill="#233F59">人工确认对接成分；PPI与富集使用完整交集，不受成分截断影响</text>
+<rect x="180" y="916" width="1370" height="48" rx="11" fill="#A36E99" stroke="none" stroke-width="2"/>
+<text x="865" y="940" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="33" font-weight="700" fill="#FFFFFF">识别网络与功能</text>
+<rect x="205" y="981" width="620" height="140" rx="12" fill="#F0E6F0" stroke="#A36E99" stroke-width="2"/>
+<text x="515.0" y="1006.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="29" font-weight="700" fill="#233F59">识别关键网络靶点</text>
+<text x="515.0" y="1036.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="26" font-weight="400" fill="#233F59">STRING高置信人类网络  score≥0.9</text>
+<text x="515.0" y="1066.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="26" font-weight="400" fill="#233F59">Degree与BC/CC独立两轮筛选</text>
+<text x="515.0" y="1096.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="26" font-weight="400" fill="#233F59">完整名单求交  A/B候选另存并复核</text>
+<rect x="905" y="981" width="620" height="140" rx="12" fill="#F0E6F0" stroke="#A36E99" stroke-width="2"/>
+<text x="1215.0" y="1006.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="29" font-weight="700" fill="#233F59">识别功能与通路</text>
+<text x="1215.0" y="1036.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="26" font-weight="400" fill="#233F59">GO三类分别BH  KEGG单独BH</text>
+<text x="1215.0" y="1066.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="26" font-weight="400" fill="#233F59">p.adjust &lt; 0.05  保留完整结果</text>
+<text x="1215.0" y="1096.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="26" font-weight="400" fill="#233F59">图表与首位通路命中图同源并复核</text>
+<rect x="180" y="1161" width="1370" height="48" rx="11" fill="#7BA65F" stroke="none" stroke-width="2"/>
+<text x="865" y="1185" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="33" font-weight="700" fill="#FFFFFF">评估结合潜力</text>
+<rect x="205" y="1222" width="620" height="82" rx="12" fill="#EAF3E1" stroke="#7BA65F" stroke-width="2"/>
+<text x="515.0" y="1248.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="29" font-weight="700" fill="#233F59">核准候选成分</text>
+<text x="515.0" y="1278.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="26" font-weight="400" fill="#233F59">已确认成分  身份与三维结构</text>
+<rect x="905" y="1222" width="620" height="82" rx="12" fill="#EAF3E1" stroke="#7BA65F" stroke-width="2"/>
+<text x="1215.0" y="1248.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="29" font-weight="700" fill="#233F59">核准受体结构</text>
+<text x="1215.0" y="1278.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="26" font-weight="400" fill="#233F59">A/B候选  身份、物种、链与位点</text>
+<rect x="335" y="1326" width="1060" height="44" rx="10" fill="#FFF4D3" stroke="#B5874E" stroke-width="2"/>
+<text x="865" y="1348" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="27" font-weight="400" fill="#233F59">确认结构方案与计算范围  保存草案后单独确认</text>
+<rect x="205" y="1393" width="1320" height="74" rx="12" fill="#EAF3E1" stroke="#7BA65F" stroke-width="2"/>
+<text x="865.0" y="1415.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="29" font-weight="700" fill="#233F59">检查对接质控</text>
+<text x="865.0" y="1445.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="26" font-weight="400" fill="#233F59">参考配体Top-1 RMSD≤2 Å；严格结果与获准试算分开，失败保留NA</text>
+<rect x="205" y="1489" width="1320" height="74" rx="12" fill="#EAF3E1" stroke="#7BA65F" stroke-width="2"/>
+<text x="865.0" y="1511.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="29" font-weight="700" fill="#233F59">获取可核验评分</text>
+<text x="865.0" y="1541.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="26" font-weight="400" fill="#233F59">Vina 1.2.7固定参数  默认最多5×5组合  扩展另审  结果独立复核</text>
+<rect x="180" y="1608" width="1370" height="48" rx="11" fill="#7BA65F" stroke="none" stroke-width="2"/>
+<text x="865" y="1632" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="33" font-weight="700" fill="#FFFFFF">形成研究报告</text>
+<rect x="205" y="1668" width="620" height="100" rx="12" fill="#EAF3E1" stroke="#7BA65F" stroke-width="2"/>
+<text x="515.0" y="1688.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="29" font-weight="700" fill="#233F59">呈现结构证据</text>
+<text x="515.0" y="1718.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="26" font-weight="400" fill="#233F59">原始评分矩阵与热图</text>
+<text x="515.0" y="1748.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="26" font-weight="400" fill="#233F59">保留姿势及失败原因</text>
+<rect x="905" y="1668" width="620" height="100" rx="12" fill="#EAF3E1" stroke="#7BA65F" stroke-width="2"/>
+<text x="1215.0" y="1688.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="29" font-weight="700" fill="#233F59">按需整理图片</text>
+<text x="1215.0" y="1718.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="26" font-weight="400" fill="#233F59">可选操作  下拉定位成分与受体</text>
+<text x="1215.0" y="1748.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="26" font-weight="400" fill="#233F59">点击才出图  上传图片独立留存</text>
+<rect x="355" y="1788" width="1020" height="84" rx="12" fill="#EAF3E1" stroke="#7BA65F" stroke-width="2"/>
+<text x="865.0" y="1815.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="29" font-weight="700" fill="#233F59">交付同源双报告</text>
+<text x="865.0" y="1845.0" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="26" font-weight="400" fill="#233F59">专业版与简略版  固定第24版展示规范  术语统一末尾附录</text>
+<rect x="335" y="1895" width="1060" height="44" rx="10" fill="#FFF4D3" stroke="#B5874E" stroke-width="2"/>
+<text x="865" y="1917" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="27" font-weight="400" fill="#233F59">独立复核报告与结论  通过后发布并保留历史版本</text>
+<text x="865" y="1977" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="24" font-weight="400" fill="#233F59">后台任务可查日志、取消及显式重试；程序不代签人工复核</text>
+<text x="865" y="2017" text-anchor="middle" dominant-baseline="central" font-family="Microsoft YaHei,sans-serif" font-size="22" font-weight="400" fill="#596A77">图示当前操作规则；新病例逐项验证，报告入口按实际协议核对适配。</text>
+</svg>
