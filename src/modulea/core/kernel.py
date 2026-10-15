@@ -30,6 +30,7 @@ from contracts import MODULES, ContractError  # noqa: E402
 from storage import read_json, verified_file  # noqa: E402
 from workflow import Workflow  # noqa: E402
 from .ranked_pathway_workflow import RankedPathwayWorkflow as DockingWorkflow  # noqa: E402
+from .read_archive import ReadResultMixin  # noqa: E402
 
 __all__ = ["Kernel", "ContractError", "MODULES", "read_json", "verified_file", "full_workflow"]
 
@@ -56,6 +57,10 @@ class Kernel:
     def workflow(self) -> Workflow:
         return DockingWorkflow(self.settings.data_root, VIEW_VALIDATORS)
 
+    def read_workflow(self) -> Workflow:
+        """只读列表、表格和下载使用；写入口继续使用workflow()完整核验。"""
+        return _ReadWorkflow(self.settings.data_root, VIEW_VALIDATORS)
+
     def display_workflow(self) -> Workflow:
         """只用于显示状态的实例：回收站中的研究也按原有批准关系计算状态。
 
@@ -65,7 +70,11 @@ class Kernel:
         return _DisplayWorkflow(self.settings.data_root, VIEW_VALIDATORS)
 
 
-class _DisplayWorkflow(DockingWorkflow):
+class _ReadWorkflow(ReadResultMixin, DockingWorkflow):
+    """只读I/O适配，不改动科学内核或写入实例。"""
+
+
+class _DisplayWorkflow(_ReadWorkflow):
     def load(self, study_id):
         manifest = dict(super().load(study_id))
         manifest["trashed"] = False

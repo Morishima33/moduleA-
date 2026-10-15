@@ -10,6 +10,7 @@ import mimetypes
 from pathlib import Path
 
 from ..core import modules as registry
+from ..core.read_archive import SnapshotFlight
 from ..core.source_catalog import source_intro
 from ..core.source_uploads import context as upload_context
 from ..core.kernel import ContractError, Kernel, read_json, verified_file
@@ -62,13 +63,17 @@ class Views:
     def __init__(self, kernel: Kernel, tasks: TaskManager):
         self.kernel = kernel
         self.tasks = tasks
+        self._snapshot_flight = SnapshotFlight()
 
     # ------------------------------------------------------------------ 基础读取
     def _snapshot(self, study_id: str):
         """读取一项研究的完整状态；归档核验失败时返回 (None, 错误说明)。"""
         workflow = self.kernel.display_workflow()
         try:
-            snapshot = workflow.view(study_id)
+            # 同版本的并发页面请求共用一次完整核验；读取完成后不跨请求缓存。
+            info = (workflow.location(study_id) / "manifest.json").stat()
+            key = (study_id, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+            snapshot = self._snapshot_flight.run(key, lambda: workflow.view(study_id))
             # 此Workflow只属于本次只读请求；复用已完整指纹核验的不可变归档。
             # 下一次请求由Kernel新建实例，写入口仍重新读取版本与文件。
             workflow._view_cache = {
@@ -85,7 +90,7 @@ class Views:
 
     def _manifest(self, study_id: str) -> dict:
         try:
-            return self.kernel.workflow().load(study_id)
+            return self.kernel.read_workflow().load(study_id)
         except (ContractError, FileNotFoundError):
             raise not_found("研究 " + study_id)
 
@@ -129,7 +134,7 @@ class Views:
     # ------------------------------------------------------------------ 首页与研究
     def study_cards(self, trashed: bool = False) -> list[dict]:
         cards = []
-        for manifest in self.kernel.workflow().studies(trashed=trashed):
+        for manifest in self.kernel.read_workflow().studies(trashed=trashed):
             cards.append(self.study_card(manifest["study_id"]))
         cards.sort(key=lambda c: c["study"]["updated_at"] or "", reverse=True)
         return cards
@@ -211,7 +216,7 @@ class Views:
                        "text_zh": NEXT_TEXT.get(states[m]["code"], "{m}").format(m=f"{m} {registry.SPECS[m].title_zh}")}
                       for m in registry.ORDER if states[m]["code"] in ("review", "hold", "returned", "waiting", "failed")],
             "active_tasks": self.tasks.list(study_id, active_only=True),
-            "management": {"expected_action_id": self._last_action(self.kernel.workflow(), study_id, manifest)},
+            "management": {"expected_action_id": self._last_action(self.kernel.read_workflow(), study_id, manifest)},
         }
 
     def _last_action(self, workflow, study_id: str, manifest: dict) -> str | None:
@@ -225,7 +230,7 @@ class Views:
 
     def inbox(self) -> list[dict]:
         items = []
-        for manifest in self.kernel.workflow().studies(trashed=False):
+        for manifest in self.kernel.read_workflow().studies(trashed=False):
             card = self.study_card(manifest["study_id"], with_states=True)
             states = card.pop("_states")
             for m in registry.ORDER:
@@ -430,7 +435,7 @@ class Views:
 
     # ------------------------------------------------------------------ 历史、表格、文件
     def runs(self, study_id: str, module_id: str, workflow=None, manifest=None) -> list[dict]:
-        workflow = workflow or self.kernel.workflow()
+        workflow = workflow or self.kernel.read_workflow()
         manifest = manifest or self._manifest(study_id)
         items = []
         for run_id in manifest["runs"]:
@@ -470,7 +475,7 @@ class Views:
         return out
 
     def table(self, study_id: str, module_id: str, name: str, run_id: str | None, page: int, size: int, q: str) -> dict:
-        workflow = self.kernel.workflow()
+        workflow = self.kernel.read_workflow()
         manifest = self._manifest(study_id)
         run_id = run_id or manifest["current"].get(module_id)
         if not run_id or run_id not in manifest["runs"]:
@@ -521,7 +526,7 @@ class Views:
     def file(self, study_id: str, key: str) -> tuple[Path, str, str]:
         run_id, _, index = key.rpartition(".")
         if run_id.startswith("ranked_maps_") and index.isdigit():
-            workflow = self.kernel.workflow()
+            workflow = self.kernel.read_workflow()
             manifest = self._manifest(study_id)
             try:
                 path = workflow.ranked_map_file(manifest, run_id, int(index))
@@ -529,7 +534,7 @@ class Views:
                 raise from_contract(str(error))
             return path, path.name, mimetypes.guess_type(path.name)[0] or "application/octet-stream"
         if run_id.startswith("bilingual_display_") and index.isdigit():
-            workflow = self.kernel.workflow()
+            workflow = self.kernel.read_workflow()
             manifest = self._manifest(study_id)
             rows = manifest.get("bilingual_display_records", [])
             row = next((r for r in rows if r["display_id"] == run_id), None)
@@ -538,7 +543,7 @@ class Views:
             path = verified_file(workflow.location(study_id), row["files"][int(index)])
             return path, path.name, mimetypes.guess_type(path.name)[0] or "application/octet-stream"
         if run_id.startswith("dock_artifact_") and index.isdigit():
-            workflow = self.kernel.workflow()
+            workflow = self.kernel.read_workflow()
             manifest = self._manifest(study_id)
             try:
                 path = workflow.docking_artifact_file(manifest, run_id, int(index))
@@ -553,7 +558,7 @@ class Views:
                 name = item["name_zh"]
             return path, name, mimetypes.guess_type(path.name)[0] or "application/octet-stream"
         if run_id.startswith("prep_link_") and index.isdigit():
-            workflow = self.kernel.workflow()
+            workflow = self.kernel.read_workflow()
             manifest = self._manifest(study_id)
             matches = [read_json(verified_file(workflow.location(study_id), r)) for r in manifest.get("trial_preparation_link_records", [])]
             link = next((r for r in matches if r["link_id"] == run_id), None)
@@ -563,7 +568,7 @@ class Views:
             path = verified_file(workflow.location(study_id), record)
             return path, Path(record["path"]).name, mimetypes.guess_type(record["path"])[0] or "application/octet-stream"
         if run_id.startswith("trial_") and index.isdigit():
-            workflow = self.kernel.workflow()
+            workflow = self.kernel.read_workflow()
             manifest = self._manifest(study_id)
             rows = [r for r in manifest.get("docking_trial_records", []) if r["trial_id"] == run_id]
             if len(rows) != 1 or rows[0]["state"] != "completed":
@@ -582,7 +587,7 @@ class Views:
         from_report_table = index.startswith("r") and index[1:].isdigit()
         if not run_id.startswith("run_") or not (index.isdigit() or from_report_table):
             raise ApiError(400, "BAD_REQUEST", "文件编号格式不正确")
-        workflow = self.kernel.workflow()
+        workflow = self.kernel.read_workflow()
         manifest = self._manifest(study_id)
         if run_id not in manifest["runs"]:
             raise not_found("文件")

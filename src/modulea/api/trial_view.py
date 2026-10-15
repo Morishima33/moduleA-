@@ -34,6 +34,8 @@ def trial_info(workflow, manifest, busy=False):
     record = records[-1]
     sid = manifest["study_id"]
     root = workflow.location(sid)
+    # 只读实例提供路径批次优化；其他调用仍沿用原指纹校验。
+    verify = getattr(workflow, "verify_archive", verified_file)
     stale = False
     try:
         workflow.trial_binding(sid, record["payload"], manifest)
@@ -65,26 +67,26 @@ def trial_info(workflow, manifest, busy=False):
         "note_zh": "独立扩展试算；Vina对接评分（kcal/mol），不是实测结合自由能。正式A06结果及批准保持。",
     }
     for rec in manifest.get("docking_trial_review_records", []):
-        value = read_json(verified_file(root, rec))
+        value = read_json(verify(root, rec))
         if value["trial_id"] == record["trial_id"]:
             info["review"] = value
     if record["state"] != "completed":
         return info
     for rec in record.get("files", []):
-        verified_file(root, rec)
-    packet = read_json(verified_file(root, record["packet"]))
+        verify(root, rec)
+    packet = read_json(verify(root, record["packet"]))
     require(
         packet["study_id"] == sid and packet["trial_id"] == record["trial_id"],
         "试算研究绑定不一致",
     )
     for compound in packet["compounds"]:
         for rec in compound["files"]:
-            verified_file(root, rec)
+            verify(root, rec)
     for receptor in packet["receptors"]:
         if receptor["state"] == "ready":
-            verified_file(root, receptor["receptor"])
+            verify(root, receptor["receptor"])
             if receptor.get("source"):
-                verified_file(root, receptor["source"])
+                verify(root, receptor["source"])
     validate_matrix(packet)
     names = compound_names(workflow, manifest, packet=packet)
     bilingual_downloads = workflow.bilingual_display_downloads(manifest, packet) if hasattr(workflow, "bilingual_display_downloads") else []
@@ -123,7 +125,7 @@ def trial_info(workflow, manifest, busy=False):
     ]
     if scope_records:
         scope_map = {
-            s["target_id"]: s for s in read_json(verified_file(root, scope_records[-1]))
+            s["target_id"]: s for s in read_json(verify(root, scope_records[-1]))
         }
         for row in info["receptors"]:
             scope = scope_map.get(row["target_id"], {})
