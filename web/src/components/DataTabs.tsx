@@ -230,7 +230,7 @@ function TraceTab({ studyId, view }: { studyId: string; view: ModuleView }) {
             scroll={{ x: 'max-content' }}
             columns={[
               { title: '时间', dataIndex: 'created_at', key: 't', render: (v: string) => fmtTime(v) },
-              { title: '决定', dataIndex: 'decision', key: 'd', render: (v: string) => decisionLabel(session, v) },
+              { title: '决定', dataIndex: 'decision', key: 'd', render: (v: string) => decisionLabel(session, v, view.module.module_id) },
               { title: '复核人', dataIndex: 'reviewer', key: 'r' },
               { title: '意见', dataIndex: 'note', key: 'n', render: (v: string) => <span style={{ whiteSpace: 'normal', overflowWrap: 'anywhere' }}>{v}</span> },
               { title: '复核编号', dataIndex: 'review_id', key: 'id', render: (v: string) => <span className="mono tiny">{v}</span> },
@@ -253,7 +253,7 @@ function TraceTab({ studyId, view }: { studyId: string; view: ModuleView }) {
             { title: '时间', dataIndex: 'created_at', key: 't', render: (v: string) => fmtTime(v) },
             { title: '原因', dataIndex: 'reason_zh', key: 'r', render: (v: string) => <span style={{ whiteSpace: 'normal' }}>{v || '—'}</span> },
             { title: '结果', dataIndex: 'outcome', key: 'oc', render: (v: string) => outcomeZh(v) },
-            { title: '复核', dataIndex: 'review_decision', key: 'd', render: (v: string) => (v ? decisionLabel(session, v) : '未复核') },
+            { title: '复核', dataIndex: 'review_decision', key: 'd', render: (v: string) => (v ? decisionLabel(session, v, view.module.module_id) : '未复核') },
             { title: '运行编号', dataIndex: 'run_id', key: 'id', render: (v: string) => <span className="mono tiny">{v}</span> },
             {
               title: '', key: 'op', render: (_, r) =>

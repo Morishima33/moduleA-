@@ -144,9 +144,9 @@ export default function ReviewPanel({ studyId, view, onSaved, onStale }: Props) 
       <Box title="复核决定">
         <div style={{ padding: '10px 12px', borderRadius: 8, background: style.boxBg, border: `1px solid ${style.boxLine}`, fontSize: 14 }}>
           <strong>{view.state.label_zh}</strong>
-          <div>{NO_FORM_TEXT[view.historical ? 'history' : code] || '当前状态不需要复核。'}</div>
+          <div>{!view.historical && code === 'stale' && view.module.module_id === 'A07' ? '已失效：上游已有新版本，本版报告需要重新生成并复核。旧文件全部保留可查。' : NO_FORM_TEXT[view.historical ? 'history' : code] || '当前状态不需要复核。'}</div>
         </div>
-        {r.current && <CurrentDecision session={session} r={r} />}
+        {r.current && <CurrentDecision session={session} r={r} moduleId={view.module.module_id} />}
       </Box>
     );
   }
@@ -156,7 +156,7 @@ export default function ReviewPanel({ studyId, view, onSaved, onStale }: Props) 
     return (
       <Box title="复核决定">
         <Alert type="info" showIcon message={`当前状态：${view.state.label_zh}`} description={view.state.reason_zh || '当前不能复核（例如研究在回收站中，处于只读状态）。'} />
-        {r.current && <CurrentDecision session={session} r={r} />}
+        {r.current && <CurrentDecision session={session} r={r} moduleId={view.module.module_id} />}
       </Box>
     );
   }
@@ -167,7 +167,7 @@ export default function ReviewPanel({ studyId, view, onSaved, onStale }: Props) 
       <Box title={view.state.label_zh} ok>
         {success && <Alert type={taskFailed ? "warning" : "success"} showIcon message={success} />}
         <span style={{ fontSize: 14 }}>{code === 'published' ? '两份正式报告已发布，无需重复操作。' : '本版本已通过复核，无需重复操作。'}</span>
-        {r.current && <CurrentDecision session={session} r={r} />}
+        {r.current && <CurrentDecision session={session} r={r} moduleId={view.module.module_id} />}
         <Button style={{ alignSelf: 'flex-start' }} onClick={() => setChangeOpen(true)}>更改决定</Button>
       </Box>
     );
@@ -184,15 +184,15 @@ export default function ReviewPanel({ studyId, view, onSaved, onStale }: Props) 
       </span>
       {/* 已通过后更改决定的提醒 */}
       {changeOpen && (
-        <Alert type="warning" showIcon message="更改已通过的决定" description={view.downstream.note_zh || '更改决定可能使下游结果失效。'} />
+        <Alert type="warning" showIcon message="更改已通过的决定" description={view.module.module_id === 'A07' ? '请核对本版报告后重新填写复核决定。' : view.downstream.note_zh || '更改决定可能使下游结果失效。'} />
       )}
-      {r.current && <CurrentDecision session={session} r={r} />}
+      {r.current && <CurrentDecision session={session} r={r} moduleId={view.module.module_id} />}
       {view.special.ppi_identity && <Alert type="warning" showIcon style={{ marginBottom: 12 }} message="请先完成身份核验" description="待核验清单已在页面标题下展开。这里保存的是整体模块复核意见，不会自动解决身份问题。" />}
       <Form form={form} layout="vertical" requiredMark={false} disabled={!!saving}>
         {/* 决定：三选一 */}
         <Form.Item name="decision" label="决定" rules={[{ required: true, message: '请选择决定' }]} style={{ marginBottom: 12 }}>
           <DecisionPicker
-            options={all.map((d) => ({ value: d, label: decisionLabel(session, d), disabled: !allowed.has(d) }))}
+            options={all.map((d) => ({ value: d, label: decisionLabel(session, d, view.module.module_id), disabled: !allowed.has(d) }))}
             blockedReason={r.blocked_reason_zh}
           />
         </Form.Item>
@@ -224,7 +224,7 @@ export default function ReviewPanel({ studyId, view, onSaved, onStale }: Props) 
       <p className="tiny muted" style={{ margin: 0 }}>
         {canContinue ? r.continue.note_zh : r.continue.note_zh ? `本次不提供“保存并继续”。${r.continue.note_zh}` : '本次不提供“保存并继续”。'}
       </p>
-      <p className="tiny muted" style={{ margin: 0 }}>通过只表示本版本可交给下一步使用，不代表已经证明药效。</p>
+      <p className="tiny muted" style={{ margin: 0 }}>{view.module.module_id === 'A07' ? '通过表示本版报告已完成复核，不代表已经证明药效。' : '通过只表示本版本可交给下一步使用，不代表已经证明药效。'}</p>
       {/* A01/A02 一起提交 */}
       {r.batch_with && (
         <>
@@ -254,11 +254,11 @@ function Box({ title, ok, children }: { title: string; ok?: boolean; children: R
 }
 
 /** 当前决定摘要 */
-function CurrentDecision({ session, r }: { session: ReturnType<typeof useApp>['session']; r: ModuleView['review'] }) {
+function CurrentDecision({ session, r, moduleId }: { session: ReturnType<typeof useApp>['session']; r: ModuleView['review']; moduleId: string }) {
   const c = r.current!; // 当前复核记录
   return (
     <div className="small" style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '8px 10px', background: '#F6F8F9', borderRadius: 8 }}>
-      <span>当前决定：<strong>{decisionLabel(session, c.decision)}</strong></span>
+      <span>当前决定：<strong>{decisionLabel(session, c.decision, moduleId)}</strong></span>
       <span className="muted">复核人 {c.reviewer} · {fmtTime(c.created_at)}</span>
       {c.note && <span className="muted" style={{ overflowWrap: 'anywhere' }}>意见：{c.note}</span>}
       <span className="muted" style={{ overflowWrap: 'anywhere' }}>复核编号 <span className="mono">{c.review_id}</span></span>

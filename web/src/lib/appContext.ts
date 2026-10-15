@@ -24,9 +24,10 @@ export function useApp(): AppContextValue {
   return v;
 }
 
-/** 决定的中文名（优先使用接口返回的 decisions_zh） */
-export function decisionLabel(session: Session | null, d: string | null | undefined): string {
+/** 决定的中文名；末端 A07 的通过文案不再描述下游，其余优先使用接口。 */
+export function decisionLabel(session: Session | null, d: string | null | undefined, moduleId?: string): string {
   if (!d) return '—'; // 无决定
+  if (moduleId === 'A07' && d === 'approved') return '通过'; // 报告为流程末端
   const fallback: Record<string, string> = { approved: '通过', rejected: '退回修改', pending: '暂存待定' }; // 接口未返回时的兜底
   return (session?.decisions_zh as Record<string, string> | undefined)?.[d] || fallback[d] || d;
 }
