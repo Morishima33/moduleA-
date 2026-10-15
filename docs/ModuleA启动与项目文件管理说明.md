@@ -42,4 +42,4 @@ D:/codex-重大专项/moduleA重构/data/three_source_snapshot_20261009/studies/
 
 大纲13页逐页渲染检查通过，原稿与旧图保留；第24版28个模板文件指纹保持一致。两项使用临时虚构研究的既有隔离测试通过，分别验证跨研究候选来源及结构方案不能错用；测试未启动真实研究或科学计算。
 
-核验证据位于仓库外`audit_20261015/outline_v14_release/`，包括`build-proof.json`、`validation-proof.json`、`launcher-proof.json`和`project-isolation-tests.txt`。文档及正式图按明确清单上传development，不上传真实研究、环境和过程文件，不自动合并main。
+核验证据位于仓库外`开发与验收档案/audit_20261015/outline_v14_release/`，包括`build-proof.json`、`validation-proof.json`、`launcher-proof.json`和`project-isolation-tests.txt`。文档及正式图按明确清单上传development，不上传真实研究、环境和过程文件，不自动合并main。
