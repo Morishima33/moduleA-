@@ -11,6 +11,7 @@ from pathlib import Path
 
 from ..core import modules as registry
 from ..core.read_archive import SnapshotFlight
+from ..core.study_creation import PROJECT_FOLDERS
 from ..core.source_catalog import source_intro
 from ..core.source_uploads import context as upload_context
 from ..core.kernel import ContractError, Kernel, read_json, verified_file
@@ -216,6 +217,7 @@ class Views:
                        "text_zh": NEXT_TEXT.get(states[m]["code"], "{m}").format(m=f"{m} {registry.SPECS[m].title_zh}")}
                       for m in registry.ORDER if states[m]["code"] in ("review", "hold", "returned", "waiting", "failed")],
             "active_tasks": self.tasks.list(study_id, active_only=True),
+            "storage": {"directory": str(workflow.location(study_id)), "folders": [dict(row) for row in PROJECT_FOLDERS]},
             "management": {"expected_action_id": self._last_action(self.kernel.read_workflow(), study_id, manifest)},
         }
 

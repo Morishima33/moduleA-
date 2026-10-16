@@ -81,6 +81,8 @@ function qs(params: Record<string, string | number | undefined | null>): string 
 
 // 各端点的薄封装；路径与契约第 3 节一致
 export const api = {
+  /** 核对MeSH后建立独立研究，仅保存登记。 */
+  createStudy: (body: import('./types').NewStudyInput) => request<import('./types').CreatedStudy>('POST', '/studies', body),
   /** 明确点击后制作当前确认范围两个首位通路命中图。 */
   rankedPathwayMaps: (sid: string, expected_a05: string) =>
     request<{task: Task; message_zh: string}>('POST', `/studies/${sid}/modules/A05/actions/ranked_pathway_maps`, {expected_a05}),

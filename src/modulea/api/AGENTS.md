@@ -1,5 +1,13 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-10-16 新建研究与独立项目目录（用户授权）
+
+新增POST `/studies`：`{request_id,formula,herbs,disease,mesh_term,mesh_id,operator,analysis_purpose}`。request_id为`create_`加32位小写十六进制；用途由用户明确选择formal_research或workflow_test。只接受上述字段，不接受客户端MeSH证据、批准、路径或自动计算选项。服务器固定人类9606和“仅本病，不纳入亚型”，复用原NLM核对函数；失败不建研究。核对成功只调用Workflow.create，形成A00待复核，无reviews及后台任务。
+
+首次201；同request_id及同登记的重复请求200并返回原项目，不重复建档，修改字段冲突409。响应`{study_id,run_id,created,directory,message_zh}`。去重记录位于私有runtime/study-creation，A00保存服务器creation_request_id供重启或记录丢失后核对；每次新建操作使用新request_id，同方剂同病也独立目录。session.capabilities新增create_study。
+
+StudyView新增`storage:{directory,folders:[{name,label_zh}]}`，目录仅供查看和复制，不接受页面指定任意文件路径。六类目录为intake、raw、normalized、runs、reviews、reports；各项目所有版本及复核保持原有存储规则。新版首页及研究页提供新建入口，成功进入该项目A00；此功能不代表新疾病全流程已验收。
+
 ## 2026-10-15 只读页面性能约定
 
 页面状态仍来自Workflow.view。只读实例在单次请求内复用目录解析及已核验JSON的解析结果；每次独立读取仍逐文件核验SHA-256，不以修改时间代替内容校验。同研究、同manifest版本的并发状态读取合并执行，完成即移除，不缓存已完成状态；每个请求取得独立副本。复核、提交、任务及后台计算继续使用原Workflow，下载仍要求同研究登记及指纹一致。接口字段与权限不变。

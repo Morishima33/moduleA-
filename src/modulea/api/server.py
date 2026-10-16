@@ -24,6 +24,7 @@ from urllib.parse import parse_qs, quote, urlsplit
 from .. import __version__
 from ..config import Settings
 from ..core.kernel import ContractError, Kernel, read_json, verified_file
+from ..core.study_creation import CreationConflict, StudyCreation
 from ..tasks.manager import TaskManager
 from .errors import ApiError, from_contract, not_found
 from .views import PREUPLOAD_PROFILES, Views
@@ -46,10 +47,12 @@ class App:
         self.kernel = Kernel(settings)
         self.tasks = TaskManager(settings)
         self.views = Views(self.kernel, self.tasks)
+        self.creation = StudyCreation(self.kernel)
         self.token = secrets.token_urlsafe(32)
         self.routes = [
             ("GET", r"/api/v1/session", self.session),
             ("GET", r"/api/v1/studies", self.list_studies),
+            ("POST", r"/api/v1/studies", self.post_create_study),
             ("GET", rf"/api/v1/studies/{ID}", self.get_study),
             ("GET", rf"/api/v1/studies/{ID}/modules/{ID}", self.get_module),
             ("GET", rf"/api/v1/studies/{ID}/modules/{ID}/runs", self.get_runs),
@@ -96,8 +99,20 @@ class App:
     # ------------------------------------------------------------------ 读取
     def session(self, req):
         return {"token": self.token, "version": __version__, "platform": sys.platform,
-                "capabilities": {"review": True, "batch_review": True, "tasks": True, "trash": True, "module_actions": False, "source_upload": True, "ppi_compute": True},
+                "capabilities": {"review": True, "batch_review": True, "tasks": True, "trash": True, "module_actions": False, "source_upload": True, "ppi_compute": True, "create_study": True},
                 "decisions_zh": {"approved": "通过，允许下游使用", "rejected": "退回修改", "pending": "暂存待定"}}
+
+    def post_create_study(self, req):
+        """核对官方疾病身份并独立建档；不代签、不提交计算任务。"""
+        try:
+            result = self.creation.create(req.json())
+        except CreationConflict as error:
+            raise ApiError(409, "CREATE_CONFLICT", str(error)) from error
+        except ContractError as error:
+            if "暂时无法连接NLM" in str(error):
+                raise ApiError(503, "MESH_UNAVAILABLE", str(error), retryable=True) from error
+            raise from_contract(str(error)) from error
+        return result, 201 if result["created"] else 200
 
     def list_studies(self, req):
         return {"items": self.views.study_cards(trashed=False)}

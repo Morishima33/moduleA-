@@ -10,6 +10,7 @@ import ManageStudyModal from '../components/ManageStudyModal';
 import { DownstreamCard } from '../components/ModuleSections';
 import ModulePage from '../components/ModulePage';
 import ReviewPanel from '../components/ReviewPanel';
+import ProjectStorage from '../components/ProjectStorage';
 import { useApp } from '../lib/appContext';
 import { hrefFor, navigate } from '../lib/route';
 import { LEGEND, stateStyle } from '../lib/theme';
@@ -152,6 +153,7 @@ export default function StudyPage({ studyId, moduleId, runId }: { studyId: strin
           </div>
         ))}
       </nav>
+      <ProjectStorage studyId={studyId} storage={study.storage} />
       {/* 图例 */}
       <div className="legend">
         {LEGEND.map((l) => <span key={l.code}><i style={{ background: stateStyle(l.code).dot }} />{l.text}</span>)}

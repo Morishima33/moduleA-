@@ -10,6 +10,7 @@ import HomePage from './pages/HomePage';
 import StudyPage from './pages/StudyPage';
 import TaskDrawer from './components/TaskDrawer';
 import InboxDrawer from './components/InboxDrawer';
+import NewStudyModal from './components/NewStudyModal';
 
 // 任务仍在进行的状态
 const ACTIVE = new Set(['queued', 'running']);
@@ -22,6 +23,7 @@ export default function App() {
   const [refreshTick, setRefreshTick] = useState(0); // 刷新信号
   const [tasksOpen, setTasksOpen] = useState(false); // 任务面板是否打开
   const [focusTask, setFocusTask] = useState<string | undefined>(); // 面板中默认展开的任务
+  const [newStudyOpen, setNewStudyOpen] = useState(false); // 新建登记窗口
   const [inboxOpen, setInboxOpen] = useState(false); // 待办面板是否打开
   const [inbox, setInbox] = useState<GlobalInboxEntry[]>([]); // 全局待办
   const [tracked, setTracked] = useState<Set<string>>(new Set()); // 正在跟踪的活动任务编号
@@ -87,6 +89,7 @@ export default function App() {
       bumpRefresh,
       openTasks,
       openInbox: () => setInboxOpen(true),
+      openNewStudy: () => setNewStudyOpen(true),
       trackTasks,
       setCrumb,
       currentStudyId: route.page === 'study' ? route.studyId || null : null,
@@ -136,6 +139,7 @@ export default function App() {
               待你处理
               <Badge count={inbox.length} showZero color="#C76E00" style={{ marginLeft: 6 }} />
             </Button>
+            {route.page === 'study' && <Button disabled={!session?.capabilities.create_study} onClick={() => setNewStudyOpen(true)}>新建研究</Button>}
             {/* 后台任务入口；有活动任务时显示数量 */}
             <Button icon={<UnorderedListOutlined />} onClick={() => openTasks()}>
               后台任务
@@ -154,6 +158,7 @@ export default function App() {
         <HomePage />
       )}
 
+      <NewStudyModal open={newStudyOpen} onClose={() => setNewStudyOpen(false)} onCreated={bumpRefresh} />
       {/* 后台任务抽屉 */}
       <TaskDrawer
         open={tasksOpen}

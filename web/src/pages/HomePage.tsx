@@ -1,5 +1,5 @@
 // 文件用途：首页。显示研究卡片（进度、下一步、待办数、继续按钮）、全局待办、回收站（列表与恢复）。
-import { Alert, Button, Empty, Skeleton, Tooltip } from 'antd';
+import { Alert, Button, Empty, Skeleton } from 'antd';
 import { useEffect, useState } from 'react';
 import { api, errorText } from '../api/client';
 import type { GlobalInboxEntry, StudyCard } from '../api/types';
@@ -51,13 +51,9 @@ export default function HomePage() {
           <h1 style={{ margin: 0, fontSize: 26 }}>我的研究</h1>
           <p className="muted small" style={{ margin: '4px 0 0' }}>一个方剂 + 一个疾病 = 一项研究。点击研究进入工作页。</p>
         </div>
-        <Tooltip title="新建研究请暂用原工作台（新接口尚未提供创建功能）">
-          <span>
-            <Button type="primary" size="large" disabled>新建研究</Button>
-          </span>
-        </Tooltip>
+        <Button type="primary" size="large" disabled={!app.session?.capabilities.create_study} onClick={app.openNewStudy}>新建研究</Button>
       </div>
-      <div className="small muted" style={{ marginTop: -12 }}>新建研究请暂用原工作台。</div>
+      <div className="small muted" style={{ marginTop: -12 }}>每项研究独立保存资料、运行结果、复核记录和报告。</div>
 
       {error && <Alert type="error" showIcon message={error} />}
 
@@ -153,6 +149,7 @@ function StudyCardView({ card }: { card: StudyCard }) {
           <KindTag kind={s.kind} />
         </div>
         <div className="small muted">{meta}</div>
+        <div className="small muted" style={{ overflowWrap: 'anywhere' }}>项目编号：<span className="mono">{s.study_id}</span></div>
         {/* 归档未就绪时显示原因 */}
         {!card.archive_ok && <ArchiveAlert error={card.archive_error_zh} compact />}
         {/* 进度分段条 */}

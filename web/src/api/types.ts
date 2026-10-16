@@ -1,6 +1,29 @@
 // 文件用途：本机接口（/api/v1）返回数据的 TypeScript 类型；字段与 src/modulea/api/AGENTS.md 契约一一对应。
 // 改字段前先改契约文件，再改这里；前端不自行推算状态。
 
+/** 新研究的明确登记；物种、范围及核对证据由服务端生成。 */
+export interface NewStudyInput {
+  request_id: string;
+  formula: string;
+  herbs: string;
+  disease: string;
+  mesh_term: string;
+  mesh_id: string;
+  operator: string;
+  analysis_purpose: 'formal_research' | 'workflow_test';
+}
+export interface CreatedStudy {
+  study_id: string;
+  run_id: string;
+  created: boolean;
+  directory: string;
+  message_zh: string;
+}
+export interface ProjectStorage {
+  directory: string;
+  folders: { name: string; label_zh: string }[];
+}
+
 /** 状态码：与契约第 2 节一致 */
 export type StateCode =
   | 'idle' | 'ready' | 'running' | 'incomplete' | 'failed' | 'waiting' | 'empty'
@@ -105,6 +128,7 @@ export interface GlobalInboxEntry extends InboxEntry {
 
 /** 研究页 */
 export interface StudyView {
+  storage?: ProjectStorage;
   study: StudyInfo;
   purpose: Purpose | null;
   archive_ok: boolean;

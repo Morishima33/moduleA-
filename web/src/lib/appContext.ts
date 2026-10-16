@@ -8,6 +8,7 @@ export interface AppContextValue {
   refreshTick: number; // 刷新信号：数值变化时页面重新加载数据
   bumpRefresh: () => void; // 触发一次刷新
   openTasks: (taskId?: string) => void; // 打开任务面板（可指定任务）
+  openNewStudy: () => void; // 打开新研究登记，创建本身不启动计算
   openInbox: () => void; // 打开全局待办
   trackTasks: (tasks: (Task | null | undefined)[]) => void; // 登记需要跟踪的活动任务
   setCrumb: (title: string | null) => void; // 设置顶栏位置中的研究名
