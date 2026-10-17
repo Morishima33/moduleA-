@@ -1,5 +1,9 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-10-17 A02失败来源定向重试
+
+新增POST `/studies/{sid}/modules/A02/actions/retry_sources`：JSON `{expected_a00,expected_run,expected_staging,databases,reason}`，databases为当前获取失败的OTP/TTD/PharmGKB非空去重列表；只重取选中失败来源。沿用令牌、来源版本、回收站和忙碌校验，后台`a02_sources_retry`进入统一run_disease产生新的待复核A02，其他来源和历史保持。返回202 `{task,created,message_zh}`；版本过期409，不自动重试提交或批准。SourceUploadItem增加可选`can_retry`；状态来自归档source_status。失败或缺资料时数字显示“未取得”，成功空结果才显示0。原始失败查询轨迹随失败来源另存，不作为候选发布。
+
 ## 2026-10-16 新建研究与独立项目目录（用户授权）
 
 新增POST `/studies`：`{request_id,formula,herbs,disease,mesh_term,mesh_id,operator,analysis_purpose}`。request_id为`create_`加32位小写十六进制；用途由用户明确选择formal_research或workflow_test。只接受上述字段，不接受客户端MeSH证据、批准、路径或自动计算选项。服务器固定人类9606和“仅本病，不纳入亚型”，复用原NLM核对函数；失败不建研究。核对成功只调用Workflow.create，形成A00待复核，无reviews及后台任务。

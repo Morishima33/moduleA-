@@ -39,13 +39,16 @@ export default function StudyPage({ studyId, moduleId, runId }: { studyId: strin
 
   // 读取研究页
   useEffect(() => {
+    let current = true; // 新请求或离开页面后，不接纳旧响应。
     api.study(studyId)
       .then((s) => {
+        if (!current) return;
         setStudy(s); // 更新研究数据
         setStudyError(null);
         app.trackTasks(s.active_tasks); // 跟踪活动任务
       })
-      .catch((e) => setStudyError(e instanceof ApiError ? e : new ApiError(0, 'UNKNOWN', errorText(e))));
+      .catch((e) => { if (current) setStudyError(e instanceof ApiError ? e : new ApiError(0, 'UNKNOWN', errorText(e))); });
+    return () => { current = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studyId, app.refreshTick, reloadTick]);
 
@@ -58,16 +61,20 @@ export default function StudyPage({ studyId, moduleId, runId }: { studyId: strin
   // 读取模块页
   useEffect(() => {
     if (!mid) return; // 研究尚未加载
+    let current = true; // 模块切换、刷新和卸载均使旧请求失效。
     api.module(studyId, mid, runId)
       .then((v) => {
+        if (!current) return;
         setView(v); // 更新模块数据
         setModuleError(null);
         app.trackTasks(v.tasks); // 跟踪本模块任务
       })
       .catch((e) => {
+        if (!current) return;
         setView(null);
         setModuleError(e instanceof ApiError ? e : new ApiError(0, 'UNKNOWN', errorText(e)));
       });
+    return () => { current = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studyId, mid, runId, app.refreshTick, reloadTick]);
 

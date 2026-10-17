@@ -70,22 +70,25 @@ def parse_source(meta, data):  # 所有获取方式进入同一候选解析函�
         require(db == "GeneCards", "GeneCards CSV只能用于GeneCards来源")  # 拒绝错库导入。
         reader = csv.DictReader(io.StringIO(text), strict=True)  # 使用官方逗号格式及严格引号解析。
         headers = [str(name).strip() for name in (reader.fieldnames or [])]  # 官方链接列可能带一个前导空格。
-        require(headers and len(headers) == len(set(headers)) and all(headers), "GeneCards CSV存在空表头或重复字段")  # 不任取重复列。
-        require({"Gene Symbol", "Relevance score", "GC Id", "Uniprot ID", "Category"} <= set(headers), "GeneCards CSV缺少官方必需字段")  # 不猜列位置。
-        reader.fieldnames = headers  # 后续以唯一原生字段名读取。
-        try:  # 严格CSV语法错误需要给用户可处理提示。
-            source_rows = list(reader)  # 完整解析成功后才进入候选，不发布半表。
-        except csv.Error as error:  # 引号损坏不显示无法理解的内部错误。
-            raise ValueError("GeneCards CSV格式损坏：请重新导出并检查引号与分隔符") from error  # 不猜测修复原文件。
-        for index, row in enumerate(source_rows, 2):  # 所有行保留原始定位。
-            require(None not in row and all(value is not None for value in row.values()), "GeneCards CSV行列不完整：第" + str(index) + "行")  # 不接纳截断或多余列。
-            require(row["Gene Symbol"].strip(), "GeneCards CSV存在空基因名称：第" + str(index) + "行")  # 空符号不伪造记录。
-            try:  # 只检查评分格式，不修改原始精度。
-                score = float(row["Relevance score"])  # 原始关联评分不是纳入阈值。
-            except ValueError as error:  # 报告可定位的输入错误。
-                raise ValueError("GeneCards原始评分无效：第" + str(index) + "行") from error  # 不将缺评分补零。
-            require(math.isfinite(score), "GeneCards原始评分必须为有限数值")  # 禁止NaN或无穷值。
-            entries.append({"raw_symbol": row["Gene Symbol"], "raw_id": row["GC Id"], "raw_score": row["Relevance score"], "score_name": "GeneCards Relevance score", "raw_uniprot": row["Uniprot ID"], "gene_category": row["Category"], "target_name": row.get("Description", ""), "gifts": row.get("Gifts", ""), "evidence_url": row.get("GeneCards Link", ""), "source_row": index, "relation_type": "GeneCards搜索关联；非逐条实验确认的疾病致病证据"})  # 疾病词来自用户确认的实际检索元信息。
+        if not {"Gene Symbol", "Relevance score", "GC Id", "Uniprot ID", "Category"} <= set(headers):
+            from genecards_source import parse_search_export
+            entries = parse_search_export(text)  # 搜索导出使用明确的新字段集，不补造稳定ID。
+        else:  # 原格式和原定位规则保持。
+            require(headers and len(headers) == len(set(headers)) and all(headers), "GeneCards CSV存在空表头或重复字段")  # 不任取重复列。
+            reader.fieldnames = headers  # 后续以唯一原生字段名读取。
+            try:  # 严格CSV语法错误需要给用户可处理提示。
+                source_rows = list(reader)  # 完整解析成功后才进入候选，不发布半表。
+            except csv.Error as error:  # 引号损坏不显示无法理解的内部错误。
+                raise ValueError("GeneCards CSV格式损坏：请重新导出并检查引号与分隔符") from error  # 不猜测修复原文件。
+            for index, row in enumerate(source_rows, 2):  # 所有行保留原始定位。
+                require(None not in row and all(value is not None for value in row.values()), "GeneCards CSV行列不完整：第" + str(index) + "行")  # 不接纳截断或多余列。
+                require(row["Gene Symbol"].strip(), "GeneCards CSV存在空基因名称：第" + str(index) + "行")  # 空符号不伪造记录。
+                try:  # 只检查评分格式，不修改原始精度。
+                    score = float(row["Relevance score"])  # 原始关联评分不是纳入阈值。
+                except ValueError as error:  # 报告可定位的输入错误。
+                    raise ValueError("GeneCards原始评分无效：第" + str(index) + "行") from error  # 不将缺评分补零。
+                require(math.isfinite(score), "GeneCards原始评分必须为有限数值")  # 禁止NaN或无穷值。
+                entries.append({"raw_symbol": row["Gene Symbol"], "raw_id": row["GC Id"], "raw_score": row["Relevance score"], "score_name": "GeneCards Relevance score", "raw_uniprot": row["Uniprot ID"], "gene_category": row["Category"], "target_name": row.get("Description", ""), "gifts": row.get("Gifts", ""), "evidence_url": row.get("GeneCards Link", ""), "source_row": index, "relation_type": "GeneCards搜索关联；非逐条实验确认的疾病致病证据"})  # 疾病词来自用户确认的实际检索元信息。
     elif fmt == "detailed_txt":  # 详细人工导出使用固定制表符和明确表头。
         require(db in ("GeneCards", "TTD", "PharmGKB"), "详细候选TXT仅用于GeneCards、TTD或PharmGKB")  # OMIM继续使用专用适配器。
         reader = csv.DictReader(io.StringIO(text), delimiter="\t")  # 不依据文件后缀或内容猜分隔符。
@@ -171,7 +174,9 @@ def parse_source(meta, data):  # 所有获取方式进入同一候选解析函�
         scope_id = fingerprint([db, digest, term, did])[:24]  # 相同来源及疾病条目复用同一范围决定。
         records.append({"record_id": fingerprint([db, digest, entry["source_row"]])[:24], "database": db, "source_row": entry["source_row"], "raw_symbol": symbol, "raw_id": str(entry.get("raw_id") or ""), "raw_score": entry.get("raw_score") if entry.get("raw_score") is not None else "", "score_name": str(entry.get("score_name") or ""), "disease_term": term, "disease_id": did, "scope_id": scope_id, "scope": "pending", "identity_status": hint, "relation_type": str(entry.get("relation_type") or "上传资料，范围待核验")})  # 原分数缺失保持空值。
         if fmt in ("ttd_snapshot", "detailed_txt", "genecards_csv"):  # 原生状态与身份字段也可在网页追溯。
-            records[-1].update({key: str(entry.get(key) or "") for key in ("clinical_status", "target_name", "raw_uniprot", "source_record_id", "evidence_url", "gene_category", "gifts")})  # 未知附加列仍只保存在原文件。
+            records[-1].update({key: str(entry.get(key) or "") for key in ("clinical_status", "target_name", "raw_uniprot", "source_record_id", "evidence_url", "gene_category", "gifts")})
+            if "knowledge" in entry:
+                records[-1]["knowledge"] = str(entry["knowledge"])  # 独立保留，不替代Gifts。  # 未知附加列仍只保存在原文件。
     return records  # 只返回候选，不返回正式疾病基因集合。
 
 def organize(datasets, decisions, databases=DATABASES, profile_version="A02.source_profile.default.1"):  # 汇总当前研究启用的来源版本。

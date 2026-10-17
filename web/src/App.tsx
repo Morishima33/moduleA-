@@ -56,23 +56,49 @@ export default function App() {
     });
   }, []);
 
-  // 有活动任务时每 3 秒轮询；发现任务结束就刷新当前页面
+  // 启动、进入研究及重新回到页面时发现活动任务，避免漏掉快速完成的任务。
   useEffect(() => {
-    if (tracked.size === 0) return; // 没有活动任务时不轮询
-    const timer = window.setInterval(async () => {
+    let current = true;
+    async function recover() {
+      if (document.visibilityState === 'hidden') return;
+      try { const r = await api.tasks({ active: true }); if (current) { trackTasks(r.items); bumpRefresh(); } }
+      catch { /* 保留现有页面，下一次聚焦重试。 */ }
+    }
+    void recover();
+    window.addEventListener('focus', recover);
+    document.addEventListener('visibilitychange', recover);
+    return () => { current = false; window.removeEventListener('focus', recover); document.removeEventListener('visibilitychange', recover); };
+  }, [trackTasks, bumpRefresh, route.studyId]);
+
+  // 串行轻量轮询；终态刷新并补一次核对，不在每次轮询重载研究归档。
+  useEffect(() => {
+    if (tracked.size === 0) return;
+    let current = true, pending = false;
+    async function poll() {
+      if (pending) return;
+      pending = true;
       try {
-        const r = await api.tasks({ active: true }); // 读取全部活动任务
-        const still = new Set(r.items.map((t) => t.task_id)); // 仍在进行的编号
-        const ended = [...trackedRef.current].filter((id) => !still.has(id)); // 已结束的编号
-        if (ended.length) {
-          setTracked(new Set([...trackedRef.current].filter((id) => still.has(id)))); // 移除已结束任务
-          bumpRefresh(); // 刷新研究与模块数据
+        const r = await api.tasks({ active: true });
+        if (!current) return;
+        const still = new Set(r.items.map((t) => t.task_id));
+        const ended = new Set([...trackedRef.current].filter((id) => !still.has(id)));
+        if (ended.size) {
+          setTracked(old => new Set([...old].filter(id => !ended.has(id))));
+          bumpRefresh();
         }
-      } catch {
-        // 轮询失败时下一轮再试
-      }
-    }, 3000);
-    return () => window.clearInterval(timer); // 清理定时器
+      } catch { /* 网络失败不终止跟踪，也不把失败当作完成。 */ }
+      finally { pending = false; }
+    }
+    void poll();
+    const timer = window.setInterval(poll, 3000);
+    return () => { current = false; window.clearInterval(timer); };
+  }, [tracked, bumpRefresh]);
+
+  // 终态清空跟踪后再核对一次，覆盖任务落盘与页面读取的边界。
+  useEffect(() => {
+    if (tracked.size) return;
+    const timer = window.setTimeout(bumpRefresh, 1000);
+    return () => window.clearTimeout(timer);
   }, [tracked, bumpRefresh]);
 
   /** 打开任务面板 */

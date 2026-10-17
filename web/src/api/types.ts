@@ -232,6 +232,7 @@ export interface SourceUploadInfo {
   sources: SourceUploadItem[];
 }
 export interface SourceUploadItem {
+  can_retry?: boolean; // 由后端判断当前失败来源可否重取
   database: string; label_zh: string; status_zh: string; hint_zh: string;
   uploaded_name: string | null; sha256: string | null; download_url: string | null;
   formats: { value: string; label_zh: string; accept: string; template_url: string }[];

@@ -26,22 +26,23 @@ def _request_json(url, opener=urllib.request.urlopen):  # 一次受控读取官�
     except (OSError, ValueError) as error:  # 网络或JSON失败都不是零结果。
         raise ContractError("ClinPGx查询失败，本次未发布部分数据") from error  # 提示稍后重试或上传。
 
-def fetch_pharmgkb(terms, opener=urllib.request.urlopen, sleeper=time.sleep):  # 依次核对MeSH首选词和Entry Term。
+def _fetch_pharmgkb(terms, opener, sleeper, requests):  # 依次核对MeSH首选词和Entry Term。
     cleaned = []  # 保留原顺序并去除完全重复词。
     for term in terms:  # 只查询A00已经核验的官方词。
         value = str(term).strip()  # 空词不发送请求。
         if value and value.casefold() not in {item.casefold() for item in cleaned}:  # 大小写不形成新查询。
             cleaned.append(value)  # 记录实际查询词。
     require(bool(cleaned), "缺少已核对的MeSH首选词或Entry Term")  # 不由简称猜疾病。
-    requests, exact = [], {}  # 保存每次响应和唯一精确实体。
+    exact = {}  # 保存每次响应和唯一精确实体。
     for index, term in enumerate(cleaned):  # 顺序查询方便复算。
         if index:  # 首次请求前无需等待。
             sleeper(RATE_SECONDS)  # 遵守每秒不超过两次。
         url = DISEASE_ENDPOINT + "?" + urllib.parse.urlencode({"name": term})  # 查询参数安全编码。
         status, payload = _request_json(url, opener)  # 失败时整体退出。
         requests.append({"term": term, "url": url, "status": status, "response": payload})  # 404也完整留痕。
-        candidates = payload if isinstance(payload, list) else payload.get("data", []) if isinstance(payload, dict) else []  # 兼容官方列表包装。
+        candidates = [] if status == 404 else _items(payload)  # 兼容官方列表包装。
         for row in candidates:  # 只有名称完全等于当前官方词才算精确实体。
+            require(isinstance(row, dict), "ClinPGx疾病记录不完整")
             if str(row.get("name", "")).strip().casefold() == term.casefold() and row.get("id"):
                 exact[str(row["id"])] = row  # 同一实体跨Entry Term只保留一份。
     require(len(exact) <= 1, "ClinPGx返回多个精确疾病实体，须人工核对后再获取")  # 不任选一个。
@@ -50,12 +51,33 @@ def fetch_pharmgkb(terms, opener=urllib.request.urlopen, sleeper=time.sleep):  #
         sleeper(RATE_SECONDS)  # 与上一请求保持官方频率。
         url = GENE_ENDPOINT.format(disease_id=urllib.parse.quote(str(disease["id"]), safe=""))  # 稳定ID进入固定路径。
         status, payload = _request_json(url, opener)  # 基因接口失败时不发布疾病半成品。
-        require(status == 200 and isinstance(payload, list), "ClinPGx基因关系响应不完整")  # 失败不是零结果。
         requests.append({"term": "direct genes", "url": url, "status": status, "response": payload})  # 直接关系完整留痕。
-        for row in payload:  # 不经药物或变异间接扩展。
+        require(status == 200, "ClinPGx基因关系查询失败")
+        items = _items(payload)  # 兼容官方data包装，同时检查显式成功状态。
+        for row in items:  # 不经药物或变异间接扩展。
+            require(isinstance(row, dict) and isinstance(row.get("connectedObject"), dict), "ClinPGx基因关系记录不完整")
             obj = row.get("connectedObject", {})  # 官方连接对象。
             if obj.get("objCls") == "Gene" and obj.get("id"):  # 只收直接Gene对象。
                 genes.append({"id": obj["id"], "symbol": obj.get("symbol", ""), "name": obj.get("name", ""), "connectionTypes": row.get("connectionTypes", [])})  # 保存官方关系类型。
     snapshot = {"api": BASE_URL, "queried_at": now(), "official_terms": cleaned, "exact_disease": disease, "records": genes, "requests": requests, "status": "queried_zero_exact" if disease is None else "queried_exact"}  # 零结果与失败明确区分。
     data = json.dumps(snapshot, ensure_ascii=False, allow_nan=False).encode("utf-8")  # 作为原始来源归档。
     return {"database": "PharmGKB", "format": "pharmgkb_api", "query": " | ".join(cleaned), "retrieved_at": snapshot["queried_at"], "version": "ClinPGx API v1；以响应快照固定", "source_url": DISEASE_ENDPOINT, "name": "pharmgkb_exact_disease.json", "encoding": "utf-8-sig", "data": data, "source_status": snapshot["status"]}  # 进入统一A02入口。
+
+
+def _items(payload):
+    """仅接受完整列表或成功data包装，错误对象不能解释为有效空集。"""
+    if isinstance(payload, dict):
+        require(payload.get("status", "success") == "success", "ClinPGx返回错误状态")
+        payload = payload.get("data")
+    require(isinstance(payload, list), "ClinPGx关系响应不完整")
+    return payload
+
+
+def fetch_pharmgkb(terms, opener=urllib.request.urlopen, sleeper=time.sleep):
+    """失败也把已收到的原响应交给失败来源归档，不发布部分基因。"""
+    requests = []
+    try:
+        return _fetch_pharmgkb(terms, opener, sleeper, requests)
+    except Exception as error:
+        error.source_trace = {"requests": requests, "api": BASE_URL}
+        raise

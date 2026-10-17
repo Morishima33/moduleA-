@@ -86,6 +86,7 @@ class App:
             ("GET", rf"/api/v1/studies/{ID}/modules/A04/identity_evidence/{ID}", self.get_identity_evidence),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/upload", self.post_source_upload),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/process_sources", self.post_source_process),
+            ("POST", rf"/api/v1/studies/{ID}/modules/A02/actions/retry_sources", self.post_source_retry),
             ("GET", r"/api/v1/trash", self.list_trash),
             ("GET", r"/api/v1/inbox", self.get_inbox),
             ("GET", r"/api/v1/tasks", self.list_tasks),
@@ -332,6 +333,23 @@ class App:
             path.unlink()
             raise ApiError(409, "GATE_BLOCKED", "当前研究已有后台任务，本次资料未提交，请完成后重试")
         return {"task": task, "created": created, "message_zh": "资料已提交后台校验，处理结果见任务面板；尚未批准。" + self._task_message(task)}, 202
+
+    def post_source_retry(self, req, study_id):
+        """绑定当前来源版本，只提交选中的失败库。"""
+        body = req.json()
+        info = self._source_versions(req, study_id, "A02", body)
+        databases = body.get("databases")
+        allowed = {s["database"] for s in info["sources"] if s.get("can_retry")}
+        if not isinstance(databases, list) or not databases or not all(isinstance(db, str) for db in databases) or len(databases) != len(set(databases)) or not set(databases) <= allowed:
+            raise ApiError(422, "VALIDATION_FAILED", "请选择当前获取失败且支持自动重试的来源")
+        if not isinstance(body.get("reason"), str) or not 0 < len(body["reason"].strip()) <= 2000:
+            raise ApiError(422, "VALIDATION_FAILED", "请填写本次重试原因")
+        payload = {k: info[k] for k in ("expected_a00", "expected_run", "expected_staging")}
+        payload.update(databases=databases, reason=body["reason"].strip())
+        task, created = self.tasks.submit(study_id, "a02_sources_retry", "网页重试失败来源", payload)
+        if not created:
+            raise ApiError(409, "GATE_BLOCKED", "当前研究已有后台任务，请完成后重试")
+        return {"task": task, "created": created, "message_zh": "失败来源重试已提交；结果仍需人工复核。" + self._task_message(task)}, 202
 
     def post_source_process(self, req, study_id, module_id):
         if module_id != "A01":

@@ -68,6 +68,12 @@ export default function SourceUploads({ studyId, moduleId, info }: { studyId: st
   const [reason, setReason] = useState('整理本研究已上传的完整三库资料');
   const [notice, setNotice] = useState<string | null>(null);
   function track(task: Task) { app.trackTasks([task]); app.openTasks(task.task_id); app.bumpRefresh(); }
+  async function retry(database: string) {
+    setBusy(true); setNotice(null);
+    try { const r = await api.retrySources(studyId, { expected_a00: info.expected_a00, expected_run: info.expected_run, expected_staging: info.expected_staging, databases: [database], reason: "重试本研究获取失败的" + database }); setNotice(r.message_zh); track(r.task); }
+    catch (error) { setNotice(errorText(error)); app.bumpRefresh(); }
+    finally { setBusy(false); }
+  }
   async function process() {
     setBusy(true); setNotice(null);
     try { const response = await api.processSources(studyId, { expected_a00: info.expected_a00, expected_run: info.expected_run, expected_staging: info.expected_staging, reason }); setNotice(response.message_zh); track(response.task); }
@@ -78,6 +84,8 @@ export default function SourceUploads({ studyId, moduleId, info }: { studyId: st
     <SectionHead title="数据库资料上传与更新" />
     <p className="small muted">{info.note_zh}</p>
     {!info.enabled && <Alert type="info" showIcon message={info.disabled_reason_zh} style={{ marginBottom: 12 }} />}
+    {info.sources.some(s => s.can_retry) && <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>{info.sources.filter(s => s.can_retry).map(s => <Button key={s.database} disabled={busy || !info.enabled} loading={busy} onClick={() => retry(s.database)}>重试 {s.label_zh} 获取</Button>)}</div>}
+    {moduleId === 'A02' && notice && <Alert showIcon message={notice} style={{ marginBottom: 12 }} />}
     <Collapse items={info.sources.map(source => ({ key: source.database, label: <span><strong>{source.label_zh}</strong> · {source.status_zh}</span>, children: <UploadForm studyId={studyId} moduleId={moduleId} info={info} source={source} /> }))} />
     {moduleId === 'A01' && <div style={{ marginTop: 16 }}>
       <p className="small muted">{info.process_reason_zh || '完整三库资料和共同身份依据齐备，可整理为新版本。'}</p>

@@ -87,6 +87,16 @@ def run_continue(settings: Settings, task: dict, manager: TaskManager) -> str:
 
 
 # 上传解析只在科学子进程运行；从已绑定的私有暂存文件读取原始字节。
+def run_a02_sources_retry(settings: Settings, task: dict, manager: TaskManager) -> str:
+    """只重取失败的疾病来源，不推进下游。"""
+    from a02_retry_sources import retry_sources
+    manager.update(task["task_id"], progress={"step_zh": "重取选定失败来源", "done": 0, "total": 1})
+    result = retry_sources(full_workflow(settings.data_root), task["study_id"], json.loads(task["payload"]))
+    failures = result["summary"].get("失败来源库数", 0)
+    manager.update(task["task_id"], progress={"step_zh": "新A02已归档，等待人工核查", "done": 1, "total": 1})
+    return "已生成新A02候选：" + result["run_id"] + "；仍失败来源数：" + str(failures) + "。未自动批准或启动下游。"
+
+
 def run_source_upload(settings: Settings, task: dict, manager: TaskManager) -> str:
     payload = json.loads(task.get("payload") or "{}")
     source = dict(payload["source"])
@@ -258,7 +268,7 @@ def run_a06_trial(settings, task, manager):
     return "试算已归档：" + result["trial_id"] + "；真实评分" + str(result["summary"]["completed"]) + "/225，未批准正式科研结果"
 
 
-HANDLERS = {"a06_trial":run_a06_trial,"a06_coverage_confirm":run_a06_coverage_confirm,"a06_coverage":run_a06_quality,"a06_quality":run_a06_quality,"a03_selection":run_a03_selection,"a06_plan":run_a06_plan,"a06_candidates": run_a06_candidates, "a05_display": run_a05_display, "a04_identity": run_a04_identity, "a04_ppi": run_a04_ppi, "continue": run_continue, "source_upload": run_source_upload, "a01_sources": run_a01_sources}
+HANDLERS = {"a02_sources_retry": run_a02_sources_retry, "a06_trial":run_a06_trial,"a06_coverage_confirm":run_a06_coverage_confirm,"a06_coverage":run_a06_quality,"a06_quality":run_a06_quality,"a03_selection":run_a03_selection,"a06_plan":run_a06_plan,"a06_candidates": run_a06_candidates, "a05_display": run_a05_display, "a04_identity": run_a04_identity, "a04_ppi": run_a04_ppi, "continue": run_continue, "source_upload": run_source_upload, "a01_sources": run_a01_sources}
 
 
 from .drawing import run_figure, run_packages, run_bundle

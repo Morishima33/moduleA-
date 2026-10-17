@@ -83,7 +83,7 @@ def present_a01_multisource(result: dict, ctx: dict) -> Parts:
 def present_a02(result: dict, ctx: dict) -> Parts:
     s = result.get("summary") or {}
     t = tables_of(result)
-    sources = t.get("source_summary") or []
+    sources = source_display_rows(t.get("source_summary") or [])
     parts = Parts()
     expected = len(s.get("databases") or []) or len(sources) or None
     parts.kpis = clean([
@@ -110,8 +110,21 @@ def present_a02(result: dict, ctx: dict) -> Parts:
     if pick(s, "身份问题组数"):
         parts.focus.append(focus("身份问题组", f"共 {s['身份问题组数']} 组；处理方式：{pick(s, '身份问题处理', default='见明细')}", tier="should_know"))
     for row in sources:
-        if str(row.get("records")) == "0":
+        if str(row.get("records")) == "0" and row.get("availability") == "已查询但0条精确记录":
             parts.focus.append(focus(f"{row.get('database')} 为 0 条", f"状态：{row.get('availability')}。已检索但无精确命中，不等于未提供资料。", tier="should_know"))
     if s.get("handoff_blocked") and not parts.focus:
         parts.focus.append(focus("尚不能交给下游", "当前为候选整理阶段或仍有待决事项。", blocks=["A03"]))
     return parts
+
+
+def source_display_rows(rows):
+    """展示时区分未取得和真实空结果；不改写原始归档计数。"""
+    result = []
+    for row in rows:
+        item = dict(row)
+        if str(item.get("availability", "")).startswith(("查询失败", "尚未提供")):
+            for key in ("records", "distinct_raw_symbols", "missing_score"):
+                if key in item:
+                    item[key] = "未取得"
+        result.append(item)
+    return result

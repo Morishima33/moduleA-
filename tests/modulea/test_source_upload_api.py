@@ -80,3 +80,22 @@ class SourceUploadApiTests(unittest.TestCase):
         body={k:info[k] for k in ("expected_a00","expected_run","expected_staging")};body["reason"]="fixture"
         status,_=self.call("POST",self.endpoint("actions/process_sources"),json.dumps(body));self.assertEqual(status,409)
         self.assertEqual(self.app.tasks.list(self.sid),[])
+
+    def test_failed_source_retry_security_versions_and_payload(self):
+        info = {"enabled": True, "expected_a00": "run_fixture_a00", "expected_run": "run_fixture_a02", "expected_staging": "", "sources": [{"database": "OTP", "can_retry": True}, {"database": "TTD", "can_retry": False}]}
+        body = {k: info[k] for k in ("expected_a00", "expected_run", "expected_staging")}
+        body.update(databases=["OTP"], reason="合成失败来源重试")
+        endpoint = self.endpoint("actions/retry_sources", "A02")
+        with patch.object(self.app, "get_sources", return_value=info), patch.object(self.app.tasks, "_spawn"):
+            self.assertEqual(self.call("POST", endpoint, json.dumps(body), token=False)[0], 403)
+            self.assertEqual(self.call("POST", endpoint, json.dumps(body), origin="https://outside.invalid")[0], 403)
+            self.assertEqual(self.call("POST", endpoint, json.dumps(dict(body, expected_run="old")))[0], 409)
+            for databases in ([], ["TTD"], ["OTP", "OTP"], [None], ["GeneCards"]):
+                self.assertEqual(self.call("POST", endpoint, json.dumps(dict(body, databases=databases)))[0], 422)
+            self.assertEqual(self.app.tasks.list(self.sid), [])
+            status, value = self.call("POST", endpoint, json.dumps(body))
+            self.assertEqual(status, 202)
+            self.assertNotIn("payload", value["task"])
+            payload = json.loads(self.app.tasks._raw(value["task"]["task_id"])["payload"])
+            self.assertEqual(payload, body)
+            self.assertEqual(self.call("POST", endpoint, json.dumps(body))[0], 409)

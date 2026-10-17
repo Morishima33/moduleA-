@@ -493,6 +493,9 @@ class Views:
             raise not_found("表格 " + name)
         if isinstance(rows, dict):
             return {"name": name, "kind": "object", "data": rows}
+        if module_id == "A02" and name == "source_summary":
+            from ..presenters.sources import source_display_rows
+            rows = source_display_rows(rows)
         if q:
             needle = q.lower()
             rows = [r for r in rows if any(needle in str(v).lower() for v in r.values())]

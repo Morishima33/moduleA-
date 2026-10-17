@@ -54,7 +54,7 @@ def public_sources(a00_summary):  # 历史入口继续要求OTP与TTD整体成�
 
 def _failure(database, error):  # 将单库失败保存为可追溯状态，而不是伪零结果。
     message = str(error).strip() or type(error).__name__  # 页面显示业务错误，不保存堆栈。
-    snapshot = {"database": database, "status": "query_failed", "attempted_at": now(), "error": message}  # 固定失败事实。
+    snapshot = {"database": database, "status": "query_failed", "attempted_at": now(), "error": message, "trace": getattr(error, "source_trace", {})}  # 失败原响应仅归档，不发布候选。
     return {"database": database, "format": "source_failure", "query": "按A00已核对MeSH词自动查询", "retrieved_at": snapshot["attempted_at"], "version": "查询未完成，无数据库结果版本", "source_url": {"OTP": "https://api.platform.opentargets.org/", "TTD": "https://ttd.idrblab.cn/", "PharmGKB": "https://api.clinpgx.org/v1"}[database], "name": database.lower() + "_failure.json", "encoding": "utf-8-sig", "source_status": "query_failed", "data": json.dumps(snapshot, ensure_ascii=False).encode("utf-8")}  # 统一进入A02来源清单。
 
 def new_research_sources(workflow, manifest, a00):  # 新流程独立采集三库并合并A00预上传资料。

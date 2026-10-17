@@ -69,10 +69,11 @@ def context(workflow, manifest, module_id, result, historical=False, active=Fals
         else:
             row = states.get(database)
             status = row.get("availability", "尚未提供资料") if row else "尚未提供资料"
-            if row:
+            if row and (item or {}).get("source_status") != "query_failed":
                 status += "；归档候选记录 " + str(row.get("records", "—")) + " 条"
         sources.append({"database": database, "label_zh": SOURCE_LABELS.get(database, database), "status_zh": status,
-                        "formats": options, "hint_zh": A01_HINTS.get(database, "按所选格式解析，原始评分、疾病条目及文件字节保留；不新增筛选阈值。"),
+                        "can_retry": bool(enabled and module_id == "A02" and database in ("OTP", "TTD", "PharmGKB") and (item or {}).get("source_status") == "query_failed"),
+                        "formats": options, "hint_zh": ("支持Gene Symbol旧格式及Symbol/Name/Type/Relevance Score/Knowledge搜索导出；保留标题和版权说明即可，无需手动改列名。" if database == "GeneCards" else A01_HINTS.get(database, "按所选格式解析，原始评分、疾病条目及文件字节保留；不新增筛选阈值。")),
                         "uploaded_name": (item or {}).get("name"), "sha256": ((item or {}).get("source_record") or {}).get("sha256"),
                         "download_url": f"/api/v1/studies/{sid}/modules/{module_id}/sources/{database}/file" if item else None})
     complete = valid and set(uploaded) == {"TCMSP", "HERB", "BATMAN"}
