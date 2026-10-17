@@ -29,6 +29,7 @@ import ReportSummary from './special/ReportSummary';
 import Venn from './special/Venn';
 import ComponentTop from './special/ComponentTop';
 import SourceUploads from './SourceUploads';
+import DiseaseScopeReview from './DiseaseScopeReview';
 import PpiRun from './PpiRun';
 import IdentityReview, { IdentityPlanStatus } from './IdentityReview';
 
@@ -102,6 +103,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       {view.enrichment_display && <EnrichmentConfirmation studyId={studyId} info={view.enrichment_display} onPendingChange={setKeggPending} />}
       {/* 待核验事项紧接标题；证据直接展开，不藏在结果末尾。 */}
       {!view.historical && <FocusSection items={view.focus} evidence={sp.ppi_identity ? <IdentityReview studyId={studyId} view={view} data={sp.ppi_identity} /> : undefined} />}
+      {view.disease_scope && <DiseaseScopeReview key={view.run?.run_id} studyId={studyId} info={view.disease_scope} />}
       {view.historical && sp.ppi_identity && <section className="card"><h2>历史身份问题清单（只读）</h2><IdentityReview studyId={studyId} view={view} data={sp.ppi_identity} /></section>}
       {!sp.ppi_identity && view.identity_plan?.latest && <section className="card"><h2>身份核验方案与应用结果</h2><IdentityPlanStatus info={view.identity_plan} /></section>}
       {/* 窄屏时整体复核栏也在结果之前。 */}

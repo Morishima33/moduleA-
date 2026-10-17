@@ -259,7 +259,13 @@ export interface Special {
 }
 
 /** 模块页 */
+export interface DiseaseScopeInfo {
+  enabled: boolean; disabled_reason_zh: string; expected_a00: string; expected_run: string; expected_staging: string;
+  choices: { value: string; label_zh: string }[];
+  items: { scope_id: string; database: string; disease_term: string; disease_id: string; records: number; scope: string; source_name: string; source_url: string; identity_warning: string; direct_allowed: boolean }[];
+}
 export interface ModuleView {
+  disease_scope?: DiseaseScopeInfo | null;
   ranked_pathway_maps?: RankedPathwayMapsInfo | null;
   docking_artifacts?: DockingArtifactInfo | null;
   trial_preparation?: TrialPreparationInfo | null;

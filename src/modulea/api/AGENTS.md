@@ -1,5 +1,11 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-10-17 疾病范围核验前置及来源身份防混用
+
+ModuleView增加`disease_scope`：`{enabled,disabled_reason_zh,expected_a00,expected_run,expected_staging,items,choices}`。items包含当前完整scope_groups及`source_name,source_url,identity_warning,direct_allowed`，不受明细分页筛选影响。A02提示框下默认展开，全部范围选项来自后端，不预选本病。
+POST `/studies/{sid}/modules/A02/actions/scope_review`：`{expected_a00,expected_run,expected_staging,decisions:[{scope_id,scope}],reviewer,note,confirmed:true}`，必须完整覆盖当前条目且不重复。`a02_scope_review`任务调用既有run_disease的scope_change批次入口，保存新候选，不批准、不运行下游。版本、令牌、回收站和忙碌校验沿用分库上传；后台再次核验。来源文件内检索词与当前研究不符时，拒绝将对应组标为direct，仍可保留待核验或排除。
+新上传OMIM Excel使用`omim_xlsx_v2`，旧omim_xlsx接口上传自动升级到该解析分支；历史旧结果按旧格式可复算。新分支识别官方页尾说明而不生成候选。GeneCards/OMIM有可识别检索标题时必须同时匹配本次检索元信息与A00官方词；缺标题明确展示无法自动核对，不能声称已验证。旧来源不回写；旧错库文件显示身份警告，须由用户更换或做范围决定。
+
 ## 2026-10-17 A02失败来源定向重试
 
 新增POST `/studies/{sid}/modules/A02/actions/retry_sources`：JSON `{expected_a00,expected_run,expected_staging,databases,reason}`，databases为当前获取失败的OTP/TTD/PharmGKB非空去重列表；只重取选中失败来源。沿用令牌、来源版本、回收站和忙碌校验，后台`a02_sources_retry`进入统一run_disease产生新的待复核A02，其他来源和历史保持。返回202 `{task,created,message_zh}`；版本过期409，不自动重试提交或批准。SourceUploadItem增加可选`can_retry`；状态来自归档source_status。失败或缺资料时数字显示“未取得”，成功空结果才显示0。原始失败查询轨迹随失败来源另存，不作为候选发布。

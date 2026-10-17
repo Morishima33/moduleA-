@@ -13,7 +13,7 @@ DATABASES = ("GeneCards", "OMIM", "TTD", "DisGeNET", "OTP")  # 默认五库保�
 SUPPORTED_DATABASES = DATABASES + ("PharmGKB",)  # 研究级方案可以启用PharmGKB，但不改默认组合。
 SOURCE_PROFILES = {"A02.source_profile.default.1": DATABASES, "A02.source_profile.1": ("GeneCards", "OMIM", "TTD", "PharmGKB", "OTP"), "A02.source_profile.2": ("GeneCards", "OMIM", "TTD", "PharmGKB", "OTP"), "A02.source_profile.3": ("GeneCards", "OMIM", "TTD", "PharmGKB", "OTP")}  # v3增加流程测试缺库例外，历史方案保持不变。
 PROFILE_STUDIES = {"A02.source_profile.1": {"study_3c0c6805cc5a47d0a1722160988df238"}}  # 本次例外只授权给明确研究。
-FORMATS = {"genecards_csv": "GeneCards官方搜索结果CSV", "ttd_snapshot": "TTD官方双文件原始快照", "names": "逐行标识名单（无分数）", "omim": "OMIM Gene Map TSV", "omim_xlsx": "OMIM Gene Map Excel（.xlsx）", "detailed_txt": "详细候选TXT（制表符分隔）", "otp_legacy": "Kimi OTP历史结果JSON", "disgenet_legacy": "Kimi DisGeNET对照JSON", "tsv": "通用候选TSV（保留原始评分）", "otp_api": "OTP直接关联API快照", "pharmgkb_api": "ClinPGx官方API精确疾病快照", "source_failure": "自动来源查询失败记录"}  # 详细TXT执行严格表头校验。
+FORMATS = {"omim_xlsx_v2": "OMIM Gene Map Excel（新版完整性校验，.xlsx）", "genecards_csv": "GeneCards官方搜索结果CSV", "ttd_snapshot": "TTD官方双文件原始快照", "names": "逐行标识名单（无分数）", "omim": "OMIM Gene Map TSV", "omim_xlsx": "OMIM Gene Map Excel（.xlsx）", "detailed_txt": "详细候选TXT（制表符分隔）", "otp_legacy": "Kimi OTP历史结果JSON", "disgenet_legacy": "Kimi DisGeNET对照JSON", "tsv": "通用候选TSV（保留原始评分）", "otp_api": "OTP直接关联API快照", "pharmgkb_api": "ClinPGx官方API精确疾病快照", "source_failure": "自动来源查询失败记录"}  # 详细TXT执行严格表头校验。
 CONFIG = {"version": "A02.collect.2", "stage": "candidate_collection", "score_filter": None, "handoff_blocked": True}  # null表示尚未制定规则，不是score≥0。
 SCOPES = {"pending": "待核验", "direct": "本病直接条目", "subtype": "疾病亚型（首版不纳入）", "outside": "不属于本研究范围"}  # 专业人员决定范围，不自动遍历纳入。
 TABLE_LABELS = {"source_summary": "五库资料情况", "candidate_records": "原始候选与评分", "scope_groups": "疾病条目范围复核", "raw_union": "原始标识并集对照（非正式疾病集合）", "raw_reference": "原四库并集与OTP交集对照", "scope_history": "疾病范围复核留痕"}  # 不把候选写作正式靶点。
@@ -50,9 +50,9 @@ def metadata(item):  # 校验和收紧单份上传资料的元信息。
 def parse_source(meta, data):  # 所有获取方式进入同一候选解析函数。
     require(isinstance(data, bytes) and 0 < len(data) <= 16 * 1024 * 1024, "来源文件为空或超过16MB，请按数据库拆分")  # 大小是工程限制，不截断科研记录。
     fmt, db = meta["format"], meta["database"]  # 使用用户明确选择的适配器。
-    require(fmt not in ("omim", "omim_xlsx", "otp_legacy", "otp_api", "disgenet_legacy", "pharmgkb_api") or db == {"omim": "OMIM", "omim_xlsx": "OMIM", "otp_legacy": "OTP", "otp_api": "OTP", "disgenet_legacy": "DisGeNET", "pharmgkb_api": "PharmGKB"}[fmt], "文件格式与数据库不匹配")  # 防止跨库误用。
+    require(fmt not in ("omim", "omim_xlsx", "omim_xlsx_v2", "otp_legacy", "otp_api", "disgenet_legacy", "pharmgkb_api") or db == {"omim": "OMIM", "omim_xlsx": "OMIM", "omim_xlsx_v2": "OMIM", "otp_legacy": "OTP", "otp_api": "OTP", "disgenet_legacy": "DisGeNET", "pharmgkb_api": "PharmGKB"}[fmt], "文件格式与数据库不匹配")  # 防止跨库误用。
     try:  # 文本编码错误要作为可处理的输入问题显示。
-        text = "" if fmt == "omim_xlsx" else data.decode(meta["encoding"], errors="strict")  # Excel按工作簿读取，文本仍严格解码。
+        text = "" if fmt in ("omim_xlsx", "omim_xlsx_v2") else data.decode(meta["encoding"], errors="strict")  # Excel按工作簿读取，文本仍严格解码。
     except UnicodeDecodeError as error:  # 不让乱码进入候选或只显示内部异常。
         raise ValueError("资料文件无法按所选编码读取；请确认UTF-8或GBK后重新上传") from error  # 用户可以直接修正编码。
     entries = []  # 中间条目保留原始名称、评分和疾病字段。
@@ -101,6 +101,10 @@ def parse_source(meta, data):  # 所有获取方式进入同一候选解析函�
         reader = csv.DictReader(io.StringIO(text), delimiter="\t")  # 按已知Gene Map字段读取。
         require({"Approved Symbol", "Phenotype", "Phenotype MIM number"} <= set(reader.fieldnames or []), "OMIM导出缺少基因或表型字段")  # 不猜列位置。
         entries = [{"raw_symbol": row["Approved Symbol"] or "", "raw_id": row.get("Entrez Gene ID", "") or "", "disease_term": row["Phenotype"] or "", "disease_id": row["Phenotype MIM number"] or "", "source_row": index, "relation_type": "Gene Map表型行"} for index, row in enumerate(reader, 2) if row]  # 缺标准符号的行也留存。
+    elif fmt == "omim_xlsx_v2":
+        require(str(meta.get("name", "")).lower().endswith(".xlsx"), "OMIM Excel只支持.xlsx")
+        from omim_source_v2 import parse_excel
+        entries = parse_excel(data)
     elif fmt == "omim_xlsx":  # Excel保持原工作簿字节，不经过文本编码转换。
         require(str(meta.get("name", "")).lower().endswith(".xlsx"), "OMIM Excel只支持.xlsx；旧.xls请先另存为.xlsx")  # 不用后缀不明文件猜格式。
         from openpyxl import load_workbook  # 使用项目已有依赖只读解析工作簿。
@@ -249,6 +253,8 @@ def run_disease(workflow, study_id, expected_a00, expected_a02, updates, reason,
         require(selected_profile["version"] == "A02.source_profile.default.1" or (selected_profile["version"] == "A02.source_profile.1" and study_id in PROFILE_STUDIES.get(selected_profile["version"], set())) or (selected_profile["version"] == "A02.source_profile.2" and manifest.get("workflow_profile") == "A00.preupload.1") or (selected_profile["version"] == "A02.source_profile.3" and manifest.get("workflow_profile") == "A00.preupload.2"), "当前研究未获授权使用此A02数据库方案")  # v3只用于显式用途的新研究。
         for item in updates:  # 新上传替换同库当前版本，旧运行不覆盖。
             require(item.get("database") in selected_profile["databases"], "当前研究数据库方案不包含此来源")  # 研究级例外不扩散到其他库。
+            from source_identity import validate_source_identity
+            validate_source_identity(workflow.result(manifest, expected_a00)["summary"], item, item["data"])  # 文件内检索词必须与本次研究绑定，错文件不得发布。
             datasets[item["database"]] = dict(metadata(item), data=item["data"])  # 清除旧源引用，准备归档新原始文件。
         require(bool(datasets), "尚无疾病资料，请先导入或上传")  # 没取到资料不能生成成功空查询。
         if scope_change:  # 支持单条兼容及全表一次提交。
@@ -259,6 +265,13 @@ def run_disease(workflow, study_id, expected_a00, expected_a02, updates, reason,
             require(len(ids) == len(set(ids)), "批次含重复范围条目")  # 防止重复决定覆盖。
             if isinstance(scope_change, list):  # 全表提交必须覆盖当前全部条目。
                 require(set(ids) == valid_ids, "全表范围条目不完整或已改变，请刷新")  # 不把筛选后的局部当作全量。
+            from source_identity import validate_source_identity
+            for change in batch:  # CLI、旧网页和新网页同样禁止把错疾病来源纳入本病。
+                if change.get("scope") == "direct":
+                    require(change.get("scope_id") in valid_ids, "范围条目不属于当前研究")
+                    group = next(g for g in groups if g["scope_id"] == change["scope_id"])
+                    item = datasets[group["database"]]
+                    validate_source_identity(workflow.result(manifest, expected_a00)["summary"], item, item["data"])
             timestamp = now()  # 同批决定共享保存时间。
             for change in batch:  # 全批校验完成前不发布任何运行。
                 require(change.get("scope_id") in valid_ids and change.get("scope") in SCOPES, "范围条目或决定不合法")  # 检查合法决定。
@@ -274,7 +287,7 @@ def run_disease(workflow, study_id, expected_a00, expected_a02, updates, reason,
         run = workflow._begin(manifest, "A02", inputs, dict(CONFIG), reason)  # 统一内核创建新版本。
         for index, item in enumerate(inputs["datasets"]):  # 只归档本次新上传字节，旧来源沿用其校验引用。
             if "source_record" not in item:  # 不重复复制旧原始资料。
-                suffix = ".csv" if item["format"] == "genecards_csv" else (".txt" if item["format"] == "names" else (".xlsx" if item["format"] == "omim_xlsx" else (".tsv" if item["format"] in ("omim", "tsv", "detailed_txt") else ".json")))  # 按明确格式保留原文件类型。
+                suffix = ".csv" if item["format"] == "genecards_csv" else (".txt" if item["format"] == "names" else (".xlsx" if item["format"] in ("omim_xlsx", "omim_xlsx_v2") else (".tsv" if item["format"] in ("omim", "tsv", "detailed_txt") else ".json")))  # 按明确格式保留原文件类型。
                 path = root / "raw" / run["run_id"] / (item["database"].lower() + suffix)  # 路径只由数据库白名单和格式决定。
                 path.parent.mkdir(parents=True, exist_ok=True)  # 新运行的原始资料目录。
                 with path.open("xb") as stream:  # 不覆盖历史来源。

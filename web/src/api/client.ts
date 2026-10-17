@@ -108,6 +108,9 @@ export const api = {
   /** 分库上传；仍经过令牌与统一错误处理 */
   uploadSource: (sid: string, mid: string, body: FormData) =>
     request<{ task: Task; created: boolean; message_zh: string }>('POST', `/studies/${sid}/modules/${mid}/actions/upload`, body),
+  /** 保存当前完整疾病范围清单，单独生成待核查版本。 */
+  reviewDiseaseScope: (sid: string, body: {expected_a00: string; expected_run: string; expected_staging: string; decisions: {scope_id: string; scope: string}[]; reviewer: string; note: string; confirmed: boolean}) =>
+    request<{task: Task; created: boolean; message_zh: string}>('POST', `/studies/${sid}/modules/A02/actions/scope_review`, body),
   /** 只重取指定失败来源，绑定当前A00与A02。 */
   retrySources: (sid: string, body: { expected_a00: string; expected_run: string; expected_staging: string; databases: string[]; reason: string }) =>
     request<{ task: Task; created: boolean; message_zh: string }>('POST', `/studies/${sid}/modules/A02/actions/retry_sources`, body),

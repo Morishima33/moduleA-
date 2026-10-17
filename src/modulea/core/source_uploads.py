@@ -11,7 +11,7 @@ from .source_catalog import source_databases, SOURCE_LABELS
 
 A02_FORMATS = {
     "GeneCards": ("genecards_csv", "detailed_txt", "tsv"),
-    "OMIM": ("omim_xlsx", "omim", "tsv"),
+    "OMIM": ("omim_xlsx_v2", "omim_xlsx", "omim", "tsv"),
     "TTD": ("ttd_snapshot", "detailed_txt", "tsv"),
     "PharmGKB": ("pharmgkb_api", "detailed_txt", "tsv"),
     "OTP": ("otp_api", "tsv"),
@@ -61,7 +61,9 @@ def context(workflow, manifest, module_id, result, historical=False, active=Fals
         item = uploaded.get(database) if module_id == "A01" else available_sources.get(database)
         options = []
         for fmt in formats(module_id, database):
-            accept = ".zip" if fmt == "source_zip" else (".xlsx" if fmt == "omim_xlsx" else (".json" if fmt.endswith("api") or fmt.endswith("snapshot") or fmt.endswith("legacy") else (".csv" if fmt == "genecards_csv" else ".txt,.tsv")))
+            if fmt == "omim_xlsx":  # 旧接口继续接收，网页只列新版。
+                continue
+            accept = ".zip" if fmt == "source_zip" else (".xlsx" if fmt in ("omim_xlsx", "omim_xlsx_v2") else (".json" if fmt.endswith("api") or fmt.endswith("snapshot") or fmt.endswith("legacy") else (".csv" if fmt == "genecards_csv" else ".txt,.tsv")))
             options.append({"value": fmt, "label_zh": "官方原始资料ZIP（按模板包装）" if fmt == "source_zip" else FORMATS[fmt], "accept": accept,
                             "template_url": f"/api/v1/studies/{sid}/modules/{module_id}/sources/{database}/template?format={fmt}"})
         if module_id == "A01":
@@ -111,7 +113,7 @@ def template(module_id, database, fmt, herbs):
             for name, text in members.items():
                 archive.writestr(name, text.encode("utf-8"))
         return stream.getvalue(), database + "_来源包装模板.zip", "application/zip"
-    if fmt == "omim_xlsx":
+    if fmt in ("omim_xlsx", "omim_xlsx_v2"):
         headers = OMIM.strip().split("\t")
         stream = io.BytesIO()
         with zipfile.ZipFile(stream, "w", zipfile.ZIP_DEFLATED) as archive:

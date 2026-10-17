@@ -87,6 +87,15 @@ def run_continue(settings: Settings, task: dict, manager: TaskManager) -> str:
 
 
 # 上传解析只在科学子进程运行；从已绑定的私有暂存文件读取原始字节。
+def run_a02_scope_review(settings: Settings, task: dict, manager: TaskManager) -> str:
+    """沿用统一范围批次入口，不代签研究复核。"""
+    from ..core.disease_scope import review_scope
+    manager.update(task["task_id"], progress={"step_zh": "核对来源身份并保存范围决定", "done": 0, "total": 1})
+    result = review_scope(full_workflow(settings.data_root), task["study_id"], json.loads(task["payload"]))
+    manager.update(task["task_id"], progress={"step_zh": "范围决定已留存，等待身份核查和整体复核", "done": 1, "total": 1})
+    return "已保存范围核验并生成新A02：" + result["run_id"] + "；未批准或启动下游。"
+
+
 def run_a02_sources_retry(settings: Settings, task: dict, manager: TaskManager) -> str:
     """只重取失败的疾病来源，不推进下游。"""
     from a02_retry_sources import retry_sources
@@ -104,6 +113,8 @@ def run_source_upload(settings: Settings, task: dict, manager: TaskManager) -> s
     if not path.is_relative_to((settings.runtime_dir / "upload_queue").resolve()) or hashlib.sha256(path.read_bytes()).hexdigest() != payload["blob_sha256"]:
         raise ValueError("上传暂存文件校验失败，请重新上传")
     source["data"] = path.read_bytes()
+    if source["format"] == "omim_xlsx":
+        source["format"] = "omim_xlsx_v2"  # 新上传升级；既有历史来源仍按原格式读取。
     workflow = full_workflow(settings.data_root)
     manager.update(task["task_id"], progress={"step_zh": "校验并归档所选库资料", "done": 0, "total": 1})
     if payload["module_id"] == "A02":
@@ -268,7 +279,7 @@ def run_a06_trial(settings, task, manager):
     return "试算已归档：" + result["trial_id"] + "；真实评分" + str(result["summary"]["completed"]) + "/225，未批准正式科研结果"
 
 
-HANDLERS = {"a02_sources_retry": run_a02_sources_retry, "a06_trial":run_a06_trial,"a06_coverage_confirm":run_a06_coverage_confirm,"a06_coverage":run_a06_quality,"a06_quality":run_a06_quality,"a03_selection":run_a03_selection,"a06_plan":run_a06_plan,"a06_candidates": run_a06_candidates, "a05_display": run_a05_display, "a04_identity": run_a04_identity, "a04_ppi": run_a04_ppi, "continue": run_continue, "source_upload": run_source_upload, "a01_sources": run_a01_sources}
+HANDLERS = {"a02_scope_review": run_a02_scope_review, "a02_sources_retry": run_a02_sources_retry, "a06_trial":run_a06_trial,"a06_coverage_confirm":run_a06_coverage_confirm,"a06_coverage":run_a06_quality,"a06_quality":run_a06_quality,"a03_selection":run_a03_selection,"a06_plan":run_a06_plan,"a06_candidates": run_a06_candidates, "a05_display": run_a05_display, "a04_identity": run_a04_identity, "a04_ppi": run_a04_ppi, "continue": run_continue, "source_upload": run_source_upload, "a01_sources": run_a01_sources}
 
 
 from .drawing import run_figure, run_packages, run_bundle

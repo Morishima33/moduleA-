@@ -99,3 +99,21 @@ class SourceUploadApiTests(unittest.TestCase):
             payload = json.loads(self.app.tasks._raw(value["task"]["task_id"])["payload"])
             self.assertEqual(payload, body)
             self.assertEqual(self.call("POST", endpoint, json.dumps(body))[0], 409)
+
+    def test_scope_review_security_and_complete_version_bound_batch(self):
+        versions = {"expected_a00": "run_fixture_a00", "expected_run": "run_fixture_a02", "expected_staging": ""}
+        info = dict(versions, enabled=True, items=[{"scope_id": "scope_fixture", "identity_warning": "", "direct_allowed": True}])
+        body = dict(versions, decisions=[{"scope_id": "scope_fixture", "scope": "pending"}], reviewer="test", note="合成核验", confirmed=True)
+        endpoint = self.endpoint("actions/scope_review", "A02")
+        with patch.object(self.app, "get_sources", return_value=dict(versions, enabled=True)), patch.object(self.app.views, "module", return_value={"disease_scope": info}), patch.object(self.app.tasks, "_spawn"):
+            self.assertEqual(self.call("POST", endpoint, json.dumps(body), token=False)[0], 403)
+            self.assertEqual(self.call("POST", endpoint, json.dumps(body), origin="https://outside.invalid")[0], 403)
+            self.assertEqual(self.call("POST", endpoint, json.dumps(dict(body, expected_run="other_study")))[0], 409)
+            for change in [{"confirmed": False}, {"decisions": []}, {"decisions": body["decisions"] * 2}, {"decisions": [{"scope_id": "other_study", "scope": "direct"}]}, {"decisions": [{"scope_id": "scope_fixture", "scope": []}]}]:
+                self.assertEqual(self.call("POST", endpoint, json.dumps(dict(body, **change)))[0], 422)
+            self.assertEqual(self.app.tasks.list(self.sid), [])
+            status, value = self.call("POST", endpoint, json.dumps(body))
+            self.assertEqual(status, 202)
+            private = json.loads(self.app.tasks._raw(value["task"]["task_id"])["payload"])
+            self.assertEqual(private, body)
+            self.assertEqual(value["task"]["kind"], "a02_scope_review")

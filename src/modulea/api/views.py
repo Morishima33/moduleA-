@@ -13,6 +13,7 @@ from ..core import modules as registry
 from ..core.read_archive import SnapshotFlight
 from ..core.study_creation import PROJECT_FOLDERS
 from ..core.source_catalog import source_intro
+from ..core.disease_scope import context as scope_context
 from ..core.source_uploads import context as upload_context
 from ..core.kernel import ContractError, Kernel, read_json, verified_file
 from ..core.identity_workflow import plan_view
@@ -348,6 +349,7 @@ class Views:
             "trial_handoff": handoff,
             "docking_preparation": preparation_context(workflow,real,historical,bool(self.tasks.active_for(study_id))) if module_id=="A06_PREP" and not coverage_info and not preparation_page else None,
             "source_uploads": upload_context(workflow, real, module_id, result, historical, bool(self.tasks.active_for(study_id))) if not historical else None,
+            "disease_scope": scope_context(workflow, real, result, not real.get("trashed") and bool(run) and workflow.active(real, run["run_id"]) and not bool(self.tasks.active_for(study_id)), "历史/失效/回收站或后台任务进行中，当前不可提交") if module_id == "A02" and not historical else None,
         }
         preparation = view.get("trial_preparation") if module_id == "A06_PREP" and not historical else None
         if preparation:

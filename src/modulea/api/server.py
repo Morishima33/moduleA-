@@ -87,6 +87,7 @@ class App:
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/upload", self.post_source_upload),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/process_sources", self.post_source_process),
             ("POST", rf"/api/v1/studies/{ID}/modules/A02/actions/retry_sources", self.post_source_retry),
+            ("POST", rf"/api/v1/studies/{ID}/modules/A02/actions/scope_review", self.post_disease_scope),
             ("GET", r"/api/v1/trash", self.list_trash),
             ("GET", r"/api/v1/inbox", self.get_inbox),
             ("GET", r"/api/v1/tasks", self.list_tasks),
@@ -333,6 +334,21 @@ class App:
             path.unlink()
             raise ApiError(409, "GATE_BLOCKED", "当前研究已有后台任务，本次资料未提交，请完成后重试")
         return {"task": task, "created": created, "message_zh": "资料已提交后台校验，处理结果见任务面板；尚未批准。" + self._task_message(task)}, 202
+
+    def post_disease_scope(self, req, study_id):
+        """保存完整范围决定，来源身份不符不能纳入本病。"""
+        from ..core.disease_scope import validate_submission
+        body = req.json()
+        self._source_versions(req, study_id, "A02", body)
+        info = self.views.module(study_id, "A02").get("disease_scope")
+        if not info or not info["enabled"]:
+            raise ApiError(409, "GATE_BLOCKED", "当前范围条目不可核验，请刷新")
+        validate_submission(info, body)
+        payload = {k: body[k] for k in ("expected_a00", "expected_run", "expected_staging", "decisions", "reviewer", "note", "confirmed")}
+        task, created = self.tasks.submit(study_id, "a02_scope_review", "网页疾病范围核验", payload)
+        if not created:
+            raise ApiError(409, "GATE_BLOCKED", "当前研究已有后台任务，请完成后重试")
+        return {"task": task, "created": created, "message_zh": "范围核验已提交；保存后仍需身份核查及A02整体复核。" + self._task_message(task)}, 202
 
     def post_source_retry(self, req, study_id):
         """绑定当前来源版本，只提交选中的失败库。"""
