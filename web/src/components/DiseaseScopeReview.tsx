@@ -25,7 +25,7 @@ export default function DiseaseScopeReview({ studyId, info }: { studyId: string;
       const r = await api.reviewDiseaseScope(studyId, { expected_a00: info.expected_a00, expected_run: info.expected_run, expected_staging: info.expected_staging,
         decisions: info.items.map(row => ({ scope_id: row.scope_id, scope: decisions[row.scope_id] })), reviewer, note, confirmed });
       setNotice(r.message_zh); app.trackTasks([r.task]); app.openTasks(r.task.task_id); app.bumpRefresh();
-    } catch (e) { setNotice(errorText(e)); }
+    } catch (e) { setNotice(errorText(e)); app.bumpRefresh(); }
     finally { setBusy(false); }
   }
 
