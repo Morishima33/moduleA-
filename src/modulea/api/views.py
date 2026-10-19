@@ -269,9 +269,13 @@ class Views:
         else:
             run, result, review = raw["run"], raw["result"], raw["review"]
 
-        state = states[module_id]
+        state = dict(states[module_id])
+        normalization_info = normalization_context(workflow, real, result, self.kernel.settings, bool(self.tasks.active_for(study_id))) if module_id == "A02" and not historical else None
+        preview_ready = bool(normalization_info and normalization_info["preview"])
+        if preview_ready and state["handoff_blocked"] and state["code"] == "waiting":
+            state["reason_zh"] = "身份预览已完成，尚未生成待复核结果。请核对身份例外，在“确认身份处理”区填写依据并点击“确认处理并生成待复核结果”，完成后再整体复核。"
         results = {m["module_id"]: m["result"] for m in view["modules"] if m.get("result")}
-        ctx = {"workflow_profile": manifest.get("workflow_profile"), "state_code": state["code"], "results": results, "study_id": study_id}
+        ctx = {"workflow_profile": manifest.get("workflow_profile"), "state_code": state["code"], "results": results, "study_id": study_id, "normalization_preview_ready": preview_ready}
         parts = present(module_id, result, ctx) if result and not preparation_page else {"kpis": [], "flow": [], "flow_note_zh": "", "focus": [], "params": [], "table": None, "special": {}}
 
         history = self.runs(study_id, module_id, workflow=workflow, manifest=manifest)
@@ -351,7 +355,7 @@ class Views:
             "docking_preparation": preparation_context(workflow,real,historical,bool(self.tasks.active_for(study_id))) if module_id=="A06_PREP" and not coverage_info and not preparation_page else None,
             "source_uploads": upload_context(workflow, real, module_id, result, historical, bool(self.tasks.active_for(study_id))) if not historical else None,
             "disease_scope": scope_context(workflow, real, result, not real.get("trashed") and bool(run) and workflow.active(real, run["run_id"]) and not bool(self.tasks.active_for(study_id)), "历史/失效/回收站或后台任务进行中，当前不可提交") if module_id == "A02" and not historical else None,
-            "normalization": normalization_context(workflow, real, result, self.kernel.settings, bool(self.tasks.active_for(study_id))) if module_id == "A02" and not historical else None,
+            "normalization": normalization_info,
         }
         preparation = view.get("trial_preparation") if module_id == "A06_PREP" and not historical else None
         if preparation:

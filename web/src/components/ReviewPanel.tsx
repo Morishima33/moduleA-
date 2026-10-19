@@ -188,6 +188,7 @@ export default function ReviewPanel({ studyId, view, onSaved, onStale }: Props) 
       )}
       {r.current && <CurrentDecision session={session} r={r} moduleId={view.module.module_id} />}
       {view.special.ppi_identity && <Alert type="warning" showIcon style={{ marginBottom: 12 }} message="请先完成身份核验" description="待核验清单已在页面标题下展开。这里保存的是整体模块复核意见，不会自动解决身份问题。" />}
+      {view.normalization && <Button onClick={() => document.getElementById(view.normalization?.preview ? 'normalization-confirmation' : 'normalization-review')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>{view.normalization.preview ? '前往确认身份处理并生成结果' : '前往基因身份核查'}</Button>}
       <Form form={form} layout="vertical" requiredMark={false} disabled={!!saving}>
         {/* 决定：三选一 */}
         <Form.Item name="decision" label="决定" rules={[{ required: true, message: '请选择决定' }]} style={{ marginBottom: 12 }}>

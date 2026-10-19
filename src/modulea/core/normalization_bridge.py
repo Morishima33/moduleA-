@@ -2,6 +2,17 @@
 from contracts import require, safe_id
 from storage import read_json
 
+REFERENCE_FILES = ("hgnc_complete_set_20260913.json", "hgnc_complete_set_20260913.tsv",
+                   "ncbi_human_gene_info_20260913.json", "ncbi_human_gene_info_20260913.gz",
+                   "ncbi_human_gene_history_20260913.json", "ncbi_human_gene_history_20260913.tsv",
+                   "identity_queries_20260913_v3_manifest.json", "identity_queries_20260913_v3.json")
+
+
+def reference_error(root):
+    """只检查原标准化入口所需固定文件是否就位，科学指纹仍由原加载器校验。"""
+    missing = [name for name in REFERENCE_FILES if not (root / "references" / name).is_file()]
+    return "缺少公共基因身份参考文件：" + "、".join(missing) + "；请补齐当前数据目录的固定参考包。" if missing else ""
+
 
 def bindings(manifest):
     """三侧输入一起绑定，不能将旧项目或旧方剂侧预览交给新疾病。"""
@@ -24,6 +35,9 @@ def context(workflow, manifest, result, settings, busy=False):
         reasons.append("研究在回收站中，只读")
     if busy:
         reasons.append("当前研究已有后台任务，请等待完成")
+    missing_reference = reference_error(workflow.root)
+    if missing_reference:
+        reasons.append(missing_reference)
     if not all(expected.values()) or not all(workflow.active(manifest, rid) for rid in expected.values() if rid):
         reasons.append("请先补齐有效的A00、A01和A02")
     if expected["expected_a00"] and not workflow.approved(manifest, expected["expected_a00"]):
@@ -51,6 +65,7 @@ def validate(workflow, sid, payload):
     result = workflow.result(manifest, manifest["current"]["A02"])
     require("标准化基因数" not in result.get("summary", {}), "当前已是标准化结果，请直接整体复核")
     require(all(row["scope"] != "pending" for row in result["tables"]["scope_groups"]), "仍有待核验范围，请先保存完整范围决定")
+    require(not reference_error(workflow.root), reference_error(workflow.root))
     # 复用来源身份提示，拒绝将错疾病附件作为直接条目发布。
     from .disease_scope import context as scope_context
     info = scope_context(workflow, manifest, result, True)

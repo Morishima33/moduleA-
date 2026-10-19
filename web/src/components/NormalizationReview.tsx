@@ -31,29 +31,41 @@ export default function NormalizationReview({ studyId, info }: { studyId: string
     finally { setBusy(false); }
   }
   return <section className="card" id="normalization-review">
-    <h2>下一步：基因身份核查与标准化</h2>
-    <p>范围保存后还需生成标准化结果，整体复核的“通过”才可开放。本步骤只读取已保存的范围决定；上方未保存的修改不会用于本次预览。</p>
-    <Alert type="info" showIcon message={info.scope_note_zh} style={{ marginBottom: 12 }} />
+    <h2>{preview ? '身份预览已完成 · 请确认处理并生成结果' : '下一步：基因身份核查与标准化'}</h2>
+    <p>操作顺序：保存范围 → 核查身份并确认处理 → 生成待复核结果 → 整体复核。本步骤只读取已保存的范围决定。</p>
+    <Alert type="warning" showIcon message={info.scope_note_zh} style={{ marginBottom: 12 }} />
     {!info.enabled && <Alert type="warning" showIcon message={info.disabled_reason_zh} style={{ marginBottom: 12 }} />}
-    <Button disabled={disabled} loading={busy} onClick={() => submit('preview')}>{preview ? '重新核查基因身份' : '核查基因身份'}</Button>
+    {!preview && <Button type="primary" disabled={disabled} loading={busy} onClick={() => submit('preview')}>核查基因身份</Button>}
     {preview && <>
-      <Table size="small" rowKey="module" pagination={false} dataSource={preview.modules} style={{ marginTop: 12 }} columns={[
-        { title: '模块', dataIndex: 'module' },
-        { title: '标准化基因数', render: (_, row) => String(row.summary['标准化基因数']) },
-        { title: '身份问题组', render: (_, row) => String(row.summary['身份问题组数']) },
-      ]} />
-      <Collapse style={{ margin: '12px 0' }} items={preview.modules.map(m => ({ key: m.module, label: `${m.module} 身份例外明细`, children: <Table size="small" rowKey="issue_id" dataSource={m.identity_issues} scroll={{ x: 650 }} pagination={{ defaultPageSize: 10 }} columns={[
-        { title: '原名称', dataIndex: 'raw_symbol' }, { title: '原始编号', dataIndex: 'raw_id' },
-        { title: '核查状态', render: (_, row) => ({unmapped:'仍未查实', ambiguous_or_conflicting:'歧义或冲突', identity_verified_no_hgnc:'身份已查实，未接入HGNC', non_gene_object:'生物区域，非单个基因'}[String(row.status)] || String(row.status)) },
-        { title: '核查依据', dataIndex: 'query_note' },
-      ]} /> }))} />
+      <section id="normalization-confirmation" style={{ border: '2px solid #0F5E6E', borderRadius: 10, padding: 16, marginBottom: 16, scrollMarginTop: 90 }}>
+      <h3 style={{ marginTop: 0 }}>确认身份处理</h3>
+      <Alert type="info" showIcon message="目前只有预览，整体复核尚未开放" description="完成下面的身份处理确认并生成待复核结果后，右侧“通过”才可使用。“重新核查”只更新预览。" style={{ marginBottom: 12 }} />
+      {hasIssues && <p>请查看下方已展开的身份例外。程序尚不能唯一确定这些条目的标准身份，须明确本次是否暂不采用。</p>}
+      {preview.modules.filter(m => m.identity_issues.length > 0).map(m => <div key={m.module}>
+        <strong>{m.module} · 需要处理的身份例外</strong>
+        <Table size="small" rowKey="issue_id" dataSource={m.identity_issues} scroll={{ x: 650 }} pagination={{ defaultPageSize: 10 }} columns={[
+          { title: '原名称', dataIndex: 'raw_symbol' }, { title: '原蛋白编号', dataIndex: 'raw_uniprot' },
+          { title: '原始关系数', dataIndex: 'records' },
+          { title: '核查状态', render: (_, row) => ({unmapped:'仍未查实', ambiguous_or_conflicting:'歧义或冲突', identity_verified_no_hgnc:'身份已查实，未接入HGNC', non_gene_object:'生物区域，非单个基因'}[String(row.status)] || String(row.status)) },
+          { title: '核查依据', dataIndex: 'query_note' },
+        ]} />
+      </div>)}
       {hasSourceException && <Alert type="warning" message="本预览包含流程测试缺库例外" description="GeneCards未提供；其他来源不是等价替代。须核对下方例外确认，本次不能作为完整五库正式研究。" />}
       <label>本次核验人<Input aria-label="标准化核验人" value={reviewer} disabled={disabled} onChange={e => { setReviewer(e.target.value); setConfirmed(false); }} maxLength={200} /></label>
       <label>处理依据<Input.TextArea aria-label="标准化处理依据" value={note} disabled={disabled} onChange={e => { setNote(e.target.value); setConfirmed(false); }} rows={3} maxLength={4000} /></label>
       {hasIssues && <p><Checkbox disabled={disabled} checked={omit} onChange={e => { setOmit(e.target.checked); setConfirmed(false); }}>我已核查身份例外，接受本次暂不采用未进入HGNC主集合的条目，保留原件及核查依据</Checkbox></p>}
       {hasSourceException && <p><Checkbox disabled={disabled} checked={sourceException} onChange={e => { setSourceException(e.target.checked); setConfirmed(false); }}>我接受本次流程测试暂不采用GeneCards；其他来源不是等价替代，不作为完整五库正式研究</Checkbox></p>}
       <p><Checkbox disabled={disabled} checked={confirmed} onChange={e => setConfirmed(e.target.checked)}>我确认已保存的采用、排除范围及上述身份处理</Checkbox></p>
-      <Button type="primary" disabled={disabled || !confirmed || !reviewer.trim() || !note.trim() || (hasIssues && !omit) || (hasSourceException && !sourceException)} onClick={() => submit('publish')}>生成标准化结果，进入整体复核</Button>
+      <Button type="primary" disabled={disabled || !confirmed || !reviewer.trim() || !note.trim() || (hasIssues && !omit) || (hasSourceException && !sourceException)} onClick={() => submit('publish')}>确认处理并生成待复核结果</Button>
+      <p className="small muted">请填写核验人与依据，勾选需要的例外处理及范围确认后提交。</p>
+      </section>
+      <h3>身份核查预览（尚未生成待复核结果）</h3>
+      <Table size="small" rowKey="module" pagination={false} dataSource={preview.modules} columns={[
+        { title: '模块', dataIndex: 'module' },
+        { title: '预览可匹配基因数', render: (_, row) => String(row.summary['标准化基因数']) },
+        { title: '待处理身份问题组', render: (_, row) => String(row.summary['身份问题组数']) },
+      ]} />
+      <Collapse style={{ marginTop: 12 }} items={[{ key: 'refresh-preview', label: '需要重新核查时展开', children: <Button disabled={disabled} loading={busy} onClick={() => submit('preview')}>重新核查基因身份（仅更新预览）</Button> }]} />
     </>}
     {notice && <Alert showIcon message={notice} style={{ marginTop: 12 }} />}
     <p className="small muted">生成后停在A01/A02整体复核；不自动批准、不启动A03或分子对接。</p>

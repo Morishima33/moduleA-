@@ -113,7 +113,7 @@ def present_a02(result: dict, ctx: dict) -> Parts:
         if str(row.get("records")) == "0" and row.get("availability") == "已查询但0条精确记录":
             parts.focus.append(focus(f"{row.get('database')} 为 0 条", f"状态：{row.get('availability')}。已检索但无精确命中，不等于未提供资料。", tier="should_know"))
     if s.get("handoff_blocked") and not parts.focus:
-        parts.focus.append(focus("范围已保存，下一步生成标准化结果", "请在范围表下方点击“核查基因身份”，核对例外并生成标准化结果后，再进行A02整体复核。", blocks=["A03"]))
+        parts.focus.append(focus("身份预览已完成，等待确认生成结果" if ctx.get("normalization_preview_ready") else "范围已保存，下一步生成标准化结果", "请在范围表下方的“确认身份处理”区核对例外、填写依据并生成待复核结果，再进行A02整体复核。" if ctx.get("normalization_preview_ready") else "请在范围表下方点击“核查基因身份”，核对例外并生成标准化结果后，再进行A02整体复核。", blocks=["A03"]))
     return parts
 
 

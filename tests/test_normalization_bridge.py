@@ -134,6 +134,30 @@ class NormalizationBridgeTests(unittest.TestCase):
             app.post_normalization(request, self.sid)
         self.assertEqual(error.exception.status, 409)
 
+    def test_missing_reference_is_reported_before_task_execution(self):
+        result = self.decide(True)
+        (self.fixture.root / "references/hgnc_complete_set_20260913.json").unlink()
+        info = context(self.flow, self.flow.load(self.sid), result, self.settings)
+        self.assertFalse(info["enabled"])
+        self.assertIn("缺少公共基因身份参考文件", info["disabled_reason_zh"])
+        before = self.flow.load(self.sid)
+        with self.assertRaisesRegex(ContractError, "hgnc_complete_set_20260913.json"):
+            execute(self.settings, self.flow, self.sid, self.payload())
+        self.assertEqual(self.flow.load(self.sid), before)
+
+    def test_current_preview_changes_hint_without_unlocking_review(self):
+        from modulea.api.server import App
+        from modulea.config import Settings
+        self.decide(True)
+        execute(self.settings, self.flow, self.sid, self.payload())
+        app = App(Settings(data_root=self.fixture.root, runtime_dir=self.settings.runtime_dir))
+        view = app.views.module(self.sid, "A02")
+        self.assertIn("身份预览已完成", view["review"]["blocked_reason_zh"])
+        self.assertNotIn("approved", view["review"]["allowed_decisions"])
+        self.decide(True)
+        view = app.views.module(self.sid, "A02")
+        self.assertNotIn("身份预览已完成", view["review"]["blocked_reason_zh"])
+
 
 if __name__ == "__main__":
     unittest.main()
