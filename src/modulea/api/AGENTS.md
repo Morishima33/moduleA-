@@ -1,5 +1,13 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-10-19 A06一次授权自动执行
+
+用户授权简化A06：先连接资料（不评分），随后一次明确授权，后台连续准备、质控、对接及出图；异常对象集中保留，结果仍独立复核。新协议A06.automatic.1，不解除旧协议或伪造准备批准；直接绑定本研究已批准A00/A01/A02/A03/A03_SELECT/A04及连接原件；A05仍是独立分支，不成为对接的新前置关口。原始构型、位点、参数、日志和所有组合可追溯。
+ModuleView新增可空automatic_docking，含enabled、disabled_reason_zh、expected_binding、expected_connection_id、expected_a06、counts:{compounds,receptors,pairs}、policy:{version,summary_zh,details_zh}、connection:{id,created_at,summary,exceptions,objects,files}|null、latest:{id,state,run_id,summary,pairs,files}|null。对象只读归档；GET不联网或计算。历史及旧试算交接/准备关联页不显示新执行入口。
+POST `/studies/{sid}/modules/A06_PREP/actions/automatic_connect`：{expected_binding}→202任务a06_auto_connect，只连接及归档资料，不确认、不评分。
+POST `/studies/{sid}/modules/A06_PREP/actions/automatic_run`：{expected_binding,expected_connection_id,expected_a06,request_id,policy_version,reviewer,note,confirmed:true}→202任务a06_auto_run。request_id为auto_<32hex>；不接收客户端名单、路径、PDB或参数。服务端固定规则，一次授权仅对应本研究当前绑定；确认框默认未勾选。过期409，回收站423，同研究任务互斥；失败/取消原件保留，不自动重试。
+GET `/studies/{sid}/automatic_docking/{id}/files/{index}`只读本研究索引登记且指纹一致的文件，禁止任意路径。新A06独立结果复核，不批准A06_PREP，不继承旧225组合授权。通用继续不得重新跑已完成批次或自动批准结果；A07若尚未适配该新协议，明确阻断报告生成，保留A06可复核结果。
+
 ## 2026-10-19 KEGG官方分类筛选（用户确认的新边界）
 
 自动富集新增KEGG.disease_screening.1来源快照，按官方BRITE br08901稳定编号及已核验A00本病身份筛选完整显著表：Human Diseases中非本病直接条目均为拟排除，含癌症机制和耐药，不再沿用旧机制例外；分类/身份不明为待判断。通路分类不表示生物学无关，不删除共享基因或重算统计。

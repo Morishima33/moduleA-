@@ -265,7 +265,19 @@ export interface DiseaseScopeInfo {
   saved_counts?: {value: string; label_zh: string; count: number}[];
   items: { scope_id: string; database: string; disease_term: string; disease_id: string; records: number; scope: string; source_name: string; source_url: string; identity_warning: string; direct_allowed: boolean }[];
 }
+// 一次授权独立版本，原件下载只采用服务器给出的索引链接。
+export interface AutomaticFile {name: string; path?: string; role: string; url: string}
+export interface AutomaticPair {compound_id: string; target_id: string; compound_name: string; symbol: string; state: string; quality: string; score: number | null; reason_zh: string; trace: Record<string, unknown>; evidence_files?: AutomaticFile[]}
+export interface AutomaticRequest {expected_binding: string; expected_connection_id: string; expected_a06: string | null; request_id: string; policy_version: string; reviewer: string; note: string; confirmed: boolean}
+export interface AutomaticDockingInfo {
+  enabled: boolean; disabled_reason_zh: string; expected_binding: string; expected_connection_id: string | null; expected_a06: string | null;
+  counts: {compounds: number; receptors: number; pairs: number}; policy: {version: string; summary_zh: string; details_zh: string[]};
+  connection: {id: string; summary: {connected_compounds: number; connected_receptors: number; exceptions: number};
+    objects: {id: string; name: string; state: string; cid?: number; reason_zh: string; structures: {pdb_id: string; chains: string[]; pocket: string; altloc?: string | null}[]}[]; files: AutomaticFile[]} | null;
+  latest: {id: string; state: string; run_id: string | null; summary: Record<string, unknown> | null; error_zh?: string; pairs: AutomaticPair[]; files: AutomaticFile[]} | null;
+}
 export interface ModuleView {
+  automatic_docking?: AutomaticDockingInfo | null;
   input_audit?: {formula: {run_id: string; sources: string[]; missing_sources: string[]; component_label_zh: string; component_count: number | null; target_count: number | null; relationship_count: number | null} | null;
     disease: {run_id: string; candidate_count: number | null; target_count: number | null; scope_counts: {value: string; label_zh: string; count: number; records: number}[]; empty_reason_zh: string} | null;
     checks: {kind?: 'input_update'; level: 'info' | 'warning'; label_zh: string; detail_zh: string; module_id?: string}[]} | null;

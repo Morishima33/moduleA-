@@ -81,6 +81,10 @@ function qs(params: Record<string, string | number | undefined | null>): string 
 
 // 各端点的薄封装；路径与契约第 3 节一致
 export const api = {
+  /** 只连接资料，不准备或评分。 */
+  automaticConnect: (sid: string, expected_binding: string) => request<{task: Task; message_zh: string}>('POST', `/studies/${sid}/modules/A06_PREP/actions/automatic_connect`, {expected_binding}),
+  /** 用户主动一次授权，后台连续执行固定策略。 */
+  automaticRun: (sid: string, body: import('./types').AutomaticRequest) => request<{task: Task; message_zh: string}>('POST', `/studies/${sid}/modules/A06_PREP/actions/automatic_run`, body),
   /** 核对MeSH后建立独立研究，仅保存登记。 */
   createStudy: (body: import('./types').NewStudyInput) => request<import('./types').CreatedStudy>('POST', '/studies', body),
   /** 明确点击后制作当前确认范围两个首位通路命中图。 */

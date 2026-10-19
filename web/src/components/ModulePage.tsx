@@ -16,6 +16,7 @@ import DockingMatrix from './DockingMatrix';
 import DockingPreparation from './DockingPreparation';
 import DockingCoverage from './DockingCoverage';
 import DockingTrial from './DockingTrial';
+import AutomaticDocking from './AutomaticDocking';
 import DockingArtifacts from './DockingArtifacts';
 import TrialPreparation from './TrialPreparation';
 import { FlowChain, FocusSection, KnowSection, KpiGrid } from './ModuleSections';
@@ -107,14 +108,16 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
         {m.module_id === 'A06' ? <Button type="primary" onClick={() => document.getElementById('module-review-panel')?.scrollIntoView({behavior:'smooth',block:'start'})}>定位正式复核按钮</Button> :
           <Button type="primary" href={view.trial_handoff.review_url}>前往A06结果复核</Button>}
       </div>}
-      {view.docking_trial && <DockingTrial studyId={studyId} info={view.docking_trial}/>}
+      {view.automatic_docking && <AutomaticDocking key={view.automatic_docking.expected_binding} studyId={studyId} info={view.automatic_docking}/>}
+      {!view.automatic_docking && view.docking_trial && <DockingTrial studyId={studyId} info={view.docking_trial}/>}
       {view.docking_artifacts && <div id="module-docking-artifacts"><DockingArtifacts studyId={studyId} info={view.docking_artifacts}/></div>}
-      {(view.docking_coverage || view.docking_preparation) && <div id="module-preparation" className="stack">
+      {!view.automatic_docking && (view.docking_coverage || view.docking_preparation) && <div id="module-preparation" className="stack">
       {view.docking_coverage && (view.docking_trial ? <Collapse items={[{key:'strict-history',label:'原严格准备与历史核查（保留）',children:<DockingCoverage studyId={studyId} info={view.docking_coverage}/>}]}/> : <DockingCoverage studyId={studyId} info={view.docking_coverage}/>)}
       {view.docking_preparation && !view.docking_coverage && <DockingPreparation studyId={studyId} info={view.docking_preparation}/>}
       </div>}
-      {view.docking_review && !view.docking_trial && m.module_id !== 'A03_SELECT' && <div id="module-docking-matrix"><DockingMatrix info={view.docking_review}/></div>}
-      {view.docking_candidates && m.module_id !== 'A04'  && <DockingCandidates studyId={studyId} moduleId={m.module_id} info={view.docking_candidates} />}
+      {view.docking_review && !view.automatic_docking && !view.docking_trial && m.module_id !== 'A03_SELECT' && <div id="module-docking-matrix"><DockingMatrix info={view.docking_review}/></div>}
+      {view.docking_candidates && !view.automatic_docking && m.module_id !== 'A04' && <DockingCandidates studyId={studyId} moduleId={m.module_id} info={view.docking_candidates} />}
+      {view.automatic_docking && <Collapse items={[{key:'legacy', label:'原分步流程与历史资料（可追溯）', children:<div className="stack">{view.docking_coverage ? <DockingCoverage studyId={studyId} info={view.docking_coverage}/> : view.docking_preparation && <DockingPreparation studyId={studyId} info={view.docking_preparation}/>}</div>}]}/>}
       {view.enrichment_display && <div id="module-enrichment-confirmation"><EnrichmentConfirmation studyId={studyId} info={view.enrichment_display} onPendingChange={setKeggPending} navigationRequest={enrichmentNavigation}/></div>}
       {/* 待核验事项紧接标题；证据直接展开，不藏在结果末尾。 */}
       {!view.historical && !oldIntersection && <div id="module-focus"><FocusSection items={view.focus} evidence={sp.ppi_identity ? <IdentityReview studyId={studyId} view={view} data={sp.ppi_identity} /> : undefined} /></div>}

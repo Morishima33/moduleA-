@@ -28,7 +28,15 @@ def context(view, result=None):
     approved = bool(view["review"]["already_approved"])
     current = "review"
     prep = view.get("trial_preparation")
-    if prep:
+    automatic = view.get("automatic_docking")
+    if automatic and mid in ("A06_PREP", "A06"):
+        add("connect", "连接本研究资料", "module-automatic-docking", "按已复核名单连接官方原件，集中列出异常；连接不会开始评分。")
+        add("authorize", "一次确认并开始计算", "module-automatic-docking", "核对成分、受体及策略后一次授权；后台连续准备、质控、评分和出图。")
+        add("scores", "查看结果与溯源", "module-automatic-docking", "查看每一分数对应的构型、位点、参数、原始姿势及失败原因。")
+        link("result", "独立复核A06结果", "A06", "执行授权不等于结果批准；计算完成后独立复核。")
+        latest = automatic.get("latest")
+        current = "scores" if latest else "authorize" if automatic.get("connection") else "connect"
+    elif prep:
         add("source", "核对本批准备来源", "trial-preparation-summary", "沿用已保存的同批核查，查看原核查人与关联版本，无需重复批准。")
         if prep["active"]:
             add("receptors", "查看受体与位点证据", "trial-preparation-receptors", "核对采用结构、搜索方式、修补说明及适用范围。")

@@ -50,6 +50,9 @@ class App:
         self.creation = StudyCreation(self.kernel)
         self.token = secrets.token_urlsafe(32)
         self.routes = [
+            ("POST", rf"/api/v1/studies/{ID}/modules/A06_PREP/actions/automatic_connect", self.post_automatic_connect),
+            ("POST", rf"/api/v1/studies/{ID}/modules/A06_PREP/actions/automatic_run", self.post_automatic_run),
+            ("GET", rf"/api/v1/studies/{ID}/automatic_docking/{ID}/files/([0-9]+)", self.get_automatic_file),
             ("GET", r"/api/v1/session", self.session),
             ("GET", r"/api/v1/studies", self.list_studies),
             ("POST", r"/api/v1/studies", self.post_create_study),
@@ -100,6 +103,54 @@ class App:
         self.compiled = [(method, re.compile("^" + pattern + "$"), handler) for method, pattern, handler in self.routes]
 
     # ------------------------------------------------------------------ 读取
+    def _automatic_ready(self, study_id):
+        """只读校验工具、当前上游及并发状态；不自动签署授权。"""
+        if self.tasks.active_for(study_id):
+            raise ApiError(409, "GATE_BLOCKED", "请等待当前研究后台任务结束")
+        if not self.settings.science_tools_root:
+            raise ApiError(409, "GATE_BLOCKED", "尚未配置固定对接工具目录")
+        return self.kernel.workflow()
+
+    def post_automatic_connect(self, req, study_id):
+        """连接与评分分离；请求不接受路径或隐藏名单。"""
+        body = req.json()
+        if not isinstance(body, dict) or set(body) != {"expected_binding"} or not isinstance(body["expected_binding"], str) or not re.fullmatch(r"[0-9a-f]{64}", body["expected_binding"]):
+            raise ApiError(422, "VALIDATION_FAILED", "连接请求字段不合法")
+        workflow = self._automatic_ready(study_id)
+        try:
+            workflow.automatic_binding(study_id, body["expected_binding"])
+        except ContractError as error:
+            raise from_contract(str(error))
+        payload = dict(body, connection_id="connection_" + uuid.uuid4().hex)
+        task, created = self.tasks.submit(study_id, "a06_auto_connect", "网页连接对接资料（不评分）", payload)
+        if not created:
+            raise ApiError(409, "GATE_BLOCKED", "当前研究已有后台任务")
+        return {"task": task, "message_zh": "开始连接资料；完成后由你一次确认计算范围。"}, 202
+
+    def post_automatic_run(self, req, study_id):
+        """登记显式授权任务，子进程开始及发布前再次校验版本。"""
+        payload = req.json()
+        workflow = self._automatic_ready(study_id)
+        try:
+            workflow.validate_automatic_request(study_id, payload)
+        except ContractError as error:
+            raise from_contract(str(error))
+        task, created = self.tasks.submit(study_id, "a06_auto_run", "网页一次授权自动对接", payload)
+        if not created:
+            raise ApiError(409, "GATE_BLOCKED", "当前研究已有后台任务")
+        return {"task": task, "message_zh": "已提交一次授权，后台依次准备、质控、对接和出图；结果仍待独立复核。"}, 202
+
+    def get_automatic_file(self, req, study_id, identity, index):
+        """仅从本研究登记的文件索引下载，逐次校验原始指纹。"""
+        workflow = self.kernel.read_workflow()
+        record = workflow.automatic_record(workflow.load(study_id), identity)
+        number = int(index)
+        if not record or number >= len(record["files"]):
+            raise not_found("本研究的自动对接证据")
+        path = verified_file(workflow.location(study_id), record["files"][number])
+        mime = "image/png" if path.suffix.lower() == ".png" else "application/octet-stream"
+        return ("file", path, path.name, mime, mime == "image/png")
+
     def session(self, req):
         return {"token": self.token, "version": __version__, "platform": sys.platform,
                 "capabilities": {"review": True, "batch_review": True, "tasks": True, "trash": True, "module_actions": False, "source_upload": True, "ppi_compute": True, "create_study": True},

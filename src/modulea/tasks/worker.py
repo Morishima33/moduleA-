@@ -29,6 +29,8 @@ def run_continue(settings: Settings, task: dict, manager: TaskManager) -> str:
     # 新双分支的对接来源未确认时停下，不启动旧候选准备和计算。
     manifest = workflow.load(task["study_id"])
     a06 = manifest.get("current", {}).get("A06")
+    if a06 and workflow.run(manifest, a06).get("config", {}).get("schema_version") == "A06.automatic.1":
+        return "自动对接结果已独立归档；请在A06复核。新协议尚未接入冻结双报告模板，未生成不完整报告。"
     if a06 and workflow.run(manifest, a06).get("config", {}).get("schema_version") == "A06.trial.handoff.1":
         with workflow.handoff_read_cache():
             approved = workflow.approved(manifest, a06)
@@ -292,6 +294,8 @@ HANDLERS = {"a02_scope_review": run_a02_scope_review, "a02_sources_retry": run_a
 
 
 from .drawing import run_figure, run_packages, run_bundle
+from .automatic_docking import execute as run_automatic
+HANDLERS.update({"a06_auto_connect": run_automatic, "a06_auto_run": run_automatic})
 from .ranked_pathway_maps import run_ranked_maps
 HANDLERS["a05_pathway_maps"] = run_ranked_maps
 HANDLERS.update({"normalization_preview": run_normalization, "normalization_publish": run_normalization})

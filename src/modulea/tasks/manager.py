@@ -29,6 +29,7 @@ KINDS = {"a02_scope_review": "保存疾病范围核验", "a02_sources_retry": "�
 
 
 KINDS["a05_pathway_maps"] = "生成KEGG排名首位命中图"
+KINDS.update({"a06_auto_connect": "连接本研究对接资料（不评分）", "a06_auto_run": "一次授权自动准备、质控、对接和出图"})
 KINDS.update({"normalization_preview": "核查基因身份并生成标准化预览", "normalization_publish": "生成标准化结果，等待整体复核"})
 KINDS.update({"a06_figure": "验证并保存对接结果图片", "a06_pair_packages": "整理所选对接出图包",
               "a06_pair_bundle": "汇集所选对接包下载"})
@@ -208,6 +209,8 @@ class TaskManager:
         env = dict(os.environ)
         env["PYTHONPATH"] = str(LEGACY_SRC) + os.pathsep + env.get("PYTHONPATH", "")
         env["MODULEA_DATA_ROOT"] = str(self.settings.data_root)
+        if self.settings.science_tools_root:
+            env["MODULEA_SCIENCE_TOOLS_ROOT"] = str(self.settings.science_tools_root)
         command = [self.settings.science_python, "-m", "modulea", "--runtime-dir", str(self.settings.runtime_dir), "task-run", task_id]
         flags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
         with open(log_path, "ab") as stream:
@@ -230,6 +233,10 @@ class TaskManager:
             except OSError:
                 pass
         self.update(task_id, state="cancelled", finished_at=_now(), error_zh="用户取消；本次未完整提交的运行不可复用，原文件保留")
+        if task["kind"] == "a06_auto_run":
+            from ..core.kernel import Kernel
+            payload = json.loads(task["payload"])
+            Kernel(self.settings).workflow().fail_automatic(task["study_id"], payload["request_id"], "用户取消，已有原件和尝试保留")
         if task["kind"] == "a06_trial":
             from ..core.kernel import Kernel
             workflow = Kernel(self.settings).workflow()
