@@ -13,7 +13,8 @@ export default function EnrichmentConfirmation({ studyId, info, onPendingChange,
   useEffect(() => {if (navigationRequest > 0) setExpanded(true);}, [navigationRequest]); // 导航只展开显示，不保存。
   const detailsId = useId(); // 为展开按钮关联当前组件的详情区域。
   const [selected, setSelected] = useState<string[]>(info.excluded_ids);
-  const [mode, setMode] = useState<'proposed' | 'all'>('proposed');
+  const [mode, setMode] = useState<'proposed' | 'uncertain' | 'all'>('proposed');
+  const [excludeAllConfirmed, setExcludeAllConfirmed] = useState(false);
   const [query, setQuery] = useState('');
   const [reviewer, setReviewer] = useState('');
   const [note, setNote] = useState('');
@@ -22,10 +23,14 @@ export default function EnrichmentConfirmation({ studyId, info, onPendingChange,
   const [busy, setBusy] = useState<'exclusions' | 'layout' | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
-    setSelected(info.excluded_ids); setScopeChecked(false); setLayoutChecked(false); setError(null);
+    setSelected(info.excluded_ids); setScopeChecked(false); setLayoutChecked(false); setExcludeAllConfirmed(false); setError(null);
     setReviewer(info.latest?.reviewer || ''); setNote('');
   }, [studyId, info.expected_a05]);
-  const filtered = useMemo(() => info.catalog.filter(r => (mode === 'all' || r.proposed) && (r.ID+' '+r.Description+' '+r.description_zh).toLowerCase().includes(query.trim().toLowerCase())), [info.catalog, mode, query]);
+  const filtered = useMemo(() => info.catalog.filter(r => (mode === 'all' || (mode === 'proposed' ? r.proposed : r.classification_status === 'uncertain')) && (r.ID+' '+r.Description+' '+r.description_zh).toLowerCase().includes(query.trim().toLowerCase())), [info.catalog, mode, query]);
+  const proposedIds = info.catalog.filter(r => r.proposed).map(r => r.ID);
+  const allExcluded = info.significant_count > 0 && selected.length === info.significant_count;
+  // 这些是本地排除草稿的数量，不是新统计或已保存范围。
+  useEffect(() => { setExcludeAllConfirmed(false); }, [selected]);
   const sameScope = selected.length === info.excluded_ids.length && selected.every(id => info.excluded_ids.includes(id));
   // 本地名单修改或提交中暂时隐藏旧KEGG图，不将未保存选择当成已归档排除。
   useEffect(() => { onPendingChange?.(!sameScope || !!busy); }, [sameScope, busy, info.expected_a05, onPendingChange]);
@@ -35,7 +40,7 @@ export default function EnrichmentConfirmation({ studyId, info, onPendingChange,
   async function submit(action: 'exclusions' | 'layout') {
     setBusy(action); setError(null);
     try {
-      const response = await api.confirmEnrichmentDisplay(studyId, { expected_a03: info.expected_a03, expected_a05: info.expected_a05, expected_decision_id: info.expected_decision_id, action, reviewer: reviewer.trim(), note: note.trim(), excluded_ids: selected, confirmed: true });
+      const response = await api.confirmEnrichmentDisplay(studyId, { expected_a03: info.expected_a03, expected_a05: info.expected_a05, expected_decision_id: info.expected_decision_id, action, reviewer: reviewer.trim(), note: note.trim(), excluded_ids: selected, confirmed: true, exclude_all_confirmed: excludeAllConfirmed });
       app.trackTasks([response.task]); app.bumpRefresh(); app.openTasks(response.task.task_id);
       if (response.task.state === 'failed') { setError(response.task.error_zh || '任务启动失败，请重试。'); message.error(response.task.error_zh || '任务启动失败'); }
       else message.success(response.message_zh);
@@ -50,7 +55,7 @@ export default function EnrichmentConfirmation({ studyId, info, onPendingChange,
   const columns = [
     { title: '排除', key: 'select', width: 70, render: (_: unknown, row: EnrichmentCatalogRow) => <Checkbox aria-label={'从展示中排除 '+row.ID} checked={selected.includes(row.ID)} disabled={!writable} onChange={e => toggle(row.ID, e.target.checked)} /> },
     // 中文名后只保留疾病标题提示；完整理由随证据展开，避免逐行重复。
-    { title: '疾病／通路名称（中文）', key: 'term', render: (_: unknown, row: EnrichmentCatalogRow) => <div style={{ overflowWrap: 'anywhere' }}><strong>{row.description_zh || '中文待核译'}</strong>{row.proposed && <span className="tiny muted" style={{ marginLeft: 8 }}>明确的其他疾病标题</span>}</div> },
+    { title: '疾病／通路名称（中文）', key: 'term', render: (_: unknown, row: EnrichmentCatalogRow) => <div style={{ overflowWrap: 'anywhere' }}><strong>{row.description_zh || '中文待核译'}</strong>{row.proposed && <Tag color="orange">其他疾病类，拟排除</Tag>}{row.classification_status === 'uncertain' && <Tag color="gold">待判断</Tag>}{row.classification_zh && <div className="tiny muted">{row.classification_zh}</div>}</div> },
     { title: '英文名称', key: 'english', render: (_: unknown, row: EnrichmentCatalogRow) => <span style={{ overflowWrap: 'anywhere' }}>{row.Description.replace(' - Homo sapiens (human)', '')}<span className="mono tiny muted" style={{ marginLeft: 8 }}>{row.ID}</span></span> },
     { title: 'Count', dataIndex: 'Count', width: 72 },
     { title: '校正后P值', dataIndex: 'p.adjust', width: 110, render: (p: number) => <span className="mono" title={String(p)}>{fmtP(p)}</span> },
@@ -66,6 +71,8 @@ export default function EnrichmentConfirmation({ studyId, info, onPendingChange,
       <span className="small">3 A05结果：在“复核决定”中独立确认</span>
       <Button size="small" onClick={() => document.getElementById('module-review-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>前往A05结果复核</Button>
     </Space>
+    <Alert type="info" showIcon message={`显著总数 ${info.significant_count}；拟排除 ${info.screening?.proposed_count ?? proposedIds.length}；当前选择排除 ${selected.length}；预计保留 ${info.significant_count - selected.length}`} description={info.screening ? <>依据KEGG官方分类，其他人类疾病及癌症机制统一列为建议，本病直接条目保留。待判断 {info.screening.uncertain_count} 项。选择仅为草稿，确认后才应用。<a href={info.screening.source_url} target="_blank" rel="noreferrer">查看分类依据</a></> : '当前版本尚未归档官方分类候选；原选择继续保留，历史研究不自动改写。'} style={{ marginBottom: 12 }} />
+    {allExcluded && <Alert type="warning" showIcon message="当前选择将排除全部KEGG显著通路，图表将为空" description={<Checkbox checked={excludeAllConfirmed} disabled={!writable} onChange={e => setExcludeAllConfirmed(e.target.checked)}>我确认本次需要排除全部KEGG显著通路</Checkbox>} style={{ marginBottom: 12 }} />}
     {!sameScope && info.exclusions_confirmed && <Alert type="warning" style={{ marginBottom: 10 }} message="排除选择有未保存修改；请先确认新清单，再核查新图表版式。" />}
     {error && <Alert type="error" showIcon style={{ marginBottom: 10 }} message={error} />}
     {/* 保留表单挂载；仅隐藏详情，收起和再次展开不会重置选择或发起提交。 */}
@@ -79,7 +86,7 @@ export default function EnrichmentConfirmation({ studyId, info, onPendingChange,
     {/* 主按钮就在核对区上方，当前选择和是否提交明确可见。 */}
     <div className="stack" style={{ gap: 10 }}>
       <Checkbox checked={scopeChecked} disabled={!writable} onChange={e => setScopeChecked(e.target.checked)}>已核对本次排除清单，包括不排除任何条目的情况</Checkbox>
-      <Button type="primary" loading={busy === 'exclusions'} disabled={!writable || !filled || !scopeChecked} onClick={() => submit('exclusions')}>确认排除清单并生成图表</Button>
+      <Button type="primary" loading={busy === 'exclusions'} disabled={!writable || !filled || !scopeChecked || (allExcluded && !excludeAllConfirmed)} onClick={() => submit('exclusions')}>确认排除清单并生成图表</Button>
       <Checkbox checked={layoutChecked} disabled={!writable || !info.exclusions_confirmed || !sameScope || !!info.missing_translations.length} onChange={e => setLayoutChecked(e.target.checked)}>已查看下方GO、KEGG图表，认可中英文、科研配色、图例和排序</Checkbox>
       <Button type="primary" loading={busy === 'layout'} disabled={!writable || !filled || !layoutChecked || !info.exclusions_confirmed || !sameScope || !!info.missing_translations.length || info.layout_confirmed} onClick={() => submit('layout')}>{info.layout_confirmed ? '当前图表版式已确认' : '确认当前图表版式'}</Button>
     </div>
@@ -89,12 +96,13 @@ export default function EnrichmentConfirmation({ studyId, info, onPendingChange,
     <h3 style={{ marginBottom: 8 }}>KEGG拟排除清单与完整显著通路</h3>
     <p className="small">已归档：{info.significant_count}条显著通路，展示保留{info.retained_count}条，排除{info.excluded_count}条。当前勾选{selected.length}条；点击确认前不会改变归档。</p>
     <Space wrap style={{ marginBottom: 12 }}>
-      <Radio.Group value={mode} onChange={e => setMode(e.target.value)}><Radio.Button value="proposed">拟排除清单</Radio.Button><Radio.Button value="all">全部显著通路</Radio.Button></Radio.Group>
+      <Radio.Group value={mode} onChange={e => setMode(e.target.value)}><Radio.Button value="proposed">拟排除清单</Radio.Button><Radio.Button value="uncertain">待判断</Radio.Button><Radio.Button value="all">全部显著通路</Radio.Button></Radio.Group>
+      <Button disabled={!writable || !proposedIds.length} onClick={() => { setSelected(current => Array.from(new Set([...current, ...proposedIds]))); setScopeChecked(false); setLayoutChecked(false); }}>勾选全部拟排除项（{proposedIds.length}项）</Button>
       <Input.Search aria-label="搜索KEGG清单" placeholder="搜索编号、中英文" value={query} onChange={e => setQuery(e.target.value)} allowClear style={{ width: 230, maxWidth: '100%' }} />
-      <Button disabled={!writable || !filtered.length} onClick={() => { setSelected(current => Array.from(new Set([...current, ...filtered.map(r => r.ID)]))); setScopeChecked(false); setLayoutChecked(false); }}>全选当前筛选结果（{filtered.length}项）</Button>
+      <Button disabled={!writable || !filtered.length} onClick={() => { setSelected(current => Array.from(new Set([...current, ...filtered.map(r => r.ID)]))); setScopeChecked(false); setLayoutChecked(false); }}>将当前筛选结果勾选为排除（{filtered.length}项）</Button>
       <Button disabled={!writable || !selected.length} onClick={() => { setSelected([]); setScopeChecked(false); setLayoutChecked(false); }}>全部取消勾选</Button>
     </Space>
-    <p className="tiny muted">全选范围为当前筛选的全部条目，包含其他分页；切换列表不会清除已有选择。候选只是展示建议，共享机制仍须结合命中基因核查。</p>
+    <p className="tiny muted">批量勾选覆盖对应清单的全部分页；切换列表不清除选择。拟排除依据报告范围，不表示这些疾病与本病在生物学上完全无关。</p>
     <Table rowKey="ID" size="small" dataSource={filtered} columns={columns} scroll={{ x: 680 }} pagination={{ pageSize: 25, showSizeChanger: false, showTotal: total => '共 '+total+' 项' }} locale={{ emptyText: '当前筛选没有条目；可切换至全部显著通路。' }} expandable={{ expandedRowRender: row => <div>{row.reason_zh && <p className="small muted">{row.reason_zh}</p>}<p className="small" style={{ overflowWrap: 'anywhere' }}>实际命中基因：{row.gene_symbols || '原归档未提供符号，请查明细'}</p><a href={row.evidence_url} target="_blank" rel="noreferrer">查看官方通路定义与机制依据</a></div>, columnTitle: '证据', expandIcon: ({ expanded, onExpand, record }) => <Button size="small" onClick={e => onExpand(record,e)}>{expanded ? '收起' : '查看'}</Button>, columnWidth: 65 }} />
     </div>
   </section>;

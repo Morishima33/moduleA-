@@ -33,6 +33,8 @@ class EnrichmentWorkflow(IdentityWorkflow):
         ids = payload.get("excluded_ids")
         require(isinstance(ids, list) and all(isinstance(x, str) for x in ids) and len(ids) == len(set(ids)), "排除清单格式不正确")
         require(set(ids) <= {r["ID"] for r in result["tables"]["kegg_significant"]}, "不能混用其他研究或非显著条目")
+        if payload.get("action") == "exclusions" and ids and len(ids) == len(result["tables"]["kegg_significant"]):
+            require(payload.get("exclude_all_confirmed") is True, "当前选择将排除全部KEGG显著通路，请单独确认全部排除，或调整选择")
         require(payload.get("confirmed") is True, "请勾选本次核对确认")
         require(all(isinstance(payload.get(k), str) and 0 < len(payload[k].strip()) <= 2000 for k in ("reviewer", "note")), "请填写核验人和说明（每项不超过2000字）")
         latest, record = self.display_decision(manifest, a03, meta["base_run"])
@@ -106,6 +108,16 @@ def display_context(workflow, manifest, run, result, historical, busy):
     if not meta:
         return None
     enabled = bool(not historical and not manifest.get("trashed") and not busy and workflow.active(manifest, run["run_id"]))
+    # 分类只读本运行来源快照；GET不联网、不重新判断其他疾病。
+    catalog = result["tables"]["kegg_catalog"]
+    screening_info = None
+    source_record = run.get("inputs", {}).get("display_source")
+    if source_record:
+        source = read_json(verified_file(workflow.location(manifest["study_id"]), source_record))
+        screen = source.get("screening")
+        if screen:
+            catalog = [dict(row, **{k: value for k, value in screen["assessments"].get(row["ID"], {}).items() if k in ("classification_status", "classification_zh", "official_name", "reason_zh", "evidence_url")}) for row in catalog]
+            screening_info = {"version": screen["version"], "source_url": screen["catalog"]["source_url"], "proposed_count": sum(row["classification_status"] == "exclude" for row in screen["assessments"].values()), "uncertain_count": sum(row["classification_status"] == "uncertain" for row in screen["assessments"].values())}
     decision, _ = workflow.display_decision(manifest, run["parent_runs"]["A03"], meta["base_run"])
     applied = bool(decision and decision["decision_id"] == meta.get("decision_id"))
-    return {**kegg_display_status(meta,decision,run["run_id"],historical,busy), "enabled": enabled, "disabled_reason_zh": "" if enabled else "历史及回收站只读；请使用当前有效结果并等待后台任务结束。", "expected_a03": run["parent_runs"]["A03"], "expected_a05": run["run_id"], "expected_decision_id": decision["decision_id"] if decision else None, "exclusions_confirmed": bool(meta.get("exclusions_confirmed")), "layout_confirmed": bool(meta.get("layout_confirmed")), "excluded_ids": meta["excluded_ids"], "missing_translations": meta["missing_translations"], "catalog": result["tables"]["kegg_catalog"], "retained_count": meta["retained_count"], "excluded_count": meta["excluded_count"], "significant_count": meta["significant_count"], "latest": {"reviewer": decision["reviewer"], "note_zh": decision["note"], "created_at": decision["created_at"], "applied": applied, "status_zh": "确认已应用，A05结果仍须独立复核" if applied else "确认已保存但尚未应用，请查看后台任务并重试"} if decision else None}
+    return {**kegg_display_status(meta,decision,run["run_id"],historical,busy), "enabled": enabled, "disabled_reason_zh": "" if enabled else "历史及回收站只读；请使用当前有效结果并等待后台任务结束。", "expected_a03": run["parent_runs"]["A03"], "expected_a05": run["run_id"], "expected_decision_id": decision["decision_id"] if decision else None, "exclusions_confirmed": bool(meta.get("exclusions_confirmed")), "layout_confirmed": bool(meta.get("layout_confirmed")), "excluded_ids": meta["excluded_ids"], "missing_translations": meta["missing_translations"], "catalog": catalog, "screening": screening_info, "retained_count": meta["retained_count"], "excluded_count": meta["excluded_count"], "significant_count": meta["significant_count"], "latest": {"reviewer": decision["reviewer"], "note_zh": decision["note"], "created_at": decision["created_at"], "applied": applied, "status_zh": "确认已应用，A05结果仍须独立复核" if applied else ("旧版确认已留存；筛选规则已更新，请重新确认当前范围" if run.get("inputs", {}).get("display_screening_source") and not meta.get("exclusions_confirmed") else "确认已保存但尚未应用，请查看后台任务并重试")} if decision else None}

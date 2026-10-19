@@ -621,7 +621,7 @@ class App:
             raise ApiError(409,"STALE_VERSION","富集结果或确认版本已改变，请刷新")
         if not info["enabled"]:
             raise ApiError(409,"GATE_BLOCKED",info["disabled_reason_zh"])
-        payload = {k:body.get(k) for k in ("expected_a03","expected_a05","expected_decision_id","action","reviewer","note","excluded_ids","confirmed")}
+        payload = {k:body.get(k) for k in ("expected_a03","expected_a05","expected_decision_id","action","reviewer","note","excluded_ids","confirmed","exclude_all_confirmed")}
         payload["decision_id"]="decision_"+uuid.uuid4().hex
         try:
             self.kernel.workflow().validate_display_confirmation(study_id,payload)

@@ -1,0 +1,4118 @@
+{
+  "schema_version": "KEGG.br08901.snapshot.1",
+  "source_url": "https://www.kegg.jp/kegg/pathway.html",
+  "download_url": "https://www.kegg.jp/kegg-bin/download_htext?htext=br08901.keg&format=htext&filedir=",
+  "source_sha256": "24a0fb388c5969e736b982882a4e512101aeb64d8c270c42ec3d3761f1cd4d2a",
+  "snapshot_date": "2026-10-19",
+  "pathways": {
+    "01100": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Global and overview maps",
+        "name": "Metabolic pathways"
+      }
+    ],
+    "01110": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Global and overview maps",
+        "name": "Biosynthesis of secondary metabolites"
+      }
+    ],
+    "01120": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Global and overview maps",
+        "name": "Microbial metabolism in diverse environments"
+      }
+    ],
+    "01200": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Global and overview maps",
+        "name": "Carbon metabolism"
+      }
+    ],
+    "01210": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Global and overview maps",
+        "name": "2-Oxocarboxylic acid metabolism"
+      }
+    ],
+    "01212": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Global and overview maps",
+        "name": "Fatty acid metabolism"
+      }
+    ],
+    "01230": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Global and overview maps",
+        "name": "Biosynthesis of amino acids"
+      }
+    ],
+    "01232": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Global and overview maps",
+        "name": "Nucleotide metabolism"
+      }
+    ],
+    "01250": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Global and overview maps",
+        "name": "Biosynthesis of nucleotide sugars"
+      }
+    ],
+    "01240": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Global and overview maps",
+        "name": "Biosynthesis of cofactors"
+      }
+    ],
+    "01220": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Global and overview maps",
+        "name": "Degradation of aromatic compounds"
+      }
+    ],
+    "01310": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Global and overview maps",
+        "name": "Nitrogen cycle"
+      }
+    ],
+    "01320": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Global and overview maps",
+        "name": "Sulfur cycle"
+      }
+    ],
+    "00010": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Carbohydrate metabolism",
+        "name": "Glycolysis / Gluconeogenesis"
+      }
+    ],
+    "00020": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Carbohydrate metabolism",
+        "name": "Citrate cycle (TCA cycle)"
+      }
+    ],
+    "00030": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Carbohydrate metabolism",
+        "name": "Pentose phosphate pathway"
+      }
+    ],
+    "00040": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Carbohydrate metabolism",
+        "name": "Pentose and glucuronate interconversions"
+      }
+    ],
+    "00051": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Carbohydrate metabolism",
+        "name": "Fructose and mannose metabolism"
+      }
+    ],
+    "00052": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Carbohydrate metabolism",
+        "name": "Galactose metabolism"
+      }
+    ],
+    "00053": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Carbohydrate metabolism",
+        "name": "Ascorbate and aldarate metabolism"
+      }
+    ],
+    "00500": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Carbohydrate metabolism",
+        "name": "Starch and sucrose metabolism"
+      }
+    ],
+    "00620": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Carbohydrate metabolism",
+        "name": "Pyruvate metabolism"
+      }
+    ],
+    "00630": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Carbohydrate metabolism",
+        "name": "Glyoxylate and dicarboxylate metabolism"
+      }
+    ],
+    "00640": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Carbohydrate metabolism",
+        "name": "Propanoate metabolism"
+      }
+    ],
+    "00650": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Carbohydrate metabolism",
+        "name": "Butanoate metabolism"
+      }
+    ],
+    "00660": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Carbohydrate metabolism",
+        "name": "C5-Branched dibasic acid metabolism"
+      }
+    ],
+    "00562": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Carbohydrate metabolism",
+        "name": "Inositol phosphate metabolism"
+      }
+    ],
+    "00566": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Carbohydrate metabolism",
+        "name": "Sulfoquinovose metabolism"
+      }
+    ],
+    "00190": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Energy metabolism",
+        "name": "Oxidative phosphorylation"
+      }
+    ],
+    "00195": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Energy metabolism",
+        "name": "Photosynthesis"
+      }
+    ],
+    "00196": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Energy metabolism",
+        "name": "Photosynthesis - antenna proteins"
+      }
+    ],
+    "00710": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Energy metabolism",
+        "name": "Carbon fixation by Calvin cycle"
+      }
+    ],
+    "00720": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Energy metabolism",
+        "name": "Other carbon fixation pathways"
+      }
+    ],
+    "00680": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Energy metabolism",
+        "name": "Methane metabolism"
+      }
+    ],
+    "00910": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Energy metabolism",
+        "name": "Nitrogen metabolism"
+      }
+    ],
+    "00920": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Energy metabolism",
+        "name": "Sulfur metabolism"
+      }
+    ],
+    "00061": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Lipid metabolism",
+        "name": "Fatty acid biosynthesis"
+      }
+    ],
+    "00062": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Lipid metabolism",
+        "name": "Fatty acid elongation"
+      }
+    ],
+    "00071": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Lipid metabolism",
+        "name": "Fatty acid degradation"
+      }
+    ],
+    "00073": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Lipid metabolism",
+        "name": "Cutin, suberine and wax biosynthesis"
+      }
+    ],
+    "00074": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Lipid metabolism",
+        "name": "Mycolic acid biosynthesis"
+      }
+    ],
+    "00100": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Lipid metabolism",
+        "name": "Steroid biosynthesis"
+      }
+    ],
+    "00120": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Lipid metabolism",
+        "name": "Primary bile acid biosynthesis"
+      }
+    ],
+    "00121": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Lipid metabolism",
+        "name": "Secondary bile acid biosynthesis"
+      }
+    ],
+    "00140": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Lipid metabolism",
+        "name": "Steroid hormone biosynthesis"
+      }
+    ],
+    "00561": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Lipid metabolism",
+        "name": "Glycerolipid metabolism"
+      }
+    ],
+    "00564": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Lipid metabolism",
+        "name": "Glycerophospholipid metabolism"
+      }
+    ],
+    "00565": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Lipid metabolism",
+        "name": "Ether lipid metabolism"
+      }
+    ],
+    "00600": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Lipid metabolism",
+        "name": "Sphingolipid metabolism"
+      }
+    ],
+    "00590": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Lipid metabolism",
+        "name": "Arachidonic acid metabolism"
+      }
+    ],
+    "00591": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Lipid metabolism",
+        "name": "Linoleic acid metabolism"
+      }
+    ],
+    "00592": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Lipid metabolism",
+        "name": "alpha-Linolenic acid metabolism"
+      }
+    ],
+    "01040": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Lipid metabolism",
+        "name": "Biosynthesis of unsaturated fatty acids"
+      }
+    ],
+    "00230": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Nucleotide metabolism",
+        "name": "Purine metabolism"
+      }
+    ],
+    "00240": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Nucleotide metabolism",
+        "name": "Pyrimidine metabolism"
+      }
+    ],
+    "00250": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Amino acid metabolism",
+        "name": "Alanine, aspartate and glutamate metabolism"
+      }
+    ],
+    "00260": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Amino acid metabolism",
+        "name": "Glycine, serine and threonine metabolism"
+      }
+    ],
+    "00270": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Amino acid metabolism",
+        "name": "Cysteine and methionine metabolism"
+      }
+    ],
+    "00280": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Amino acid metabolism",
+        "name": "Valine, leucine and isoleucine degradation"
+      }
+    ],
+    "00290": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Amino acid metabolism",
+        "name": "Valine, leucine and isoleucine biosynthesis"
+      }
+    ],
+    "00300": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Amino acid metabolism",
+        "name": "Lysine biosynthesis"
+      }
+    ],
+    "00310": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Amino acid metabolism",
+        "name": "Lysine degradation"
+      }
+    ],
+    "00220": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Amino acid metabolism",
+        "name": "Arginine biosynthesis"
+      }
+    ],
+    "00330": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Amino acid metabolism",
+        "name": "Arginine and proline metabolism"
+      }
+    ],
+    "00340": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Amino acid metabolism",
+        "name": "Histidine metabolism"
+      }
+    ],
+    "00350": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Amino acid metabolism",
+        "name": "Tyrosine metabolism"
+      }
+    ],
+    "00360": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Amino acid metabolism",
+        "name": "Phenylalanine metabolism"
+      }
+    ],
+    "00380": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Amino acid metabolism",
+        "name": "Tryptophan metabolism"
+      }
+    ],
+    "00400": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Amino acid metabolism",
+        "name": "Phenylalanine, tyrosine and tryptophan biosynthesis"
+      }
+    ],
+    "00410": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of other amino acids",
+        "name": "beta-Alanine metabolism"
+      }
+    ],
+    "00430": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of other amino acids",
+        "name": "Taurine and hypotaurine metabolism"
+      }
+    ],
+    "00440": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of other amino acids",
+        "name": "Phosphonate and phosphinate metabolism"
+      }
+    ],
+    "00450": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of other amino acids",
+        "name": "Selenocompound metabolism"
+      }
+    ],
+    "00460": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of other amino acids",
+        "name": "Cyanoamino acid metabolism"
+      }
+    ],
+    "00470": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of other amino acids",
+        "name": "D-Amino acid metabolism"
+      }
+    ],
+    "00480": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of other amino acids",
+        "name": "Glutathione metabolism"
+      }
+    ],
+    "00520": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Glycan biosynthesis and metabolism",
+        "name": "Amino sugar and nucleotide sugar metabolism"
+      }
+    ],
+    "00541": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Glycan biosynthesis and metabolism",
+        "name": "Biosynthesis of various nucleotide sugars"
+      }
+    ],
+    "00510": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Glycan biosynthesis and metabolism",
+        "name": "N-Glycan biosynthesis"
+      }
+    ],
+    "00513": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Glycan biosynthesis and metabolism",
+        "name": "Various types of N-glycan biosynthesis"
+      }
+    ],
+    "00512": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Glycan biosynthesis and metabolism",
+        "name": "Mucin type O-glycan biosynthesis"
+      }
+    ],
+    "00515": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Glycan biosynthesis and metabolism",
+        "name": "Mannose type O-glycan biosynthesis"
+      }
+    ],
+    "00514": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Glycan biosynthesis and metabolism",
+        "name": "Other types of O-glycan biosynthesis"
+      }
+    ],
+    "00532": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Glycan biosynthesis and metabolism",
+        "name": "Glycosaminoglycan biosynthesis - chondroitin sulfate / dermatan sulfate"
+      }
+    ],
+    "00534": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Glycan biosynthesis and metabolism",
+        "name": "Glycosaminoglycan biosynthesis - heparan sulfate / heparin"
+      }
+    ],
+    "00533": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Glycan biosynthesis and metabolism",
+        "name": "Glycosaminoglycan biosynthesis - keratan sulfate"
+      }
+    ],
+    "00531": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Glycan biosynthesis and metabolism",
+        "name": "Glycosaminoglycan degradation"
+      }
+    ],
+    "00563": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Glycan biosynthesis and metabolism",
+        "name": "Glycosylphosphatidylinositol (GPI)-anchor biosynthesis"
+      }
+    ],
+    "00601": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Glycan biosynthesis and metabolism",
+        "name": "Glycosphingolipid biosynthesis - lacto and neolacto series"
+      }
+    ],
+    "00603": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Glycan biosynthesis and metabolism",
+        "name": "Glycosphingolipid biosynthesis - globo and isoglobo series"
+      }
+    ],
+    "00604": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Glycan biosynthesis and metabolism",
+        "name": "Glycosphingolipid biosynthesis - ganglio series"
+      }
+    ],
+    "00511": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Glycan biosynthesis and metabolism",
+        "name": "Other glycan degradation"
+      }
+    ],
+    "00540": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Glycan biosynthesis and metabolism",
+        "name": "Lipopolysaccharide biosynthesis"
+      }
+    ],
+    "00542": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Glycan biosynthesis and metabolism",
+        "name": "O-Antigen repeat unit biosynthesis"
+      }
+    ],
+    "00550": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Glycan biosynthesis and metabolism",
+        "name": "Peptidoglycan biosynthesis"
+      }
+    ],
+    "00552": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Glycan biosynthesis and metabolism",
+        "name": "Teichoic acid biosynthesis"
+      }
+    ],
+    "00571": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Glycan biosynthesis and metabolism",
+        "name": "Lipoarabinomannan (LAM) biosynthesis"
+      }
+    ],
+    "00572": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Glycan biosynthesis and metabolism",
+        "name": "Arabinogalactan biosynthesis - Mycobacterium"
+      }
+    ],
+    "00543": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Glycan biosynthesis and metabolism",
+        "name": "Exopolysaccharide biosynthesis"
+      }
+    ],
+    "00730": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of cofactors and vitamins",
+        "name": "Thiamine metabolism"
+      }
+    ],
+    "00740": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of cofactors and vitamins",
+        "name": "Riboflavin metabolism"
+      }
+    ],
+    "00750": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of cofactors and vitamins",
+        "name": "Vitamin B6 metabolism"
+      }
+    ],
+    "00760": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of cofactors and vitamins",
+        "name": "Nicotinate and nicotinamide metabolism"
+      }
+    ],
+    "00770": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of cofactors and vitamins",
+        "name": "Pantothenate and CoA biosynthesis"
+      }
+    ],
+    "00780": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of cofactors and vitamins",
+        "name": "Biotin metabolism"
+      }
+    ],
+    "00785": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of cofactors and vitamins",
+        "name": "Lipoic acid metabolism"
+      }
+    ],
+    "00790": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of cofactors and vitamins",
+        "name": "Folate biosynthesis"
+      }
+    ],
+    "00670": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of cofactors and vitamins",
+        "name": "One carbon pool by folate"
+      }
+    ],
+    "00830": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of cofactors and vitamins",
+        "name": "Retinol metabolism"
+      }
+    ],
+    "00860": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of cofactors and vitamins",
+        "name": "Porphyrin metabolism"
+      }
+    ],
+    "00130": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of cofactors and vitamins",
+        "name": "Ubiquinone and other terpenoid-quinone biosynthesis"
+      }
+    ],
+    "00900": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of terpenoids and polyketides",
+        "name": "Terpenoid backbone biosynthesis"
+      }
+    ],
+    "00902": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of terpenoids and polyketides",
+        "name": "Monoterpenoid biosynthesis"
+      }
+    ],
+    "00909": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of terpenoids and polyketides",
+        "name": "Sesquiterpenoid and triterpenoid biosynthesis"
+      }
+    ],
+    "00904": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of terpenoids and polyketides",
+        "name": "Diterpenoid biosynthesis"
+      }
+    ],
+    "00906": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of terpenoids and polyketides",
+        "name": "Carotenoid biosynthesis"
+      }
+    ],
+    "00905": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of terpenoids and polyketides",
+        "name": "Brassinosteroid biosynthesis"
+      }
+    ],
+    "00981": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of terpenoids and polyketides",
+        "name": "Insect hormone biosynthesis"
+      }
+    ],
+    "00908": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of terpenoids and polyketides",
+        "name": "Zeatin biosynthesis"
+      }
+    ],
+    "00903": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of terpenoids and polyketides",
+        "name": "Limonene degradation"
+      }
+    ],
+    "00907": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of terpenoids and polyketides",
+        "name": "Pinene, camphor and geraniol degradation"
+      }
+    ],
+    "01052": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of terpenoids and polyketides",
+        "name": "Type I polyketide structures"
+      }
+    ],
+    "00522": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of terpenoids and polyketides",
+        "name": "Biosynthesis of 12-, 14- and 16-membered macrolides"
+      }
+    ],
+    "01051": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of terpenoids and polyketides",
+        "name": "Biosynthesis of ansamycins"
+      }
+    ],
+    "01059": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of terpenoids and polyketides",
+        "name": "Biosynthesis of enediyne antibiotics"
+      }
+    ],
+    "01056": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of terpenoids and polyketides",
+        "name": "Biosynthesis of type II polyketide backbone"
+      }
+    ],
+    "01057": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of terpenoids and polyketides",
+        "name": "Biosynthesis of type II polyketide products"
+      }
+    ],
+    "00253": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of terpenoids and polyketides",
+        "name": "Tetracycline biosynthesis"
+      }
+    ],
+    "00523": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of terpenoids and polyketides",
+        "name": "Polyketide sugar unit biosynthesis"
+      }
+    ],
+    "01054": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of terpenoids and polyketides",
+        "name": "Nonribosomal peptide structures"
+      }
+    ],
+    "01053": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of terpenoids and polyketides",
+        "name": "Biosynthesis of siderophore group nonribosomal peptides"
+      }
+    ],
+    "01055": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Metabolism of terpenoids and polyketides",
+        "name": "Biosynthesis of vancomycin group antibiotics"
+      }
+    ],
+    "00940": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Biosynthesis of other secondary metabolites",
+        "name": "Phenylpropanoid biosynthesis"
+      }
+    ],
+    "00945": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Biosynthesis of other secondary metabolites",
+        "name": "Stilbenoid, diarylheptanoid and gingerol biosynthesis"
+      }
+    ],
+    "00941": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Biosynthesis of other secondary metabolites",
+        "name": "Flavonoid biosynthesis"
+      }
+    ],
+    "00944": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Biosynthesis of other secondary metabolites",
+        "name": "Flavone and flavonol biosynthesis"
+      }
+    ],
+    "00942": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Biosynthesis of other secondary metabolites",
+        "name": "Anthocyanin biosynthesis"
+      }
+    ],
+    "00943": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Biosynthesis of other secondary metabolites",
+        "name": "Isoflavonoid biosynthesis"
+      }
+    ],
+    "00946": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Biosynthesis of other secondary metabolites",
+        "name": "Degradation of flavonoids"
+      }
+    ],
+    "00901": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Biosynthesis of other secondary metabolites",
+        "name": "Indole alkaloid biosynthesis"
+      }
+    ],
+    "00403": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Biosynthesis of other secondary metabolites",
+        "name": "Indole diterpene alkaloid biosynthesis"
+      }
+    ],
+    "00950": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Biosynthesis of other secondary metabolites",
+        "name": "Isoquinoline alkaloid biosynthesis"
+      }
+    ],
+    "00960": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Biosynthesis of other secondary metabolites",
+        "name": "Tropane, piperidine and pyridine alkaloid biosynthesis"
+      }
+    ],
+    "00996": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Biosynthesis of other secondary metabolites",
+        "name": "Biosynthesis of various alkaloids"
+      }
+    ],
+    "00232": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Biosynthesis of other secondary metabolites",
+        "name": "Caffeine metabolism"
+      }
+    ],
+    "00965": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Biosynthesis of other secondary metabolites",
+        "name": "Betalain biosynthesis"
+      }
+    ],
+    "00966": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Biosynthesis of other secondary metabolites",
+        "name": "Glucosinolate biosynthesis"
+      }
+    ],
+    "00402": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Biosynthesis of other secondary metabolites",
+        "name": "Benzoxazinoid biosynthesis"
+      }
+    ],
+    "00311": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Biosynthesis of other secondary metabolites",
+        "name": "Penicillin and cephalosporin biosynthesis"
+      }
+    ],
+    "00332": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Biosynthesis of other secondary metabolites",
+        "name": "Carbapenem biosynthesis"
+      }
+    ],
+    "00261": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Biosynthesis of other secondary metabolites",
+        "name": "Monobactam biosynthesis"
+      }
+    ],
+    "00331": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Biosynthesis of other secondary metabolites",
+        "name": "Clavulanic acid biosynthesis"
+      }
+    ],
+    "00521": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Biosynthesis of other secondary metabolites",
+        "name": "Streptomycin biosynthesis"
+      }
+    ],
+    "00524": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Biosynthesis of other secondary metabolites",
+        "name": "Neomycin, kanamycin and gentamicin biosynthesis"
+      }
+    ],
+    "00525": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Biosynthesis of other secondary metabolites",
+        "name": "Acarbose and validamycin biosynthesis"
+      }
+    ],
+    "00401": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Biosynthesis of other secondary metabolites",
+        "name": "Novobiocin biosynthesis"
+      }
+    ],
+    "00404": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Biosynthesis of other secondary metabolites",
+        "name": "Staurosporine biosynthesis"
+      }
+    ],
+    "00405": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Biosynthesis of other secondary metabolites",
+        "name": "Phenazine biosynthesis"
+      }
+    ],
+    "00333": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Biosynthesis of other secondary metabolites",
+        "name": "Prodigiosin biosynthesis"
+      }
+    ],
+    "00254": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Biosynthesis of other secondary metabolites",
+        "name": "Aflatoxin biosynthesis"
+      }
+    ],
+    "00975": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Biosynthesis of other secondary metabolites",
+        "name": "Biosynthesis of various siderophores"
+      }
+    ],
+    "00998": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Biosynthesis of other secondary metabolites",
+        "name": "Biosynthesis of various antibiotics"
+      }
+    ],
+    "00999": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Biosynthesis of other secondary metabolites",
+        "name": "Biosynthesis of various plant secondary metabolites"
+      }
+    ],
+    "00997": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Biosynthesis of other secondary metabolites",
+        "name": "Biosynthesis of various other secondary metabolites"
+      }
+    ],
+    "00362": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Xenobiotics biodegradation and metabolism",
+        "name": "Benzoate degradation"
+      }
+    ],
+    "00627": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Xenobiotics biodegradation and metabolism",
+        "name": "Aminobenzoate degradation"
+      }
+    ],
+    "00364": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Xenobiotics biodegradation and metabolism",
+        "name": "Fluorobenzoate degradation"
+      }
+    ],
+    "00625": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Xenobiotics biodegradation and metabolism",
+        "name": "Chloroalkane and chloroalkene degradation"
+      }
+    ],
+    "00361": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Xenobiotics biodegradation and metabolism",
+        "name": "Chlorocyclohexane and chlorobenzene degradation"
+      }
+    ],
+    "00623": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Xenobiotics biodegradation and metabolism",
+        "name": "Toluene degradation"
+      }
+    ],
+    "00622": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Xenobiotics biodegradation and metabolism",
+        "name": "Xylene degradation"
+      }
+    ],
+    "00633": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Xenobiotics biodegradation and metabolism",
+        "name": "Nitrotoluene degradation"
+      }
+    ],
+    "00642": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Xenobiotics biodegradation and metabolism",
+        "name": "Ethylbenzene degradation"
+      }
+    ],
+    "00643": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Xenobiotics biodegradation and metabolism",
+        "name": "Styrene degradation"
+      }
+    ],
+    "00791": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Xenobiotics biodegradation and metabolism",
+        "name": "Atrazine degradation"
+      }
+    ],
+    "00930": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Xenobiotics biodegradation and metabolism",
+        "name": "Caprolactam degradation"
+      }
+    ],
+    "00363": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Xenobiotics biodegradation and metabolism",
+        "name": "Bisphenol degradation"
+      }
+    ],
+    "00621": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Xenobiotics biodegradation and metabolism",
+        "name": "Dioxin degradation"
+      }
+    ],
+    "00626": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Xenobiotics biodegradation and metabolism",
+        "name": "Naphthalene degradation"
+      }
+    ],
+    "00624": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Xenobiotics biodegradation and metabolism",
+        "name": "Polycyclic aromatic hydrocarbon degradation"
+      }
+    ],
+    "00365": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Xenobiotics biodegradation and metabolism",
+        "name": "Furfural degradation"
+      }
+    ],
+    "00984": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Xenobiotics biodegradation and metabolism",
+        "name": "Steroid degradation"
+      }
+    ],
+    "00980": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Xenobiotics biodegradation and metabolism",
+        "name": "Metabolism of xenobiotics by cytochrome P450"
+      }
+    ],
+    "00982": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Xenobiotics biodegradation and metabolism",
+        "name": "Drug metabolism - cytochrome P450"
+      }
+    ],
+    "00983": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Xenobiotics biodegradation and metabolism",
+        "name": "Drug metabolism - other enzymes"
+      }
+    ],
+    "01010": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Chemical structure transformation maps",
+        "name": "Overview of biosynthetic pathways"
+      }
+    ],
+    "01060": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Chemical structure transformation maps",
+        "name": "Biosynthesis of plant secondary metabolites"
+      }
+    ],
+    "01061": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Chemical structure transformation maps",
+        "name": "Biosynthesis of phenylpropanoids"
+      }
+    ],
+    "01062": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Chemical structure transformation maps",
+        "name": "Biosynthesis of terpenoids and steroids"
+      }
+    ],
+    "01063": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Chemical structure transformation maps",
+        "name": "Biosynthesis of alkaloids derived from shikimate pathway"
+      }
+    ],
+    "01064": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Chemical structure transformation maps",
+        "name": "Biosynthesis of alkaloids derived from ornithine, lysine and nicotinic acid"
+      }
+    ],
+    "01065": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Chemical structure transformation maps",
+        "name": "Biosynthesis of alkaloids derived from histidine and purine"
+      }
+    ],
+    "01066": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Chemical structure transformation maps",
+        "name": "Biosynthesis of alkaloids derived from terpenoid and polyketide"
+      }
+    ],
+    "01070": [
+      {
+        "category": "Metabolism",
+        "subcategory": "Chemical structure transformation maps",
+        "name": "Biosynthesis of plant hormones"
+      }
+    ],
+    "03020": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Transcription",
+        "name": "RNA polymerase"
+      }
+    ],
+    "03022": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Transcription",
+        "name": "Basal transcription factors"
+      }
+    ],
+    "03040": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Transcription",
+        "name": "Spliceosome"
+      }
+    ],
+    "03010": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Translation",
+        "name": "Ribosome"
+      }
+    ],
+    "00970": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Translation",
+        "name": "Aminoacyl-tRNA biosynthesis"
+      }
+    ],
+    "03013": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Translation",
+        "name": "Nucleocytoplasmic transport"
+      }
+    ],
+    "03015": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Translation",
+        "name": "mRNA surveillance pathway"
+      }
+    ],
+    "03008": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Translation",
+        "name": "Ribosome biogenesis in eukaryotes"
+      }
+    ],
+    "03060": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Folding, sorting and degradation",
+        "name": "Protein export"
+      }
+    ],
+    "04141": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Folding, sorting and degradation",
+        "name": "Protein processing in endoplasmic reticulum"
+      }
+    ],
+    "04130": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Folding, sorting and degradation",
+        "name": "SNARE interactions in vesicular transport"
+      }
+    ],
+    "04120": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Folding, sorting and degradation",
+        "name": "Ubiquitin mediated proteolysis"
+      }
+    ],
+    "04122": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Folding, sorting and degradation",
+        "name": "Sulfur relay system"
+      }
+    ],
+    "03050": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Folding, sorting and degradation",
+        "name": "Proteasome"
+      }
+    ],
+    "03018": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Folding, sorting and degradation",
+        "name": "RNA degradation"
+      }
+    ],
+    "03030": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Replication and repair",
+        "name": "DNA replication"
+      }
+    ],
+    "03410": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Replication and repair",
+        "name": "Base excision repair"
+      }
+    ],
+    "03420": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Replication and repair",
+        "name": "Nucleotide excision repair"
+      }
+    ],
+    "03430": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Replication and repair",
+        "name": "Mismatch repair"
+      }
+    ],
+    "03440": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Replication and repair",
+        "name": "Homologous recombination"
+      }
+    ],
+    "03450": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Replication and repair",
+        "name": "Non-homologous end-joining"
+      }
+    ],
+    "03460": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Replication and repair",
+        "name": "Fanconi anemia pathway"
+      }
+    ],
+    "03082": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Chromosome",
+        "name": "ATP-dependent chromatin remodeling"
+      }
+    ],
+    "03083": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Chromosome",
+        "name": "Polycomb repressive complex"
+      }
+    ],
+    "03230": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Information processing in viruses",
+        "name": "Viral genome structure"
+      }
+    ],
+    "03240": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Information processing in viruses",
+        "name": "Viral replication"
+      }
+    ],
+    "03250": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Information processing in viruses",
+        "name": "Viral life cycle - HIV-1"
+      }
+    ],
+    "03260": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Information processing in viruses",
+        "name": "Virion - Human immunodeficiency virus"
+      }
+    ],
+    "03271": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Information processing in viruses",
+        "name": "Virion - Rotavirus"
+      }
+    ],
+    "03262": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Information processing in viruses",
+        "name": "Virion - Coronavirus"
+      }
+    ],
+    "03261": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Information processing in viruses",
+        "name": "Virion - Influenza virus"
+      }
+    ],
+    "03263": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Information processing in viruses",
+        "name": "Virion - Enterovirus"
+      }
+    ],
+    "03264": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Information processing in viruses",
+        "name": "Virion - Flavivirus and Alphavirus"
+      }
+    ],
+    "03265": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Information processing in viruses",
+        "name": "Virion - Ebolavirus, Lyssavirus and Morbillivirus"
+      }
+    ],
+    "03273": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Information processing in viruses",
+        "name": "Virion - Lassa virus and SFTS virus"
+      }
+    ],
+    "03272": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Information processing in viruses",
+        "name": "Virion - Hepatitis viruses"
+      }
+    ],
+    "03266": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Information processing in viruses",
+        "name": "Virion - Herpesvirus"
+      }
+    ],
+    "03268": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Information processing in viruses",
+        "name": "Virion - Orthopoxvirus"
+      }
+    ],
+    "03267": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Information processing in viruses",
+        "name": "Virion - Adenovirus"
+      }
+    ],
+    "03259": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Information processing in viruses",
+        "name": "Virion - Bacteriophages T4 and T7"
+      }
+    ],
+    "03258": [
+      {
+        "category": "Genetic Information Processing",
+        "subcategory": "Information processing in viruses",
+        "name": "Virion - Bacteriophage lambda"
+      }
+    ],
+    "02010": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Membrane transport",
+        "name": "ABC transporters"
+      }
+    ],
+    "02060": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Membrane transport",
+        "name": "Phosphotransferase system (PTS)"
+      }
+    ],
+    "03070": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Membrane transport",
+        "name": "Bacterial secretion system"
+      }
+    ],
+    "02020": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "Two-component system"
+      }
+    ],
+    "04010": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "MAPK signaling pathway"
+      }
+    ],
+    "04013": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "MAPK signaling pathway - fly"
+      }
+    ],
+    "04016": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "MAPK signaling pathway - plant"
+      }
+    ],
+    "04011": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "MAPK signaling pathway - yeast"
+      }
+    ],
+    "04012": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "ErbB signaling pathway"
+      }
+    ],
+    "04014": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "Ras signaling pathway"
+      }
+    ],
+    "04015": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "Rap1 signaling pathway"
+      }
+    ],
+    "04310": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "Wnt signaling pathway"
+      }
+    ],
+    "04330": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "Notch signaling pathway"
+      }
+    ],
+    "04340": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "Hedgehog signaling pathway"
+      }
+    ],
+    "04341": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "Hedgehog signaling pathway - fly"
+      }
+    ],
+    "04350": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "TGF-beta signaling pathway"
+      }
+    ],
+    "04390": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "Hippo signaling pathway"
+      }
+    ],
+    "04391": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "Hippo signaling pathway - fly"
+      }
+    ],
+    "04392": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "Hippo signaling pathway - multiple species"
+      }
+    ],
+    "04370": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "VEGF signaling pathway"
+      }
+    ],
+    "04371": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "Apelin signaling pathway"
+      }
+    ],
+    "04630": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "JAK-STAT signaling pathway"
+      }
+    ],
+    "04064": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "NF-kappa B signaling pathway"
+      }
+    ],
+    "04668": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "TNF signaling pathway"
+      }
+    ],
+    "04066": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "HIF-1 signaling pathway"
+      }
+    ],
+    "04068": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "FoxO signaling pathway"
+      }
+    ],
+    "04020": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "Calcium signaling pathway"
+      }
+    ],
+    "04070": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "Phosphatidylinositol signaling system"
+      }
+    ],
+    "04072": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "Phospholipase D signaling pathway"
+      }
+    ],
+    "04071": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "Sphingolipid signaling pathway"
+      }
+    ],
+    "04024": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "cAMP signaling pathway"
+      }
+    ],
+    "04022": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "cGMP-PKG signaling pathway"
+      }
+    ],
+    "04151": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "PI3K-Akt signaling pathway"
+      }
+    ],
+    "04152": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "AMPK signaling pathway"
+      }
+    ],
+    "04150": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "mTOR signaling pathway"
+      }
+    ],
+    "04075": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signal transduction",
+        "name": "Plant hormone signal transduction"
+      }
+    ],
+    "04080": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signaling molecules and interaction",
+        "name": "Neuroactive ligand-receptor interaction"
+      }
+    ],
+    "04082": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signaling molecules and interaction",
+        "name": "Neuroactive ligand signaling"
+      }
+    ],
+    "04081": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signaling molecules and interaction",
+        "name": "Hormone signaling"
+      }
+    ],
+    "04060": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signaling molecules and interaction",
+        "name": "Cytokine-cytokine receptor interaction"
+      }
+    ],
+    "04061": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signaling molecules and interaction",
+        "name": "Viral protein interaction with cytokine and cytokine receptor"
+      }
+    ],
+    "04512": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signaling molecules and interaction",
+        "name": "ECM-receptor interaction"
+      }
+    ],
+    "04514": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signaling molecules and interaction",
+        "name": "Cell adhesion molecule (CAM) interaction"
+      }
+    ],
+    "04517": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signaling molecules and interaction",
+        "name": "IgSF CAM signaling"
+      }
+    ],
+    "04518": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signaling molecules and interaction",
+        "name": "Integrin signaling"
+      }
+    ],
+    "04519": [
+      {
+        "category": "Environmental Information Processing",
+        "subcategory": "Signaling molecules and interaction",
+        "name": "Cadherin signaling"
+      }
+    ],
+    "04144": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Transport and catabolism",
+        "name": "Endocytosis"
+      }
+    ],
+    "04145": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Transport and catabolism",
+        "name": "Phagocytosis"
+      }
+    ],
+    "04142": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Transport and catabolism",
+        "name": "Lysosome biogenesis"
+      }
+    ],
+    "04146": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Transport and catabolism",
+        "name": "Peroxisome"
+      }
+    ],
+    "04149": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Transport and catabolism",
+        "name": "Peroxisome - yeast"
+      }
+    ],
+    "04140": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Transport and catabolism",
+        "name": "Autophagy - animal"
+      }
+    ],
+    "04138": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Transport and catabolism",
+        "name": "Autophagy - yeast"
+      }
+    ],
+    "04136": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Transport and catabolism",
+        "name": "Autophagy - other"
+      }
+    ],
+    "04137": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Transport and catabolism",
+        "name": "Mitophagy - animal"
+      }
+    ],
+    "04139": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Transport and catabolism",
+        "name": "Mitophagy - yeast"
+      }
+    ],
+    "04148": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Transport and catabolism",
+        "name": "Efferocytosis"
+      }
+    ],
+    "04110": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Cell growth and death",
+        "name": "Cell cycle"
+      }
+    ],
+    "04111": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Cell growth and death",
+        "name": "Cell cycle - yeast"
+      }
+    ],
+    "04112": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Cell growth and death",
+        "name": "Cell cycle - Caulobacter"
+      }
+    ],
+    "04113": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Cell growth and death",
+        "name": "Meiosis - yeast"
+      }
+    ],
+    "04114": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Cell growth and death",
+        "name": "Oocyte meiosis"
+      }
+    ],
+    "04210": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Cell growth and death",
+        "name": "Apoptosis"
+      }
+    ],
+    "04214": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Cell growth and death",
+        "name": "Apoptosis - fly"
+      }
+    ],
+    "04215": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Cell growth and death",
+        "name": "Apoptosis - multiple species"
+      }
+    ],
+    "04216": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Cell growth and death",
+        "name": "Ferroptosis"
+      }
+    ],
+    "04217": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Cell growth and death",
+        "name": "Necroptosis"
+      }
+    ],
+    "04115": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Cell growth and death",
+        "name": "p53 signaling pathway"
+      }
+    ],
+    "04218": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Cell growth and death",
+        "name": "Cellular senescence"
+      }
+    ],
+    "04156": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Cell growth and death",
+        "name": "Integrated stress response (ISR) signaling pathway"
+      }
+    ],
+    "04510": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Cellular community - eukaryotes",
+        "name": "Focal adhesion"
+      }
+    ],
+    "04520": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Cellular community - eukaryotes",
+        "name": "Adherens junction"
+      }
+    ],
+    "04530": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Cellular community - eukaryotes",
+        "name": "Tight junction"
+      }
+    ],
+    "04540": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Cellular community - eukaryotes",
+        "name": "Gap junction"
+      }
+    ],
+    "04550": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Cellular community - eukaryotes",
+        "name": "Signaling pathways regulating pluripotency of stem cells"
+      }
+    ],
+    "02024": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Cellular community - prokaryotes",
+        "name": "Quorum sensing"
+      }
+    ],
+    "05111": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Cellular community - prokaryotes",
+        "name": "Biofilm formation - Vibrio cholerae"
+      }
+    ],
+    "02025": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Cellular community - prokaryotes",
+        "name": "Biofilm formation - Pseudomonas aeruginosa"
+      }
+    ],
+    "02026": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Cellular community - prokaryotes",
+        "name": "Biofilm formation - Escherichia coli"
+      }
+    ],
+    "02030": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Cell motility",
+        "name": "Bacterial chemotaxis"
+      }
+    ],
+    "02040": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Cell motility",
+        "name": "Flagellar assembly"
+      }
+    ],
+    "04814": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Cell motility",
+        "name": "Motor proteins"
+      }
+    ],
+    "04820": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Cell motility",
+        "name": "Cytoskeleton in muscle cells"
+      }
+    ],
+    "04810": [
+      {
+        "category": "Cellular Processes",
+        "subcategory": "Cell motility",
+        "name": "Regulation of actin cytoskeleton"
+      }
+    ],
+    "04640": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Immune system",
+        "name": "Hematopoietic cell lineage"
+      }
+    ],
+    "04610": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Immune system",
+        "name": "Complement and coagulation cascades"
+      }
+    ],
+    "04611": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Immune system",
+        "name": "Platelet activation"
+      }
+    ],
+    "04613": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Immune system",
+        "name": "Neutrophil extracellular trap formation"
+      }
+    ],
+    "04620": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Immune system",
+        "name": "Toll-like receptor signaling pathway"
+      }
+    ],
+    "04624": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Immune system",
+        "name": "Toll and Imd signaling pathway"
+      }
+    ],
+    "04621": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Immune system",
+        "name": "NOD-like receptor signaling pathway"
+      }
+    ],
+    "04622": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Immune system",
+        "name": "RIG-I-like receptor signaling pathway"
+      }
+    ],
+    "04623": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Immune system",
+        "name": "Cytosolic DNA-sensing pathway"
+      }
+    ],
+    "04625": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Immune system",
+        "name": "C-type lectin receptor signaling pathway"
+      }
+    ],
+    "04650": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Immune system",
+        "name": "Natural killer cell mediated cytotoxicity"
+      }
+    ],
+    "04612": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Immune system",
+        "name": "Antigen processing and presentation"
+      }
+    ],
+    "04660": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Immune system",
+        "name": "T cell receptor signaling pathway"
+      }
+    ],
+    "04658": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Immune system",
+        "name": "Th1 and Th2 cell differentiation"
+      }
+    ],
+    "04659": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Immune system",
+        "name": "Th17 cell differentiation"
+      }
+    ],
+    "04657": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Immune system",
+        "name": "IL-17 signaling pathway"
+      }
+    ],
+    "04662": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Immune system",
+        "name": "B cell receptor signaling pathway"
+      }
+    ],
+    "04664": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Immune system",
+        "name": "Fc epsilon RI signaling pathway"
+      }
+    ],
+    "04666": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Immune system",
+        "name": "Fc gamma R-mediated phagosome formation"
+      }
+    ],
+    "04670": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Immune system",
+        "name": "Leukocyte transendothelial migration"
+      }
+    ],
+    "04672": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Immune system",
+        "name": "Intestinal immune network for IgA production"
+      }
+    ],
+    "04062": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Immune system",
+        "name": "Chemokine signaling pathway"
+      }
+    ],
+    "04911": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Endocrine system",
+        "name": "Insulin secretion"
+      }
+    ],
+    "04910": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Endocrine system",
+        "name": "Insulin signaling pathway"
+      }
+    ],
+    "04922": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Endocrine system",
+        "name": "Glucagon signaling pathway"
+      }
+    ],
+    "04923": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Endocrine system",
+        "name": "Regulation of lipolysis in adipocytes"
+      }
+    ],
+    "04920": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Endocrine system",
+        "name": "Adipocytokine signaling pathway"
+      }
+    ],
+    "03320": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Endocrine system",
+        "name": "PPAR signaling pathway"
+      }
+    ],
+    "04929": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Endocrine system",
+        "name": "GnRH secretion"
+      }
+    ],
+    "04912": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Endocrine system",
+        "name": "GnRH signaling pathway"
+      }
+    ],
+    "04913": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Endocrine system",
+        "name": "Ovarian steroidogenesis"
+      }
+    ],
+    "04915": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Endocrine system",
+        "name": "Estrogen signaling pathway"
+      }
+    ],
+    "04914": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Endocrine system",
+        "name": "Progesterone-mediated oocyte maturation"
+      }
+    ],
+    "04917": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Endocrine system",
+        "name": "Prolactin signaling pathway"
+      }
+    ],
+    "04921": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Endocrine system",
+        "name": "Oxytocin signaling pathway"
+      }
+    ],
+    "04926": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Endocrine system",
+        "name": "Relaxin signaling pathway"
+      }
+    ],
+    "04935": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Endocrine system",
+        "name": "Growth hormone synthesis, secretion and action"
+      }
+    ],
+    "04918": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Endocrine system",
+        "name": "Thyroid hormone synthesis"
+      }
+    ],
+    "04919": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Endocrine system",
+        "name": "Thyroid hormone signaling pathway"
+      }
+    ],
+    "04928": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Endocrine system",
+        "name": "Parathyroid hormone synthesis, secretion and action"
+      }
+    ],
+    "04916": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Endocrine system",
+        "name": "Melanogenesis"
+      }
+    ],
+    "04924": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Endocrine system",
+        "name": "Renin secretion"
+      }
+    ],
+    "04614": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Endocrine system",
+        "name": "Renin-angiotensin system"
+      }
+    ],
+    "04925": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Endocrine system",
+        "name": "Aldosterone synthesis and secretion"
+      }
+    ],
+    "04927": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Endocrine system",
+        "name": "Cortisol synthesis and secretion"
+      }
+    ],
+    "04260": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Circulatory system",
+        "name": "Cardiac muscle contraction"
+      }
+    ],
+    "04261": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Circulatory system",
+        "name": "Adrenergic signaling in cardiomyocytes"
+      }
+    ],
+    "04270": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Circulatory system",
+        "name": "Vascular smooth muscle contraction"
+      }
+    ],
+    "04970": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Digestive system",
+        "name": "Salivary secretion"
+      }
+    ],
+    "04971": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Digestive system",
+        "name": "Gastric acid secretion"
+      }
+    ],
+    "04972": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Digestive system",
+        "name": "Pancreatic secretion"
+      }
+    ],
+    "04976": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Digestive system",
+        "name": "Bile secretion"
+      }
+    ],
+    "04973": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Digestive system",
+        "name": "Carbohydrate digestion and absorption"
+      }
+    ],
+    "04974": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Digestive system",
+        "name": "Protein digestion and absorption"
+      }
+    ],
+    "04975": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Digestive system",
+        "name": "Fat digestion and absorption"
+      }
+    ],
+    "04979": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Digestive system",
+        "name": "Cholesterol metabolism"
+      }
+    ],
+    "04977": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Digestive system",
+        "name": "Vitamin digestion and absorption"
+      }
+    ],
+    "04981": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Digestive system",
+        "name": "Folate transport and metabolism"
+      }
+    ],
+    "04980": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Digestive system",
+        "name": "Cobalamin transport and metabolism"
+      }
+    ],
+    "04978": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Digestive system",
+        "name": "Mineral absorption"
+      }
+    ],
+    "04962": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Excretory system",
+        "name": "Vasopressin-regulated water reabsorption"
+      }
+    ],
+    "04960": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Excretory system",
+        "name": "Aldosterone-regulated sodium reabsorption"
+      }
+    ],
+    "04961": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Excretory system",
+        "name": "Endocrine and other factor-regulated calcium reabsorption"
+      }
+    ],
+    "04964": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Excretory system",
+        "name": "Proximal tubule bicarbonate reclamation"
+      }
+    ],
+    "04966": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Excretory system",
+        "name": "Collecting duct acid secretion"
+      }
+    ],
+    "04724": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Nervous system",
+        "name": "Glutamatergic synapse"
+      }
+    ],
+    "04727": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Nervous system",
+        "name": "GABAergic synapse"
+      }
+    ],
+    "04725": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Nervous system",
+        "name": "Cholinergic synapse"
+      }
+    ],
+    "04728": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Nervous system",
+        "name": "Dopaminergic synapse"
+      }
+    ],
+    "04726": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Nervous system",
+        "name": "Serotonergic synapse"
+      }
+    ],
+    "04720": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Nervous system",
+        "name": "Long-term potentiation"
+      }
+    ],
+    "04730": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Nervous system",
+        "name": "Long-term depression"
+      }
+    ],
+    "04723": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Nervous system",
+        "name": "Retrograde endocannabinoid signaling"
+      }
+    ],
+    "04721": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Nervous system",
+        "name": "Synaptic vesicle cycle"
+      }
+    ],
+    "04722": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Nervous system",
+        "name": "Neurotrophin signaling pathway"
+      }
+    ],
+    "04744": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Sensory system",
+        "name": "Phototransduction"
+      }
+    ],
+    "04745": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Sensory system",
+        "name": "Phototransduction - fly"
+      }
+    ],
+    "04740": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Sensory system",
+        "name": "Olfactory transduction"
+      }
+    ],
+    "04742": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Sensory system",
+        "name": "Taste transduction"
+      }
+    ],
+    "04750": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Sensory system",
+        "name": "Inflammatory mediator regulation of TRP channels"
+      }
+    ],
+    "04320": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Development and regeneration",
+        "name": "Dorso-ventral axis formation"
+      }
+    ],
+    "04360": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Development and regeneration",
+        "name": "Axon guidance"
+      }
+    ],
+    "04361": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Development and regeneration",
+        "name": "Axon regeneration"
+      }
+    ],
+    "04380": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Development and regeneration",
+        "name": "Osteoclast differentiation"
+      }
+    ],
+    "04382": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Development and regeneration",
+        "name": "Cornified envelope formation"
+      }
+    ],
+    "04211": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Aging",
+        "name": "Longevity regulating pathway"
+      }
+    ],
+    "04212": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Aging",
+        "name": "Longevity regulating pathway - worm"
+      }
+    ],
+    "04213": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Aging",
+        "name": "Longevity regulating pathway - multiple species"
+      }
+    ],
+    "04710": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Environmental adaptation",
+        "name": "Circadian rhythm"
+      }
+    ],
+    "04713": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Environmental adaptation",
+        "name": "Circadian entrainment"
+      }
+    ],
+    "04711": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Environmental adaptation",
+        "name": "Circadian rhythm - fly"
+      }
+    ],
+    "04712": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Environmental adaptation",
+        "name": "Circadian rhythm - plant"
+      }
+    ],
+    "04714": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Environmental adaptation",
+        "name": "Thermogenesis"
+      }
+    ],
+    "04626": [
+      {
+        "category": "Organismal Systems",
+        "subcategory": "Environmental adaptation",
+        "name": "Plant-pathogen interaction"
+      }
+    ],
+    "05200": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cancer: overview",
+        "name": "Pathways in cancer"
+      }
+    ],
+    "05202": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cancer: overview",
+        "name": "Transcriptional misregulation in cancer"
+      }
+    ],
+    "05206": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cancer: overview",
+        "name": "MicroRNAs in cancer"
+      }
+    ],
+    "05205": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cancer: overview",
+        "name": "Proteoglycans in cancer"
+      }
+    ],
+    "05204": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cancer: overview",
+        "name": "Chemical carcinogenesis - DNA adducts"
+      }
+    ],
+    "05207": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cancer: overview",
+        "name": "Chemical carcinogenesis - receptor activation"
+      }
+    ],
+    "05208": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cancer: overview",
+        "name": "Chemical carcinogenesis - reactive oxygen species"
+      }
+    ],
+    "05203": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cancer: overview",
+        "name": "Viral carcinogenesis"
+      }
+    ],
+    "05230": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cancer: overview",
+        "name": "Central carbon metabolism in cancer"
+      }
+    ],
+    "05231": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cancer: overview",
+        "name": "Choline metabolism in cancer"
+      }
+    ],
+    "05235": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cancer: overview",
+        "name": "PD-L1 expression and PD-1 checkpoint pathway in cancer"
+      }
+    ],
+    "05210": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cancer: specific types",
+        "name": "Colorectal cancer"
+      }
+    ],
+    "05212": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cancer: specific types",
+        "name": "Pancreatic cancer"
+      }
+    ],
+    "05225": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cancer: specific types",
+        "name": "Hepatocellular carcinoma"
+      }
+    ],
+    "05226": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cancer: specific types",
+        "name": "Gastric cancer"
+      }
+    ],
+    "05214": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cancer: specific types",
+        "name": "Glioma"
+      }
+    ],
+    "05216": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cancer: specific types",
+        "name": "Thyroid cancer"
+      }
+    ],
+    "05221": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cancer: specific types",
+        "name": "Acute myeloid leukemia"
+      }
+    ],
+    "05220": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cancer: specific types",
+        "name": "Chronic myeloid leukemia"
+      }
+    ],
+    "05217": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cancer: specific types",
+        "name": "Basal cell carcinoma"
+      }
+    ],
+    "05218": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cancer: specific types",
+        "name": "Melanoma"
+      }
+    ],
+    "05211": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cancer: specific types",
+        "name": "Renal cell carcinoma"
+      }
+    ],
+    "05219": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cancer: specific types",
+        "name": "Bladder cancer"
+      }
+    ],
+    "05215": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cancer: specific types",
+        "name": "Prostate cancer"
+      }
+    ],
+    "05213": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cancer: specific types",
+        "name": "Endometrial cancer"
+      }
+    ],
+    "05224": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cancer: specific types",
+        "name": "Breast cancer"
+      }
+    ],
+    "05222": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cancer: specific types",
+        "name": "Small cell lung cancer"
+      }
+    ],
+    "05223": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cancer: specific types",
+        "name": "Non-small cell lung cancer"
+      }
+    ],
+    "05166": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Infectious disease: viral",
+        "name": "Human T-cell leukemia virus 1 infection"
+      }
+    ],
+    "05170": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Infectious disease: viral",
+        "name": "Human immunodeficiency virus 1 infection"
+      }
+    ],
+    "05161": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Infectious disease: viral",
+        "name": "Hepatitis B"
+      }
+    ],
+    "05160": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Infectious disease: viral",
+        "name": "Hepatitis C"
+      }
+    ],
+    "05171": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Infectious disease: viral",
+        "name": "Coronavirus disease"
+      }
+    ],
+    "05164": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Infectious disease: viral",
+        "name": "Influenza A"
+      }
+    ],
+    "05162": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Infectious disease: viral",
+        "name": "Measles"
+      }
+    ],
+    "05168": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Infectious disease: viral",
+        "name": "Herpes simplex virus 1 infection"
+      }
+    ],
+    "05163": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Infectious disease: viral",
+        "name": "Human cytomegalovirus infection"
+      }
+    ],
+    "05167": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Infectious disease: viral",
+        "name": "Kaposi sarcoma-associated herpesvirus infection"
+      }
+    ],
+    "05169": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Infectious disease: viral",
+        "name": "Epstein-Barr virus infection"
+      }
+    ],
+    "05165": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Infectious disease: viral",
+        "name": "Human papillomavirus infection"
+      }
+    ],
+    "05110": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Infectious disease: bacterial",
+        "name": "Vibrio cholerae infection"
+      }
+    ],
+    "05120": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Infectious disease: bacterial",
+        "name": "Epithelial cell signaling in Helicobacter pylori infection"
+      }
+    ],
+    "05130": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Infectious disease: bacterial",
+        "name": "Pathogenic Escherichia coli infection"
+      }
+    ],
+    "05132": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Infectious disease: bacterial",
+        "name": "Salmonella infection"
+      }
+    ],
+    "05131": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Infectious disease: bacterial",
+        "name": "Shigellosis"
+      }
+    ],
+    "05135": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Infectious disease: bacterial",
+        "name": "Yersinia infection"
+      }
+    ],
+    "05133": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Infectious disease: bacterial",
+        "name": "Pertussis"
+      }
+    ],
+    "05134": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Infectious disease: bacterial",
+        "name": "Legionellosis"
+      }
+    ],
+    "05150": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Infectious disease: bacterial",
+        "name": "Staphylococcus aureus infection"
+      }
+    ],
+    "05152": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Infectious disease: bacterial",
+        "name": "Tuberculosis"
+      }
+    ],
+    "05100": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Infectious disease: bacterial",
+        "name": "Bacterial invasion of epithelial cells"
+      }
+    ],
+    "05146": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Infectious disease: parasitic",
+        "name": "Amoebiasis"
+      }
+    ],
+    "05144": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Infectious disease: parasitic",
+        "name": "Malaria"
+      }
+    ],
+    "05145": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Infectious disease: parasitic",
+        "name": "Toxoplasmosis"
+      }
+    ],
+    "05140": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Infectious disease: parasitic",
+        "name": "Leishmaniasis"
+      }
+    ],
+    "05142": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Infectious disease: parasitic",
+        "name": "Chagas disease"
+      }
+    ],
+    "05143": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Infectious disease: parasitic",
+        "name": "African trypanosomiasis"
+      }
+    ],
+    "05310": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Immune disease",
+        "name": "Asthma"
+      }
+    ],
+    "05322": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Immune disease",
+        "name": "Systemic lupus erythematosus"
+      }
+    ],
+    "05323": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Immune disease",
+        "name": "Rheumatoid arthritis"
+      }
+    ],
+    "05320": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Immune disease",
+        "name": "Autoimmune thyroid disease"
+      }
+    ],
+    "05321": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Immune disease",
+        "name": "Inflammatory bowel disease"
+      }
+    ],
+    "05330": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Immune disease",
+        "name": "Allograft rejection"
+      }
+    ],
+    "05332": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Immune disease",
+        "name": "Graft-versus-host disease"
+      }
+    ],
+    "05340": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Immune disease",
+        "name": "Primary immunodeficiency"
+      }
+    ],
+    "05010": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Neurodegenerative disease",
+        "name": "Alzheimer disease"
+      }
+    ],
+    "05012": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Neurodegenerative disease",
+        "name": "Parkinson disease"
+      }
+    ],
+    "05014": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Neurodegenerative disease",
+        "name": "Amyotrophic lateral sclerosis"
+      }
+    ],
+    "05016": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Neurodegenerative disease",
+        "name": "Huntington disease"
+      }
+    ],
+    "05017": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Neurodegenerative disease",
+        "name": "Spinocerebellar ataxia"
+      }
+    ],
+    "05020": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Neurodegenerative disease",
+        "name": "Prion disease"
+      }
+    ],
+    "05022": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Neurodegenerative disease",
+        "name": "Pathways of neurodegeneration - multiple diseases"
+      }
+    ],
+    "05030": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Substance dependence",
+        "name": "Cocaine addiction"
+      }
+    ],
+    "05031": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Substance dependence",
+        "name": "Amphetamine addiction"
+      }
+    ],
+    "05032": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Substance dependence",
+        "name": "Morphine addiction"
+      }
+    ],
+    "05033": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Substance dependence",
+        "name": "Nicotine addiction"
+      }
+    ],
+    "05034": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Substance dependence",
+        "name": "Alcoholism"
+      }
+    ],
+    "05417": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cardiovascular disease",
+        "name": "Lipid and atherosclerosis"
+      }
+    ],
+    "05418": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cardiovascular disease",
+        "name": "Fluid shear stress and atherosclerosis"
+      }
+    ],
+    "05410": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cardiovascular disease",
+        "name": "Hypertrophic cardiomyopathy"
+      }
+    ],
+    "05412": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cardiovascular disease",
+        "name": "Arrhythmogenic right ventricular cardiomyopathy"
+      }
+    ],
+    "05414": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cardiovascular disease",
+        "name": "Dilated cardiomyopathy"
+      }
+    ],
+    "05415": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cardiovascular disease",
+        "name": "Diabetic cardiomyopathy"
+      }
+    ],
+    "05416": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Cardiovascular disease",
+        "name": "Viral myocarditis"
+      }
+    ],
+    "04930": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Endocrine and metabolic disease",
+        "name": "Type II diabetes mellitus"
+      }
+    ],
+    "04940": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Endocrine and metabolic disease",
+        "name": "Type I diabetes mellitus"
+      }
+    ],
+    "04950": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Endocrine and metabolic disease",
+        "name": "Maturity onset diabetes of the young"
+      }
+    ],
+    "04936": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Endocrine and metabolic disease",
+        "name": "Alcoholic liver disease"
+      }
+    ],
+    "04932": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Endocrine and metabolic disease",
+        "name": "Non-alcoholic fatty liver disease"
+      }
+    ],
+    "04931": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Endocrine and metabolic disease",
+        "name": "Insulin resistance"
+      }
+    ],
+    "04933": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Endocrine and metabolic disease",
+        "name": "AGE-RAGE signaling pathway in diabetic complications"
+      }
+    ],
+    "04934": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Endocrine and metabolic disease",
+        "name": "Cushing syndrome"
+      }
+    ],
+    "01501": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Drug resistance: antimicrobial",
+        "name": "beta-Lactam resistance"
+      }
+    ],
+    "01502": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Drug resistance: antimicrobial",
+        "name": "Vancomycin resistance"
+      }
+    ],
+    "01503": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Drug resistance: antimicrobial",
+        "name": "Cationic antimicrobial peptide (CAMP) resistance"
+      }
+    ],
+    "01521": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Drug resistance: antineoplastic",
+        "name": "EGFR tyrosine kinase inhibitor resistance"
+      }
+    ],
+    "01524": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Drug resistance: antineoplastic",
+        "name": "Platinum drug resistance"
+      }
+    ],
+    "01523": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Drug resistance: antineoplastic",
+        "name": "Antifolate resistance"
+      }
+    ],
+    "01522": [
+      {
+        "category": "Human Diseases",
+        "subcategory": "Drug resistance: antineoplastic",
+        "name": "Endocrine resistance"
+      }
+    ],
+    "07011": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Antiinfectives",
+        "name": "Penicillins"
+      }
+    ],
+    "07012": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Antiinfectives",
+        "name": "Cephalosporins - parenteral agents"
+      }
+    ],
+    "07013": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Antiinfectives",
+        "name": "Cephalosporins - oral agents"
+      }
+    ],
+    "07021": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Antiinfectives",
+        "name": "Aminoglycosides"
+      }
+    ],
+    "07019": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Antiinfectives",
+        "name": "Tetracyclines"
+      }
+    ],
+    "07020": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Antiinfectives",
+        "name": "Macrolides and ketolides"
+      }
+    ],
+    "07014": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Antiinfectives",
+        "name": "Quinolones"
+      }
+    ],
+    "07023": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Antiinfectives",
+        "name": "Rifamycins"
+      }
+    ],
+    "07026": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Antiinfectives",
+        "name": "Antifungal agents"
+      }
+    ],
+    "07044": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Antiinfectives",
+        "name": "Antiviral agents"
+      }
+    ],
+    "07053": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Antiinfectives",
+        "name": "Anti-HIV agents"
+      }
+    ],
+    "07040": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Antineoplastics",
+        "name": "Antineoplastics - alkylating agents"
+      }
+    ],
+    "07041": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Antineoplastics",
+        "name": "Antineoplastics - antimetabolic agents"
+      }
+    ],
+    "07042": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Antineoplastics",
+        "name": "Antineoplastics - agents from natural products"
+      }
+    ],
+    "07043": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Antineoplastics",
+        "name": "Antineoplastics - hormones"
+      }
+    ],
+    "07045": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Antineoplastics",
+        "name": "Antineoplastics - protein kinase inhibitors"
+      }
+    ],
+    "07032": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Nervous system agents",
+        "name": "Hypnotics"
+      }
+    ],
+    "07030": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Nervous system agents",
+        "name": "Anxiolytics"
+      }
+    ],
+    "07033": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Nervous system agents",
+        "name": "Anticonvulsants"
+      }
+    ],
+    "07015": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Nervous system agents",
+        "name": "Local analgesics"
+      }
+    ],
+    "07039": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Nervous system agents",
+        "name": "Opioid analgesics"
+      }
+    ],
+    "07028": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Nervous system agents",
+        "name": "Antipsychotics"
+      }
+    ],
+    "07029": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Nervous system agents",
+        "name": "Antipsychotics - phenothiazines"
+      }
+    ],
+    "07031": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Nervous system agents",
+        "name": "Antipsychotics - butyrophenones"
+      }
+    ],
+    "07027": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Nervous system agents",
+        "name": "Antidepressants"
+      }
+    ],
+    "07056": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Nervous system agents",
+        "name": "Agents for Alzheimer-type dementia"
+      }
+    ],
+    "07057": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Nervous system agents",
+        "name": "Antiparkinsonian agents"
+      }
+    ],
+    "07055": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Other drugs",
+        "name": "Sulfonamide derivatives - overview"
+      }
+    ],
+    "07016": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Other drugs",
+        "name": "Sulfonamide derivatives - sulfa drugs"
+      }
+    ],
+    "07017": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Other drugs",
+        "name": "Sulfonamide derivatives - diuretics"
+      }
+    ],
+    "07018": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Other drugs",
+        "name": "Sulfonamide derivatives - hypoglycemic agents"
+      }
+    ],
+    "07037": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Other drugs",
+        "name": "Antiarrhythmic drugs"
+      }
+    ],
+    "07038": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Other drugs",
+        "name": "Antiulcer drugs"
+      }
+    ],
+    "07046": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Other drugs",
+        "name": "Immunosuppressive agents"
+      }
+    ],
+    "07047": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Other drugs",
+        "name": "Osteoporosis drugs"
+      }
+    ],
+    "07048": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Other drugs",
+        "name": "Antimigraines"
+      }
+    ],
+    "07049": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Other drugs",
+        "name": "Antithrombosis agents"
+      }
+    ],
+    "07050": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Other drugs",
+        "name": "Antirheumatics - DMARDs and biological agents"
+      }
+    ],
+    "07051": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Other drugs",
+        "name": "Antidiabetics"
+      }
+    ],
+    "07052": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Other drugs",
+        "name": "Antidyslipidemic agents"
+      }
+    ],
+    "07054": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Chronology: Other drugs",
+        "name": "Antiglaucoma agents"
+      }
+    ],
+    "07220": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Target-based classification: G protein-coupled receptors",
+        "name": "Cholinergic and anticholinergic drugs"
+      }
+    ],
+    "07215": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Target-based classification: G protein-coupled receptors",
+        "name": "alpha-Adrenergic receptor agonists/antagonists"
+      }
+    ],
+    "07214": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Target-based classification: G protein-coupled receptors",
+        "name": "beta-Adrenergic receptor agonists/antagonists"
+      }
+    ],
+    "07213": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Target-based classification: G protein-coupled receptors",
+        "name": "Dopamine receptor agonists/antagonists"
+      }
+    ],
+    "07212": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Target-based classification: G protein-coupled receptors",
+        "name": "Histamine H1 receptor antagonists"
+      }
+    ],
+    "07227": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Target-based classification: G protein-coupled receptors",
+        "name": "Histamine H2/H3 receptor agonists/antagonists"
+      }
+    ],
+    "07211": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Target-based classification: G protein-coupled receptors",
+        "name": "Serotonin receptor agonists/antagonists"
+      }
+    ],
+    "07228": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Target-based classification: G protein-coupled receptors",
+        "name": "Eicosanoid receptor agonists/antagonists"
+      }
+    ],
+    "07224": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Target-based classification: G protein-coupled receptors",
+        "name": "Opioid receptor agonists/antagonists"
+      }
+    ],
+    "07229": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Target-based classification: G protein-coupled receptors",
+        "name": "Angiotensin receptor and endothelin receptor antagonists"
+      }
+    ],
+    "07225": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Target-based classification: Nuclear receptors",
+        "name": "Glucocorticoid and mineralocorticoid receptor agonists/antagonists"
+      }
+    ],
+    "07226": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Target-based classification: Nuclear receptors",
+        "name": "Progesterone, androgen and estrogen receptor agonists/antagonists"
+      }
+    ],
+    "07223": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Target-based classification: Nuclear receptors",
+        "name": "Retinoic acid receptor (RAR) and retinoid X receptor (RXR) agonists/antagonists"
+      }
+    ],
+    "07222": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Target-based classification: Nuclear receptors",
+        "name": "Peroxisome proliferator-activated receptor (PPAR) agonists"
+      }
+    ],
+    "07221": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Target-based classification: Ion channels",
+        "name": "Nicotinic cholinergic receptor antagonists"
+      }
+    ],
+    "07230": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Target-based classification: Ion channels",
+        "name": "GABA-A receptor agonists/antagonists"
+      }
+    ],
+    "07036": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Target-based classification: Ion channels",
+        "name": "Calcium channel blocking drugs"
+      }
+    ],
+    "07231": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Target-based classification: Ion channels",
+        "name": "Sodium channel blocking drugs"
+      }
+    ],
+    "07232": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Target-based classification: Ion channels",
+        "name": "Potassium channel blocking and opening drugs"
+      }
+    ],
+    "07235": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Target-based classification: Ion channels",
+        "name": "N-Methyl-D-aspartic acid (NMDA) receptor antagonists"
+      }
+    ],
+    "07233": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Target-based classification: Transporters",
+        "name": "Ion transporter inhibitors"
+      }
+    ],
+    "07234": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Target-based classification: Transporters",
+        "name": "Neurotransmitter transporter inhibitors"
+      }
+    ],
+    "07216": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Target-based classification: Enzymes",
+        "name": "Catecholamine transferase inhibitors"
+      }
+    ],
+    "07219": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Target-based classification: Enzymes",
+        "name": "Cyclooxygenase inhibitors"
+      }
+    ],
+    "07024": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Target-based classification: Enzymes",
+        "name": "HMG-CoA reductase inhibitors"
+      }
+    ],
+    "07217": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Target-based classification: Enzymes",
+        "name": "Renin-angiotensin system inhibitors"
+      }
+    ],
+    "07218": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Target-based classification: Enzymes",
+        "name": "HIV protease inhibitors"
+      }
+    ],
+    "07025": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Structure-based classification",
+        "name": "Quinolines"
+      }
+    ],
+    "07034": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Structure-based classification",
+        "name": "Eicosanoids"
+      }
+    ],
+    "07035": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Structure-based classification",
+        "name": "Prostaglandins"
+      }
+    ],
+    "07110": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Skeleton-based classification",
+        "name": "Benzoic acid family"
+      }
+    ],
+    "07112": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Skeleton-based classification",
+        "name": "1,2-Diphenyl substitution family"
+      }
+    ],
+    "07114": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Skeleton-based classification",
+        "name": "Naphthalene family"
+      }
+    ],
+    "07117": [
+      {
+        "category": "Drug Development",
+        "subcategory": "Skeleton-based classification",
+        "name": "Benzodiazepine family"
+      }
+    ]
+  }
+}

@@ -7,6 +7,7 @@ from storage import read_json, verified_file, write_json, file_record, new_id
 from . import flow as runtime
 from .compact_display import VERSION, RULE, build, translation_snapshot, metadata, english
 from . import display_flow as previous
+from . import screening
 
 CONFIG = dict(runtime.CONFIG, display_version=VERSION, display_rule=RULE)
 
@@ -36,6 +37,11 @@ def prepare(workflow, sid, rid, proposals=None):
     inputs = base_inputs(workflow,manifest,rid)
     translations = translation_snapshot(result["tables"])
     source = {"version": VERSION, "translations": translations, "proposals": proposals or {}}
+    if proposals is None:
+        a00 = screening_a00(workflow, manifest, workflow.run(manifest, rid)["parent_runs"]["A03"])
+        inputs["screening_a00"] = deepcopy(manifest["runs"][a00]["run_file"])
+        source["screening"] = screening.snapshot(result["tables"]["kegg_significant"], workflow.run(manifest, a00)["inputs"])
+        source["proposals"] = screening.proposals(source["screening"])
     return publish(workflow,sid,rid,inputs,source,{"base_run":rid,"excluded_ids":[],"exclusions_confirmed":False,"layout_confirmed":False,"decision_id":None},"按已确认A05图表要求生成真实研究预览")
 
 
@@ -94,12 +100,22 @@ def validator(root):
         require(base_run["config"]==runtime.CONFIG and base_run["parent_runs"]==run["parent_runs"] and base_run["parent_review_ids"]==run["parent_review_ids"], "统计来源与当前批准A03不一致")
         source=read_json(verified_file(home,run["inputs"]["display_source"]))
         control=metadata(tables)
+        if source.get("screening"):
+            validate_screening(home, run, base, source)
         require(control["base_run"] == base["run_id"] == base_run["run_id"], "展示未绑定原统计运行")
         decision_record=run["inputs"].get("display_decision")
         if decision_record:
             d=read_json(verified_file(home,decision_record))
             require(d["study_id"]==run["study_id"] and d["base_run"]==base["run_id"] and d["a03_run"]==run["parent_runs"]["A03"] and d["decision_id"]==control["decision_id"],"确认记录不是本次研究范围")
             require(d["excluded_ids"]==control["excluded_ids"] and d["exclusions_confirmed"]==control["exclusions_confirmed"] and d["layout_confirmed"]==control["layout_confirmed"],"确认范围与展示不一致")
+        elif run["inputs"].get("display_screening_source"):
+            old = read_json(verified_file(home, run["inputs"]["display_screening_source"]))
+            old_run = read_json(verified_file(home, run["inputs"]["display_screening_run"]))
+            old_meta = metadata(old["tables"])
+            require(source.get("screening") and old["study_id"] == run["study_id"] and old["module_id"] == "A05" and old["run_id"] == old_run["run_id"], "候选修订来源归属不一致")
+            require(old_run["parent_runs"] == run["parent_runs"] and old_run["parent_review_ids"] == run["parent_review_ids"] and old_run["inputs"]["statistical_result"] == run["inputs"]["statistical_result"], "候选修订不能改变上游或统计来源")
+            require(old_meta and old_meta["base_run"] == control["base_run"] and old_meta["excluded_ids"] == control["excluded_ids"], "候选修订不能替用户改变排除选择")
+            require(not control["exclusions_confirmed"] and not control["layout_confirmed"] and control["decision_id"] is None, "候选修订必须重新等待人工确认")
         elif run["inputs"].get("display_layout_source"):
             old=read_json(verified_file(home,run["inputs"]["display_layout_source"]))
             old_meta=metadata(old["tables"])
@@ -119,6 +135,68 @@ def validator(root):
                 verified_file(home,{k:row[kind+"_"+k] for k in ("path","bytes","sha256")})
         require(outcome==("success" if any(tables[g+"_significant"] for g in ("bp","cc","mf","kegg")) else "empty"),"展示修订不能改变空结果状态")
     return check
+
+
+# 沿A03的真实上游寻找唯一A00；不借用别的研究或后来的疾病登记。
+def screening_a00(workflow, manifest, a03):
+    pending, seen, found = [a03], set(), set()
+    while pending:
+        rid = pending.pop()
+        if rid in seen:
+            continue
+        seen.add(rid)
+        run = workflow.run(manifest, rid)
+        if run["module_id"] == "A00":
+            found.add(rid)
+        else:
+            pending.extend(run.get("parent_runs", {}).values())
+    require(len(found) == 1, "富集上游的疾病登记不唯一，不能生成筛选候选")
+    return found.pop()
+
+
+# 冻结候选重放使用归档分类与绑定A00，不使用后来更新的全局分类词典。
+def validate_screening(home, run, base, source):
+    from workflow import Workflow
+    w = Workflow(home.parent.parent)
+    manifest = w.load(run["study_id"])
+    a00 = screening_a00(w, manifest, run["parent_runs"]["A03"])
+    require(run["inputs"].get("screening_a00") == manifest["runs"][a00]["run_file"], "筛选疾病登记不是本轮实际上游")
+    intake = read_json(verified_file(home, run["inputs"]["screening_a00"]))["inputs"]
+    screen = source["screening"]
+    require(screen["version"] == screening.VERSION and screen["identity"] == screening.disease_identity(intake), "筛选规则或本病身份不一致")
+    require(screen["assessments"] == screening.assess(base["tables"]["kegg_significant"], screen["catalog"], screen["identity"]), "候选与官方分类快照不一致")
+    require(source["proposals"] == screening.proposals(screen), "拟排除清单与分类结果不一致")
+
+
+# 用户授权修复旧研究的空候选清单；保留选择和原统计，重置确认而不代签。
+def refresh_screening(workflow, sid, expected_a05):
+    manifest = workflow.load(sid)
+    require(manifest["current"].get("A05") == expected_a05 and workflow.active(manifest, expected_a05) and not manifest.get("trashed"), "当前A05已改变或研究只读，请刷新")
+    old = metadata(workflow.result(manifest, expected_a05)["tables"])
+    require(old and old["version"] in (previous.VERSION, VERSION), "请先准备同源A05展示")
+    inputs = base_inputs(workflow, manifest, expected_a05)
+    for key in ("display_decision", "display_layout_source", "display_layout_run"):
+        inputs.pop(key, None)
+    inputs["display_screening_source"] = deepcopy(manifest["runs"][expected_a05]["result_file"])
+    inputs["display_screening_run"] = deepcopy(manifest["runs"][expected_a05]["run_file"])
+    a00 = screening_a00(workflow, manifest, workflow.run(manifest, expected_a05)["parent_runs"]["A03"])
+    inputs["screening_a00"] = deepcopy(manifest["runs"][a00]["run_file"])
+    home = workflow.location(sid)
+    source = deepcopy(read_json(verified_file(home, inputs["display_source"])))
+    base = read_json(verified_file(home, inputs["statistical_result"]))
+    screen = screening.snapshot(base["tables"]["kegg_significant"], workflow.run(manifest, a00)["inputs"])
+    require(source.get("screening") != screen, "本轮候选规则和资料已就绪，不生成重复修订")
+    source.update(version=VERSION, screening=screen, proposals=screening.proposals(screen))
+    # 筛选后排名可能前移，同时补齐原清单缺译；已核译的本轮译名保持。
+    available = translation_snapshot(base["tables"])
+    for row in base["tables"]["kegg_significant"]:
+        tid = row["ID"]
+        old_entry = source["translations"].get(tid, {})
+        new_entry = available.get(tid, {})
+        if not (old_entry.get("english") == english(row) and old_entry.get("zh")) and new_entry.get("english") == english(row) and new_entry.get("zh"):
+            source["translations"][tid] = deepcopy(new_entry)
+    control = {"base_run": old["base_run"], "excluded_ids": old["excluded_ids"], "exclusions_confirmed": False, "layout_confirmed": False, "decision_id": None}
+    return publish(workflow, sid, expected_a05, inputs, source, control, "按已确认KEGG官方分类补齐其他疾病及癌症拟排除项；原统计保留，范围和版式重新待确认")
 
 # 用户要求调整版式时复用当前归档统计、译名和名单；不执行R或冒充人工确认。
 def revise_layout(workflow, sid, expected_a05):

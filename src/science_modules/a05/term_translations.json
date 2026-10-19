@@ -1,4 +1,76 @@
 {
+  "hsa04723": {
+    "english": "Retrograde endocannabinoid signaling",
+    "zh": "逆行内源性大麻素信号传导",
+    "source": "https://www.kegg.jp/pathway/hsa04723",
+    "translation_basis": "依据KEGG官方通路名称核译，非官方中文译名；固定编号和归档英文精确对应"
+  },
+  "hsa04623": {
+    "english": "Cytosolic DNA-sensing pathway",
+    "zh": "胞质DNA感知通路",
+    "source": "https://www.kegg.jp/pathway/hsa04623",
+    "translation_basis": "依据KEGG官方通路名称核译，非官方中文译名；固定编号和归档英文精确对应"
+  },
+  "hsa04519": {
+    "english": "Cadherin signaling",
+    "zh": "钙黏蛋白信号传导",
+    "source": "https://www.kegg.jp/pathway/hsa04519",
+    "translation_basis": "依据KEGG官方通路名称核译，非官方中文译名；固定编号和归档英文精确对应"
+  },
+  "hsa04742": {
+    "english": "Taste transduction",
+    "zh": "味觉传导",
+    "source": "https://www.kegg.jp/pathway/hsa04742",
+    "translation_basis": "依据KEGG官方通路名称核译，非官方中文译名；固定编号和归档英文精确对应"
+  },
+  "hsa04727": {
+    "english": "GABAergic synapse",
+    "zh": "γ-氨基丁酸能突触",
+    "source": "https://www.kegg.jp/pathway/hsa04727",
+    "translation_basis": "依据KEGG官方通路名称核译，非官方中文译名；固定编号和归档英文精确对应"
+  },
+  "hsa04114": {
+    "english": "Oocyte meiosis",
+    "zh": "卵母细胞减数分裂",
+    "source": "https://www.kegg.jp/pathway/hsa04114",
+    "translation_basis": "依据KEGG官方通路名称核译，非官方中文译名；固定编号和归档英文精确对应"
+  },
+  "hsa05016": {
+    "english": "Huntington disease",
+    "zh": "亨廷顿病",
+    "source": "https://www.kegg.jp/pathway/hsa05016",
+    "translation_basis": "依据KEGG官方通路名称核译，非官方中文译名；固定编号和归档英文精确对应"
+  },
+  "hsa04918": {
+    "english": "Thyroid hormone synthesis",
+    "zh": "甲状腺激素合成",
+    "source": "https://www.kegg.jp/pathway/hsa04918",
+    "translation_basis": "依据KEGG官方通路名称核译，非官方中文译名；固定编号和归档英文精确对应"
+  },
+  "hsa04971": {
+    "english": "Gastric acid secretion",
+    "zh": "胃酸分泌",
+    "source": "https://www.kegg.jp/pathway/hsa04971",
+    "translation_basis": "依据KEGG官方通路名称核译，非官方中文译名；固定编号和归档英文精确对应"
+  },
+  "hsa04961": {
+    "english": "Endocrine and other factor-regulated calcium reabsorption",
+    "zh": "内分泌及其他因子调节的钙重吸收",
+    "source": "https://www.kegg.jp/pathway/hsa04961",
+    "translation_basis": "依据KEGG官方通路名称核译，非官方中文译名；固定编号和归档英文精确对应"
+  },
+  "hsa04340": {
+    "english": "Hedgehog signaling pathway",
+    "zh": "刺猬信号通路",
+    "source": "https://www.kegg.jp/pathway/hsa04340",
+    "translation_basis": "依据KEGG官方通路名称核译，非官方中文译名；固定编号和归档英文精确对应"
+  },
+  "hsa04976": {
+    "english": "Bile secretion",
+    "zh": "胆汁分泌",
+    "source": "https://www.kegg.jp/pathway/hsa04976",
+    "translation_basis": "依据KEGG官方通路名称核译，非官方中文译名；固定编号和归档英文精确对应"
+  },
   "GO:0000307": {
     "english": "cyclin-dependent protein kinase holoenzyme complex",
     "zh": "细胞周期蛋白依赖性蛋白激酶全酶复合物",

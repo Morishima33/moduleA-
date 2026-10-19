@@ -100,7 +100,7 @@ class DisplayWorkflowTests(unittest.TestCase):
     def payload(self,action="exclusions",ids=None):
         m=self.w.load(self.sid);rid=m["current"]["A05"];r=self.w.result(m,rid);meta=display.metadata(r["tables"])
         latest,_=self.w.display_decision(m,m["current"]["A03"],meta["base_run"])
-        return {"expected_a03":m["current"]["A03"],"expected_a05":rid,"expected_decision_id":latest["decision_id"] if latest else None,"action":action,"excluded_ids":[] if ids is None else ids,"reviewer":"虚构核验人","note":"仅自测确认","confirmed":True,"decision_id":new_id("decision")}
+        return {"expected_a03":m["current"]["A03"],"expected_a05":rid,"expected_decision_id":latest["decision_id"] if latest else None,"action":action,"excluded_ids":[] if ids is None else ids,"reviewer":"虚构核验人","note":"仅自测确认","confirmed":True,"exclude_all_confirmed": bool(ids and set(ids)=={row["ID"] for row in r["tables"]["kegg_significant"]}),"decision_id":new_id("decision")}
 
     def test_explicit_scope_then_layout_preserves_history_no_auto_approval(self):
         previous=deepcopy(self.preview)

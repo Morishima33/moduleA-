@@ -17,6 +17,7 @@ export default function EnrichmentDisplay({ special, info, pending, rankedMaps, 
   if (!tables) return null;
   const showKegg = !!info?.kegg_ready && !pending; // 是否应用来自接口；未保存选择仅暂时隐藏。
   function graph(key: 'go' | 'kegg') {
+    if (key === 'kegg' && info && info.significant_count > 0 && info.retained_count === 0) return <Alert type="warning" showIcon message={`原统计有${info.significant_count}条显著通路，已全部从本轮展示排除，因此图表为空。`} />;
     const item = special.enrichment_graphs?.[key];
     return item ? <figure style={{ margin: '12px 0 22px' }}><a href={item.url} target="_blank" rel="noreferrer" aria-label={key === 'go' ? '放大GO图' : '放大KEGG图'}><img src={item.url} alt={key === 'go' ? 'GO三分类前八条目科研柱图' : 'KEGG前十五条目科研气泡图'} style={{ width: '100%', height: 'auto', display: 'block' }} /></a><figcaption className="small muted" style={{ marginTop: 8 }}>{item.caption_zh} 点击图片可放大核查。</figcaption></figure> : <Alert type="warning" message="本次归档图尚未就绪，不使用历史图代替。" />;
   }
@@ -28,7 +29,7 @@ export default function EnrichmentDisplay({ special, info, pending, rankedMaps, 
     <h3>图 A05 01 GO三分类前八</h3>{graph('go')}
     {showKegg ? <>
     <h3>KEGG通路富集</h3><p className="small muted">统计显著性按BH校正后P值排序；命中基因数按Count排序。两项分别说明统计证据和命中规模。</p>
-    {[{ key: 'kegg_p_top10', title: '表 A05 04 KEGG统计显著性前十', note: '按校正后P值升序，体现统计证据；同值按稳定编号排列。' }, { key: 'kegg_count_top10', title: '表 A05 05 KEGG命中基因数前十', note: '按Count降序，体现命中规模；同值按校正后P值和稳定编号排列。' }].map(group => <div key={group.key} style={{ marginBottom: 18 }}><h3>{group.title}</h3><p className="small muted">{group.note}</p><Table rowKey="ID" size="small" pagination={false} dataSource={tables[group.key]} columns={[{ ...englishColumn, title: '通路名称（英文）' }, chineseColumn, { title: 'Count', dataIndex: 'Count', width: 80 }, pColumn]} scroll={{ x: 790 }} locale={{ emptyText: '当前展示范围无显著通路，不补造条目。' }} /></div>)}
+    {[{ key: 'kegg_p_top10', title: '表 A05 04 KEGG统计显著性前十', note: '按校正后P值升序，体现统计证据；同值按稳定编号排列。' }, { key: 'kegg_count_top10', title: '表 A05 05 KEGG命中基因数前十', note: '按Count降序，体现命中规模；同值按校正后P值和稳定编号排列。' }].map(group => <div key={group.key} style={{ marginBottom: 18 }}><h3>{group.title}</h3><p className="small muted">{group.note}</p><Table rowKey="ID" size="small" pagination={false} dataSource={tables[group.key]} columns={[{ ...englishColumn, title: '通路名称（英文）' }, chineseColumn, { title: 'Count', dataIndex: 'Count', width: 80 }, pColumn]} scroll={{ x: 790 }} locale={{ emptyText: info && info.significant_count > 0 && info.retained_count === 0 ? '原统计存在显著通路，当前已全部被展示排除；可返回确认区调整清单。' : '原统计无显著KEGG通路，不放宽阈值补项。' }} /></div>)}
     <h3>图 A05 02 KEGG统计显著性前十五</h3>{graph('kegg')}
     {rankedMaps && <RankedPathwayMaps studyId={studyId} info={rankedMaps}/>}
     </> : <Alert type="info" showIcon message="KEGG图表暂不显示" description={pending ? '排除选择有改动或正在提交，请确认清单并等待应用完成；不展示旧图表。' : info?.kegg_reason_zh || '排除范围尚未应用，完成后才显示图和两张表。'} />}

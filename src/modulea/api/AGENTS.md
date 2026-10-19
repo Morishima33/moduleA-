@@ -1,5 +1,11 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-10-19 KEGG官方分类筛选（用户确认的新边界）
+
+自动富集新增KEGG.disease_screening.1来源快照，按官方BRITE br08901稳定编号及已核验A00本病身份筛选完整显著表：Human Diseases中非本病直接条目均为拟排除，含癌症机制和耐药，不再沿用旧机制例外；分类/身份不明为待判断。通路分类不表示生物学无关，不删除共享基因或重算统计。
+enrichment_display.catalog行新增可选classification_status:exclude|retain|uncertain、classification_zh、official_name；来源仍通过evidence_url提供。enrichment_display新增可选screening:{version,source_url,proposed_count,uncertain_count}。只读GET展示归档资料，不运行筛选或联网。既有确认请求增加可选exclude_all_confirmed:boolean；非空显著集合全部排除时必须明确为true，后台再校验，并记录决定；旧决定复算不新增必填要求。
+候选修订仅追加同源A05，保留原排除选择但重置范围与版式确认，新结果独立复核。当前表单的已选数与预计保留数为本地选择计数，不能当作已归档结果。不得自动勾选人工确认或应用排除。
+
 ## 2026-10-19 等待事项说明
 
 研究inbox与全局inbox的既有text_zh在waiting且存在reason_zh时直接显示模块标题及该原始原因，缺原因时保留既有回退；不新增字段、不推算状态或权限，不把等待资料／核译／人工确认解释为后台运行。A04证据窗口没有逐条阅读门槛，提交既有identity_plan批量请求后才后台补查，生成结果仍需独立复核。
