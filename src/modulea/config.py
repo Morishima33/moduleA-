@@ -31,6 +31,7 @@ class Settings:
     runtime_dir: Path = PROJECT_ROOT / ".runtime"  # 任务索引和服务日志，可删除
     science_python: str = sys.executable  # 后台科学任务使用的解释器
     science_tools_root: Path | None = None  # 只读固定对接依赖，不从浏览器接收路径
+    science_repair_packages: Path | None = None  # 固定侧链修补依赖，由服务器配置
     allowed_origins: list[str] = field(default_factory=list)  # 允许跨源访问的前端开发地址
     static_dir: Path | None = None  # 预构建前端所在目录；为空时不提供静态页面
 
@@ -62,6 +63,8 @@ def load_settings(**overrides) -> Settings:
         settings.science_python = paths["science_python"]
     if paths.get("science_tools_root"):
         settings.science_tools_root = Path(paths["science_tools_root"]).expanduser()
+    if paths.get("science_repair_packages"):
+        settings.science_repair_packages = Path(paths["science_repair_packages"]).expanduser()
     if paths.get("static_dir"):
         settings.static_dir = Path(paths["static_dir"]).expanduser()
     settings.allowed_origins = list(server.get("allowed_origins", []))
@@ -73,6 +76,8 @@ def load_settings(**overrides) -> Settings:
         settings.science_python = os.environ["MODULEA_SCIENCE_PYTHON"]
     if os.environ.get("MODULEA_SCIENCE_TOOLS_ROOT"):
         settings.science_tools_root = Path(os.environ["MODULEA_SCIENCE_TOOLS_ROOT"]).expanduser()
+    if os.environ.get("MODULEA_SCIENCE_REPAIR_PACKAGES"):
+        settings.science_repair_packages = Path(os.environ["MODULEA_SCIENCE_REPAIR_PACKAGES"]).expanduser()
     if os.environ.get("MODULEA_ALLOWED_ORIGINS"):
         settings.allowed_origins = [o.strip() for o in os.environ["MODULEA_ALLOWED_ORIGINS"].split(",") if o.strip()]
 
@@ -80,7 +85,7 @@ def load_settings(**overrides) -> Settings:
     for key, value in overrides.items():
         if value is None:
             continue
-        if key in ("data_root", "static_dir", "runtime_dir", "science_tools_root"):
+        if key in ("data_root", "static_dir", "runtime_dir", "science_tools_root", "science_repair_packages"):
             value = Path(value).expanduser()
         if key == "allowed_origins" and isinstance(value, str):
             value = [o.strip() for o in value.split(",") if o.strip()]

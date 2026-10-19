@@ -136,7 +136,7 @@ class AutomaticDockingWorkflow(RankedPathwayWorkflow):
         run = self.run(manifest, run_id)
         if run.get("config", {}).get("schema_version") == VERSION:
             try:
-                _, bound = self.automatic_binding(manifest["study_id"], manifest=manifest)
+                _, bound = AutomaticDockingWorkflow.automatic_binding(self, manifest["study_id"], manifest=manifest)
                 key = fingerprint(bound)
                 connection = self.current_automatic_connection(manifest, key)
                 verified_file(self.location(manifest["study_id"]), run["inputs"]["automatic_connection"])

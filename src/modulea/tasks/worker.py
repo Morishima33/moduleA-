@@ -29,7 +29,7 @@ def run_continue(settings: Settings, task: dict, manager: TaskManager) -> str:
     # 新双分支的对接来源未确认时停下，不启动旧候选准备和计算。
     manifest = workflow.load(task["study_id"])
     a06 = manifest.get("current", {}).get("A06")
-    if a06 and workflow.run(manifest, a06).get("config", {}).get("schema_version") == "A06.automatic.1":
+    if a06 and workflow.run(manifest, a06).get("config", {}).get("schema_version") in ("A06.automatic.1", "A06.automatic.2"):
         return "自动对接结果已独立归档；请在A06复核。新协议尚未接入冻结双报告模板，未生成不完整报告。"
     if a06 and workflow.run(manifest, a06).get("config", {}).get("schema_version") == "A06.trial.handoff.1":
         with workflow.handoff_read_cache():

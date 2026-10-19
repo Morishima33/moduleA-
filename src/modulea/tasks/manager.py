@@ -211,6 +211,8 @@ class TaskManager:
         env["MODULEA_DATA_ROOT"] = str(self.settings.data_root)
         if self.settings.science_tools_root:
             env["MODULEA_SCIENCE_TOOLS_ROOT"] = str(self.settings.science_tools_root)
+        if self.settings.science_repair_packages:
+            env["MODULEA_SCIENCE_REPAIR_PACKAGES"] = str(self.settings.science_repair_packages)
         command = [self.settings.science_python, "-m", "modulea", "--runtime-dir", str(self.settings.runtime_dir), "task-run", task_id]
         flags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
         with open(log_path, "ab") as stream:

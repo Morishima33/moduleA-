@@ -29,7 +29,7 @@ _ensure_legacy_path()
 from contracts import MODULES, ContractError  # noqa: E402
 from storage import read_json, verified_file  # noqa: E402
 from workflow import Workflow  # noqa: E402
-from .automatic_docking import AutomaticDockingWorkflow as DockingWorkflow  # noqa: E402
+from .automatic_coverage import AutomaticCoverageWorkflow as DockingWorkflow  # noqa: E402
 from .read_archive import ReadResultMixin  # noqa: E402
 
 __all__ = ["Kernel", "ContractError", "MODULES", "read_json", "verified_file", "full_workflow"]
@@ -101,6 +101,7 @@ def full_workflow(data_root: Path) -> Workflow:
     from science_modules.a06.coverage_flow import validator as coverage_validator
     from science_modules.a06.trial_handoff import validator as trial_handoff_validator
     from science_modules.a06.automatic_engine import validator as automatic_validator
+    from science_modules.a06.automatic_coverage_engine import validator as rescue_validator
 
     root = data_root
     return DockingWorkflow(root, {
@@ -111,6 +112,6 @@ def full_workflow(data_root: Path) -> Workflow:
         "A04": ppi_validator(root),
         "A05": enrichment_validator(root),
         "A06_PREP": coverage_validator(root, quality_validator(root, docking_validator(root, prep_validator(root)))),
-        "A06": automatic_validator(root, trial_handoff_validator(root, formal_validator(root))),
+        "A06": rescue_validator(root, automatic_validator(root, trial_handoff_validator(root, formal_validator(root)))),
         "A07": report_validator(root),
     })

@@ -4,6 +4,7 @@
 [paths]
 # 固定对接依赖所在只读目录，内含 environments/A06_python_runtime.json、Vina及P2Rank
 # science_tools_root = "D:/科学工具目录"
+# science_repair_packages = "D:/固定侧链修补依赖/packages"
 # studies/ 与 references/ 所在目录；默认就是项目根目录
 # data_root = "D:/codex-重大专项/moduleA"
 # 后台科学计算使用的 Python（需已安装 networkx、python-docx、rdkit、meeko 等科学依赖）；默认与工作台相同

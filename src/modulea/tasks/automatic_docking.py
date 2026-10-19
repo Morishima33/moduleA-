@@ -17,6 +17,8 @@ def execute(settings, task, manager):
                "--mode", "connect" if task["kind"] == "a06_auto_connect" else "run",
                "--request-file", str(request), "--result-file", str(output),
                "--tools-root", str(settings.science_tools_root), "--data-root", str(settings.data_root), "--study", task["study_id"]]
+    if settings.science_repair_packages:
+        command += ["--repair-packages", str(settings.science_repair_packages)]
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
         text=True, encoding="utf-8", errors="replace", env=dict(os.environ,
         TEMP=str(folder), TMP=str(folder), PYTHONDONTWRITEBYTECODE="1", PYTHONUTF8="1"))

@@ -33,14 +33,15 @@ export default function AutomaticDocking({studyId, info}: {studyId: string; info
     <p>当前范围：{info.counts.compounds} 个成分、{info.counts.receptors} 个受体，共 {info.counts.pairs} 个组合。异常对象保留原因，其余继续。</p>
     {!info.enabled && <Alert type="info" showIcon message={info.disabled_reason_zh || '当前不可提交'}/>}
     {error && <Alert type="error" showIcon message={error}/>}
+    {info.migration_note_zh && <Alert type="warning" showIcon message="请先补齐连接资料" description={info.migration_note_zh}/>}
     <Button style={{alignSelf:'flex-start'}} loading={busy} disabled={!info.enabled} onClick={() => submit(false)}>
-      {connection ? '重新连接资料（生成新版本）' : '1. 连接资料（不计算对接）'}</Button>
+      {info.migration_note_zh ? '1. 补齐连接资料（复用合格原件，不计算对接）' : connection ? '重新连接资料（生成新版本）' : '1. 连接资料（不计算对接）'}</Button>
     {connection && <>
       <Alert type="info" showIcon message={`连接完成：成分 ${connection.summary.connected_compounds}/${info.counts.compounds}，受体 ${connection.summary.connected_receptors}/${info.counts.receptors}；异常 ${connection.summary.exceptions} 项。`}/>
       <Collapse items={[{key:'objects', label:'查看连接对象、构型及集中异常', children:<>
         <Table rowKey="id" size="small" scroll={{x:680}} dataSource={connection.objects} columns={[
           {title:'对象',dataIndex:'name'}, {title:'编号',dataIndex:'id'}, {title:'状态',render:(_,r) => ({connected:'连接完成',failed:'连接失败',unavailable:'资料待核对'}[r.state] || r.state)},
-          {title:'来源与构型',render:(_,r) => r.cid ? `PubChem CID ${r.cid}` : r.structures.map(s => `${s.pdb_id} / 链 ${s.chains.join(',')} / ${s.pocket === 'reference' ? '共晶位点' : '首位预测口袋'} / ${s.altloc || '无替代构象'}`).join('；')},
+          {title:'来源与构型',render:(_,r) => r.cid ? `PubChem CID ${r.cid}` : r.structures.map(s => `${s.pdb_id || s.model_id || '来源待补'} / 链 ${s.chains.join(',')} / ${s.source_type === 'alphafold' ? '预测模型，仅探索' : s.pocket === 'reference' ? '共晶位点' : '预测口袋探索'} / ${s.altloc || '无替代构象'}`).join('；')},
           {title:'异常原因',dataIndex:'reason_zh'}]}/>
         <p>没有通过连接或质控的组合保留为NA或失败，不填零、不挪用其他研究资料。</p>
       </>}, {key:'policy', label:'查看固定自动策略及适用范围', children:<ul>{info.policy.details_zh.map(x => <li key={x}>{x}</li>)}</ul>} ]}/>

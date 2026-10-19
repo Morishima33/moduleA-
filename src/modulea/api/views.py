@@ -288,7 +288,7 @@ class Views:
         results = {m["module_id"]: m["result"] for m in view["modules"] if m.get("result")}
         ctx = {"workflow_profile": manifest.get("workflow_profile"), "state_code": state["code"], "results": results, "study_id": study_id, "normalization_preview_ready": preview_ready}
         parts = present(module_id, result, ctx) if result and not preparation_page else {"kpis": [], "flow": [], "flow_note_zh": "", "focus": [], "params": [], "table": None, "special": {}}
-        if module_id == "A06" and result and result.get("summary", {}).get("science_version") == "A06.automatic.1":
+        if module_id == "A06" and result and result.get("summary", {}).get("science_version") in ("A06.automatic.1", "A06.automatic.2"):
             from ..presenters.automatic_docking import present as present_automatic
             parts = present_automatic(result)
 
@@ -341,7 +341,7 @@ class Views:
             "docking_artifacts": workflow.docking_artifact_context(real, run["run_id"], historical,
                                      bool(self.tasks.active_for(study_id))) if module_id == "A06" and run else None,
             "module": {"module_id": module_id, "title_zh": spec.title_zh, "group_zh": spec.group_zh, "purpose_zh": source_intro(module_id, real, result) + ("STRING人类功能关联网络；两分支独立两轮；Degree图展示第二轮候选，Degree表展示第一轮前十，BC＋CC表展示第二轮前十五。" if module_id == "A04" and result and result.get("summary", {}).get("selection_version") == "A04.dual.3" else ("STRING人类功能关联网络；Degree与BC＋CC两分支独立进行两轮筛选，Degree图表显示第一轮前十，BC＋CC表显示第二轮前十五。" if module_id == "A04" and result and result.get("summary", {}).get("selection_version") == "A04.dual.2" else ("STRING人类功能关联网络；双分支独立两轮，显示第二轮排名。" if module_id == "A04" and result and result.get("summary", {}).get("selection_version") == "A04.dual.1" else spec.purpose_zh))),
-                       "sub": spec.sub, "depends_on": list(run["parent_runs"]) if module_id == "A06" and run and run.get("config", {}).get("schema_version") in ("A06.trial.handoff.1", "A06.automatic.1") else list(spec.depends_on)},
+                       "sub": spec.sub, "depends_on": list(run["parent_runs"]) if module_id == "A06" and run and run.get("config", {}).get("schema_version") in ("A06.trial.handoff.1", "A06.automatic.1", "A06.automatic.2") else list(spec.depends_on)},
             "state": state if not historical else {**state, "code": "history", "label_zh": "历史版本（只读）", "can_review": False},
             "purpose": self._purpose(view),
             "run": self._run_info(workflow, manifest, run, result, history) if run else None,
@@ -384,16 +384,18 @@ class Views:
                 response[key] = None
         response["automatic_docking"] = None
         if module_id in ("A06_PREP", "A06") and not historical and not preparation and not handoff:
-            from ..core.automatic_docking import automatic_context
+            from ..core.automatic_coverage import automatic_context
             with workflow.handoff_read_cache():
                 response["automatic_docking"] = automatic_context(workflow, real, False, bool(self.tasks.active_for(study_id)))
             if not self.kernel.settings.science_tools_root:
                 response["automatic_docking"].update(enabled=False, disabled_reason_zh="尚未配置固定对接工具目录")
+            if not self.kernel.settings.science_repair_packages:
+                response["automatic_docking"].update(enabled=False, disabled_reason_zh="尚未配置固定侧链修补依赖目录")
             if module_id == "A06_PREP":
                 response["module"].update(title_zh="对接准备与自动计算", purpose_zh="连接本研究资料，一次确认后自动准备、质控、对接与出图；结果另行复核。")
                 response["review"].update(can_review=False, allowed_decisions=[])
                 response["review"]["continue"]["available"] = False
-            if run and run.get("config", {}).get("schema_version") == "A06.automatic.1":
+            if run and run.get("config", {}).get("schema_version") in ("A06.automatic.1", "A06.automatic.2"):
                 response["review"]["continue"].update(available=False, note_zh="自动对接结果可独立复核；新协议尚未接入冻结报告模板。")
                 for key in ("docking_trial", "docking_artifacts", "docking_review", "docking_preparation", "docking_coverage", "docking_candidates"):
                     response[key] = None

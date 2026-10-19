@@ -131,6 +131,10 @@ class App:
         """登记显式授权任务，子进程开始及发布前再次校验版本。"""
         payload = req.json()
         workflow = self._automatic_ready(study_id)
+        if isinstance(payload, dict) and payload.get("policy_version") == "A06.automatic.1":
+            # 明确声明旧协议的请求仍按旧协议验证，绝不升级其授权。
+            from ..core.automatic_docking import AutomaticDockingWorkflow
+            workflow = AutomaticDockingWorkflow(self.settings.data_root, workflow.validators)
         try:
             workflow.validate_automatic_request(study_id, payload)
         except ContractError as error:
