@@ -1,6 +1,7 @@
 // 本批准备页：只读关联已确认试算，同批资料与历史严格质控分别呈现。
 import {Alert, Button, Collapse, Descriptions, Modal, Table, Tag} from 'antd';
 import {useState} from 'react';
+import type {ReactNode} from 'react';
 import type {PreparationFile, TrialPreparationInfo} from '../api/types';
 import {fmtTime} from '../lib/format';
 import {StatusPill} from './common';
@@ -28,7 +29,7 @@ export function PreparationSource({info}:{info:TrialPreparationInfo}){
 }
 
 /** 同批准备摘要、受体、成分及默认折叠的历史证据，均无保存表单。 */
-export default function TrialPreparation({info,label}:{info:TrialPreparationInfo;label:string}){
+export default function TrialPreparation({info,label,guide}:{info:TrialPreparationInfo;label:string;guide?:ReactNode}){
  const receptorColumns=[
   {title:'受体',key:'gene',width:110,render:(_:unknown,r:TrialPreparationInfo['receptors'][number])=><><strong>{r.symbol}</strong><div className="tiny muted">{r.target_id}</div></>},
   {title:'A/B梯队',dataIndex:'candidate_grade',width:80},
@@ -53,6 +54,7 @@ export default function TrialPreparation({info,label}:{info:TrialPreparationInfo
    <p className="small muted">沿用本批已确认的结构、位点和处理记录；扩展用途与严格质控分别记录。</p>
    {!info.active&&<Alert type="warning" showIcon message="准备关联已失效" description={info.reason_zh}/>}
   </section>
+  {guide}
   <section className="card" id="trial-preparation-summary"><h2>本批准备摘要</h2>
    <p>{info.active?`${info.compounds.length}个成分 · ${info.receptors.length}个受体，均来自下方A06的同批准备资料。`:'当前资料不再满足原关联；完整历史记录保留，不能沿用为本批已核查。'}</p>
    <p>原核查人：<strong>{info.reviewer}</strong> · {fmtTime(info.reviewed_at)}；说明：{info.note}</p>

@@ -1,5 +1,11 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-10-19 全模块操作导航
+
+ModuleView新增可空`operation_guide:{current_step,note_zh,steps:[{key,label_zh,detail_zh,target,module_id?,href?}]}`。current_step为从1开始的建议操作位置，不是完成率、模块状态或批准。仅只读组合本页已有归档展示字段及Workflow给出的状态；不计算科学结果，不改变权限。当前A00、A01、A03、A03_SELECT、A04、A05、A06_PREP、A06、A07均提供各自流程；A02沿用既有disease_workflow和未保存范围保护。历史页不提供操作导航。本批准备关联使用只读资料核查步骤及原关联结果地址，不能提示重复批准或质控执行。
+
+target为本页稳定区域编号；module_id导航至同研究模块；href仅沿用本页已核验关联结果地址。点击只定位或切页，不能提交复核、后台任务、下载生成或科学选择。目标尚无操作区时定位状态/明细并解释等待条件，不生成虚假的计算按钮。前端可提示本地未保存选择，但不得将其视为归档完成。
+
 ## 2026-10-19 A02按操作顺序导航
 
 当前A02的ModuleView新增`disease_workflow:{current_step,note_zh,next_label_zh,next_target}`，仅根据本研究归档事实、同版本预览及Workflow批准状态给出操作定位，不修改模块状态或批准权限。六步为资料、范围、身份预览、确认生成、整体复核、A03。历史版本不提供导航。DiseaseScopeInfo新增`saved_counts:[{value,label_zh,count}]`，计数单位为已保存的范围组，前端未保存的编辑不回写计数。前端存在未保存范围修改时提示先保存并暂禁预览/发布，后台原有版本校验保持。

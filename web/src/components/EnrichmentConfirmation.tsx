@@ -7,9 +7,10 @@ import { useApp } from '../lib/appContext';
 import { fmtP, fmtTime } from '../lib/format';
 
 // 每个研究和运行使用自己的已保存清单，刷新后恢复归档值，不从其他研究继承。
-export default function EnrichmentConfirmation({ studyId, info, onPendingChange }: { studyId: string; info: EnrichmentDisplayInfo; onPendingChange?: (pending: boolean) => void }) {
+export default function EnrichmentConfirmation({ studyId, info, onPendingChange, navigationRequest = 0 }: { studyId: string; info: EnrichmentDisplayInfo; onPendingChange?: (pending: boolean) => void; navigationRequest?: number }) {
   const app = useApp();
   const [expanded, setExpanded] = useState(false); // 默认收起核查表单，折叠不清除已填写内容。
+  useEffect(() => {if (navigationRequest > 0) setExpanded(true);}, [navigationRequest]); // 导航只展开显示，不保存。
   const detailsId = useId(); // 为展开按钮关联当前组件的详情区域。
   const [selected, setSelected] = useState<string[]>(info.excluded_ids);
   const [mode, setMode] = useState<'proposed' | 'all'>('proposed');

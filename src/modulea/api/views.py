@@ -27,6 +27,7 @@ from ..core.status import LABELS, map_state, unavailable
 from ..presenters import present
 from ..tasks.manager import TaskManager
 from .errors import ApiError, from_contract, not_found
+from .module_navigation import context as operation_navigation
 
 # 当前KEGG范围未确认或未应用时，专属展示不发送旧图和排名；原归档仍可追溯。
 def hide_pending_kegg(special, info):
@@ -369,6 +370,7 @@ class Views:
             response["downstream"] = {"note_zh": "准备关联只用于本批资料核查，已确认A06及A07报告保持。", "modules": []}
             for key in ("docking_trial", "docking_coverage", "docking_preparation", "docking_candidates", "docking_review", "trial_handoff"):
                 response[key] = None
+        response["operation_guide"] = operation_navigation(response, result)
         return response
 
     @staticmethod

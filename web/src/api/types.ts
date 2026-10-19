@@ -266,6 +266,7 @@ export interface DiseaseScopeInfo {
   items: { scope_id: string; database: string; disease_term: string; disease_id: string; records: number; scope: string; source_name: string; source_url: string; identity_warning: string; direct_allowed: boolean }[];
 }
 export interface ModuleView {
+  operation_guide?: {current_step: number; note_zh: string; steps: {key: string; label_zh: string; detail_zh: string; target: string; module_id?: string; href?: string}[]} | null;
   disease_workflow?: {current_step: number; note_zh: string; next_label_zh: string; next_target: string} | null;
   normalization?: NormalizationInfo | null;
   disease_scope?: DiseaseScopeInfo | null;

@@ -32,6 +32,7 @@ import SourceUploads from './SourceUploads';
 import DiseaseScopeReview from './DiseaseScopeReview';
 import NormalizationReview from './NormalizationReview';
 import DiseaseWorkflowGuide from './DiseaseWorkflowGuide';
+import ModuleOperationGuide from './ModuleOperationGuide';
 import PpiRun from './PpiRun';
 import IdentityReview, { IdentityPlanStatus } from './IdentityReview';
 
@@ -46,9 +47,12 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
 }) {
   const [keggPending, setKeggPending] = useState(false); // 本地未保存勾选只控制旧图可见性。
   const [scopeDirty, setScopeDirty] = useState(false); // 仅阻止使用未保存的本页范围继续核查。
+  const [enrichmentNavigation, setEnrichmentNavigation] = useState(0); // 仅展开显示区，不确认清单。
   const app = useApp(); // 全局上下文（打开任务面板）
   if (view.trial_preparation && !view.historical) {
-    return <><TrialPreparation info={view.trial_preparation} label={view.state.label_zh}/>{reviewSlot}{downstreamSlot}</>;
+    return <div className="stack"><TrialPreparation info={view.trial_preparation} label={view.state.label_zh}
+      guide={view.operation_guide && <ModuleOperationGuide studyId={studyId} moduleId={view.module.module_id} info={view.operation_guide}/>}/>
+      {reviewSlot && <div id="module-review-panel">{reviewSlot}</div>}{downstreamSlot}</div>;
   }
   const m = view.module; // 模块信息
   const oldSelection = !view.historical && ((m.module_id === 'A03_SELECT' && !view.compound_selection?.previous_active) || (['A06', 'A06_PREP'].includes(m.module_id) && !!view.docking_review && !view.docking_review.matrix?.ready && stIsStale(view)));
@@ -70,7 +74,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       )}
 
       {/* 标题与状态 */}
-      <section className="card" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px 18px', padding: '18px 22px' }}>
+      <section id="module-status" className="card" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px 18px', padding: '18px 22px' }}>
         <div style={{ flex: '999 1 300px', minWidth: 0 }}>
           <div className="mono small muted">{m.module_id}{m.group_zh ? ` · ${m.group_zh}` : ''}</div>
           <h1 style={{ margin: '2px 0 0', fontSize: 24 }}>{m.title_zh}</h1>
@@ -89,9 +93,11 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
         </div>
       </section>
 
-      {m.module_id === 'A07' && <ReportSummary special={sp} studyId={studyId} downloadsOnly />}
+      {view.operation_guide && <ModuleOperationGuide studyId={studyId} moduleId={m.module_id} info={view.operation_guide} pending={m.module_id === 'A05' && keggPending}
+        onLocate={target => {if (target === 'module-enrichment-confirmation') setEnrichmentNavigation(n => n + 1);}}/>}
+      {m.module_id === 'A07' && <div id="module-report-downloads"><ReportSummary special={sp} studyId={studyId} downloadsOnly />{!sp.report_files?.length && <Alert type="info" message="本版报告尚未生成，请先查看当前模块状态与输入条件。"/>}</div>}
       {view.disease_workflow && <DiseaseWorkflowGuide studyId={studyId} info={view.disease_workflow} scopeDirty={scopeDirty} />}
-      {view.compound_selection && <CompoundSelection studyId={studyId} info={view.compound_selection} review={view.docking_review}/>}
+      {view.compound_selection && <div id="module-compound-selection"><CompoundSelection studyId={studyId} info={view.compound_selection} review={view.docking_review}/></div>}
       {/* 对接人工关口紧接标题，先核对方案，再阅读矩阵。 */}
       {view.trial_handoff && <div className="card" style={{border:'2px solid #0F5E6E',marginBottom:12}}>
         <strong>当前A06复核：225组合扩展试算结果</strong><p>{view.trial_handoff.note_zh}</p>
@@ -99,14 +105,16 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
           <Button type="primary" href={view.trial_handoff.review_url}>前往A06结果复核</Button>}
       </div>}
       {view.docking_trial && <DockingTrial studyId={studyId} info={view.docking_trial}/>}
-      {view.docking_artifacts && <DockingArtifacts studyId={studyId} info={view.docking_artifacts}/>}
+      {view.docking_artifacts && <div id="module-docking-artifacts"><DockingArtifacts studyId={studyId} info={view.docking_artifacts}/></div>}
+      {(view.docking_coverage || view.docking_preparation) && <div id="module-preparation" className="stack">
       {view.docking_coverage && (view.docking_trial ? <Collapse items={[{key:'strict-history',label:'原严格准备与历史核查（保留）',children:<DockingCoverage studyId={studyId} info={view.docking_coverage}/>}]}/> : <DockingCoverage studyId={studyId} info={view.docking_coverage}/>)}
       {view.docking_preparation && !view.docking_coverage && <DockingPreparation studyId={studyId} info={view.docking_preparation}/>}
-      {view.docking_review && !view.docking_trial && m.module_id !== 'A03_SELECT' && <DockingMatrix info={view.docking_review}/>}
+      </div>}
+      {view.docking_review && !view.docking_trial && m.module_id !== 'A03_SELECT' && <div id="module-docking-matrix"><DockingMatrix info={view.docking_review}/></div>}
       {view.docking_candidates && m.module_id !== 'A04'  && <DockingCandidates studyId={studyId} moduleId={m.module_id} info={view.docking_candidates} />}
-      {view.enrichment_display && <EnrichmentConfirmation studyId={studyId} info={view.enrichment_display} onPendingChange={setKeggPending} />}
+      {view.enrichment_display && <div id="module-enrichment-confirmation"><EnrichmentConfirmation studyId={studyId} info={view.enrichment_display} onPendingChange={setKeggPending} navigationRequest={enrichmentNavigation}/></div>}
       {/* 待核验事项紧接标题；证据直接展开，不藏在结果末尾。 */}
-      {!view.historical && <FocusSection items={view.focus} evidence={sp.ppi_identity ? <IdentityReview studyId={studyId} view={view} data={sp.ppi_identity} /> : undefined} />}
+      {!view.historical && <div id="module-focus"><FocusSection items={view.focus} evidence={sp.ppi_identity ? <IdentityReview studyId={studyId} view={view} data={sp.ppi_identity} /> : undefined} /></div>}
       {m.module_id === 'A02' && !view.historical && view.source_uploads && <SourceUploads studyId={studyId} moduleId={m.module_id} info={view.source_uploads} />}
       {view.disease_scope && <DiseaseScopeReview key={view.run?.run_id} studyId={studyId} info={view.disease_scope} onDirtyChange={setScopeDirty} />}
       {view.normalization && <NormalizationReview key={'normalization-' + view.run?.run_id + (view.normalization.preview?.stamp || '')} studyId={studyId} info={view.normalization} scopeDirty={scopeDirty} />}
@@ -143,11 +151,12 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
         </section>
       )}
 
-      {view.ppi_run && <PpiRun studyId={studyId} info={view.ppi_run} />}
-      {view.source_uploads && (m.module_id !== 'A02' || view.historical) && <SourceUploads studyId={studyId} moduleId={m.module_id} info={view.source_uploads} />}
+      {view.ppi_run && <div id="module-ppi-run"><PpiRun studyId={studyId} info={view.ppi_run} /></div>}
+      {view.source_uploads && (m.module_id !== 'A02' || view.historical) && <div id="module-source-inputs"><SourceUploads studyId={studyId} moduleId={m.module_id} info={view.source_uploads} /></div>}
 
       {/* 需要知悉 */}
       <KnowSection items={view.focus} />
+      <div id="module-results" className="stack">
       {/* 关键数字 */}
       {!oldSelection && <KpiGrid kpis={view.kpis} />}
       {/* 数量变化 */}
@@ -162,9 +171,11 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       {sp.enrichment_top && <EnrichmentTop data={sp.enrichment_top} />}
       {sp.heatmap && !view.docking_review && <Heatmap data={sp.heatmap} />}
       {(sp.conclusion_zh || sp.leads || sp.limits || sp.report_files) && <ReportSummary special={sp} studyId={studyId} />}
+      {!view.run && <Alert type="info" message="本模块尚无运行结果，请先核对上游状态及本页提示。"/>}
+      </div>
 
       {/* 结果明细 / 参数与版本 / 来源与追溯 */}
-      {oldSelection ? <Collapse items={[{key:'old-result',label:'已失效历史名单与结果（仅供对照）',children:<><KpiGrid kpis={view.kpis}/><FlowChain steps={view.flow} note={view.flow_note_zh}/><DataTabs studyId={studyId} view={view}/></>}]} /> : <DataTabs studyId={studyId} view={view} />}
+      <div id="module-details">{oldSelection ? <Collapse items={[{key:'old-result',label:'已失效历史名单与结果（仅供对照）',children:<><KpiGrid kpis={view.kpis}/><FlowChain steps={view.flow} note={view.flow_note_zh}/><DataTabs studyId={studyId} view={view}/></>}]} /> : <DataTabs studyId={studyId} view={view} />}</div>
       {view.docking_candidates && m.module_id === 'A04' && <DockingCandidates studyId={studyId} moduleId={m.module_id} info={view.docking_candidates} />}
       {/* 窄屏时下游影响放在最后 */}
       {downstreamSlot}
