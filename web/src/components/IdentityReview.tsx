@@ -49,7 +49,7 @@ export default function IdentityReview({ studyId, view, data }: { studyId: strin
       {!view.historical && <Button type="primary" disabled={!info?.enabled} onClick={() => openPlan(data.rows.map(r => r.target_id))}>确认补查方案并应用</Button>}
       {list && <Button size="small" href={fileUrl(studyId, list.key)}>下载本轮清单</Button>}
     </div>
-    {!view.historical && <p className="small">操作：先查看证据，再点击“确认补查方案并应用”，选择范围、填写核验人和说明后提交。后台补查后生成新A04，仍须独立复核。</p>}
+    {!view.historical && <p className="small">操作：证据可按需查看，无须逐条点开。点击“确认补查方案并应用”，可一次提交多项补查；填写核验人和说明后，后台自动执行并生成新A04，仍须独立复核。仅等待不会启动补查。</p>}
     {!view.historical && !info?.enabled && info?.disabled_reason_zh && <Alert type="info" message={info.disabled_reason_zh} style={{ marginBottom: 12 }} />}
     <IdentityPlanStatus info={info} />
     <Table<PpiIdentityRow> size="small" rowKey="target_id" pagination={false} dataSource={data.rows}

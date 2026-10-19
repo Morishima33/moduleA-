@@ -1,5 +1,5 @@
 // 文件用途：全局待办收件箱（抽屉）。按研究分组列出 GET /inbox 返回的待办，点击直接跳到对应模块。
-import { Drawer, Empty } from 'antd';
+import { Alert, Drawer, Empty } from 'antd';
 import type { GlobalInboxEntry } from '../api/types';
 import { hrefFor } from '../lib/route';
 import { StatusPill } from './common';
@@ -18,6 +18,7 @@ export default function InboxDrawer({ open, items, onClose }: { open: boolean; i
   }
   return (
     <Drawer title={`待你处理（${items.length}）`} open={open} onClose={onClose} width={460}>
+      <Alert type="info" showIcon style={{ marginBottom: 16 }} message="“等待”表示还有资料或确认事项需要处理；不会因继续等待而自动完成。后台是否正在计算，请查看“后台任务”的运行状态。" />
       {!items.length ? (
         <Empty description="目前没有需要你处理的事项" />
       ) : (

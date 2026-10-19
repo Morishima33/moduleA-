@@ -5,7 +5,7 @@ from pathlib import Path
 from contracts import require
 from storage import read_json, verified_file, write_json, file_record, new_id
 from . import flow as runtime
-from .compact_display import VERSION, RULE, build, translation_snapshot, metadata
+from .compact_display import VERSION, RULE, build, translation_snapshot, metadata, english
 from . import display_flow as previous
 
 CONFIG = dict(runtime.CONFIG, display_version=VERSION, display_rule=RULE)
@@ -135,3 +135,29 @@ def revise_layout(workflow, sid, expected_a05):
     source=dict(source,version=VERSION)
     control={"base_run":old["base_run"],"excluded_ids":old["excluded_ids"],"exclusions_confirmed":old["exclusions_confirmed"],"layout_confirmed":False,"decision_id":None}
     return publish(workflow,sid,expected_a05,inputs,source,control,"按用户要求精简核查清单、中英文分列及KEGG单蓝渐变；仅版式修订")
+
+
+# 补齐当前缺译后追加展示修订；原统计、范围及历史译名快照不回写，新图仍待人工确认。
+def refresh_translations(workflow, sid, expected_a05):
+    manifest = workflow.load(sid)
+    require(manifest["current"].get("A05") == expected_a05 and workflow.active(manifest, expected_a05) and not manifest.get("trashed"), "当前A05已改变或研究只读，请刷新")
+    old = metadata(workflow.result(manifest, expected_a05)["tables"])
+    require(old and old["version"] in (previous.VERSION, VERSION), "请先准备同源A05展示")
+    inputs = base_inputs(workflow, manifest, expected_a05)
+    inputs.pop("display_decision", None)
+    inputs["display_layout_source"] = deepcopy(manifest["runs"][expected_a05]["result_file"])
+    inputs["display_layout_run"] = deepcopy(manifest["runs"][expected_a05]["run_file"])
+    home = workflow.location(sid)
+    source = deepcopy(read_json(verified_file(home, inputs["display_source"])))
+    original = deepcopy(source["translations"])
+    base = read_json(verified_file(home, inputs["statistical_result"]))
+    translations = translation_snapshot(base["tables"])
+    english_by_id = {row["ID"]: english(row) for group in ("bp", "cc", "mf", "kegg") for row in base["tables"].get(group + "_significant", [])}
+    # 只补已归档缺译项；新的词库不覆盖本轮已有核译，也不改统计表的英文名称。
+    for tid in old["missing_translations"]:
+        if tid in translations and translations[tid].get("english") == english_by_id.get(tid) and translations[tid].get("zh"):
+            source["translations"][tid] = translations[tid]
+    source["version"] = VERSION
+    require(source["translations"] != original, "当前没有可补齐的译名，不生成重复版本")
+    control = {"base_run": old["base_run"], "excluded_ids": old["excluded_ids"], "exclusions_confirmed": old["exclusions_confirmed"], "layout_confirmed": False, "decision_id": None}
+    return publish(workflow, sid, expected_a05, inputs, source, control, "补齐同源GO/KEGG缺失中文译名并重绘；统计和展示范围保持，新版式仍待人工确认")

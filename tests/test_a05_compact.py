@@ -81,6 +81,48 @@ class CompactPresentationTests(unittest.TestCase):
             self.assertEqual(reports.CONFIG["template_version"],"A07.double_report.19")
 
 class CompactUpgradeTests(legacy_tests.DisplayWorkflowTests):
+    # 缺译修订只追加本研究展示，保留已确认范围、旧译名、统计和复核历史。
+    def test_translation_refresh_preserves_scope_statistics_and_history(self):
+        from contracts import ContractError
+        from storage import read_json, verified_file
+        w = EnrichmentWorkflow(self.root_case, {"A05": compact_flow.validator(self.root_case)})
+        m = w.load(self.sid)
+        rid = m["current"]["A05"]
+        inputs = compact_flow.base_inputs(w, m, rid)
+        source = read_json(verified_file(w.location(self.sid), inputs["display_source"]))
+        tid = self.base["tables"]["bp_significant"][0]["ID"]
+        entry = source["translations"].pop(tid)
+        old = compact_flow.publish(w, self.sid, rid, inputs, source, {"base_run": self.base["run_id"], "excluded_ids": [], "exclusions_confirmed": False, "layout_confirmed": False, "decision_id": None}, "虚构缺译预览")
+        self.w = w
+        old = compact_flow.apply_confirmation(w, self.sid, self.payload(ids=["hsa00001"]))
+        before = deepcopy(w.load(self.sid))
+        old_run = w.run(before, old["run_id"])
+        self.assertIn(tid, compact_display.metadata(old["tables"])["missing_translations"])
+        with patch.object(compact_flow, "translation_snapshot", return_value={tid: dict(entry, english="不匹配的英文")}):
+            with self.assertRaises(ContractError):
+                compact_flow.refresh_translations(w, self.sid, old["run_id"])
+        self.assertEqual(w.load(self.sid), before)
+        with patch.object(compact_flow, "translation_snapshot", return_value={tid: entry}):
+            new = compact_flow.refresh_translations(w, self.sid, old["run_id"])
+        after = w.load(self.sid)
+        meta = compact_display.metadata(new["tables"])
+        self.assertEqual(meta["missing_translations"], [])
+        self.assertEqual(meta["excluded_ids"], ["hsa00001"])
+        self.assertTrue(meta["exclusions_confirmed"])
+        self.assertFalse(meta["layout_confirmed"])
+        self.assertFalse(w.approved(after, new["run_id"]))
+        self.assertEqual(after["reviews"], before["reviews"])
+        self.assertEqual(w.result(after, old["run_id"]), old)
+        new_run = w.run(after, new["run_id"])
+        self.assertEqual(new_run["inputs"]["statistical_result"], old_run["inputs"]["statistical_result"])
+        for key, rows in self.base["tables"].items():
+            self.assertEqual(new["tables"][key], rows)
+        with patch.object(compact_flow, "translation_snapshot", return_value={tid: entry}):
+            with self.assertRaises(ContractError):
+                compact_flow.refresh_translations(w, self.sid, new["run_id"])
+            with self.assertRaises(ContractError):
+                compact_flow.refresh_translations(w, self.sid, old["run_id"])
+
     # 使用既有虚构R基线；版式升级保留已确认名单，撤销新版式审批而不重算。
     def test_revision_retains_scope_history_and_requires_new_layout(self):
         from science_modules.a05 import display_flow

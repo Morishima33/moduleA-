@@ -1,4 +1,208 @@
 {
+  "GO:0000307": {
+    "english": "cyclin-dependent protein kinase holoenzyme complex",
+    "zh": "细胞周期蛋白依赖性蛋白激酶全酶复合物",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0000307",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
+  "GO:0001221": {
+    "english": "transcription coregulator binding",
+    "zh": "转录共调节因子结合",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0001221",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
+  "GO:0003707": {
+    "english": "nuclear steroid receptor activity",
+    "zh": "核类固醇受体活性",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0003707",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
+  "GO:0004879": {
+    "english": "nuclear receptor activity",
+    "zh": "核受体活性",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0004879",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
+  "GO:0004935": {
+    "english": "adrenergic receptor activity",
+    "zh": "肾上腺素能受体活性",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0004935",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
+  "GO:0005901": {
+    "english": "caveola",
+    "zh": "胞膜窖",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0005901",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
+  "GO:0006979": {
+    "english": "response to oxidative stress",
+    "zh": "对氧化应激的响应",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0006979",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
+  "GO:0008227": {
+    "english": "G protein-coupled amine receptor activity",
+    "zh": "G蛋白偶联胺受体活性",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0008227",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
+  "GO:0019207": {
+    "english": "kinase regulator activity",
+    "zh": "激酶调节因子活性",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0019207",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
+  "GO:0019887": {
+    "english": "protein kinase regulator activity",
+    "zh": "蛋白激酶调节因子活性",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0019887",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
+  "GO:0030594": {
+    "english": "neurotransmitter receptor activity",
+    "zh": "神经递质受体活性",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0030594",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
+  "GO:0031625": {
+    "english": "ubiquitin protein ligase binding",
+    "zh": "泛素蛋白连接酶结合",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0031625",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
+  "GO:0032589": {
+    "english": "neuron projection membrane",
+    "zh": "神经元突起膜",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0032589",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
+  "GO:0032590": {
+    "english": "dendrite membrane",
+    "zh": "树突膜",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0032590",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
+  "GO:0042060": {
+    "english": "wound healing",
+    "zh": "创伤愈合",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0042060",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
+  "GO:0044853": {
+    "english": "plasma membrane raft",
+    "zh": "质膜脂筏",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0044853",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
+  "GO:0045211": {
+    "english": "postsynaptic membrane",
+    "zh": "突触后膜",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0045211",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
+  "GO:0048545": {
+    "english": "response to steroid hormone",
+    "zh": "对类固醇激素的响应",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0048545",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
+  "GO:0050673": {
+    "english": "epithelial cell proliferation",
+    "zh": "上皮细胞增殖",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0050673",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
+  "GO:0050878": {
+    "english": "regulation of body fluid levels",
+    "zh": "体液水平的调节",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0050878",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
+  "GO:0061629": {
+    "english": "RNA polymerase II-specific DNA-binding transcription factor binding",
+    "zh": "RNA聚合酶II特异性DNA结合型转录因子结合",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0061629",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
+  "GO:0071216": {
+    "english": "cellular response to biotic stimulus",
+    "zh": "细胞对生物性刺激的响应",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0071216",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
+  "GO:0072593": {
+    "english": "reactive oxygen species metabolic process",
+    "zh": "活性氧代谢过程",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0072593",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
+  "GO:0097060": {
+    "english": "synaptic membrane",
+    "zh": "突触膜",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0097060",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
+  "GO:0097136": {
+    "english": "Bcl-2 family protein complex",
+    "zh": "Bcl-2家族蛋白复合物",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0097136",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
+  "GO:0098531": {
+    "english": "ligand-activated transcription factor activity",
+    "zh": "配体激活型转录因子活性",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0098531",
+    "translation_basis": "按本轮归档英文旧名称核译；当前QuickGO名为ligand-modulated transcription factor activity，归档英文仍列为narrow同义词；不回写统计英文或扩大术语语义"
+  },
+  "GO:0098960": {
+    "english": "postsynaptic neurotransmitter receptor activity",
+    "zh": "突触后神经递质受体活性",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0098960",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
+  "GO:0099528": {
+    "english": "G protein-coupled neurotransmitter receptor activity",
+    "zh": "G蛋白偶联神经递质受体活性",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0099528",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
+  "GO:0140297": {
+    "english": "DNA-binding transcription factor binding",
+    "zh": "DNA结合型转录因子结合",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0140297",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
+  "GO:1902554": {
+    "english": "serine/threonine protein kinase complex",
+    "zh": "丝氨酸/苏氨酸蛋白激酶复合物",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:1902554",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
+  "GO:1902710": {
+    "english": "GABA receptor complex",
+    "zh": "γ-氨基丁酸受体复合物",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:1902710",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
+  "GO:1902711": {
+    "english": "GABA-A receptor complex",
+    "zh": "γ-氨基丁酸A型受体复合物",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:1902711",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
+  "GO:1902911": {
+    "english": "protein kinase complex",
+    "zh": "蛋白激酶复合物",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:1902911",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
+  "GO:2001233": {
+    "english": "regulation of apoptotic signaling pathway",
+    "zh": "细胞凋亡信号通路的调节",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:2001233",
+    "translation_basis": "依据QuickGO官方英文名称及定义人工核译；标准缩写及蛋白专名保留，非官方中文译名"
+  },
   "GO:0009410": {
     "english": "response to xenobiotic stimulus",
     "zh": "对外源性化合物刺激的响应",

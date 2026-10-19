@@ -65,6 +65,14 @@ NEXT_TEXT = {
 INLINE_TYPES = {".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
 
 
+# 待办直接说明Workflow给出的等待原因；等待事项不冒充后台正在计算。
+def inbox_text(module_id: str, state: dict) -> str:
+    title = f"{module_id} {registry.SPECS[module_id].title_zh}"
+    if state["code"] == "waiting" and state.get("reason_zh"):
+        return f"{title}：{state['reason_zh']}"
+    return NEXT_TEXT.get(state["code"], "{m}").format(m=title)
+
+
 class Views:
     def __init__(self, kernel: Kernel, tasks: TaskManager):
         self.kernel = kernel
@@ -219,7 +227,7 @@ class Views:
             "nav": nav,
             "next_step": self._next_step(states),
             "inbox": [{"module_id": m, "code": states[m]["code"], "label_zh": states[m]["label_zh"],
-                       "text_zh": NEXT_TEXT.get(states[m]["code"], "{m}").format(m=f"{m} {registry.SPECS[m].title_zh}")}
+                       "text_zh": inbox_text(m, states[m])}
                       for m in registry.ORDER if states[m]["code"] in ("review", "hold", "returned", "waiting", "failed")],
             "active_tasks": self.tasks.list(study_id, active_only=True),
             "storage": {"directory": str(workflow.location(study_id)), "folders": [dict(row) for row in PROJECT_FOLDERS]},
@@ -244,7 +252,7 @@ class Views:
                 if states[m]["code"] in ("review", "hold", "returned", "waiting", "failed"):
                     items.append({"study_id": card["study"]["study_id"], "study_title_zh": card["study"]["title_zh"], "module_id": m,
                                   "code": states[m]["code"], "label_zh": states[m]["label_zh"],
-                                  "text_zh": NEXT_TEXT[states[m]["code"]].format(m=f"{m} {registry.SPECS[m].title_zh}")})
+                                  "text_zh": inbox_text(m, states[m])})
         return items
 
     # ------------------------------------------------------------------ 模块视图
