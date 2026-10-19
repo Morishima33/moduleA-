@@ -39,6 +39,10 @@ export default function DiseaseScopeReview({ studyId, info, onDirtyChange }: { s
     {dirty && <Alert type="warning" showIcon message="有未保存的范围修改，请先保存本批范围核验，再核查基因身份。" style={{marginBottom: 12}} />}
     {!info.enabled && <Alert showIcon type="info" message={info.disabled_reason_zh} />}
     <Space wrap style={{ marginBottom: 12 }}>
+      <Button disabled={disabled || !info.items.some(row => decisions[row.scope_id] === 'pending')} onClick={() => {
+        setDecisions(old => Object.fromEntries(info.items.map(row => [row.scope_id, old[row.scope_id] === 'pending' ? 'outside' : old[row.scope_id]])));
+        setConfirmed(false);
+      }}>仅排除待核验条目</Button>
       <Button disabled={disabled || selectedIds.length === info.items.length} onClick={() => setSelectedIds(info.items.map(row => row.scope_id))}>全选条目（含其他页）</Button>
       <Button disabled={disabled || !selectedIds.length} onClick={() => setSelectedIds([])}>取消选择</Button>
       <span role="status">已选 {selectedIds.length} 项</span>
@@ -49,6 +53,7 @@ export default function DiseaseScopeReview({ studyId, info, onDirtyChange }: { s
       }}>应用到已选条目</Button>
       <span className="small muted">全选涵盖完整清单，不受搜索或分页影响；选择本身不改变范围，来源身份不符的条目不会设为本病。</span>
     </Space>
+    <p className="small muted">“仅排除待核验条目”只修改待核验行的本地草稿，保留已确认的本病条目；填写依据并保存后才生效。</p>
     <Input aria-label="查找范围条目" allowClear placeholder="按来源、疾病名称或编号查找；筛选保留勾选，保存时保留完整清单的决定" value={query} onChange={e => setQuery(e.target.value)} style={{ marginBottom: 12 }} />
     <Table rowKey="scope_id" size="small" rowSelection={{ selectedRowKeys: selectedIds, preserveSelectedRowKeys: true, onChange: keys => setSelectedIds(keys.map(String)), getCheckboxProps: () => ({ disabled }), columnTitle: '选择', columnWidth: 50 }} dataSource={info.items.filter(row => [row.database, row.disease_term, row.disease_id].some(value => value.toLowerCase().includes(query.trim().toLowerCase())))} scroll={{ x: 770 }} pagination={{ defaultPageSize: 10, showSizeChanger: true }} columns={[
       { title: '来源与原文件', key: 'source', width: 125, render: (_, row) => <><strong>{row.database}</strong><br /><a href={row.source_url}>查看原文件</a><Typography.Text type="secondary" ellipsis={{ tooltip: row.source_name }} style={{ fontSize: 12, maxWidth: 109, display: 'block' }}>{row.source_name}</Typography.Text></> },

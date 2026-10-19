@@ -216,7 +216,7 @@ export interface EnrichItem { id: string; description: string; count: number; ge
 /** A04 第一轮前 10 */
 export interface PpiTopItem { symbol: string; degree: number; bc: number; cc: number; round2: boolean; bar: number }
 /** A03 韦恩图 */
-export interface Venn { formula_only: number; both: number; disease_only: number; formula_total: number; disease_total: number }
+export interface Venn { formula_only: number; both: number; disease_only: number; formula_total: number; disease_total: number; layout?: 'overlap' | 'disjoint' | 'empty_formula' | 'empty_disease' | 'empty_both' }
 /** A07 研究线索 */
 export interface Lead { title_zh: string; fact_zh: string; next_zh: string }
 /** A07 报告文件 */
@@ -266,6 +266,9 @@ export interface DiseaseScopeInfo {
   items: { scope_id: string; database: string; disease_term: string; disease_id: string; records: number; scope: string; source_name: string; source_url: string; identity_warning: string; direct_allowed: boolean }[];
 }
 export interface ModuleView {
+  input_audit?: {formula: {run_id: string; sources: string[]; missing_sources: string[]; component_label_zh: string; component_count: number | null; target_count: number | null; relationship_count: number | null} | null;
+    disease: {run_id: string; candidate_count: number | null; target_count: number | null; scope_counts: {value: string; label_zh: string; count: number; records: number}[]; empty_reason_zh: string} | null;
+    checks: {level: 'info' | 'warning'; label_zh: string; detail_zh: string; module_id?: string}[]} | null;
   operation_guide?: {current_step: number; note_zh: string; steps: {key: string; label_zh: string; detail_zh: string; target: string; module_id?: string; href?: string}[]} | null;
   disease_workflow?: {current_step: number; note_zh: string; next_label_zh: string; next_target: string} | null;
   normalization?: NormalizationInfo | null;

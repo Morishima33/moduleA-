@@ -33,6 +33,7 @@ import DiseaseScopeReview from './DiseaseScopeReview';
 import NormalizationReview from './NormalizationReview';
 import DiseaseWorkflowGuide from './DiseaseWorkflowGuide';
 import ModuleOperationGuide from './ModuleOperationGuide';
+import InputAudit from './InputAudit';
 import PpiRun from './PpiRun';
 import IdentityReview, { IdentityPlanStatus } from './IdentityReview';
 
@@ -97,6 +98,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
         onLocate={target => {if (target === 'module-enrichment-confirmation') setEnrichmentNavigation(n => n + 1);}}/>}
       {m.module_id === 'A07' && <div id="module-report-downloads"><ReportSummary special={sp} studyId={studyId} downloadsOnly />{!sp.report_files?.length && <Alert type="info" message="本版报告尚未生成，请先查看当前模块状态与输入条件。"/>}</div>}
       {view.disease_workflow && <DiseaseWorkflowGuide studyId={studyId} info={view.disease_workflow} scopeDirty={scopeDirty} />}
+      {view.input_audit && <InputAudit studyId={studyId} moduleId={m.module_id} info={view.input_audit}/>}
       {view.compound_selection && <div id="module-compound-selection"><CompoundSelection studyId={studyId} info={view.compound_selection} review={view.docking_review}/></div>}
       {/* 对接人工关口紧接标题，先核对方案，再阅读矩阵。 */}
       {view.trial_handoff && <div className="card" style={{border:'2px solid #0F5E6E',marginBottom:12}}>

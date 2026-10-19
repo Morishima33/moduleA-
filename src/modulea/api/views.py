@@ -28,6 +28,7 @@ from ..presenters import present
 from ..tasks.manager import TaskManager
 from .errors import ApiError, from_contract, not_found
 from .module_navigation import context as operation_navigation
+from .input_audit import context as input_audit_context
 
 # 当前KEGG范围未确认或未应用时，专属展示不发送旧图和排名；原归档仍可追溯。
 def hide_pending_kegg(special, info):
@@ -371,6 +372,7 @@ class Views:
             for key in ("docking_trial", "docking_coverage", "docking_preparation", "docking_candidates", "docking_review", "trial_handoff"):
                 response[key] = None
         response["operation_guide"] = operation_navigation(response, result)
+        response["input_audit"] = input_audit_context(workflow, real, module_id, run, result)
         return response
 
     @staticmethod

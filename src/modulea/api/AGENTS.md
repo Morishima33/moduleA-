@@ -1,5 +1,11 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-10-19 A01—A03输入数量溯源
+
+ModuleView新增可空`input_audit:{formula,disease,checks}`，用于A01/A02/A03。formula为`{run_id,sources,missing_sources,component_label_zh,component_count,target_count,relationship_count}`，disease为`{run_id,candidate_count,target_count,scope_counts:[{value,label_zh,count,records}],empty_reason_zh}`；checks为`[{level:info|warning,label_zh,detail_zh,module_id?}]`。A03只读取该运行实际parent_runs绑定的A01/A02，不借用当前新结果解释历史；数量逐项取既有归档摘要、表和范围决定，不计算交集、补造基因或改变权限。现代研究的三库覆盖差异仅说明当前来源和待补来源，不自动混入别的项目资料、不撤销原批准。
+
+special.venn新增`layout:overlap|disjoint|empty_formula|empty_disease|empty_both`，仅按归档数量选择示意图布局；空疾病集合不再画成有实质重叠的两圆。A02增加“仅排除待核验条目”的本地草稿操作，只处理当前表单值为pending的行，不保存、不改变direct等已决定行。范围和身份修订仍须原有明确提交及独立整体复核。
+
 ## 2026-10-19 全模块操作导航
 
 ModuleView新增可空`operation_guide:{current_step,note_zh,steps:[{key,label_zh,detail_zh,target,module_id?,href?}]}`。current_step为从1开始的建议操作位置，不是完成率、模块状态或批准。仅只读组合本页已有归档展示字段及Workflow给出的状态；不计算科学结果，不改变权限。当前A00、A01、A03、A03_SELECT、A04、A05、A06_PREP、A06、A07均提供各自流程；A02沿用既有disease_workflow和未保存范围保护。历史页不提供操作导航。本批准备关联使用只读资料核查步骤及原关联结果地址，不能提示重复批准或质控执行。

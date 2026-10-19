@@ -72,6 +72,25 @@ class NormalizationBridgeTests(unittest.TestCase):
         self.assertEqual(made["A02"]["summary"]["标准化基因数"], 1)
         self.assertFalse(made["A02"]["summary"]["handoff_blocked"])
 
+    def test_scope_can_be_revised_after_publishing_empty_normalized_result(self):
+        """已生成空标准化集合仍能按原入口修订范围，旧版本和批准不自动迁移。"""
+        from modulea.core.disease_scope import context as scope_context, review_scope
+        self.decide(True)
+        _, pre = execute(self.settings, self.flow, self.sid, self.payload())
+        _, made = execute(self.settings, self.flow, self.sid, self.payload("publish", stamp=pre["stamp"], reviewer="test", note="合成全排除", confirmed=True, accept_omit=False, accept_source_exception=False))
+        manifest = self.flow.load(self.sid)
+        old = made["A02"]
+        info = scope_context(self.flow, manifest, old, True)
+        decisions = [{"scope_id": row["scope_id"], "scope": "direct" if row["disease_term"] == "COPD" else "outside"} for row in info["items"]]
+        candidate = review_scope(self.flow, self.sid, {"expected_a00": manifest["current"]["A00"], "expected_run": old["run_id"], "decisions": decisions, "reviewer": "test", "note": "合成纠正范围", "confirmed": True})
+        self.assertNotIn("标准化基因数", candidate["summary"])
+        _, preview = execute(self.settings, self.flow, self.sid, self.payload())
+        self.assertEqual(preview["modules"][1]["summary"]["标准化基因数"], 1)
+        after = self.flow.load(self.sid)
+        self.assertIn(old["run_id"], after["runs"])
+        self.assertEqual(after["reviews"], manifest["reviews"])
+        self.assertNotIn("A03", after["current"])
+
     def test_stale_input_and_other_study_preview_are_rejected(self):
         self.decide()
         payload = self.payload()

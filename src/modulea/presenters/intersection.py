@@ -29,6 +29,7 @@ def present_a03(result: dict, ctx: dict) -> Parts:
     parts.table = table([("main_rank", "主排序"), ("name", "成分"), ("herbs", "药味"), ("intersection_count", "交集靶点数"), ("mixed_degree", "混合 Degree"), ("degree_rank", "Degree 排名")], ranking, "ranking", limit=max(10, len(top)))
     # 韦恩图数字（三块面积）：仅方剂 / 交集 / 仅疾病
     parts.special["venn"] = {"formula_only": pick(s, "仅方剂靶点数"), "both": I, "disease_only": pick(s, "仅疾病靶点数"), "formula_total": T, "disease_total": D}
+    parts.special["venn"]["layout"] = ("empty_both" if T == 0 and D == 0 else "empty_formula" if T == 0 else "empty_disease" if D == 0 else "disjoint" if I == 0 else "overlap")
     parts.params = clean([param("计算", "I = T ∩ D", "outline"), param("标识空间", pick(s, "namespace"))])
     if s.get("截断处需要并列选择"):
         parts.focus.append(focus("前五截断处有并列", "请在 A03_SELECT 中确认并列成分的名额。", blocks=["A03_SELECT"]))
