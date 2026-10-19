@@ -91,6 +91,8 @@ def map_state(module_id: str, raw: dict, task_active: bool = False) -> ModuleSta
         reason = raw["preparation_scope"]["reason_zh"]
         blocked = False
     label=LABELS[code]
+    if module_id == "A02" and code == "waiting" and summary.get("资料阶段", "").startswith("候选整理"):
+        reason = "范围尚有待核验项，请先保存范围决定，再生成标准化结果。" if summary.get("待范围复核条目数") else "范围决定已保存；尚未生成标准化结果，请在范围表下方完成基因身份核查与标准化，再进行整体复核。"
     if module_id=="A05" and code=="waiting" and summary.get("display_version") in ("A05.display.2","A05.display.3"):
         pending=[]
         if not summary.get("display_exclusions_confirmed"):pending.append("KEGG展示范围确认")

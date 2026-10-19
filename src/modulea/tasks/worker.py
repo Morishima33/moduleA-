@@ -87,6 +87,15 @@ def run_continue(settings: Settings, task: dict, manager: TaskManager) -> str:
 
 
 # 上传解析只在科学子进程运行；从已绑定的私有暂存文件读取原始字节。
+def run_normalization(settings: Settings, task: dict, manager: TaskManager) -> str:
+    """调用既有标准化入口，预览与发布均不替用户整体复核。"""
+    from ..core.normalization_bridge import execute
+    manager.update(task["task_id"], progress={"step_zh": "核对当前范围、映射证据与输入版本", "done": 0, "total": 1})
+    message, _ = execute(settings, full_workflow(settings.data_root), task["study_id"], json.loads(task["payload"]))
+    manager.update(task["task_id"], progress={"step_zh": message, "done": 1, "total": 1})
+    return message
+
+
 def run_a02_scope_review(settings: Settings, task: dict, manager: TaskManager) -> str:
     """沿用统一范围批次入口，不代签研究复核。"""
     from ..core.disease_scope import review_scope
@@ -285,6 +294,7 @@ HANDLERS = {"a02_scope_review": run_a02_scope_review, "a02_sources_retry": run_a
 from .drawing import run_figure, run_packages, run_bundle
 from .ranked_pathway_maps import run_ranked_maps
 HANDLERS["a05_pathway_maps"] = run_ranked_maps
+HANDLERS.update({"normalization_preview": run_normalization, "normalization_publish": run_normalization})
 HANDLERS.update({"a06_figure": run_figure, "a06_pair_packages": run_packages, "a06_pair_bundle": run_bundle})
 
 

@@ -57,6 +57,6 @@ export default function DiseaseScopeReview({ studyId, info }: { studyId: string;
     <p><Checkbox checked={confirmed} disabled={disabled} onChange={e => setConfirmed(e.target.checked)}>我已核对完整清单及例外，确认保存这些范围决定</Checkbox></p>
     <Button type="primary" loading={busy} disabled={disabled || !confirmed || !reviewer.trim() || !note.trim()} onClick={submit}>保存本批范围核验</Button>
     {notice && <Alert showIcon message={notice} style={{ marginTop: 10 }} />}
-    <p className="small muted">这里只保存范围决定，生成新的A02候选；身份标准化与A02整体复核仍按原流程完成。</p>
+    <p className="small muted">保存成功后，请到下方“基因身份核查与标准化”生成标准化结果，再进行A02整体复核。</p>
   </section>;
 }

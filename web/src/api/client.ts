@@ -111,6 +111,9 @@ export const api = {
   /** 保存当前完整疾病范围清单，单独生成待核查版本。 */
   reviewDiseaseScope: (sid: string, body: {expected_a00: string; expected_run: string; expected_staging: string; decisions: {scope_id: string; scope: string}[]; reviewer: string; note: string; confirmed: boolean}) =>
     request<{task: Task; created: boolean; message_zh: string}>('POST', `/studies/${sid}/modules/A02/actions/scope_review`, body),
+  /** 显式准备预览或发布标准化结果，整体复核仍独立进行。 */
+  normalization: (sid: string, body: {expected_a00: string; expected_a01: string; expected_a02: string; action: 'preview' | 'publish'; stamp?: string; reviewer?: string; note?: string; confirmed?: boolean; accept_omit?: boolean; accept_source_exception?: boolean}) =>
+    request<{task: Task; created: boolean; message_zh: string}>('POST', `/studies/${sid}/modules/A02/actions/normalization`, body),
   /** 只重取指定失败来源，绑定当前A00与A02。 */
   retrySources: (sid: string, body: { expected_a00: string; expected_run: string; expected_staging: string; databases: string[]; reason: string }) =>
     request<{ task: Task; created: boolean; message_zh: string }>('POST', `/studies/${sid}/modules/A02/actions/retry_sources`, body),

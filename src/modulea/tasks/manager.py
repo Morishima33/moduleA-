@@ -29,6 +29,7 @@ KINDS = {"a02_scope_review": "保存疾病范围核验", "a02_sources_retry": "�
 
 
 KINDS["a05_pathway_maps"] = "生成KEGG排名首位命中图"
+KINDS.update({"normalization_preview": "核查基因身份并生成标准化预览", "normalization_publish": "生成标准化结果，等待整体复核"})
 KINDS.update({"a06_figure": "验证并保存对接结果图片", "a06_pair_packages": "整理所选对接出图包",
               "a06_pair_bundle": "汇集所选对接包下载"})
 

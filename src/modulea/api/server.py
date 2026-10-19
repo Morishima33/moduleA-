@@ -88,6 +88,7 @@ class App:
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/actions/process_sources", self.post_source_process),
             ("POST", rf"/api/v1/studies/{ID}/modules/A02/actions/retry_sources", self.post_source_retry),
             ("POST", rf"/api/v1/studies/{ID}/modules/A02/actions/scope_review", self.post_disease_scope),
+            ("POST", rf"/api/v1/studies/{ID}/modules/A02/actions/normalization", self.post_normalization),
             ("GET", r"/api/v1/trash", self.list_trash),
             ("GET", r"/api/v1/inbox", self.get_inbox),
             ("GET", r"/api/v1/tasks", self.list_tasks),
@@ -334,6 +335,25 @@ class App:
             path.unlink()
             raise ApiError(409, "GATE_BLOCKED", "当前研究已有后台任务，本次资料未提交，请完成后重试")
         return {"task": task, "created": created, "message_zh": "资料已提交后台校验，处理结果见任务面板；尚未批准。" + self._task_message(task)}, 202
+
+    def post_normalization(self, req, study_id):
+        """标准化明确预览、明确发布；只提交后台，不在接口做身份计算。"""
+        from ..core.normalization_bridge import validate
+        body = req.json()
+        info = self.views.module(study_id, "A02").get("normalization")
+        if not info or any(body.get(k) != info[k] for k in ("expected_a00", "expected_a01", "expected_a02")):
+            raise ApiError(409, "STALE_VERSION", "资料版本已改变，请重新加载标准化入口")
+        if not info["enabled"]:
+            raise ApiError(409, "GATE_BLOCKED", info["disabled_reason_zh"])
+        payload = {k: body.get(k) for k in ("expected_a00", "expected_a01", "expected_a02", "action", "stamp", "reviewer", "note", "confirmed", "accept_omit", "accept_source_exception")}
+        validate(self.kernel.workflow(), study_id, payload)
+        if payload["action"] == "publish" and (not info["preview"] or payload["stamp"] != info["preview"]["stamp"]):
+            raise ApiError(409, "STALE_VERSION", "请先生成并核对当前版本的标准化预览")
+        kind = "normalization_" + payload["action"]
+        task, created = self.tasks.submit(study_id, kind, "网页标准化" if payload["action"] == "preview" else payload["reviewer"].strip(), payload)
+        if not created:
+            raise ApiError(409, "GATE_BLOCKED", "当前研究已有后台任务，请等待完成")
+        return {"task": task, "created": created, "message_zh": "标准化操作已提交，完成后仍需独立整体复核。" + self._task_message(task)}, 202
 
     def post_disease_scope(self, req, study_id):
         """保存完整范围决定，来源身份不符不能纳入本病。"""

@@ -1,5 +1,9 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-10-17 A02范围到标准化的完整衔接
+
+当前A02候选的ModuleView增加`normalization`，包含enabled、disabled_reason_zh、expected_a00/a01/a02、scope_note_zh及preview。preview仅取本研究、相同三个输入版本的后台预览，含stamp、两侧summary与完整identity_issues、source_exceptions；不在GET执行标准化。POST `/studies/{sid}/modules/A02/actions/normalization`接收相同expected版本和`action:preview|publish`。preview提交`normalization_preview`后台任务，仅写runtime本研究预览，不改研究；publish还需stamp、reviewer、note、confirmed:true、accept_omit:boolean及accept_source_exception:boolean，调用既有normalization.publish生成待复核结果。范围未决、上游失效、回收站和忙碌均禁止，后台再次核验三个输入及预览指纹。身份例外和缺库例外必须分别明确接受；无预选、不代签、不启动A03。全排除允许既有空结果流程，但预览须突出空疾病集合。历史标准化和科学规则保持。
+
 ## 2026-10-17 疾病范围核验前置及来源身份防混用
 
 ModuleView增加`disease_scope`：`{enabled,disabled_reason_zh,expected_a00,expected_run,expected_staging,items,choices}`。items包含当前完整scope_groups及`source_name,source_url,identity_warning,direct_allowed`，不受明细分页筛选影响。A02提示框下默认展开，全部范围选项来自后端，不预选本病。

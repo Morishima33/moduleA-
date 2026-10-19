@@ -265,6 +265,7 @@ export interface DiseaseScopeInfo {
   items: { scope_id: string; database: string; disease_term: string; disease_id: string; records: number; scope: string; source_name: string; source_url: string; identity_warning: string; direct_allowed: boolean }[];
 }
 export interface ModuleView {
+  normalization?: NormalizationInfo | null;
   disease_scope?: DiseaseScopeInfo | null;
   ranked_pathway_maps?: RankedPathwayMapsInfo | null;
   docking_artifacts?: DockingArtifactInfo | null;
@@ -303,6 +304,13 @@ export interface ModuleView {
   ppi_run?: PpiRunInfo | null;
   identity_plan?: IdentityPlanInfo | null;
   enrichment_display?: EnrichmentDisplayInfo | null;
+}
+
+/** 后台生成的标准化预览，页面不计算基因身份与交接状态。 */
+export interface NormalizationInfo {
+  enabled: boolean; disabled_reason_zh: string; scope_note_zh: string;
+  expected_a00: string; expected_a01: string; expected_a02: string;
+  preview: { stamp: string; modules: { module: string; summary: Record<string, unknown>; identity_issues: Record<string, unknown>[] }[]; source_exceptions: Record<string, unknown>[] } | null;
 }
 
 /** 当前A05两种排名首位的同源命中定位图。 */
