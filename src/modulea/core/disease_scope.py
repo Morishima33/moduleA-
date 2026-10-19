@@ -25,7 +25,8 @@ def context(workflow, manifest, result, enabled, disabled_reason=""):
     return {"enabled": enabled, "disabled_reason_zh": disabled_reason, "expected_a00": a00,
             "expected_run": result["run_id"], "expected_staging": "",
             "items": [dict(row, **evidence.get(row["database"], {})) for row in groups],
-            "choices": [{"value": key, "label_zh": label} for key, label in SCOPES.items()]}
+            "choices": [{"value": key, "label_zh": label} for key, label in SCOPES.items()],
+            "saved_counts": [{"value": key, "label_zh": label, "count": sum(row["scope"] == key for row in groups)} for key, label in SCOPES.items()]}
 
 
 def review_scope(workflow, sid, payload):

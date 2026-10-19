@@ -1,12 +1,12 @@
 // A02前置范围核验：完整清单由后端提供，决定由用户明确选择，不自动判断本病。
 import { Alert, Button, Checkbox, Input, Select, Space, Table, Typography } from 'antd';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api, errorText } from '../api/client';
 import type { DiseaseScopeInfo } from '../api/types';
 import { useApp } from '../lib/appContext';
 
 /** 默认展开核验表；翻页不丢决定，提交完整清单并绑定当前版本。 */
-export default function DiseaseScopeReview({ studyId, info }: { studyId: string; info: DiseaseScopeInfo }) {
+export default function DiseaseScopeReview({ studyId, info, onDirtyChange }: { studyId: string; info: DiseaseScopeInfo; onDirtyChange?: (dirty: boolean) => void }) {
   const app = useApp();
   const [decisions, setDecisions] = useState<Record<string, string>>(() => Object.fromEntries(info.items.map(r => [r.scope_id, r.scope])));
   const [bulk, setBulk] = useState<string>();
@@ -19,6 +19,8 @@ export default function DiseaseScopeReview({ studyId, info }: { studyId: string;
   const [notice, setNotice] = useState<string | null>(null);
   const options = info.choices.map(c => ({ value: c.value, label: c.label_zh }));
   const disabled = !info.enabled || busy;
+  const dirty = info.items.some(row => decisions[row.scope_id] !== row.scope);
+  useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
 
   async function submit() {
     setBusy(true); setNotice(null);
@@ -31,8 +33,10 @@ export default function DiseaseScopeReview({ studyId, info }: { studyId: string;
   }
 
   return <section className="card" id="disease-scope-review" style={{ border: '2px solid #D28A19', padding: 20 }}>
-    <h2 style={{ marginTop: 0 }}>疾病范围核验 · 请在此处理</h2>
-    <p>核对各组来源和疾病名称，再选择范围。只纳入本病直接条目；亚型、范围外条目不纳入，待核验不自动放行。</p>
+    <h2 style={{ marginTop: 0 }}>第2步：确认疾病范围</h2>
+    <p>每行是一组疾病资料，可能包含很多条原始记录。选择本病直接条目才纳入；亚型、范围外条目排除，待核验须继续处理。</p>
+    {info.saved_counts && <p className="small muted">已保存的范围：{info.saved_counts.map(row => `${row.label_zh} ${row.count}组`).join('；')}。表内修改后需点击下方保存。</p>}
+    {dirty && <Alert type="warning" showIcon message="有未保存的范围修改，请先保存本批范围核验，再核查基因身份。" style={{marginBottom: 12}} />}
     {!info.enabled && <Alert showIcon type="info" message={info.disabled_reason_zh} />}
     <Space wrap style={{ marginBottom: 12 }}>
       <Button disabled={disabled || selectedIds.length === info.items.length} onClick={() => setSelectedIds(info.items.map(row => row.scope_id))}>全选条目（含其他页）</Button>

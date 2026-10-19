@@ -178,7 +178,7 @@ export default function ReviewPanel({ studyId, view, onSaved, onStale }: Props) 
   const all: Decision[] = ['approved', 'rejected', 'pending']; // 三个决定的固定顺序
   const canContinue = r.continue.available; // 是否提供“保存并继续”
   return (
-    <Box title="复核决定">
+    <Box title={view.module.module_id === 'A02' ? '第5步：整体复核' : '复核决定'}>
       <span className="small muted">
         正在复核 {view.module.module_id} · <span className="mono">{view.run?.order_zh}</span>
       </span>

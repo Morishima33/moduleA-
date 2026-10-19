@@ -262,9 +262,11 @@ export interface Special {
 export interface DiseaseScopeInfo {
   enabled: boolean; disabled_reason_zh: string; expected_a00: string; expected_run: string; expected_staging: string;
   choices: { value: string; label_zh: string }[];
+  saved_counts?: {value: string; label_zh: string; count: number}[];
   items: { scope_id: string; database: string; disease_term: string; disease_id: string; records: number; scope: string; source_name: string; source_url: string; identity_warning: string; direct_allowed: boolean }[];
 }
 export interface ModuleView {
+  disease_workflow?: {current_step: number; note_zh: string; next_label_zh: string; next_target: string} | null;
   normalization?: NormalizationInfo | null;
   disease_scope?: DiseaseScopeInfo | null;
   ranked_pathway_maps?: RankedPathwayMapsInfo | null;

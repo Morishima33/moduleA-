@@ -31,6 +31,7 @@ import ComponentTop from './special/ComponentTop';
 import SourceUploads from './SourceUploads';
 import DiseaseScopeReview from './DiseaseScopeReview';
 import NormalizationReview from './NormalizationReview';
+import DiseaseWorkflowGuide from './DiseaseWorkflowGuide';
 import PpiRun from './PpiRun';
 import IdentityReview, { IdentityPlanStatus } from './IdentityReview';
 
@@ -44,6 +45,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
   studyId: string; view: ModuleView; reviewSlot?: ReactNode; downstreamSlot?: ReactNode;
 }) {
   const [keggPending, setKeggPending] = useState(false); // 本地未保存勾选只控制旧图可见性。
+  const [scopeDirty, setScopeDirty] = useState(false); // 仅阻止使用未保存的本页范围继续核查。
   const app = useApp(); // 全局上下文（打开任务面板）
   if (view.trial_preparation && !view.historical) {
     return <><TrialPreparation info={view.trial_preparation} label={view.state.label_zh}/>{reviewSlot}{downstreamSlot}</>;
@@ -88,6 +90,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       </section>
 
       {m.module_id === 'A07' && <ReportSummary special={sp} studyId={studyId} downloadsOnly />}
+      {view.disease_workflow && <DiseaseWorkflowGuide studyId={studyId} info={view.disease_workflow} scopeDirty={scopeDirty} />}
       {view.compound_selection && <CompoundSelection studyId={studyId} info={view.compound_selection} review={view.docking_review}/>}
       {/* 对接人工关口紧接标题，先核对方案，再阅读矩阵。 */}
       {view.trial_handoff && <div className="card" style={{border:'2px solid #0F5E6E',marginBottom:12}}>
@@ -104,8 +107,9 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       {view.enrichment_display && <EnrichmentConfirmation studyId={studyId} info={view.enrichment_display} onPendingChange={setKeggPending} />}
       {/* 待核验事项紧接标题；证据直接展开，不藏在结果末尾。 */}
       {!view.historical && <FocusSection items={view.focus} evidence={sp.ppi_identity ? <IdentityReview studyId={studyId} view={view} data={sp.ppi_identity} /> : undefined} />}
-      {view.disease_scope && <DiseaseScopeReview key={view.run?.run_id} studyId={studyId} info={view.disease_scope} />}
-      {view.normalization && <NormalizationReview key={'normalization-' + view.run?.run_id + (view.normalization.preview?.stamp || '')} studyId={studyId} info={view.normalization} />}
+      {m.module_id === 'A02' && !view.historical && view.source_uploads && <SourceUploads studyId={studyId} moduleId={m.module_id} info={view.source_uploads} />}
+      {view.disease_scope && <DiseaseScopeReview key={view.run?.run_id} studyId={studyId} info={view.disease_scope} onDirtyChange={setScopeDirty} />}
+      {view.normalization && <NormalizationReview key={'normalization-' + view.run?.run_id + (view.normalization.preview?.stamp || '')} studyId={studyId} info={view.normalization} scopeDirty={scopeDirty} />}
       {view.historical && sp.ppi_identity && <section className="card"><h2>历史身份问题清单（只读）</h2><IdentityReview studyId={studyId} view={view} data={sp.ppi_identity} /></section>}
       {!sp.ppi_identity && view.identity_plan?.latest && <section className="card"><h2>身份核验方案与应用结果</h2><IdentityPlanStatus info={view.identity_plan} /></section>}
       {/* 窄屏时整体复核栏也在结果之前。 */}
@@ -140,7 +144,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       )}
 
       {view.ppi_run && <PpiRun studyId={studyId} info={view.ppi_run} />}
-      {view.source_uploads && <SourceUploads studyId={studyId} moduleId={m.module_id} info={view.source_uploads} />}
+      {view.source_uploads && (m.module_id !== 'A02' || view.historical) && <SourceUploads studyId={studyId} moduleId={m.module_id} info={view.source_uploads} />}
 
       {/* 需要知悉 */}
       <KnowSection items={view.focus} />

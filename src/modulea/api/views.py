@@ -14,6 +14,7 @@ from ..core.read_archive import SnapshotFlight
 from ..core.study_creation import PROJECT_FOLDERS
 from ..core.source_catalog import source_intro
 from ..core.disease_scope import context as scope_context
+from ..core.disease_navigation import context as disease_navigation
 from ..core.normalization_bridge import context as normalization_context
 from ..core.source_uploads import context as upload_context
 from ..core.kernel import ContractError, Kernel, read_json, verified_file
@@ -356,6 +357,7 @@ class Views:
             "source_uploads": upload_context(workflow, real, module_id, result, historical, bool(self.tasks.active_for(study_id))) if not historical else None,
             "disease_scope": scope_context(workflow, real, result, not real.get("trashed") and bool(run) and workflow.active(real, run["run_id"]) and not bool(self.tasks.active_for(study_id)), "历史/失效/回收站或后台任务进行中，当前不可提交") if module_id == "A02" and not historical else None,
             "normalization": normalization_info,
+            "disease_workflow": disease_navigation(workflow, real, result, normalization_info, state) if module_id == "A02" and not historical else None,
         }
         preparation = view.get("trial_preparation") if module_id == "A06_PREP" and not historical else None
         if preparation:

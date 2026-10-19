@@ -6,7 +6,7 @@ import { api, errorText } from '../api/client';
 import { useApp } from '../lib/appContext';
 
 /** 数量与身份明细直接使用后台预览；确认框初始均不勾选。 */
-export default function NormalizationReview({ studyId, info }: { studyId: string; info: NormalizationInfo }) {
+export default function NormalizationReview({ studyId, info, scopeDirty = false }: { studyId: string; info: NormalizationInfo; scopeDirty?: boolean }) {
   const app = useApp();
   const [reviewer, setReviewer] = useState('');
   const [note, setNote] = useState('');
@@ -16,7 +16,7 @@ export default function NormalizationReview({ studyId, info }: { studyId: string
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string>();
   const preview = info.preview;
-  const disabled = busy || !info.enabled;
+  const disabled = busy || !info.enabled || scopeDirty;
   // 是否需要例外确认来自后台各侧的身份问题清单，不在页面推断身份。
   const hasIssues = !!preview?.modules.some(m => m.identity_issues.length > 0);
   const hasSourceException = !!preview?.source_exceptions.length;
@@ -31,14 +31,15 @@ export default function NormalizationReview({ studyId, info }: { studyId: string
     finally { setBusy(false); }
   }
   return <section className="card" id="normalization-review">
-    <h2>{preview ? '身份预览已完成 · 请确认处理并生成结果' : '下一步：基因身份核查与标准化'}</h2>
+    <h2>{preview ? '第3步：身份预览已完成' : '第3步：程序核查基因身份'}</h2>
     <p>操作顺序：保存范围 → 核查身份并确认处理 → 生成待复核结果 → 整体复核。本步骤只读取已保存的范围决定。</p>
     <Alert type="warning" showIcon message={info.scope_note_zh} style={{ marginBottom: 12 }} />
     {!info.enabled && <Alert type="warning" showIcon message={info.disabled_reason_zh} style={{ marginBottom: 12 }} />}
+    {scopeDirty && <Alert type="warning" showIcon message="请先保存第2步的范围修改，再重新核查身份。本次预览仍对应修改前的已保存范围。" style={{marginBottom: 12}} />}
     {!preview && <Button type="primary" disabled={disabled} loading={busy} onClick={() => submit('preview')}>核查基因身份</Button>}
     {preview && <>
       <section id="normalization-confirmation" style={{ border: '2px solid #0F5E6E', borderRadius: 10, padding: 16, marginBottom: 16, scrollMarginTop: 90 }}>
-      <h3 style={{ marginTop: 0 }}>确认身份处理</h3>
+      <h3 style={{ marginTop: 0 }}>第4步：确认身份处理并生成结果</h3>
       <Alert type="info" showIcon message="目前只有预览，整体复核尚未开放" description="完成下面的身份处理确认并生成待复核结果后，右侧“通过”才可使用。“重新核查”只更新预览。" style={{ marginBottom: 12 }} />
       {hasIssues && <p>请查看下方已展开的身份例外。程序尚不能唯一确定这些条目的标准身份，须明确本次是否暂不采用。</p>}
       {preview.modules.filter(m => m.identity_issues.length > 0).map(m => <div key={m.module}>
@@ -68,6 +69,6 @@ export default function NormalizationReview({ studyId, info }: { studyId: string
       <Collapse style={{ marginTop: 12 }} items={[{ key: 'refresh-preview', label: '需要重新核查时展开', children: <Button disabled={disabled} loading={busy} onClick={() => submit('preview')}>重新核查基因身份（仅更新预览）</Button> }]} />
     </>}
     {notice && <Alert showIcon message={notice} style={{ marginTop: 12 }} />}
-    <p className="small muted">生成后停在A01/A02整体复核；不自动批准、不启动A03或分子对接。</p>
+    <p className="small muted">生成后进入第5步：A01/A02整体复核；两项通过后接续第6步A03交集。</p>
   </section>;
 }

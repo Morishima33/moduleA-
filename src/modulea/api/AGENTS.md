@@ -1,5 +1,9 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-10-19 A02按操作顺序导航
+
+当前A02的ModuleView新增`disease_workflow:{current_step,note_zh,next_label_zh,next_target}`，仅根据本研究归档事实、同版本预览及Workflow批准状态给出操作定位，不修改模块状态或批准权限。六步为资料、范围、身份预览、确认生成、整体复核、A03。历史版本不提供导航。DiseaseScopeInfo新增`saved_counts:[{value,label_zh,count}]`，计数单位为已保存的范围组，前端未保存的编辑不回写计数。前端存在未保存范围修改时提示先保存并暂禁预览/发布，后台原有版本校验保持。
+
 ## 2026-10-17 A02范围到标准化的完整衔接
 
 2026-10-19操作澄清：预览表明确标注“预览”，确认表单和生成按钮置前，右侧复核可定位该表单。有同版本预览时state.reason_zh/review.blocked_reason_zh明确说明“身份预览已完成，尚未生成待复核结果”，不更改state.code或allowed_decisions。normalization.enabled在缺少固定公共参考包时为false并列出缺失文件；后台执行仍核查完整文件及原有指纹。两类人工关口保留。

@@ -80,8 +80,8 @@ export default function SourceUploads({ studyId, moduleId, info }: { studyId: st
     catch (error) { setNotice(errorText(error)); app.bumpRefresh(); }
     finally { setBusy(false); }
   }
-  return <section className="card">
-    <SectionHead title="数据库资料上传与更新" />
+  return <section className="card" id={moduleId === 'A02' ? 'disease-source-inputs' : undefined}>
+    <SectionHead title={moduleId === 'A02' ? '第1步：检查五库资料' : '数据库资料上传与更新'} />
     <p className="small muted">{info.note_zh}</p>
     {!info.enabled && <Alert type="info" showIcon message={info.disabled_reason_zh} style={{ marginBottom: 12 }} />}
     {info.sources.some(s => s.can_retry) && <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>{info.sources.filter(s => s.can_retry).map(s => <Button key={s.database} disabled={busy || !info.enabled} loading={busy} onClick={() => retry(s.database)}>重试 {s.label_zh} 获取</Button>)}</div>}
