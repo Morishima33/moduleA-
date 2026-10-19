@@ -4,7 +4,7 @@ import type {ModuleView} from '../api/types';
 import {hrefFor} from '../lib/route';
 
 /** 只展示后端归档事实，入口只定位或切页，不修改来源和范围。 */
-export default function InputAudit({studyId, moduleId, info}: {studyId: string; moduleId: string; info: NonNullable<ModuleView['input_audit']>}) {
+export default function InputAudit({studyId, moduleId, info, archived = false}: {studyId: string; moduleId: string; info: NonNullable<ModuleView['input_audit']>; archived?: boolean}) {
   const f = info.formula, d = info.disease;
   /** 本页直接定位已有输入区，跨模块进入同一研究的当前版本。 */
   function inspect(target: string) {
@@ -12,8 +12,14 @@ export default function InputAudit({studyId, moduleId, info}: {studyId: string; 
     if (target === moduleId) document.getElementById(anchor)?.scrollIntoView({behavior: 'smooth', block: 'start'});
     else window.location.hash = hrefFor({page: 'study', studyId, moduleId: target});
   }
-  return <section className="card stack" id="module-input-audit" aria-label="输入来源与数量核对">
-    <h2 style={{margin: 0}}>输入来源与数量核对</h2>
+  /** 相同提示可置前或放入追溯区，操作始终只定位当前模块。 */
+  function checkView(check: typeof info.checks[number], i: number) {
+    return <Alert key={i} showIcon type={check.level} message={check.label_zh} description={<>
+      <p style={{margin: 0}}>{check.detail_zh}</p>
+      {check.module_id && check.level === 'warning' && <Button style={{marginTop: 8, height: 'auto', whiteSpace: 'normal'}} onClick={() => inspect(check.module_id!)}>{check.module_id === 'A01' ? '前往A01补齐来源并核对数量' : '前往A02核对新版疾病结果'}</Button>}
+    </>}/>;
+  }
+  const details = <>
     {f && <Descriptions size="small" column={{xs: 1, sm: 2}} items={[
       {key: 'compounds', label: f.component_label_zh, children: f.component_count ?? '未记录'},
       {key: 'genes', label: '方剂标准化靶点基因', children: f.target_count ?? '尚未标准化'},
@@ -25,13 +31,15 @@ export default function InputAudit({studyId, moduleId, info}: {studyId: string; 
       {key: 'records', label: '疾病原始候选记录', children: d.candidate_count ?? '未记录'},
       {key: 'genes', label: '疾病标准化靶点基因', children: d.target_count ?? '尚未标准化'},
     ]}/><p className="small" style={{margin: 0}}>本运行已保存的范围：{d.scope_counts.map(row => `${row.label_zh} ${row.count}组／${row.records}条记录`).join('；')}。原始记录数不等于标准化后基因数。</p></>}
-    {info.checks.map((check, i) => <Alert key={i} showIcon type={check.level} message={check.label_zh} description={<>
-      <p style={{margin: 0}}>{check.detail_zh}</p>
-      {check.module_id && check.level === 'warning' && <Button style={{marginTop: 8, height: 'auto', whiteSpace: 'normal'}} onClick={() => inspect(check.module_id!)}>{check.module_id === 'A01' ? '前往A01补齐来源并核对数量' : '前往A02核对疾病范围'}</Button>}
-    </>}/>)}
+    {info.checks.filter(check => check.kind !== 'input_update').map(checkView)}
     <Collapse size="small" items={[{key: 'versions', label: '查看本运行绑定的输入版本', children: <Space direction="vertical">
       {f && <span className="small" style={{overflowWrap: 'anywhere'}}>A01：{f.run_id} <a href={hrefFor({page: 'study', studyId, moduleId: 'A01', runId: f.run_id})}>查看绑定版本</a></span>}
       {d && <span className="small" style={{overflowWrap: 'anywhere'}}>A02：{d.run_id} <a href={hrefFor({page: 'study', studyId, moduleId: 'A02', runId: d.run_id})}>查看绑定版本</a></span>}
     </Space>}]}/>
+  </>;
+  return <section className="card stack" id="module-input-audit" aria-label="输入来源与数量核对">
+    <h2 style={{margin: 0}}>{archived ? '输入已更新，旧交集待重算' : '输入来源与数量核对'}</h2>
+    {info.checks.filter(check => check.kind === 'input_update').map(checkView)}
+    {archived ? <Collapse items={[{key: 'old-input-audit', label: '查看旧A03绑定输入及数量（不代表新版）', children: <div className="stack">{details}</div>}]}/> : details}
   </section>;
 }

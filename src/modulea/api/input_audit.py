@@ -4,7 +4,7 @@ from disease import SCOPES
 from ..core.source_catalog import source_databases
 
 
-def context(workflow, manifest, module_id, run, result):
+def context(workflow, manifest, module_id, run, result, stale=False):
     """A03按实际父运行取证；历史解释不得偷偷连接当前另一版本。"""
     if module_id not in ("A01", "A02", "A03") or not run or not result:
         return None
@@ -12,6 +12,17 @@ def context(workflow, manifest, module_id, run, result):
     formula = result if module_id == "A01" else workflow.result(manifest, parents["A01"]) if module_id == "A03" and parents.get("A01") else None
     disease = result if module_id == "A02" else workflow.result(manifest, parents["A02"]) if module_id == "A03" and parents.get("A02") else None
     info = {"formula": None, "disease": None, "checks": []}
+    if module_id == "A03" and stale:
+        # 只有Workflow已判定当前A03失效时才比较当前输入；旧运行数据始终原样保留。
+        for parent in ("A01", "A02"):
+            current_id = manifest.get("current", {}).get(parent)
+            if current_id and parents.get(parent) and current_id != parents[parent]:
+                current = workflow.result(manifest, current_id)
+                total = (current or {}).get("summary", {}).get("标准化基因数")
+                current_note = f"当前{parent}已有{total}个标准化基因" if total is not None else f"当前{parent}已更新资料或范围，尚未重新生成标准化结果"
+                old_note = "旧图中的0不代表当前疾病没有基因。" if result.get("summary", {}).get("疾病靶点数") == 0 else "旧图数字仅对应原输入版本。"
+                info["checks"].append({"kind": "input_update", "level": "warning", "label_zh": "输入已更新，本页是已失效的旧交集",
+                    "detail_zh": current_note + f"。旧A03仍保留原父版本的数字；{old_note}请先完成新{parent}的整体复核，再按原流程生成新A03。", "module_id": parent})
     if formula:
         summary = formula.get("summary") or {}
         sources = source_databases("A01", manifest, formula)

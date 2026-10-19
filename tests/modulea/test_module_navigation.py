@@ -108,6 +108,16 @@ class ModuleNavigationTests(unittest.TestCase):
         result["state"]["handoff_blocked"] = False
         self.assertEqual(current(context(result)), "report")
 
+    def test_stale_intersection_points_to_updated_input_review(self):
+        """已修订上游时先指向新版复核，不能引导用户继续批准旧零交集。"""
+        value = view("A03")
+        value["state"]["code"] = "stale"
+        value["review"]["can_review"] = False
+        info = context(value)
+        self.assertEqual(current(info), "updated_inputs")
+        self.assertEqual(info["steps"][info["current_step"] - 1]["module_id"], "A02")
+        self.assertFalse(value["review"]["can_review"])
+
 
 if __name__ == "__main__":
     unittest.main()

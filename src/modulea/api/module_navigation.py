@@ -53,12 +53,14 @@ def context(view, result=None):
         else:
             current = "identity" if view["run"] else "sources"
     elif mid == "A03":
+        if view["state"]["code"] == "stale":
+            link("updated_inputs", "先复核新版输入", "A02", "A03上游已更新，请先核对当前A01/A02并完成新版本复核；旧交集不代表当前疾病集合。")
         add("sets", "核对两侧靶点与交集", "module-results", "核对方剂靶点T、疾病靶点D和交集数量及维恩图。")
         add("ranking", "查看成分关联排名", "module-details", "查看交集基因及成分关系明细；对接成分名单在独立选择页确认。")
         review()
         link("ppi", "查看A04网络分析", "A04", "A03通过后，A04与A05可并行推进，各自独立复核。")
         link("enrichment", "查看A05功能富集", "A05", "GO与KEGG使用同一已确认交集，不必等待A04完成。")
-        current = "ppi" if approved else "review" if view["review"]["can_review"] else "sets"
+        current = "updated_inputs" if view["state"]["code"] == "stale" else "ppi" if approved else "review" if view["review"]["can_review"] else "sets"
     elif mid == "A03_SELECT":
         target = "module-compound-selection" if view.get("compound_selection") else "module-details"
         add("selection", "核对成分身份与药味", target, "查看拟纳入名单、成分身份、药味来源和补充依据。")

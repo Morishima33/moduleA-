@@ -268,7 +268,7 @@ export interface DiseaseScopeInfo {
 export interface ModuleView {
   input_audit?: {formula: {run_id: string; sources: string[]; missing_sources: string[]; component_label_zh: string; component_count: number | null; target_count: number | null; relationship_count: number | null} | null;
     disease: {run_id: string; candidate_count: number | null; target_count: number | null; scope_counts: {value: string; label_zh: string; count: number; records: number}[]; empty_reason_zh: string} | null;
-    checks: {level: 'info' | 'warning'; label_zh: string; detail_zh: string; module_id?: string}[]} | null;
+    checks: {kind?: 'input_update'; level: 'info' | 'warning'; label_zh: string; detail_zh: string; module_id?: string}[]} | null;
   operation_guide?: {current_step: number; note_zh: string; steps: {key: string; label_zh: string; detail_zh: string; target: string; module_id?: string; href?: string}[]} | null;
   disease_workflow?: {current_step: number; note_zh: string; next_label_zh: string; next_target: string} | null;
   normalization?: NormalizationInfo | null;

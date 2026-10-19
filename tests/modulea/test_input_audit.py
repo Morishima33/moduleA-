@@ -72,3 +72,24 @@ class InputAuditTests(unittest.TestCase):
                 venn = present_a03(result, {}).special["venn"]
                 self.assertEqual(venn["layout"], expected)
                 self.assertEqual(venn["both"], I)
+
+    def test_stale_current_page_distinguishes_updated_input_from_old_counts(self):
+        """当前失效页提示新基因数，但旧绑定计数不能被覆盖成伪造的新交集。"""
+        self.manifest["current"]["A01"] = "old_formula"
+        newer = {"run_id": "new_disease", "summary": {"标准化基因数": 9}, "tables": {}}
+        records = {"old_formula": self.formula, "old_disease": self.disease, "new_disease": newer}
+        self.flow.result.side_effect = lambda manifest, rid: records[rid]
+        info = context(self.flow, self.manifest, "A03", self.run, self.result, stale=True)
+        self.assertEqual(info["checks"][0]["kind"], "input_update")
+        self.assertIn("当前A02已有9个标准化基因", info["checks"][0]["detail_zh"])
+        self.assertEqual(info["disease"]["target_count"], 0)
+        self.assertEqual(info["disease"]["run_id"], "old_disease")
+        newer["summary"] = {}
+        info = context(self.flow, self.manifest, "A03", self.run, self.result, stale=True)
+        self.assertIn("尚未重新生成标准化结果", info["checks"][0]["detail_zh"])
+
+    def test_historical_explanation_does_not_fetch_current_replacement(self):
+        """历史页只解释原绑定版本，不将当前新疾病集合混入旧记录。"""
+        info = context(self.flow, self.manifest, "A03", self.run, self.result)
+        self.assertFalse(any(row.get("kind") == "input_update" for row in info["checks"]))
+        self.assertEqual([call.args[1] for call in self.flow.result.call_args_list], ["old_formula", "old_disease"])

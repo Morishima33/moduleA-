@@ -91,6 +91,36 @@ class NormalizationBridgeTests(unittest.TestCase):
         self.assertEqual(after["reviews"], manifest["reviews"])
         self.assertNotIn("A03", after["current"])
 
+    def test_empty_approved_input_repair_invalidates_old_intersection_until_review(self):
+        """用合成数据完整复现误排除、修订、保持批准隔离及重新生成交集。"""
+        from intersection_flow import run_intersection
+        self.decide(True)
+        _, pre = execute(self.settings, self.flow, self.sid, self.payload())
+        _, made = execute(self.settings, self.flow, self.sid, self.payload("publish", stamp=pre["stamp"], reviewer="test", note="合成旧空集", confirmed=True, accept_omit=False, accept_source_exception=False))
+        for result in made.values():
+            self.flow.review(self.sid, result["run_id"], "approved", "test", "仅合成测试明确批准")
+        manifest = self.flow.load(self.sid)
+        expected = {key: manifest["current"].get(key, "") for key in ("A01", "A02", "A03")}
+        old_a03 = run_intersection(self.flow, self.sid, expected, "合成旧零交集")
+        self.assertEqual(old_a03["summary"]["交集靶点数"], 0)
+        old_a01 = manifest["current"]["A01"]
+        reviews = self.flow.load(self.sid)["reviews"]
+        self.decide()
+        _, pre = execute(self.settings, self.flow, self.sid, self.payload())
+        _, made = execute(self.settings, self.flow, self.sid, self.payload("publish", stamp=pre["stamp"], reviewer="test", note="合成修复范围", confirmed=True, accept_omit=True, accept_source_exception=False))
+        manifest = self.flow.load(self.sid)
+        self.assertEqual(made["A02"]["summary"]["标准化基因数"], 1)
+        self.assertEqual(manifest["current"]["A01"], old_a01)
+        self.assertEqual(manifest["reviews"], reviews)
+        self.assertFalse(self.flow.active(manifest, old_a03["run_id"]))
+        expected = {key: manifest["current"].get(key, "") for key in ("A01", "A02", "A03")}
+        with self.assertRaisesRegex(ContractError, "尚未复核通过"):
+            run_intersection(self.flow, self.sid, expected, "测试不得绕过新A02批准")
+        self.flow.review(self.sid, made["A02"]["run_id"], "approved", "test", "仅合成测试明确批准新版")
+        new_a03 = run_intersection(self.flow, self.sid, expected, "合成复核后的新交集")
+        self.assertEqual(new_a03["summary"]["交集靶点数"], 1)
+        self.assertNotIn("A04", self.flow.load(self.sid)["current"])
+
     def test_stale_input_and_other_study_preview_are_rejected(self):
         self.decide()
         payload = self.payload()

@@ -2,6 +2,9 @@
 
 ## 2026-10-19 A01—A03输入数量溯源
 
+当前A03的Workflow状态为stale时，input_audit.checks可首先提示实际父版本与当前已更新输入的区别（含当前标准化数，尚未标准化时明确说明）。旧A03的formula/disease数字及图表仍绑定旧父版本，不替换成当前输入冒充已重算。历史页面不追加当前版本比较提示。当前失效A03的旧图表和明细默认折叠，可展开追溯；新A02通过后才按原流程重新生成A03。
+上述当前输入更新提示的check增加可选`kind:"input_update"`，前端据此将新版本提示置前，把旧输入数量与旧空集原因归入默认折叠的追溯区；不依据中文文本猜测类型。
+
 ModuleView新增可空`input_audit:{formula,disease,checks}`，用于A01/A02/A03。formula为`{run_id,sources,missing_sources,component_label_zh,component_count,target_count,relationship_count}`，disease为`{run_id,candidate_count,target_count,scope_counts:[{value,label_zh,count,records}],empty_reason_zh}`；checks为`[{level:info|warning,label_zh,detail_zh,module_id?}]`。A03只读取该运行实际parent_runs绑定的A01/A02，不借用当前新结果解释历史；数量逐项取既有归档摘要、表和范围决定，不计算交集、补造基因或改变权限。现代研究的三库覆盖差异仅说明当前来源和待补来源，不自动混入别的项目资料、不撤销原批准。
 
 special.venn新增`layout:overlap|disjoint|empty_formula|empty_disease|empty_both`，仅按归档数量选择示意图布局；空疾病集合不再画成有实质重叠的两圆。A02增加“仅排除待核验条目”的本地草稿操作，只处理当前表单值为pending的行，不保存、不改变direct等已决定行。范围和身份修订仍须原有明确提交及独立整体复核。

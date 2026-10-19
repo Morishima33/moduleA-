@@ -372,7 +372,7 @@ class Views:
             for key in ("docking_trial", "docking_coverage", "docking_preparation", "docking_candidates", "docking_review", "trial_handoff"):
                 response[key] = None
         response["operation_guide"] = operation_navigation(response, result)
-        response["input_audit"] = input_audit_context(workflow, real, module_id, run, result)
+        response["input_audit"] = input_audit_context(workflow, real, module_id, run, result, stale=not historical and state["code"] == "stale")
         return response
 
     @staticmethod
