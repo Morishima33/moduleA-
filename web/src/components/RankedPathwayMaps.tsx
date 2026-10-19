@@ -19,7 +19,7 @@ export default function RankedPathwayMaps({studyId, info}: {studyId: string; inf
     } catch (e) {setError(errorText(e)); app.bumpRefresh();}
     finally {setBusy(false);}
   }
-  return <section id="a05-ranked-pathway-maps" aria-label="KEGG首位命中通路图">
+  return <section id="a05-ranked-pathway-maps" aria-label="KEGG首位命中通路图" style={{scrollMarginTop: 88}}>
     <h3>KEGG首位命中通路图</h3>
     <p className="small muted">{info.semantics_zh}</p>
     {error && <Alert type="error" showIcon message={error}/>}
