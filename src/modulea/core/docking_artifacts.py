@@ -28,6 +28,9 @@ def catalog(workflow, manifest, a06):
         "a06_run": a06,
         "result": deepcopy(manifest["runs"][a06]["result_file"]),
     }
+    # 运行中或失败且尚未提交结果时，没有可供出图的最终评分；进度由任务区展示。
+    if result is None:
+        return binding, []
     packet_record = run.get("inputs", {}).get("trial_packet")
     pairs = []
     if packet_record:
