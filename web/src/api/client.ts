@@ -81,6 +81,11 @@ function qs(params: Record<string, string | number | undefined | null>): string 
 
 // 各端点的薄封装；路径与契约第 3 节一致
 export const api = {
+  automaticPairs: (sid:string,batch:string,page=1,q='') => request<import('./types').AutomaticPage<import('./types').AutomaticPair>>('GET',`/studies/${sid}/automatic_docking/${batch}/pairs${qs({page,size:20,q})}`),
+  automaticEvidence: (sid:string,batch:string,key:string) => request<import('./types').AutomaticPair>('GET',`/studies/${sid}/automatic_docking/${batch}/pairs/${key}`),
+  automaticFiles: (sid:string,batch:string,page=1,q='') => request<import('./types').AutomaticPage<import('./types').AutomaticFile>>('GET',`/studies/${sid}/automatic_docking/${batch}/files${qs({page,size:20,q})}`),
+  automaticMatrix: (sid:string,batch:string,compound_ids?:string[],target_ids?:string[]) => request<import('./types').AutomaticMatrixResponse>('GET',`/studies/${sid}/automatic_docking/${batch}/matrix${qs({compound_ids:compound_ids?.join(','),target_ids:target_ids?.join(',')})}`),
+  automaticDisplay: (sid:string,body:{expected_a06:string;batch_id:string;compound_ids:string[];target_ids:string[]}) => request<{task:Task;message_zh:string}>('POST',`/studies/${sid}/modules/A06/actions/automatic_display`,body),
   /** 只连接资料，不准备或评分。 */
   automaticConnect: (sid: string, expected_binding: string) => request<{task: Task; message_zh: string}>('POST', `/studies/${sid}/modules/A06_PREP/actions/automatic_connect`, {expected_binding}),
   /** 用户主动一次授权，后台连续执行固定策略。 */

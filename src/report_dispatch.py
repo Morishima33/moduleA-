@@ -11,6 +11,9 @@ def selected_record(workflow, manifest): # 未准备或未批准时不纳入可�
 def run_reports(workflow, study_id, expected_a07, reason, **kwargs): # 网页和自动衔接共用可选通路分派。
     manifest = workflow.load(study_id) # 读取本次科学与审批版本。
     a06 = manifest.get('current', {}).get('A06')
+    if a06 and workflow.run(manifest, a06).get('config', {}).get('schema_version') in ('A06.automatic.1', 'A06.automatic.2', 'A06.automatic.3'):
+        from science_modules.a07.automatic_reports import run_reports as generate
+        return generate(workflow, study_id, expected_a07, reason, **kwargs)
     if a06 and workflow.run(manifest, a06).get('config', {}).get('schema_version') == 'A06.trial.handoff.1':
         from science_modules.a07.appendix_reports import run_reports as generate
         return generate(workflow, study_id, expected_a07, reason, **kwargs)
@@ -41,9 +44,13 @@ def validator(root): # 新旧报告均按自身保存契约校验。
     from science_modules.a07.commented_reports import validator as commented_validator
     from science_modules.a07.refined_reports import validator as refined_validator
     from science_modules.a07.appendix_reports import validator as appendix_validator
-    return appendix_validator(root, refined_validator(root, commented_validator(root, trial_validator(root, validate(root))))) # 新模板继续保留各版历史校验。
+    from science_modules.a07.automatic_reports import validator as automatic_validator
+    return automatic_validator(root, appendix_validator(root, refined_validator(root, commented_validator(root, trial_validator(root, validate(root)))))) # 新模板继续保留各版历史校验。
 
 def require_alignment(workflow, manifest, run): # 完整报告批准前核对可选通路最新决定。
+    if run.get('config', {}).get('schema_version') == 'A07.report.config.25':
+        from science_modules.a07.automatic_reports import require_alignment as automatic_alignment
+        automatic_alignment(workflow, manifest, run)
     if run.get('config',{}).get('schema_version') in ('A07.report.config.22', 'A07.report.config.23', 'A07.report.config.24'):
         from science_modules.a07.trial_reports import current_export
         require(run['inputs']['a06_trial_export']==current_export(workflow,manifest,'export_validation.json'), '本批原评分图表已更新，请重新生成报告后复核')

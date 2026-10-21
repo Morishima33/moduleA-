@@ -32,8 +32,42 @@ def catalog(workflow, manifest, a06):
     if result is None:
         return binding, []
     packet_record = run.get("inputs", {}).get("trial_packet")
+    automatic_record = next(iter(result.get("tables", {}).get("automatic_packet", [])), None)
     pairs = []
-    if packet_record:
+    if automatic_record:
+        # 自动批次只信同研究同运行的归档包；不引用旧试算、其他研究或客户端姿势。
+        packet = read_json(verified_file(root, automatic_record))
+        require(packet.get("study_id") == manifest["study_id"] and packet.get("run_id") == a06,
+                "自动出图来源研究或运行不一致")
+        binding["automatic_packet"] = deepcopy(automatic_record)
+        names = compound_names(workflow, manifest, run.get("parent_runs", {}).get("A03"), packet)
+        compounds = {c["compound_id"]: c for c in packet["compounds"]}
+        receptors = {r["target_id"]: r for r in packet["receptors"]}
+        for pair in packet["pairs"]:
+            compound, receptor = compounds[pair["compound_id"]], receptors[pair["target_id"]]
+            region = pair.get("execution")
+            if pair["state"] != "completed":
+                region = None
+            if region:
+                require(region.get("state") == "completed" and region.get("score") == pair["score"],
+                        "自动组合与采用区域原始评分不一致")
+                require(region.get("region_id") == pair.get("region_id", region.get("region_id")),
+                        "自动组合采用区域不一致")
+            label = names.get(pair["compound_id"], {})
+            # 附件清单只带本组合所需字段；全量候选/补救历史按绑定packet回溯，不复制80次。
+            compact_compound = {k: deepcopy(compound[k]) for k in ("compound_id", "name", "name_zh", "files") if k in compound}
+            compact_receptor = {k: deepcopy(receptor[k]) for k in ("target_id", "symbol", "quality", "mode", "receptor", "structure_id", "spec") if k in receptor}
+            if "receptor" not in compact_receptor and receptor.get("evidence", {}).get("receptor"):
+                compact_receptor["receptor"] = deepcopy(receptor["evidence"]["receptor"])
+            pairs.append({"compound_id": pair["compound_id"], "target_id": pair["target_id"],
+                          "compound_name_zh": label.get("name_zh") or compound.get("name_zh") or compound.get("name") or pair["compound_id"],
+                          "compound_name_en": label.get("name_en") or compound.get("name") or "",
+                          "target_zh": receptor["symbol"], "score": pair["score"] if region else None,
+                          "region": deepcopy(region), "compound": compact_compound,
+                          "receptor": compact_receptor, "mode": pair.get("mode", receptor.get("mode", "")),
+                          "scope_zh": f"自动对接；{pair.get('quality', receptor.get('quality', ''))}；评分不代表严格验证或药效",
+                          "automatic": True, "state": pair["state"], "reason_zh": pair.get("reason_zh", "")})
+    elif packet_record:
         packet = read_json(verified_file(root, packet_record))
         binding["trial_packet"] = deepcopy(packet_record)
         names = compound_names(workflow, manifest, run.get("parent_runs", {}).get("A03"), packet)

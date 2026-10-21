@@ -143,7 +143,10 @@ class ReadResultMixin:
         require(result["artifact_id"] == run["artifact_id"]
                 and result["run_id"] == run_id
                 and result["study_id"] == manifest["study_id"], "产物身份不一致")
-        reader.verify_all(root, result["files"])
+        # 自动批次可有上万个证据文件。列表只验证结果索引；所选附件在下载时逐件核验。
+        # 该优化仅用于只读实例；写入、科研复核及后台完整校验器仍核验全部输入。
+        if result.get("summary", {}).get("science_version") not in ("A06.automatic.1", "A06.automatic.2", "A06.automatic.3"):
+            reader.verify_all(root, result["files"])
         if cache is not None:
             cache["results"][run_id] = result
         return result

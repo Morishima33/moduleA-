@@ -24,6 +24,14 @@ def _source_files(study, pair, destination):
     if pair.get("region"):
         region = pair["region"]
         require(region["score"] == pair["score"], "选定区域评分与矩阵不一致")
+        if pair.get("automatic"):
+            # 自动协议的实际区域已有同格式配置；再次核对采用文件归属，不从图表重建姿势。
+            require(region.get("state") == "completed", "自动出图必须采用通过的区域")
+            require(region["config"]["compound"] in pair["compound"].get("files", []),
+                    "自动出图配体不属于本组合准备文件")
+            receptor = pair["receptor"]
+            actual_receptor = receptor.get("receptor") or receptor.get("evidence", {}).get("receptor")
+            require(actual_receptor == region["config"]["receptor"], "自动出图受体与采用构型不一致")
         records = {
             "receptor.pdbqt": region["config"]["receptor"],
             "ligand.pdbqt": region["config"]["compound"],

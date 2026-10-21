@@ -30,12 +30,20 @@ def context(view, result=None):
     prep = view.get("trial_preparation")
     automatic = view.get("automatic_docking")
     if automatic and mid in ("A06_PREP", "A06"):
-        add("connect", "连接本研究资料", "module-automatic-docking", "按已复核名单连接官方原件，集中列出异常；连接不会开始评分。")
-        add("authorize", "一次确认并开始计算", "module-automatic-docking", "核对成分、受体及策略后一次授权；后台连续准备、质控、评分和出图。")
-        add("scores", "查看结果与溯源", "module-automatic-docking", "查看每一分数对应的构型、位点、参数、原始姿势及失败原因。")
-        link("result", "独立复核A06结果", "A06", "执行授权不等于结果批准；计算完成后独立复核。")
         latest = automatic.get("latest")
-        current = "scores" if latest else "authorize" if automatic.get("connection") else "connect"
+        if mid == "A06_PREP":
+            add("connect", "连接本研究资料", "module-automatic-docking", "连接官方原件，不计算评分。")
+            add("authorize", "核定范围并一次确认", "module-automatic-docking", "明确共晶参考或保留探索，执行后结果独立复核。")
+            link("result", "查看运行与结果", "A06", "后台进度、评分和异常统一在A06查看。")
+            current = "result" if latest else "authorize" if automatic.get("connection") else "connect"
+        else:
+            add("scores", "查看热图与完整矩阵", "module-automatic-results", "图表、矩阵与下载使用同批原值。")
+            add("evidence", "核对异常与计算依据", "module-automatic-results", "证据按需打开，无逐条阅读门槛。")
+            if view.get("docking_artifacts"):
+                add("figures", "按需出图或上传图片", "module-docking-artifacts", "选择成分和受体后才生成指定组合。")
+            review()
+            link("report", "查看报告进度", "A07", "A06独立通过后按依赖生成双报告，仍须A07复核。")
+            current = "report" if approved else "review" if latest and latest.get("state") == "completed" else "scores"
     elif prep:
         add("source", "核对本批准备来源", "trial-preparation-summary", "沿用已保存的同批核查，查看原核查人与关联版本，无需重复批准。")
         if prep["active"]:

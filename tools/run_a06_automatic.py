@@ -27,7 +27,12 @@ def main():
     payload = json.loads(args.request_file.read_text("utf-8"))
     progress = lambda value: print("PROGRESS " + value, flush=True)
     if args.mode == "connect":
-        from science_modules.a06.automatic_coverage_sources import connect
+        if payload.get("policy_version") in (None, "A06.automatic.2"):
+            from modulea.core.automatic_coverage import AutomaticCoverageWorkflow
+            from science_modules.a06.automatic_coverage_sources import connect
+            workflow = AutomaticCoverageWorkflow(args.data_root, workflow.validators)
+        else:
+            from science_modules.a06.reference_sources import connect
         record = connect(workflow, args.study, payload, progress)
         result = {"id": record["id"], "message_zh": "资料连接已完成，请核对范围后一次确认开始；尚未计算对接。"}
     else:
@@ -36,8 +41,13 @@ def main():
             from science_modules.a06.automatic_engine import run
             workflow = AutomaticDockingWorkflow(args.data_root, workflow.validators)
             data = run(workflow, args.study, payload, args.tools_root, CODE, runtime, progress)
-        else:
+        elif payload.get("policy_version") == "A06.automatic.2":
+            from modulea.core.automatic_coverage import AutomaticCoverageWorkflow
             from science_modules.a06.automatic_coverage_engine import run
+            workflow = AutomaticCoverageWorkflow(args.data_root, workflow.validators)
+            data = run(workflow, args.study, payload, args.tools_root, CODE, runtime, progress, args.repair_packages)
+        else:
+            from science_modules.a06.reference_engine import run
             data = run(workflow, args.study, payload, args.tools_root, CODE, runtime, progress, args.repair_packages)
         result = {"run_id": data["run_id"], "message_zh": "自动对接及图表已归档，异常原因保留；请独立复核A06结果。"}
     args.result_file.write_text(json.dumps(result, ensure_ascii=False), encoding="utf-8")

@@ -108,7 +108,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
         {m.module_id === 'A06' ? <Button type="primary" onClick={() => document.getElementById('module-review-panel')?.scrollIntoView({behavior:'smooth',block:'start'})}>定位正式复核按钮</Button> :
           <Button type="primary" href={view.trial_handoff.review_url}>前往A06结果复核</Button>}
       </div>}
-      {view.automatic_docking && <AutomaticDocking key={view.automatic_docking.expected_binding} studyId={studyId} info={view.automatic_docking}/>}
+      {view.automatic_docking && <AutomaticDocking key={view.automatic_docking.expected_binding} studyId={studyId} info={view.automatic_docking} moduleId={m.module_id} readOnly={view.historical}/>}
       {!view.automatic_docking && view.docking_trial && <DockingTrial studyId={studyId} info={view.docking_trial}/>}
       {view.docking_artifacts && <div id="module-docking-artifacts"><DockingArtifacts studyId={studyId} info={view.docking_artifacts}/></div>}
       {!view.automatic_docking && (view.docking_coverage || view.docking_preparation) && <div id="module-preparation" className="stack">

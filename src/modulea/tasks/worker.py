@@ -29,14 +29,13 @@ def run_continue(settings: Settings, task: dict, manager: TaskManager) -> str:
     # 新双分支的对接来源未确认时停下，不启动旧候选准备和计算。
     manifest = workflow.load(task["study_id"])
     a06 = manifest.get("current", {}).get("A06")
-    if a06 and workflow.run(manifest, a06).get("config", {}).get("schema_version") in ("A06.automatic.1", "A06.automatic.2"):
-        return "自动对接结果已独立归档；请在A06复核。新协议尚未接入冻结双报告模板，未生成不完整报告。"
-    if a06 and workflow.run(manifest, a06).get("config", {}).get("schema_version") == "A06.trial.handoff.1":
+    automatic = bool(a06 and workflow.run(manifest, a06).get("config", {}).get("schema_version") in ("A06.automatic.1", "A06.automatic.2", "A06.automatic.3"))
+    if a06 and (automatic or workflow.run(manifest, a06).get("config", {}).get("schema_version") == "A06.trial.handoff.1"):
         with workflow.handoff_read_cache():
             approved = workflow.approved(manifest, a06)
         if not approved:
             manager.update(task["task_id"], progress={"step_zh": "等待A06独立复核", "done": 1, "total": 1})
-            return "本批扩展A06尚待正式复核，未生成报告或启动计算。"
+            return "本批自动对接尚待A06独立复核，未生成报告或启动计算。" if automatic else "本批扩展A06尚待正式复核，未生成报告或启动计算。"
         # 接续只补缺失或失效的报告，不替换正在复核或已经发布的同源版本。
         with workflow.handoff_read_cache():
             a05 = manifest["current"].get("A05")
@@ -55,9 +54,9 @@ def run_continue(settings: Settings, task: dict, manager: TaskManager) -> str:
                     manager.update(task["task_id"], progress={"step_zh": "等待A05首位命中图", "done": 1, "total": 1})
                     return "双报告尚需当前A05首位命中图；请在A05生成图件后继续，未启动对接或生成部分报告。"
         from report_dispatch import run_reports
-        result = run_reports(workflow, task["study_id"], manifest["current"].get("A07", ""), "用户通过扩展A06后接续双报告")
+        result = run_reports(workflow, task["study_id"], manifest["current"].get("A07", ""), "用户通过自动A06后接续双报告" if automatic else "用户通过扩展A06后接续双报告")
         manager.update(task["task_id"], progress={"step_zh": "双报告已生成，等待A07独立复核", "done": 1, "total": 1})
-        return "本批扩展评分已接入新双报告：" + result["run_id"] + "；未重算Vina，未自动批准A07。"
+        return ("本批自动评分已接入新双报告：" if automatic else "本批扩展评分已接入新双报告：") + result["run_id"] + "；未重算Vina，未自动批准A07。"
     prep=manifest.get("current",{}).get("A06_PREP")
     if prep and workflow.run(manifest,prep).get("config",{}).get("version") in (
             "A06.coverage.execution.4","A06.coverage.confirmed.4"):
@@ -295,6 +294,8 @@ HANDLERS = {"a02_scope_review": run_a02_scope_review, "a02_sources_retry": run_a
 
 from .drawing import run_figure, run_packages, run_bundle
 from .automatic_docking import execute as run_automatic
+from .automatic_display import run as run_automatic_display
+HANDLERS["a06_display"] = run_automatic_display
 HANDLERS.update({"a06_auto_connect": run_automatic, "a06_auto_run": run_automatic})
 from .ranked_pathway_maps import run_ranked_maps
 HANDLERS["a05_pathway_maps"] = run_ranked_maps

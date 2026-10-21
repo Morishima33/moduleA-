@@ -202,7 +202,7 @@ class Views:
                     if module_id=="A05" and code=="waiting" and states[module_id]["label_zh"]!="等待资料":
                         text=f"{module_id} {title}："+states[module_id]["label_zh"]+"，请查看页面标题下方确认区"
                     return {"module_id": module_id, "code": code, "text_zh": text}
-        if all(s["code"] in ("approved", "published", "scope_confirmed") for s in states.values()):
+        if all(s["code"] in ("approved", "published", "scope_confirmed", "prepared") for s in states.values()):
             return {"module_id": None, "code": "done", "text_zh": "本批流程已完成；准备范围按扩展试算核查。" if any(s["code"] == "scope_confirmed" for s in states.values()) else "全部模块已通过，本研究流程完成"}
         return None
 
@@ -270,6 +270,9 @@ class Views:
 
         # 查看历史版本：只读，不提供复核
         historical = bool(run_id and (run_id != manifest["current"].get(module_id) or (module_id == "A06_PREP" and view.get("trial_preparation"))))
+        if run_id and module_id == "A06" and (raw.get("run") or {}).get("config", {}).get("schema_version") in ("A06.automatic.1", "A06.automatic.2", "A06.automatic.3"):
+            # 显式查看归档版本始终只读，即使该版本仍是当前批次。
+            historical = True
         preparation_page = module_id == "A06_PREP" and not historical and bool(view.get("trial_preparation"))
         if historical:
             if run_id not in manifest["runs"] or workflow.run(manifest, run_id)["module_id"] != module_id:
@@ -288,12 +291,13 @@ class Views:
         results = {m["module_id"]: m["result"] for m in view["modules"] if m.get("result")}
         ctx = {"workflow_profile": manifest.get("workflow_profile"), "state_code": state["code"], "results": results, "study_id": study_id, "normalization_preview_ready": preview_ready}
         parts = present(module_id, result, ctx) if result and not preparation_page else {"kpis": [], "flow": [], "flow_note_zh": "", "focus": [], "params": [], "table": None, "special": {}}
-        if module_id == "A06" and result and result.get("summary", {}).get("science_version") in ("A06.automatic.1", "A06.automatic.2"):
+        if module_id == "A06" and result and result.get("summary", {}).get("science_version") in ("A06.automatic.1", "A06.automatic.2", "A06.automatic.3"):
             from ..presenters.automatic_docking import present as present_automatic
             parts = present_automatic(result)
 
         history = self.runs(study_id, module_id, workflow=workflow, manifest=manifest)
-        files = self._files(run, result)
+        auto_result = bool(result and result.get("summary", {}).get("science_version") in ("A06.automatic.1", "A06.automatic.2", "A06.automatic.3"))
+        files = [] if auto_result else self._files(run, result)
         self._link_report_files(parts, files, result)
         dual = parts.get("special", {}).get("ppi_dual")
         network = ((result or {}).get("tables") or {}).get("degree_network")
@@ -341,7 +345,7 @@ class Views:
             "docking_artifacts": workflow.docking_artifact_context(real, run["run_id"], historical,
                                      bool(self.tasks.active_for(study_id))) if module_id == "A06" and run else None,
             "module": {"module_id": module_id, "title_zh": spec.title_zh, "group_zh": spec.group_zh, "purpose_zh": source_intro(module_id, real, result) + ("STRING人类功能关联网络；两分支独立两轮；Degree图展示第二轮候选，Degree表展示第一轮前十，BC＋CC表展示第二轮前十五。" if module_id == "A04" and result and result.get("summary", {}).get("selection_version") == "A04.dual.3" else ("STRING人类功能关联网络；Degree与BC＋CC两分支独立进行两轮筛选，Degree图表显示第一轮前十，BC＋CC表显示第二轮前十五。" if module_id == "A04" and result and result.get("summary", {}).get("selection_version") == "A04.dual.2" else ("STRING人类功能关联网络；双分支独立两轮，显示第二轮排名。" if module_id == "A04" and result and result.get("summary", {}).get("selection_version") == "A04.dual.1" else spec.purpose_zh))),
-                       "sub": spec.sub, "depends_on": list(run["parent_runs"]) if module_id == "A06" and run and run.get("config", {}).get("schema_version") in ("A06.trial.handoff.1", "A06.automatic.1", "A06.automatic.2") else list(spec.depends_on)},
+                       "sub": spec.sub, "depends_on": list(run["parent_runs"]) if module_id == "A06" and run and run.get("config", {}).get("schema_version") in ("A06.trial.handoff.1", "A06.automatic.1", "A06.automatic.2", "A06.automatic.3") else list(spec.depends_on)},
             "state": state if not historical else {**state, "code": "history", "label_zh": "历史版本（只读）", "can_review": False},
             "purpose": self._purpose(view),
             "run": self._run_info(workflow, manifest, run, result, history) if run else None,
@@ -384,7 +388,7 @@ class Views:
                 response[key] = None
         response["automatic_docking"] = None
         if module_id in ("A06_PREP", "A06") and not historical and not preparation and not handoff:
-            from ..core.automatic_coverage import automatic_context
+            from ..core.automatic_experience import automatic_context
             with workflow.handoff_read_cache():
                 response["automatic_docking"] = automatic_context(workflow, real, False, bool(self.tasks.active_for(study_id)))
             if not self.kernel.settings.science_tools_root:
@@ -395,10 +399,16 @@ class Views:
                 response["module"].update(title_zh="对接准备与自动计算", purpose_zh="连接本研究资料，一次确认后自动准备、质控、对接与出图；结果另行复核。")
                 response["review"].update(can_review=False, allowed_decisions=[])
                 response["review"]["continue"]["available"] = False
-            if run and run.get("config", {}).get("schema_version") in ("A06.automatic.1", "A06.automatic.2"):
-                response["review"]["continue"].update(available=False, note_zh="自动对接结果可独立复核；新协议尚未接入冻结报告模板。")
-                for key in ("docking_trial", "docking_artifacts", "docking_review", "docking_preparation", "docking_coverage", "docking_candidates"):
+                if response['automatic_docking'].get('latest'):
+                    for key in ('docking_trial', 'docking_review', 'docking_preparation', 'docking_coverage', 'docking_candidates'):
+                        response[key] = None
+            if run and run.get("config", {}).get("schema_version") in ("A06.automatic.1", "A06.automatic.2", "A06.automatic.3"):
+                response["review"]["continue"].update(note_zh="独立复核通过后接续双报告；仍需A05复核及同批排名通路图，报告停在A07复核。")
+                for key in ("docking_trial", "docking_review", "docking_preparation", "docking_coverage", "docking_candidates"):
                     response[key] = None
+        if historical and auto_result:
+            from ..core.automatic_experience import historical_context
+            response['automatic_docking'] = historical_context(workflow, real, run)
         response["operation_guide"] = operation_navigation(response, result)
         response["input_audit"] = input_audit_context(workflow, real, module_id, run, result, stale=not historical and state["code"] == "stale")
         return response

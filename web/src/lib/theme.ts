@@ -49,6 +49,8 @@ const P: Record<string, StateStyle> = {
 };
 P.hold = P.review; // “暂存待定”与“待你复核”同色
 P.scope_confirmed = P.approved; // 仅复用完成配色，标签与正式批准分别显示。
+P.prepared = P.ready; // 技术归档不使用科研批准语义。
+P.execution_confirmed = P.running;
 
 /** 取某个状态的样式；未知状态按“未开始”显示 */
 export function stateStyle(code: StateCode | string | null | undefined): StateStyle {

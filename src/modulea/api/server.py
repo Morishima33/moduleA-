@@ -50,6 +50,12 @@ class App:
         self.creation = StudyCreation(self.kernel)
         self.token = secrets.token_urlsafe(32)
         self.routes = [
+            ("GET", rf"/api/v1/studies/{ID}/automatic_docking/{ID}/pairs", self.get_automatic_pairs),
+            ("GET", rf"/api/v1/studies/{ID}/automatic_docking/{ID}/pairs/{ID}", self.get_automatic_evidence),
+            ("GET", rf"/api/v1/studies/{ID}/automatic_docking/{ID}/files", self.get_automatic_files),
+            ("GET", rf"/api/v1/studies/{ID}/automatic_docking/{ID}/matrix", self.get_automatic_matrix),
+            ("GET", rf"/api/v1/studies/{ID}/automatic_displays/{ID}/files/([0-9]+)", self.get_automatic_display_file),
+            ("POST", rf"/api/v1/studies/{ID}/modules/A06/actions/automatic_display", self.post_automatic_display),
             ("POST", rf"/api/v1/studies/{ID}/modules/A06_PREP/actions/automatic_connect", self.post_automatic_connect),
             ("POST", rf"/api/v1/studies/{ID}/modules/A06_PREP/actions/automatic_run", self.post_automatic_run),
             ("GET", rf"/api/v1/studies/{ID}/automatic_docking/{ID}/files/([0-9]+)", self.get_automatic_file),
@@ -103,6 +109,30 @@ class App:
         self.compiled = [(method, re.compile("^" + pattern + "$"), handler) for method, pattern, handler in self.routes]
 
     # ------------------------------------------------------------------ 读取
+    def get_automatic_pairs(self, req, sid, batch):
+        from .automatic_view import pairs
+        return pairs(self, req, sid, batch)
+
+    def get_automatic_evidence(self, req, sid, batch, key):
+        from .automatic_view import evidence
+        return evidence(self, req, sid, batch, key)
+
+    def get_automatic_files(self, req, sid, batch):
+        from .automatic_view import files
+        return files(self, req, sid, batch)
+
+    def get_automatic_matrix(self, req, sid, batch):
+        from .automatic_view import matrix
+        return matrix(self, req, sid, batch)
+
+    def post_automatic_display(self, req, sid):
+        from .automatic_view import display
+        return display(self, req, sid)
+
+    def get_automatic_display_file(self, req, sid, identity, index):
+        from .automatic_view import display_file
+        return display_file(self, req, sid, identity, index)
+
     def _automatic_ready(self, study_id):
         """只读校验工具、当前上游及并发状态；不自动签署授权。"""
         if self.tasks.active_for(study_id):
@@ -121,7 +151,7 @@ class App:
             workflow.automatic_binding(study_id, body["expected_binding"])
         except ContractError as error:
             raise from_contract(str(error))
-        payload = dict(body, connection_id="connection_" + uuid.uuid4().hex)
+        payload = dict(body, connection_id="connection_" + uuid.uuid4().hex, policy_version="A06.automatic.3")
         task, created = self.tasks.submit(study_id, "a06_auto_connect", "网页连接对接资料（不评分）", payload)
         if not created:
             raise ApiError(409, "GATE_BLOCKED", "当前研究已有后台任务")
@@ -135,6 +165,9 @@ class App:
             # 明确声明旧协议的请求仍按旧协议验证，绝不升级其授权。
             from ..core.automatic_docking import AutomaticDockingWorkflow
             workflow = AutomaticDockingWorkflow(self.settings.data_root, workflow.validators)
+        elif isinstance(payload, dict) and payload.get("policy_version") == "A06.automatic.2":
+            from ..core.automatic_coverage import AutomaticCoverageWorkflow
+            workflow = AutomaticCoverageWorkflow(self.settings.data_root, workflow.validators)
         try:
             workflow.validate_automatic_request(study_id, payload)
         except ContractError as error:

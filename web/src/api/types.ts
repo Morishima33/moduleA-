@@ -27,7 +27,7 @@ export interface ProjectStorage {
 /** 状态码：与契约第 2 节一致 */
 export type StateCode =
   | 'idle' | 'ready' | 'running' | 'incomplete' | 'failed' | 'waiting' | 'empty'
-  | 'review' | 'hold' | 'returned' | 'approved' | 'stale' | 'published' | 'unavailable' | 'history' | 'scope_confirmed';
+  | 'review' | 'hold' | 'returned' | 'approved' | 'stale' | 'published' | 'unavailable' | 'history' | 'scope_confirmed' | 'prepared' | 'execution_confirmed';
 
 /** 复核决定的三种取值 */
 export type Decision = 'approved' | 'rejected' | 'pending';
@@ -267,15 +267,24 @@ export interface DiseaseScopeInfo {
 }
 // 一次授权独立版本，原件下载只采用服务器给出的索引链接。
 export interface AutomaticFile {name: string; path?: string; role: string; url: string}
-export interface AutomaticPair {compound_id: string; target_id: string; compound_name: string; symbol: string; state: string; quality: string; score: number | null; reason_zh: string; trace: Record<string, unknown>; evidence_files?: AutomaticFile[]}
-export interface AutomaticRequest {expected_binding: string; expected_connection_id: string; expected_a06: string | null; request_id: string; policy_version: string; reviewer: string; note: string; confirmed: boolean}
+export interface AutomaticPair {pair_key?:string; status_zh?:string; compound_id: string; target_id: string; compound_name: string; symbol: string; state: string; quality: string; score: number | null; reason_zh: string; trace?: Record<string, unknown>; evidence_files?: AutomaticFile[]}
+export interface ReferenceChoice {target_id:string; candidate_key:string; reference_key:string}
+export interface ReferenceCandidate extends ReferenceChoice {pdb_id:string; component_id:string; name:string; selectable:boolean; reason_zh:string; source_url:string}
+export interface AutomaticRequest {expected_binding: string; expected_connection_id: string; expected_a06: string | null; request_id: string; policy_version: string; reviewer: string; note: string; confirmed: boolean; reference_choices?:ReferenceChoice[]}
+export interface AutomaticMatrixView {
+  score_range:[number|null,number|null]; annotation?:{legend_zh?:string};
+  heatmap:{rows:{compound_id:string;name_zh:string;name_en:string}[];columns:{target_id:string;symbol:string;candidate_grade:string}[]};
+  table:{rows:{compound_id:string;name_zh:string;name_en:string}[];columns:{target_id:string;symbol:string;candidate_grade:string}[];cells:{score:number|null;display_score:string;threshold_mark:string;reason_zh:string;color:string;text_color:string}[][]};
+}
+export interface AutomaticMatrixResponse {view:AutomaticMatrixView; svg:string; downloads:{name:string;url:string;role:string}[]; display_id:string|null; expected_a06:string; enabled:boolean}
+export interface AutomaticPage<T> {items:T[];total:number;page:number;size:number}
 export interface AutomaticDockingInfo {
   migration_note_zh?: string;
   enabled: boolean; disabled_reason_zh: string; expected_binding: string; expected_connection_id: string | null; expected_a06: string | null;
   counts: {compounds: number; receptors: number; pairs: number}; policy: {version: string; summary_zh: string; details_zh: string[]};
   connection: {id: string; summary: {connected_compounds: number; connected_receptors: number; exceptions: number};
-    objects: {id: string; name: string; state: string; cid?: number; reason_zh: string; structures: {pdb_id?: string; model_id?: string; source_type?: string; chains: string[]; pocket: string; altloc?: string | null}[]}[]; files: AutomaticFile[]} | null;
-  latest: {id: string; state: string; run_id: string | null; summary: Record<string, unknown> | null; error_zh?: string; pairs: AutomaticPair[]; files: AutomaticFile[]} | null;
+    objects: {id: string; name: string; state: string; cid?: number; reason_zh: string; structures: {pdb_id?: string; model_id?: string; source_type?: string; chains: string[]; pocket: string; altloc?: string | null}[]}[]; files: AutomaticFile[]; reference_candidates?:ReferenceCandidate[]} | null;
+  latest: {id: string; state: string; run_id: string | null; summary: Record<string, unknown> | null; error_zh?: string; pairs: AutomaticPair[]; files: AutomaticFile[];file_count?:number;display_id?:string|null} | null;
 }
 export interface ModuleView {
   automatic_docking?: AutomaticDockingInfo | null;

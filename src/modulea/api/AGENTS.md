@@ -409,3 +409,8 @@ POST .../modules/A06_PREP/actions/coverage_selection：{expected_run,expected_so
 ## 本批准备关联（2026-10-14）
 ModuleView新增可选trial_preparation，仅当前A06_PREP页提供：{link_id,created_at,active,read_only,reason_zh,a06_run_id,trial_id,result_url,source_url,reviewer,reviewed_at,note,a06_reviewer,a06_reviewed_at,receptors,compounds,history_rows,legacy_run_id}。数据来自Workflow核验的独立A06.trial.preparation_link.1关联及同批归档；不更换current或新增科研reviews。历史页面不提供当前关联。GET files/{prep_link_id}.{index}仅下载研究索引内关联的files，逐字节验证；包括原件、准备文件及原核查记录，无任意路径。
 新增状态scope_confirmed，中文“准备范围已核查（扩展试算）”；不等于approved，不开放复核或自动继续。原准备状态留在历史区。导航、标题与待办均使用Workflow视图；关联失效为stale，不自动沿用。progress新增completed（正式批准及本批准备已核查的关口数）与scope_confirmed，approved保持原含义；仅有关联的研究显示完成关口及数量明细。
+## 2026-10-21 自动结果完整功能接续
+
+自动协议页面只返回连接/执行摘要，不展开全部证据；分页 GET `/studies/{sid}/automatic_docking/{batch}/pairs`、`files` 和 `pairs/{pair_key}` 分别读取评分清单、文件索引和单组合完整依据。索引与结果身份仍核验，实际文件下载逐个核验SHA256，写入/复核仍完整核验。历史可只读访问同研究批次；不能借用其他研究批次。
+GET 同批 `/matrix` 返回标准库生成的中英重点图SVG与完整矩阵；查询参数 compound_ids/target_ids 只改变显示选择。POST `/modules/A06/actions/automatic_display` 接收 expected_a06、batch_id、compound_ids、target_ids，经后台归档 PNG/SVG/Excel/CSV 展示修订，不改评分/批准。GET `/automatic_displays/{display_id}/files/{index}` 仅下载本研究展示索引登记且指纹一致的文件。
+新增技术状态 prepared（准备已归档）、execution_confirmed（执行范围已确认），只取本批连接及执行归档；不表示A06_PREP科研批准、不开放该页复核。A06页只查看结果/出图/复核；A06_PREP页连接并一次确认，旧运行表单默认收起。报告适配新增独立版本，冻结第24版保持。

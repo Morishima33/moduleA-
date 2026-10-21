@@ -15,6 +15,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 LABELS = {
+    "prepared": "准备已归档",
+    "execution_confirmed": "执行范围已确认",
     "idle": "未开始",
     "ready": "可以开始",
     "running": "运行中",
@@ -50,6 +52,8 @@ class ModuleState:
 def map_state(module_id: str, raw: dict, task_active: bool = False) -> ModuleState:
     """raw 是 Workflow.view() 返回的单个模块条目。"""
     state = raw["state"]
+    if state in ("prepared", "execution_confirmed"):
+        return ModuleState(state, LABELS[state], "同批技术准备记录；不代表全部严格质控通过或科研批准", state, False, False, False)
     if state == "scope_confirmed":
         return ModuleState(state, LABELS[state], None, state, False, False, False)
     result = raw.get("result") or {}
