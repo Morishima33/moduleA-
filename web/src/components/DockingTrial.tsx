@@ -3,6 +3,7 @@ import {Alert, Button, Checkbox, Collapse, Input, Modal, Progress, Table, Tag, m
 import {useEffect, useState} from 'react';
 import type {DockingTrialInfo, TrialReceptor} from '../api/types';
 import {api, errorText} from '../api/client';
+import DockingScoreMatrix from './DockingScoreMatrix';
 import {useApp} from '../lib/appContext';
 
 const modeLabel: Record<string, string> = {
@@ -19,20 +20,12 @@ function Scores({info, heatmap = false}: {info: DockingTrialInfo; heatmap?: bool
   </div>;
   const targets = heatmap ? matrix.columns.filter(c => matrix.heatmap_targets.includes(c.id)) : matrix.columns;
   const rows = heatmap ? matrix.rows.filter(r => matrix.heatmap_compounds.includes(r.id)) : matrix.rows;
-  return <div style={{overflowX: 'auto'}}><table style={{borderCollapse: 'collapse', fontSize: 12, width: '100%'}}>
-    <thead><tr><th style={{background: '#0F5E6E', color: 'white', padding: 8, minWidth: 130}}>成分</th>
-      {targets.map(c => <th key={c.id} style={{background: '#0F5E6E', color: 'white', padding: 7, minWidth: 66}}>
-        {c.label}<br/>{c.grade}</th>)}</tr></thead>
-    <tbody>{rows.map(row => <tr key={row.id}><td style={{padding: 7, border: '1px solid #DCE1E5'}}>{row.label_zh || row.label}
-      {row.label_en && <div style={{fontSize: 10, color: '#586B75', maxWidth: 280}}>{row.label_en}</div>}</td>
-      {targets.map(c => {const cell = row.cells.find(v => v.target_id === c.id)!;
-        return <td key={c.id} title={cell.score == null ? cell.reason_zh :
-          `${cell.score} kcal/mol；${modeLabel[cell.mode]}；${cell.region_id}${cell.partial_regions ? '；部分区域失败' : ''}`}
-          style={{textAlign: 'center', padding: 8, border: '1px solid #DCE1E5',
-            background: heatmap ? cell.color : undefined,
-            color: heatmap ? cell.text_color : undefined}}>{cell.display_score ?? (cell.score == null ? 'NA' : cell.score.toFixed(2))}
-            {!heatmap && cell.highlight && <sup style={{marginLeft: 2}}>**</sup>}</td>;
-      })}</tr>)}</tbody></table></div>;
+  return <DockingScoreMatrix heatmap={heatmap} columns={targets.map(c=>({id:c.id,label:c.label,grade:c.grade}))}
+    rows={rows.map(row=>({id:row.id,label:row.label,labelZh:row.label_zh,labelEn:row.label_en,cells:row.cells.map(cell=>({
+      targetId:cell.target_id,score:cell.score,displayScore:cell.display_score,highlight:cell.highlight,
+      color:cell.color,textColor:cell.text_color,tooltip:cell.score==null?cell.reason_zh:
+        `${cell.score} kcal/mol；${modeLabel[cell.mode]}；${cell.region_id}${cell.partial_regions?'；部分区域失败':''}`,
+    }))}))}/>;
 }
 
 /** 结构与处理集中在同一窗口，证据默认折叠，不要求用户判断原子参数。 */

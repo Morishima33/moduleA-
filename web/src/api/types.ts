@@ -272,9 +272,9 @@ export interface ReferenceChoice {target_id:string; candidate_key:string; refere
 export interface ReferenceCandidate extends ReferenceChoice {pdb_id:string; component_id:string; name:string; selectable:boolean; reason_zh:string; source_url:string}
 export interface AutomaticRequest {expected_binding: string; expected_connection_id: string; expected_a06: string | null; request_id: string; policy_version: string; reviewer: string; note: string; confirmed: boolean; reference_choices?:ReferenceChoice[]}
 export interface AutomaticMatrixView {
-  score_range:[number|null,number|null]; annotation?:{legend_zh?:string};
+  score_range:[number|null,number|null]; annotation?:{legend_zh?:string}; threshold_note_zh:string;
   heatmap:{rows:{compound_id:string;name_zh:string;name_en:string}[];columns:{target_id:string;symbol:string;candidate_grade:string}[]};
-  table:{rows:{compound_id:string;name_zh:string;name_en:string}[];columns:{target_id:string;symbol:string;candidate_grade:string}[];cells:{score:number|null;display_score:string;threshold_mark:string;reason_zh:string;color:string;text_color:string}[][]};
+  table:{rows:{compound_id:string;name_zh:string;name_en:string}[];columns:{target_id:string;symbol:string;candidate_grade:string}[];cells:{compound_id:string;target_id:string;score:number|null;display_score:string;threshold_mark:string;reason_zh:string;quality:string;color:string;text_color:string}[][]};
 }
 export interface AutomaticMatrixResponse {view:AutomaticMatrixView; svg:string; downloads:{name:string;url:string;role:string}[]; display_id:string|null; expected_a06:string; enabled:boolean}
 export interface AutomaticPage<T> {items:T[];total:number;page:number;size:number}

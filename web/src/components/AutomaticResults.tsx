@@ -4,6 +4,8 @@ import {useEffect, useRef, useState} from 'react';
 import type {AutomaticDockingInfo, AutomaticFile, AutomaticMatrixResponse, AutomaticPair} from '../api/types';
 import {api, errorText} from '../api/client';
 import {useApp} from '../lib/appContext';
+import {hrefFor} from '../lib/route';
+import DockingScoreMatrix from './DockingScoreMatrix';
 
 /** 页面只读取选择和服务端结果，不推算质控或评分阈值。 */
 export default function AutomaticResults({studyId, latest, readOnly=false}: {studyId:string; latest:NonNullable<AutomaticDockingInfo['latest']>; readOnly?:boolean}) {
@@ -63,9 +65,19 @@ export default function AutomaticResults({studyId, latest, readOnly=false}: {stu
           </div>
           <div className="row" style={{display:'flex',flexWrap:'wrap',gap:8}}><Button disabled={!compounds.length||!targets.length} onClick={preview}>预览显示选择</Button><Button disabled={readOnly||!matrix.enabled||!compounds.length||!targets.length} loading={exportBusy} onClick={exportFiles}>生成图表与矩阵下载</Button></div>
           <p className="muted">显示选择不改变计算对象或评分。重点图与完整矩阵共用完整同批色标；完整表的“**”仅标记原始评分≤−8，不表示统计显著性。</p>
+          <h4>重点展示：{matrix.view.heatmap.rows.length}×{matrix.view.heatmap.columns.length}热图</h4>
           <div style={{overflowX:'auto',maxWidth:'100%'}}><img alt="本批重点分子对接热图" src={'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(matrix.svg)} style={{display:'block',width:'100%',minWidth:600}}/></div>
           <div className="row" style={{display:'flex',flexWrap:'wrap',gap:12}}>{matrix.downloads.map(f=><a key={f.url} href={f.url} style={{overflowWrap:'anywhere',maxWidth:'100%'}}>{f.name}</a>)}</div>
-          <Collapse items={[{key:'matrix',label:`查看完整矩阵（${matrix.view.table.rows.length}个成分 × ${matrix.view.table.columns.length}个受体）`,children:<div style={{overflowX:'auto',maxWidth:'100%'}}><table style={{borderCollapse:'collapse',fontSize:13}}><thead><tr><th style={{padding:10,minWidth:200}}>成分</th>{matrix.view.table.columns.map(t=><th key={t.target_id} style={{padding:10,minWidth:90}}>{t.symbol}<br/>{t.candidate_grade}</th>)}</tr></thead><tbody>{matrix.view.table.rows.map((c,i)=><tr key={c.compound_id}><th style={{padding:10,textAlign:'left',overflowWrap:'anywhere'}}>{c.name_zh||c.name_en}{c.name_zh&&c.name_zh!==c.name_en&&<><br/>{c.name_en}</>}</th>{matrix.view.table.cells[i].map((cell,j)=><td key={j} title={cell.reason_zh||String(cell.score)} style={{padding:10,textAlign:'center',background:cell.color,color:cell.text_color,border:cell.score===null?'1px dashed #AAB4BE':'1px solid white'}}>{cell.display_score}{cell.threshold_mark}</td>)}</tr>)}</tbody></table></div>} ]}/>
+          <section id="automatic-full-matrix" style={{minWidth:0,scrollMarginTop:90}}>
+            <h4>扩展筛查：{matrix.view.table.rows.length}×{matrix.view.table.columns.length}完整结合能表</h4>
+            <DockingScoreMatrix label="完整结合能矩阵" columns={matrix.view.table.columns.map(t=>({id:t.target_id,label:t.symbol,grade:t.candidate_grade}))}
+              rows={matrix.view.table.rows.map((c,i)=>({id:c.compound_id,label:c.name_en||c.compound_id,labelZh:c.name_zh,labelEn:c.name_en,
+                cells:matrix.view.table.cells[i].map(cell=>({targetId:cell.target_id,score:cell.score,displayScore:cell.display_score,
+                  highlight:cell.threshold_mark==='**',tooltip:cell.score===null?cell.reason_zh:`${cell.score} kcal/mol；${cell.quality}`}))}))}/>
+            <p className="small">{matrix.view.threshold_note_zh} 全部成分与受体均列入本表，NA原因见下方逐组合明细。</p>
+            {!readOnly&&matrix.view.table.rows.length<15&&<Alert type="info" showIcon message={`本批实际计算${matrix.view.table.rows.length}个成分×${matrix.view.table.columns.length}个受体；扩展至15个成分须先核查本研究名单。`}
+              action={<Button href={hrefFor({page:'study',studyId,moduleId:'A03_SELECT'})}>核查扩展成分名单</Button>}/>}
+          </section>
         </div>}
       </Spin>
       <h3>逐组合评分与异常</h3>
