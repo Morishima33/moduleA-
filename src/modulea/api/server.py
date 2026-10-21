@@ -149,6 +149,7 @@ class App:
         workflow = self._automatic_ready(study_id)
         try:
             workflow.automatic_binding(study_id, body["expected_binding"])
+            workflow.validate_extended_scope(study_id)
         except ContractError as error:
             raise from_contract(str(error))
         payload = dict(body, connection_id="connection_" + uuid.uuid4().hex, policy_version="A06.automatic.3")

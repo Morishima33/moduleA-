@@ -145,7 +145,10 @@ def selection_context(workflow,manifest,historical=False,busy=False):
     previous=(old or {}).get("tables",{}).get("selected",[])
     if current and any(not isinstance(r.get("compound_id"),str) or not r["compound_id"] for r in previous):
         reason="当前选择归档缺少成分编号，不能按名称确认身份；请核查来源资料"
-    return {**binding,"enabled":not reason,"disabled_reason_zh":reason,"rows":rows,"current_selected":[r["compound_id"] for r in previous] if current and not reason else [],"previous_rows":(old or {}).get("tables",{}).get("selected",[]),"previous_active":current,"rule_zh":"沿用当前A03候选、边界并列、药味代表及逐项人工补充规则；保存后仍须独立复核。"}
+    from .extended_scope import context as extended_scope_context
+    scope = extended_scope_context(workflow, manifest)
+    manual = {r['compound_id']:r['manual_selection_reason'] for r in previous if current and isinstance(r.get('compound_id'),str) and r.get('manual_selection_reason')}
+    return {**binding,"enabled":not reason,"disabled_reason_zh":reason,"rows":rows,"current_selected":[r["compound_id"] for r in previous] if current and not reason else [],"current_manual_supplements":manual,"previous_rows":(old or {}).get("tables",{}).get("selected",[]),"previous_active":current,"extended_scope":scope,"rule_zh":"沿用当前A03候选、边界并列、药味代表及逐项人工补充规则；保存后仍须独立复核。"}
 
 # A06顶部核查入口，当前研究无来源时明确提示成分关口而不借用旧结果。
 def preparation_context(workflow,manifest,historical=False,busy=False):

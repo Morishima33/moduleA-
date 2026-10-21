@@ -30,6 +30,15 @@ def run_continue(settings: Settings, task: dict, manager: TaskManager) -> str:
     manifest = workflow.load(task["study_id"])
     a06 = manifest.get("current", {}).get("A06")
     automatic = bool(a06 and workflow.run(manifest, a06).get("config", {}).get("schema_version") in ("A06.automatic.1", "A06.automatic.2", "A06.automatic.3"))
+    # 换成完整扩展名单后，旧批次依然归档，接续不能卡在旧批次的不可用复核栏。
+    if automatic and not workflow.active(manifest, a06):
+        try:
+            scope = workflow.validate_extended_scope(task['study_id'], manifest)
+        except ValueError as error:
+            manager.update(task['task_id'], progress={'step_zh':'等待完整扩展名单及上游复核','done':1,'total':1})
+            return '旧对接批次已失效并保留；请先核对扩展名单或上游：' + str(error)
+        manager.update(task['task_id'], progress={'step_zh':'扩展名单已接齐，等待A06_PREP连接与一次执行确认','done':1,'total':1})
+        return f"已确认{scope['selected_count']}个扩展成分，请在A06_PREP连接本研究全部对象并一次确认执行。旧批次保留，未重新评分或继承旧授权。"
     if a06 and (automatic or workflow.run(manifest, a06).get("config", {}).get("schema_version") == "A06.trial.handoff.1"):
         with workflow.handoff_read_cache():
             approved = workflow.approved(manifest, a06)
@@ -58,6 +67,14 @@ def run_continue(settings: Settings, task: dict, manager: TaskManager) -> str:
         manager.update(task["task_id"], progress={"step_zh": "双报告已生成，等待A07独立复核", "done": 1, "total": 1})
         return ("本批自动评分已接入新双报告：" if automatic else "本批扩展评分已接入新双报告：") + result["run_id"] + "；未重算Vina，未自动批准A07。"
     prep=manifest.get("current",{}).get("A06_PREP")
+    selection = manifest['current'].get('A03_SELECT')
+    a04 = manifest['current'].get('A04')
+    if not a06 and not prep and selection and a04 and workflow.approved(manifest, selection) and workflow.approved(manifest, a04):
+        try:
+            scope = workflow.validate_extended_scope(task['study_id'], manifest)
+        except ValueError as error:
+            return '请先核对完整扩展名单：' + str(error)
+        return f"扩展名单{scope['selected_count']}项已复核，请进入A06_PREP连接资料并一次确认计算；尚未自动准备或评分。"
     if prep and workflow.run(manifest,prep).get("config",{}).get("version") in (
             "A06.coverage.execution.4","A06.coverage.confirmed.4"):
         manager.update(task["task_id"],progress={"step_zh":"已停在明确批量计算授权关口","done":1,"total":1})

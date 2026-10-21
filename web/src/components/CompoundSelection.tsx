@@ -9,9 +9,11 @@ import SourceIdentityTrace from './SourceIdentityTrace';
 export default function CompoundSelection({studyId,info,review}:{studyId:string;info:CompoundSelectionInfo;review?:DockingReviewInfo|null}){
  const app=useApp();const [selected,setSelected]=useState<string[]>(info.current_selected||[]);
  const [reviewer,setReviewer]=useState('');const [reason,setReason]=useState('');const [confirmed,setConfirmed]=useState(false);
- const [manual,setManual]=useState<Record<string,string>>({});const [busy,setBusy]=useState(false);const [error,setError]=useState('');
- useEffect(()=>{setSelected(info.current_selected||[]);setConfirmed(false);setManual({})},[info.expected_a03,info.expected_select,review?.review_id]);
+ const [manual,setManual]=useState<Record<string,string>>(info.current_manual_supplements||{});const [busy,setBusy]=useState(false);const [error,setError]=useState('');
+ useEffect(()=>{setSelected(info.current_selected||[]);setConfirmed(false);setManual(info.current_manual_supplements||{})},[info.expected_a03,info.expected_select,review?.review_id]);
  const draft=review?.proposal;const disabled=!info.enabled||review?.enabled===false;
+ const scope=info.extended_scope;
+ function loadExtended(){if(!scope)return;const eligible=new Set(info.rows.filter(r=>r.eligible).map(r=>r.compound_id));const ids=scope.proposed_ids.filter(id=>eligible.has(id));setSelected(ids);setManual(Object.fromEntries(Object.entries(scope.manual_reasons).filter(([id])=>ids.includes(id))));setConfirmed(false);}
  // 批量操作仅载入可核查项及补充依据，不勾选身份确认、不保存。
  function loadProposed(){if(!draft)return;setSelected(draft.compounds.filter(r=>r.identity_prechecked&&info.rows.some(x=>x.compound_id===r.compound_id&&x.eligible)).map(r=>r.compound_id));setManual(Object.fromEntries(draft.compounds.filter(r=>info.rows.find(x=>x.compound_id===r.compound_id)?.suggestion_zh.startsWith('需逐项')).map(r=>[r.compound_id,r.manual_reason_zh])));setConfirmed(false)}
  async function save(){setBusy(true);setError('');try{
@@ -23,6 +25,16 @@ export default function CompoundSelection({studyId,info,review}:{studyId:string;
  columns={[{title:'成分名称',dataIndex:'name'},{title:'药味来源',dataIndex:'herbs',render:(v:string[]|string)=>Array.isArray(v)?v.join('、'):v},{title:'交集靶点数',dataIndex:'intersection_count'},{title:'原名次',dataIndex:'main_rank'},{title:'当前规则',dataIndex:'suggestion_zh'},{title:'人工补充理由',render:(_,r)=><Input aria-label={'人工补充理由 '+r.compound_id} value={manual[r.compound_id]||''} onChange={e=>{setManual({...manual,[r.compound_id]:e.target.value});setConfirmed(false)}}/>}]}/>;
  return <section className="card" id="a03-compound-selection"><h2>对接成分核查：名单、身份与药味来源、补充依据</h2>
  <p className="small">保存名单与独立结果复核分开；本轮不启动对接计算。</p>
+ {scope&&<section id="extended-docking-scope" className="stack" style={{scrollMarginTop:90}}>
+  <Alert type={scope.ready?'success':'warning'} showIcon message={`主候选前${scope.primary_limit}与扩展筛查分开：当前已保存${scope.selected_count}项，扩展目标${scope.required_count}项${scope.proposed_count>scope.required_count?'（建议含截断并列）':''}。`} description={scope.note_zh}/>
+  <Button type="primary" disabled={disabled||!scope.proposed_ids.length} onClick={loadExtended}>载入前{scope.required_count}项扩展筛查草稿{scope.proposed_count>scope.required_count?'（含并列）':''}</Button>
+  <Table<CompoundChoiceRow> aria-label="完整扩展筛查名单" rowKey="compound_id" size="small" pagination={false} scroll={{x:800}} rowSelection={selection}
+   dataSource={selected.flatMap(id=>{const row=info.rows.find(r=>r.compound_id===id);return row?[row]:[];})}
+   columns={[{title:'成分',dataIndex:'name'},{title:'药味来源',dataIndex:'herbs',render:(v:string[]|string)=>Array.isArray(v)?v.join('、'):v},
+    {title:'交集／原名次',render:(_,r)=>`${r.intersection_count}／${r.main_rank}`},{title:'选择角色',render:(_,r)=>r.suggestion_zh.startsWith('需逐项')?'扩展补充':r.suggestion_zh},
+    {title:'补充依据（可修改）',render:(_,r)=><Input aria-label={'扩展补充理由 '+r.compound_id} value={manual[r.compound_id]||''} onChange={e=>{setManual({...manual,[r.compound_id]:e.target.value});setConfirmed(false);}}/>}]}/>
+  <p className="small">载入后逐项核对成分、来源及补充理由，再填写核验人与整体依据并保存；独立复核通过后，连接与计算使用全部已选项。</p>
+ </section>}
  {disabled&&<Alert type="warning" message={review?.reason_zh||info.disabled_reason_zh}/>}
  {draft&&<><p>{draft.note_zh}</p><div className="toolbar"><strong>本轮拟纳入 {draft.compounds.length} 项</strong><Button disabled={disabled} onClick={loadProposed}>全选本轮可确认项并载入补充理由</Button><Button onClick={()=>{setSelected([]);setConfirmed(false)}}>全部取消</Button><span>已选 {selected.length} 个</span></div>
  <Table<DockingReviewCompound> className="docking-compound-table" rowKey="compound_id" size="small" dataSource={draft.compounds.map(r=>({...r,eligible:r.identity_prechecked&&info.rows.some(x=>x.compound_id===r.compound_id&&x.eligible)}))} pagination={false} scroll={{x:750}} rowSelection={selection}

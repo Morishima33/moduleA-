@@ -279,6 +279,7 @@ export interface AutomaticMatrixView {
 export interface AutomaticMatrixResponse {view:AutomaticMatrixView; svg:string; downloads:{name:string;url:string;role:string}[]; display_id:string|null; expected_a06:string; enabled:boolean}
 export interface AutomaticPage<T> {items:T[];total:number;page:number;size:number}
 export interface AutomaticDockingInfo {
+  scope?:ExtendedDockingScope;
   migration_note_zh?: string;
   enabled: boolean; disabled_reason_zh: string; expected_binding: string; expected_connection_id: string | null; expected_a06: string | null;
   counts: {compounds: number; receptors: number; pairs: number}; policy: {version: string; summary_zh: string; details_zh: string[]};
@@ -394,7 +395,8 @@ export interface DockingCandidatesInfo {
 
 /** 对接成分选择与两遍方案来自后端，字段完整不表示质控已通过。 */
 export interface CompoundChoiceRow { compound_id:string; name:string; herbs:string[]|string; intersection_count:number; main_rank:number; eligible:boolean; suggestion_zh:string }
-export interface CompoundSelectionInfo { enabled:boolean; disabled_reason_zh:string; expected_a03:string; expected_select:string; rows:CompoundChoiceRow[]; current_selected:string[]; previous_rows:CompoundChoiceRow[]; previous_active:boolean; rule_zh:string }
+export interface ExtendedDockingScope {schema_version:string;study_id:string;a03_run:string;selection_run:string|null;primary_limit:number;expanded_target:number;required_count:number;available_count:number;selected_count:number;approved:boolean;ready:boolean;reason_zh:string;proposed_ids:string[];manual_reasons:Record<string,string>;boundary_count:number;proposed_count:number;note_zh:string}
+export interface CompoundSelectionInfo { enabled:boolean; disabled_reason_zh:string; expected_a03:string; expected_select:string; rows:CompoundChoiceRow[]; current_selected:string[]; current_manual_supplements?:Record<string,string>; previous_rows:CompoundChoiceRow[]; previous_active:boolean; rule_zh:string;extended_scope?:ExtendedDockingScope }
 export interface StructureSpec { source_type:'experimental'|'alphafold'; uniprot:string; chains:string[]; pocket?:'reference'|'p2rank'; pdb_id?:string; model_id?:string; sequence_start?:number; sequence_end?:number; altloc?:string|null; reference_code?:string; reference_chain?:string; reference_sequence?:string }
 export interface TwoPassRow {target_id:string;symbol:string;candidate_grade:string;first:StructureSpec|null;first_reason:string;second:StructureSpec|null;second_reason:string;unavailable:boolean;reason:string}
 export interface TwoPassCompound {compound_id:string;status:'use'|'unavailable'|null;cid?:string;reason:string;protonation_policy?:string;material_id?:string}

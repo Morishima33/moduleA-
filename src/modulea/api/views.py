@@ -154,11 +154,11 @@ class Views:
         return cards
 
     def study_card(self, study_id: str, with_states: bool = False) -> dict:
-        _, view, error = self._snapshot(study_id)
+        workflow, view, error = self._snapshot(study_id)
         manifest = self._manifest(study_id)  # 真实索引（含回收站标记）
         states = self._states(study_id, view, error, bool(manifest.get("trashed")))
         approved = sum(1 for s in states.values() if s["code"] in ("approved", "published"))
-        next_step = self._next_step(states)
+        next_step = self._scope_next_step(workflow, manifest, states)
         card = {
             "study": self._study_info(study_id, manifest),
             "purpose": self._purpose(view, self._intake(study_id, manifest)),
@@ -206,6 +206,24 @@ class Views:
             return {"module_id": None, "code": "done", "text_zh": "本批流程已完成；准备范围按扩展试算核查。" if any(s["code"] == "scope_confirmed" for s in states.values()) else "全部模块已通过，本研究流程完成"}
         return None
 
+    def _scope_next_step(self, workflow, manifest, states):
+        """导航指向扩展范围核查，不改变原批次的科研状态或批准。"""
+        fallback = self._next_step(states)
+        if manifest.get('trashed') or self.tasks.active_for(manifest['study_id']):
+            return fallback
+        if not all(states.get(m, {}).get('code') == 'approved' for m in ('A03', 'A03_SELECT', 'A04')):
+            return fallback
+        a06 = manifest['current'].get('A06')
+        if a06 and workflow.run(manifest, a06).get('config', {}).get('schema_version') not in ('A06.automatic.1', 'A06.automatic.2', 'A06.automatic.3'):
+            return fallback
+        if not a06 and manifest['current'].get('A06_PREP'):
+            return fallback
+        from ..core.extended_scope import context as scope_context
+        scope = scope_context(workflow, manifest)
+        if not scope['ready']:
+            return {'module_id': 'A03_SELECT', 'code': 'waiting', 'text_zh': '先核对完整扩展名单：' + scope['reason_zh']}
+        return fallback
+
     def study(self, study_id: str) -> dict:
         workflow, view, error = self._snapshot(study_id)
         manifest = self._manifest(study_id)  # 真实索引（含回收站标记）
@@ -225,7 +243,7 @@ class Views:
             "archive_error_zh": error,
             "progress": {"approved": approved, "completed": approved + sum(s["code"] == "scope_confirmed" for s in states.values()), "scope_confirmed": sum(s["code"] == "scope_confirmed" for s in states.values()), "total": len(states)},
             "nav": nav,
-            "next_step": self._next_step(states),
+            "next_step": self._scope_next_step(workflow, manifest, states),
             "inbox": [{"module_id": m, "code": states[m]["code"], "label_zh": states[m]["label_zh"],
                        "text_zh": inbox_text(m, states[m])}
                       for m in registry.ORDER if states[m]["code"] in ("review", "hold", "returned", "waiting", "failed")],

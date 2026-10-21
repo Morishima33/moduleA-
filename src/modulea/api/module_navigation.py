@@ -32,10 +32,13 @@ def context(view, result=None):
     if automatic and mid in ("A06_PREP", "A06"):
         latest = automatic.get("latest")
         if mid == "A06_PREP":
+            link("scope", "核对完整扩展名单", "A03_SELECT", "先核对主候选及扩展筛查名单；名单复核后才连接全部对象。")
             add("connect", "连接本研究资料", "module-automatic-docking", "连接官方原件，不计算评分。")
             add("authorize", "核定范围并一次确认", "module-automatic-docking", "明确共晶参考或保留探索，执行后结果独立复核。")
             link("result", "查看运行与结果", "A06", "后台进度、评分和异常统一在A06查看。")
             current = "result" if latest else "authorize" if automatic.get("connection") else "connect"
+            if automatic.get('scope') and not automatic['scope']['ready'] and not (latest and latest.get('state') == 'running'):
+                current = 'scope'
         else:
             add("scores", "查看热图与完整矩阵", "module-automatic-results", "图表、矩阵与下载使用同批原值。")
             add("evidence", "核对异常与计算依据", "module-automatic-results", "证据按需打开，无逐条阅读门槛。")
@@ -85,6 +88,9 @@ def context(view, result=None):
         link("preparation", "进入A06对接准备", "A06_PREP", "使用已复核的成分名单与A04候选准备结构及位点。")
         active = bool((view.get("compound_selection") or {}).get("previous_active"))
         current = "preparation" if approved and active else "review" if active else "selection"
+        scope = (view.get('compound_selection') or {}).get('extended_scope')
+        if scope and not scope['ready'] and approved:
+            current = 'selection'
     elif mid == "A04":
         add("run", "检查输入并计算PPI", "module-ppi-run" if view.get("ppi_run") else "module-status", "使用已通过的A03交集；需要计算时明确点击A04计算按钮，后台完成后再复核。")
         add("identity", "核查网络身份例外", "module-focus", "先处理本轮列出的身份问题；没有例外时继续查看网络结果。")

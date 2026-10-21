@@ -212,6 +212,7 @@ class AutomaticExperienceTests(unittest.TestCase):
         connection_packet = {'summary': {'connected_compounds': 5, 'connected_receptors': 16}, 'receptors': []}
         connection = {'id': 'connection_fixture', 'packet': w.record('connection.json', connection_packet)}
         with patch.object(w, 'automatic_binding', return_value=(deepcopy(w.manifest), {'fixture': True})), \
+             patch.object(w, 'validate_extended_scope', return_value={'ready': True}), \
              patch.object(w, 'current_automatic_connection', return_value=connection), \
              patch.object(w, 'automatic_record', return_value=None):
             manifest, bound, returned = w.validate_automatic_request('study_fixture', dict(request, reference_choices=[]))

@@ -206,6 +206,7 @@ def connect(workflow, sid, payload, progress):
     existing=workflow.automatic_record(manifest,payload['connection_id'])
     if existing:
         return existing
+    workflow.validate_extended_scope(sid, manifest)
     candidate_binding=workflow.candidate_binding(manifest)
     if workflow.candidate_record(manifest,candidate_binding)[0] is None:
         workflow.generate_candidates(sid,{**candidate_binding,'group_id':new_id('group'),'reason':'补齐连接沿用当前已批准A04名单'})

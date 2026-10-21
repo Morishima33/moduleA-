@@ -130,6 +130,10 @@ def pair_evidence(workflow, manifest, batch, key):
 class AutomaticExperienceWorkflow(AutomaticCoverageWorkflow):
     """沿用旧授权和评分；新增展示修订及自动协议报告的明确接入点。"""
 
+    def validate_extended_scope(self, sid, manifest=None):
+        from .extended_scope import require_ready
+        return require_ready(self, manifest or self.load(sid))
+
     def automatic_binding(self, sid, expected=None, manifest=None):
         """新连接只使用第三版指纹，旧一、二版运行仍由各自冻结_active校验。"""
         manifest = manifest or self.load(sid)
@@ -145,6 +149,9 @@ class AutomaticExperienceWorkflow(AutomaticCoverageWorkflow):
         method = _versioned('validate_automatic_request')
         result = method(self, sid, original, manifest)
         manifest, _, record = result
+        # 已登记执行仍按原授权追溯；新执行不得把默认五项当完整扩展范围。
+        if not self.automatic_record(manifest, payload['request_id']):
+            self.validate_extended_scope(sid, manifest)
         connection = read_json(verified_file(self.location(sid), record['packet']))
         from science_modules.a06.reference_candidates import validate_choices
         validate_choices(self.location(sid), connection, payload['reference_choices'])
@@ -256,8 +263,12 @@ def automatic_context(workflow, manifest, historical=False, busy=False):
             elif latest['state'] == 'running' and not busy:
                 latest['state'] = 'interrupted'
             data['latest'] = latest
-        data['enabled'] = not busy and not manifest.get('trashed')
+        from .extended_scope import context as scope_context
+        data['scope'] = scope_context(workflow, manifest)
+        data['enabled'] = not busy and not manifest.get('trashed') and data['scope']['ready']
         data['disabled_reason_zh'] = '请等待当前研究后台任务结束' if busy else '回收站中只读' if manifest.get('trashed') else ''
+        if not data['disabled_reason_zh'] and not data['scope']['ready']:
+            data['disabled_reason_zh'] = data['scope']['reason_zh']
     except (ValueError, KeyError) as error:
         data['disabled_reason_zh'] = str(error)
     return data

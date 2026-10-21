@@ -414,3 +414,7 @@ ModuleView新增可选trial_preparation，仅当前A06_PREP页提供：{link_id,
 自动协议页面只返回连接/执行摘要，不展开全部证据；分页 GET `/studies/{sid}/automatic_docking/{batch}/pairs`、`files` 和 `pairs/{pair_key}` 分别读取评分清单、文件索引和单组合完整依据。索引与结果身份仍核验，实际文件下载逐个核验SHA256，写入/复核仍完整核验。历史可只读访问同研究批次；不能借用其他研究批次。
 GET 同批 `/matrix` 返回标准库生成的中英重点图SVG与完整矩阵；查询参数 compound_ids/target_ids 只改变显示选择。POST `/modules/A06/actions/automatic_display` 接收 expected_a06、batch_id、compound_ids、target_ids，经后台归档 PNG/SVG/Excel/CSV 展示修订，不改评分/批准。GET `/automatic_displays/{display_id}/files/{index}` 仅下载本研究展示索引登记且指纹一致的文件。
 新增技术状态 prepared（准备已归档）、execution_confirmed（执行范围已确认），只取本批连接及执行归档；不表示A06_PREP科研批准、不开放该页复核。A06页只查看结果/出图/复核；A06_PREP页连接并一次确认，旧运行表单默认收起。报告适配新增独立版本，冻结第24版保持。
+
+## 2026-10-21 扩展范围接续
+
+A03_SELECT.compound_selection新增current_manual_supplements（回读同运行已保存的逐项理由）及extended_scope，只读同研究A03、当前名单及身份待补信息，返回前十五（含边界并列）草稿和逐项补充理由。加载不调用POST，保存仍使用原selection接口。automatic_docking新增scope；未复核完整范围时新第三版连接/执行禁用，API及后台重复检查；既有批次结果照常追溯。换名单后的continue不能等待失效旧A06复核，改为提示前往A06_PREP连接并一次确认。旧科学规则及历史授权不改变。
