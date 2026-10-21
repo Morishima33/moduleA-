@@ -7,17 +7,22 @@ import urllib.error
 from urllib.parse import quote, urlsplit
 from contracts import require, fingerprint
 from storage import file_record, verified_file, write_json, read_json, new_id, now
-from .automatic_sources import Fetcher as OriginalFetcher, compound_source, connected_reference
+from .automatic_sources import Fetcher as OriginalFetcher, connected_reference
 from .automatic_rules import binding as original_binding
 from .reference_rules import POLICY, VERSION
+from .compound_recovery import compound_source, VERSION as COMPOUND_RESOLUTION_VERSION
 
 
 class Fetcher(OriginalFetcher):
     """每次失败独立归档；只重试网络、限流和服务器暂时错误。"""
     def get(self, url, suffix="json"):
+        parsed = urlsplit(url)
+        if parsed.hostname == 'old.tcmsp-e.com':
+            require(parsed.path == '/molecule.php' and re.fullmatch(r'qn=[0-9]+', parsed.query)
+                    and suffix == 'html', 'TCMSP仅允许按分子稳定编号回查原始页面')
         require(urlsplit(url).scheme == "https" and urlsplit(url).hostname in {
             "pubchem.ncbi.nlm.nih.gov","rest.genenames.org","rest.uniprot.org",
-            "files.rcsb.org","data.rcsb.org","search.rcsb.org","alphafold.ebi.ac.uk"}, "只允许官方无凭据来源")
+            "files.rcsb.org","data.rcsb.org","search.rcsb.org","alphafold.ebi.ac.uk", "old.tcmsp-e.com"}, "只允许官方无凭据来源")
         require(not urlsplit(url).username and not urlsplit(url).password, "来源URL不能携带凭据")
         for attempt in range(POLICY["network_attempts"]):
             try:
@@ -245,7 +250,7 @@ def connect(workflow, sid, payload, progress):
                 output.append(dict(row,state=state,reason_zh=str(error),candidates=[]))
                 exceptions.append({'id':identity,'kind':kind,'name':row.get('name',row.get('symbol')),'state':state,'reason_zh':str(error)})
     files=list({r['path']:r for r in fetch.records}.values())
-    packet={'schema_version':VERSION,'id':payload['connection_id'],'study_id':sid,'binding':fingerprint(bound),'context':context,'created_at':now(),'policy':POLICY,'compounds':compounds,'receptors':receptors,'exceptions':exceptions,'files':files,
+    packet={'compound_resolution_version':COMPOUND_RESOLUTION_VERSION,'schema_version':VERSION,'id':payload['connection_id'],'study_id':sid,'binding':fingerprint(bound),'context':context,'created_at':now(),'policy':POLICY,'compounds':compounds,'receptors':receptors,'exceptions':exceptions,'files':files,
         'counts':{'compounds':len(compounds),'receptors':len(receptors),'pairs':len(compounds)*len(receptors)},'summary':{'connected_compounds':sum(r['state']=='connected' for r in compounds),'connected_receptors':sum(r['state']=='connected' for r in receptors),'exceptions':len(exceptions)},
         'objects':[{'id':r.get('compound_id',r.get('target_id')),'kind':kind,'name':r.get('name',r.get('symbol')),'state':r['state'],'reason_zh':r.get('reason_zh',''),'structures':[c['spec'] for c in r.get('candidates',[])],'cid':r.get('cid')} for kind,rows in (('compound',compounds),('receptor',receptors)) for r in rows]}
     from .reference_candidates import discover

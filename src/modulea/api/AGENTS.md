@@ -1,5 +1,13 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-10-21 显式一次确认后连接并计算
+
+新增POST `/studies/{sid}/modules/A06_PREP/actions/automatic_start`，字段为原第三版执行请求并增加固定`continuation_version: A06.connect_run.1`，`expected_connection_id`可为null，`reference_choices`必须明确提供（没有连接时只能为空），其余绑定、确认人、说明、confirmed:true均须真实提交。返回202后台任务`a06_auto_start`。这是明确授权后的串行连接及计算，不是GET自动计算或默认勾选确认。连接完成不再停第二次确认；连接失败、上游改变、回收站或版本冲突时停止，不自动重试计算。开始时及连接后均校验绑定和扩展范围；既有连接原件仅在本研究同批准版本且指纹一致时复用，补齐失败成分后再交原第三版执行校验器。参考选择按新连接复验，不自动选共晶配体、不改变质控或代签结果。
+
+新连接包追加`compound_resolution_version: A06.compound_identity.1`；ModuleView.connection可选回传该字段，表示名称失败后的精确身份回查是否已执行。TCMSP按本研究MOL编号回查，仅允许官方固定分子页；编号、原名称及完整InChIKey必须与PubChem一致，原始SDF仍按既有坐标身份核验。旧连接、旧授权、旧评分不回写。
+
+ModuleView.automatic_docking可选`active_task_kind`表示本研究当前后台任务种类；导航据此区分“等待执行确认”和“已确认、正在连接后自动计算”。它不代表科研批准。
+
 ## 2026-10-19 A06补救接续第二版
 
 自动连接新产物及执行授权使用A06.automatic.2，旧automatic.1原件、结果和确认保持。端点和请求字段不变，默认页面发第二版policy_version；旧版连接不能沿用为第二版授权。automatic_docking新增可选migration_note_zh：旧连接尚未按新策略补齐时说明原数量及重新连接操作；不伪造第二版连接完成。GET只读，不自动补查。

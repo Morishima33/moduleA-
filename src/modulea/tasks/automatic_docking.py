@@ -14,7 +14,7 @@ def execute(settings, task, manager):
     request, output = folder / "request.json", folder / "result.json"
     request.write_text(task["payload"], encoding="utf-8")
     command = [sys.executable, "-I", "-S", "-B", str(settings.project_root / "tools/run_a06_automatic.py"),
-               "--mode", "connect" if task["kind"] == "a06_auto_connect" else "run",
+               "--mode", {"a06_auto_connect": "connect", "a06_auto_start": "connect-run"}.get(task["kind"], "run"),
                "--request-file", str(request), "--result-file", str(output),
                "--tools-root", str(settings.science_tools_root), "--data-root", str(settings.data_root), "--study", task["study_id"]]
     if settings.science_repair_packages:

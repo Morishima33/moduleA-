@@ -279,11 +279,12 @@ export interface AutomaticMatrixView {
 export interface AutomaticMatrixResponse {view:AutomaticMatrixView; svg:string; downloads:{name:string;url:string;role:string}[]; display_id:string|null; expected_a06:string; enabled:boolean}
 export interface AutomaticPage<T> {items:T[];total:number;page:number;size:number}
 export interface AutomaticDockingInfo {
+  active_task_kind?:string|null;
   scope?:ExtendedDockingScope;
   migration_note_zh?: string;
   enabled: boolean; disabled_reason_zh: string; expected_binding: string; expected_connection_id: string | null; expected_a06: string | null;
   counts: {compounds: number; receptors: number; pairs: number}; policy: {version: string; summary_zh: string; details_zh: string[]};
-  connection: {id: string; summary: {connected_compounds: number; connected_receptors: number; exceptions: number};
+  connection: {id: string; compound_resolution_version?:string; summary: {connected_compounds: number; connected_receptors: number; exceptions: number};
     objects: {id: string; name: string; state: string; cid?: number; reason_zh: string; structures: {pdb_id?: string; model_id?: string; source_type?: string; chains: string[]; pocket: string; altloc?: string | null}[]}[]; files: AutomaticFile[]; reference_candidates?:ReferenceCandidate[]} | null;
   latest: {id: string; state: string; run_id: string | null; summary: Record<string, unknown> | null; error_zh?: string; pairs: AutomaticPair[]; files: AutomaticFile[];file_count?:number;display_id?:string|null} | null;
 }

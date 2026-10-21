@@ -70,6 +70,9 @@ def _pid_alive(pid: int | None) -> bool:
     return True
 
 
+KINDS["a06_auto_start"] = "一次确认连接、补齐并计算"
+
+
 class TaskManager:
     def __init__(self, settings: Settings):
         self.settings = settings
@@ -235,7 +238,7 @@ class TaskManager:
             except OSError:
                 pass
         self.update(task_id, state="cancelled", finished_at=_now(), error_zh="用户取消；本次未完整提交的运行不可复用，原文件保留")
-        if task["kind"] == "a06_auto_run":
+        if task["kind"] in ("a06_auto_run", "a06_auto_start"):
             from ..core.kernel import Kernel
             payload = json.loads(task["payload"])
             Kernel(self.settings).workflow().fail_automatic(task["study_id"], payload["request_id"], "用户取消，已有原件和尝试保留")

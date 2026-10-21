@@ -23,6 +23,15 @@ def current(info):
 class ModuleNavigationTests(unittest.TestCase):
     """验证候选、确认、复核、已批准及准备关联之间的导航区别。"""
 
+    def test_confirmed_continuous_task_does_not_ask_for_second_confirmation(self):
+        value = view("A06")
+        value["automatic_docking"] = {"latest": {"state": "stale"}, "connection": {"id": "old"},
+                                      "active_task_kind": "a06_auto_start"}
+        info = context(value)
+        self.assertIn("无需再次确认", info["note_zh"])
+        value["module"]["module_id"] = "A06_PREP"
+        self.assertEqual(current(context(value)), "connect")
+
     def test_stale_results_guide_execution_instead_of_nonexistent_new_graphs(self):
         value = view("A06")
         value["automatic_docking"] = {"latest": {"state": "stale"}, "connection": {"id": "new"}}

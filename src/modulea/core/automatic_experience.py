@@ -247,7 +247,7 @@ def automatic_context(workflow, manifest, historical=False, busy=False):
         if connection:
             packet = read_json(verified_file(workflow.location(sid), connection['packet']))
             data['expected_connection_id'] = connection['id']
-            data['connection'] = {k: packet.get(k) for k in ('id', 'created_at', 'summary', 'exceptions', 'objects')}
+            data['connection'] = {k: packet.get(k) for k in ('id', 'created_at', 'summary', 'exceptions', 'objects', 'compound_resolution_version')}
             data['connection']['files'] = []
             data['connection']['reference_candidates'] = packet.get('reference_candidates', [])
         batches = manifest.get('automatic_batches', [])

@@ -17,7 +17,7 @@ def main():
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument("--study", required=True)
     parser.add_argument("--repair-packages", type=Path)
-    parser.add_argument("--mode", choices=("connect", "run"), required=True)
+    parser.add_argument("--mode", choices=("connect", "run", "connect-run"), required=True)
     args = parser.parse_args()
     from docking_runtime import activate
     runtime = activate(args.tools_root)
@@ -35,6 +35,13 @@ def main():
             from science_modules.a06.reference_sources import connect
         record = connect(workflow, args.study, payload, progress)
         result = {"id": record["id"], "message_zh": "资料连接已完成，请核对范围后一次确认开始；尚未计算对接。"}
+    elif args.mode == "connect-run":
+        from modulea.core.automatic_start import run as connect_run
+        from science_modules.a06.reference_sources import connect
+        from science_modules.a06.reference_engine import run
+        data = connect_run(workflow, args.study, payload, connect,
+            lambda request: run(workflow, args.study, request, args.tools_root, CODE, runtime, progress, args.repair_packages), progress)
+        result = {"run_id": data["run_id"], "message_zh": "连续执行及图表已归档，异常原因保留；请独立复核A06结果。"}
     else:
         if payload.get("policy_version") == "A06.automatic.1":
             from modulea.core.automatic_docking import AutomaticDockingWorkflow

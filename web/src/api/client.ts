@@ -90,6 +90,7 @@ export const api = {
   automaticConnect: (sid: string, expected_binding: string) => request<{task: Task; message_zh: string}>('POST', `/studies/${sid}/modules/A06_PREP/actions/automatic_connect`, {expected_binding}),
   /** 用户主动一次授权，后台连续执行固定策略。 */
   automaticRun: (sid: string, body: import('./types').AutomaticRequest) => request<{task: Task; message_zh: string}>('POST', `/studies/${sid}/modules/A06_PREP/actions/automatic_run`, body),
+  automaticStart: (sid: string, body: Omit<import('./types').AutomaticRequest, 'expected_connection_id'> & {expected_connection_id: string | null}) => request<{task: Task; message_zh: string}>('POST', `/studies/${sid}/modules/A06_PREP/actions/automatic_start`, {...body, continuation_version:'A06.connect_run.1'}),
   /** 核对MeSH后建立独立研究，仅保存登记。 */
   createStudy: (body: import('./types').NewStudyInput) => request<import('./types').CreatedStudy>('POST', '/studies', body),
   /** 明确点击后制作当前确认范围两个首位通路命中图。 */

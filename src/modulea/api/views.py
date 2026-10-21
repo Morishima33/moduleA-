@@ -210,7 +210,7 @@ class Views:
         """导航指向扩展范围核查，不改变原批次的科研状态或批准。"""
         fallback = self._next_step(states)
         active_task = self.tasks.active_for(manifest['study_id'])
-        if manifest.get('trashed') or (active_task and active_task.get('kind') != 'a06_auto_connect'):
+        if manifest.get('trashed') or (active_task and active_task.get('kind') not in ('a06_auto_connect', 'a06_auto_start')):
             return fallback
         if not all(states.get(m, {}).get('code') == 'approved' for m in ('A03', 'A03_SELECT', 'A04')):
             return fallback
@@ -413,6 +413,7 @@ class Views:
             from ..core.automatic_experience import automatic_context
             with workflow.handoff_read_cache():
                 response["automatic_docking"] = automatic_context(workflow, real, False, bool(self.tasks.active_for(study_id)))
+            response['automatic_docking']['active_task_kind'] = (self.tasks.active_for(study_id) or {}).get('kind')
             if not self.kernel.settings.science_tools_root:
                 response["automatic_docking"].update(enabled=False, disabled_reason_zh="尚未配置固定对接工具目录")
             if not self.kernel.settings.science_repair_packages:

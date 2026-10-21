@@ -58,6 +58,7 @@ class App:
             ("POST", rf"/api/v1/studies/{ID}/modules/A06/actions/automatic_display", self.post_automatic_display),
             ("POST", rf"/api/v1/studies/{ID}/modules/A06_PREP/actions/automatic_connect", self.post_automatic_connect),
             ("POST", rf"/api/v1/studies/{ID}/modules/A06_PREP/actions/automatic_run", self.post_automatic_run),
+            ("POST", rf"/api/v1/studies/{ID}/modules/A06_PREP/actions/automatic_start", self.post_automatic_start),
             ("GET", rf"/api/v1/studies/{ID}/automatic_docking/{ID}/files/([0-9]+)", self.get_automatic_file),
             ("GET", r"/api/v1/session", self.session),
             ("GET", r"/api/v1/studies", self.list_studies),
@@ -157,6 +158,20 @@ class App:
         if not created:
             raise ApiError(409, "GATE_BLOCKED", "当前研究已有后台任务")
         return {"task": task, "message_zh": "开始连接资料；完成后由你一次确认计算范围。"}, 202
+
+    def post_automatic_start(self, req, study_id):
+        """一次明确确认后连续连接及计算；不将连接请求当成执行授权。"""
+        from ..core.automatic_start import validate
+        payload = req.json()
+        workflow = self._automatic_ready(study_id)
+        try:
+            validate(workflow, study_id, payload)
+        except ContractError as error:
+            raise from_contract(str(error))
+        task, created = self.tasks.submit(study_id, "a06_auto_start", "网页一次确认连接并计算", payload)
+        if not created:
+            raise ApiError(409, "GATE_BLOCKED", "当前研究已有后台任务")
+        return {"task": task, "message_zh": "已确认连续执行：先连接或补齐资料，再自动准备、质控、对接和出图；结果待独立复核。"}, 202
 
     def post_automatic_run(self, req, study_id):
         """登记显式授权任务，子进程开始及发布前再次校验版本。"""
