@@ -23,6 +23,18 @@ def current(info):
 class ModuleNavigationTests(unittest.TestCase):
     """验证候选、确认、复核、已批准及准备关联之间的导航区别。"""
 
+    def test_stale_results_guide_execution_instead_of_nonexistent_new_graphs(self):
+        value = view("A06")
+        value["automatic_docking"] = {"latest": {"state": "stale"}, "connection": {"id": "new"}}
+        info = context(value)
+        self.assertEqual(current(info), "new_execution")
+        self.assertEqual(info["steps"][0]["module_id"], "A06_PREP")
+        self.assertIn("尚未启动评分", info["note_zh"])
+        value["automatic_docking"]["connection"] = None
+        self.assertEqual(current(context(value)), "new_execution")
+        value["automatic_docking"]["latest"]["state"] = "completed"
+        self.assertEqual(current(context(value)), "review")
+
     def test_stale_automatic_batch_does_not_skip_new_connection(self):
         value = view("A06_PREP")
         value["automatic_docking"] = {"latest": {"state": "stale"}, "connection": None,

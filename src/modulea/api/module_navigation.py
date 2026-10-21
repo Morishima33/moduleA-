@@ -40,13 +40,18 @@ def context(view, result=None):
             if automatic.get('scope') and not automatic['scope']['ready'] and not (latest and latest.get('state') == 'running'):
                 current = 'scope'
         else:
+            stale = bool(latest and latest.get("state") == "stale")
+            if stale:
+                label = "确认本轮计算" if automatic.get("connection") else "准备本轮计算"
+                detail = "资料连接已完成，尚未启动评分。请前往A06_PREP核对连接异常，填写执行确认并开始计算；完成后才会生成本轮热图。" if automatic.get("connection") else "旧批次已失效，请前往A06_PREP查看本轮资料连接状态并完成执行确认。"
+                link("new_execution", label, "A06_PREP", detail)
             add("scores", "查看热图与完整矩阵", "module-automatic-results", "图表、矩阵与下载使用同批原值。")
             add("evidence", "核对异常与计算依据", "module-automatic-results", "证据按需打开，无逐条阅读门槛。")
             if view.get("docking_artifacts"):
                 add("figures", "按需出图或上传图片", "module-docking-artifacts", "选择成分和受体后才生成指定组合。")
             review()
             link("report", "查看报告进度", "A07", "A06独立通过后按依赖生成双报告，仍须A07复核。")
-            current = "report" if approved else "review" if latest and latest.get("state") == "completed" else "scores"
+            current = "new_execution" if stale else "report" if approved else "review" if latest and latest.get("state") == "completed" else "scores"
     elif prep:
         add("source", "核对本批准备来源", "trial-preparation-summary", "沿用已保存的同批核查，查看原核查人与关联版本，无需重复批准。")
         if prep["active"]:
@@ -181,7 +186,7 @@ def context(view, result=None):
         return None
 
     index = next(i for i, step in enumerate(steps, 1) if step["key"] == current)
-    note = view["state"].get("reason_zh") or steps[index - 1]["detail_zh"]
+    note = steps[index - 1]["detail_zh"] if current == "new_execution" else view["state"].get("reason_zh") or steps[index - 1]["detail_zh"]
     # 状态与建议分开展示，失败、失效、忙碌及只读提示不能被“下一步”掩盖。
     if view["state"]["code"] in ("idle", "ready", "running", "incomplete", "failed", "stale", "unavailable"):
         note = f"当前{view['state']['label_zh']}。{note}"
