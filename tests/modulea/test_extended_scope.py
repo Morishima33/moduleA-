@@ -6,7 +6,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 import unittest
 
-from contracts import ContractError
+from contracts import ContractError, fingerprint
 from intersection_flow import build, select_build
 from modulea.core.extended_scope import context, require_ready
 from modulea.core.automatic_experience import AutomaticExperienceWorkflow
@@ -192,11 +192,29 @@ class ExtendedScopeTests(unittest.TestCase):
         w.run=lambda m,rid: {'config':{'schema_version':'A06.automatic.2'}} if rid=='old_a06' else original_run(m,rid)
         w.active=lambda m,rid: rid!='old_a06'
         states={m:{'code':'approved'} for m in ('A03','A03_SELECT','A04')}
-        for task in (None,{'kind':'a06_auto_connect'}):
+        # 连接判断沿用真实Workflow的绑定比较：只有绑定本轮名单的最后一次连接才算已连接。
+        bound={'synthetic':True}
+        w.automatic_binding=lambda sid,expected=None,manifest=None:(w.manifest,bound)
+        w.current_automatic_connection=lambda m,key:AutomaticExperienceWorkflow.current_automatic_connection(w,m,key)
+        for task in (None,{'kind':'a06_auto_connect'},{'kind':'a06_auto_start'}):
             view=SimpleNamespace(tasks=SimpleNamespace(active_for=lambda sid:task),_next_step=lambda _: {'module_id':'A06','code':'stale'})
             action=Views._scope_next_step(view,w,w.manifest,states)
             self.assertEqual(action['module_id'],'A06_PREP')
             self.assertEqual(action['code'],'running' if task else 'ready')
+            if task and task['kind']=='a06_auto_start':
+                # 已一次确认的连续任务：不得再提示连接或确认。
+                self.assertIn('本轮已确认',action['text_zh']);self.assertNotIn('请在A06_PREP',action['text_zh'])
+        view=SimpleNamespace(tasks=SimpleNamespace(active_for=lambda sid:None),_next_step=lambda _: {'module_id':'A06','code':'stale'})
+        # 没有连接、或只有旧名单的连接：提示连接本轮资料，与操作顺序第2步一致。
+        for rows in ([],[{'id':'connection_old','binding':'b'*64}]):
+            w.manifest['automatic_connections']=rows
+            text=Views._scope_next_step(view,w,w.manifest,states)['text_zh']
+            self.assertIn('请在A06_PREP连接本轮资料',text);self.assertNotIn('已连接',text)
+        # 已有本轮连接：下一步是核定范围并确认，与操作顺序第3步一致，不再提示连接。
+        w.manifest['automatic_connections']=[{'id':'connection_new','binding':fingerprint(bound)}]
+        text=Views._scope_next_step(view,w,w.manifest,states)['text_zh']
+        self.assertIn('本轮资料已连接',text);self.assertIn('核定范围并一次确认计算',text)
+        self.assertNotIn('连接本轮资料',text)
 
     def test_next_action_points_to_scope_without_changing_scientific_states(self):
         from modulea.api.views import Views

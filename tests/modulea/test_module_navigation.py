@@ -55,6 +55,36 @@ class ModuleNavigationTests(unittest.TestCase):
             value["automatic_docking"]["latest"]["state"] = state
             self.assertEqual(current(context(value)), "result")
 
+    def test_status_prefix_does_not_repeat_current_step_detail(self):
+        """页面在说明与本步说明不同时另起一行显示本步说明，因此说明里不得再含同一句。"""
+        value = view("A06_PREP")
+        value["state"].update(code="ready", label_zh="可以开始")
+        value["automatic_docking"] = {"latest": {"state": "stale"}, "connection": {"id": "new"},
+                                      "scope": {"ready": True}}
+        info = context(value)
+        detail = info["steps"][info["current_step"] - 1]["detail_zh"]
+        self.assertEqual(current(info), "authorize")
+        self.assertEqual(info["note_zh"], "当前可以开始。")
+        self.assertNotIn(detail, info["note_zh"])
+        # A06旧批次失效时同样只保留状态，执行说明由本步说明单独显示。
+        value = view("A06")
+        value["state"].update(code="stale", label_zh="已失效")
+        value["automatic_docking"] = {"latest": {"state": "stale"}, "connection": {"id": "new"}}
+        info = context(value)
+        self.assertEqual(current(info), "new_execution")
+        self.assertEqual(info["note_zh"], "当前已失效。")
+        # 全部模块、全部带状态前缀的情形：说明要么就是本步说明，要么不包含本步说明。
+        for mid in ORDER:
+            for code in ("idle", "ready", "running", "incomplete", "failed", "stale", "unavailable", "review"):
+                with self.subTest(mid=mid, code=code):
+                    value = view(mid)
+                    value["state"].update(code=code, label_zh="状态")
+                    info = context(value)
+                    if info is None:
+                        continue
+                    detail = info["steps"][info["current_step"] - 1]["detail_zh"]
+                    self.assertTrue(info["note_zh"] == detail or detail not in info["note_zh"], info["note_zh"])
+
     def test_all_modules_and_history_are_readonly(self):
         """覆盖全部注册模块、缺结果及只读状态，不得回写权限或事实。"""
         for mid in ORDER:

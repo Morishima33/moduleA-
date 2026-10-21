@@ -191,8 +191,10 @@ def context(view, result=None):
         return None
 
     index = next(i for i, step in enumerate(steps, 1) if step["key"] == current)
-    note = steps[index - 1]["detail_zh"] if current == "new_execution" else view["state"].get("reason_zh") or steps[index - 1]["detail_zh"]
+    detail = steps[index - 1]["detail_zh"]
+    note = detail if current == "new_execution" else view["state"].get("reason_zh") or detail
     # 状态与建议分开展示，失败、失效、忙碌及只读提示不能被“下一步”掩盖。
     if view["state"]["code"] in ("idle", "ready", "running", "incomplete", "failed", "stale", "unavailable"):
-        note = f"当前{view['state']['label_zh']}。{note}"
+        # 页面在说明与本步说明不同时会另起一行显示本步说明；说明就是本步说明时只保留状态，避免同一句出现两次。
+        note = f"当前{view['state']['label_zh']}。" + ("" if note == detail else note)
     return {"current_step": index, "note_zh": note, "steps": steps}

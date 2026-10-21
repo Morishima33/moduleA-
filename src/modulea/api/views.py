@@ -65,6 +65,18 @@ NEXT_TEXT = {
 INLINE_TYPES = {".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
 
 
+# A06_PREP“下一步”与准备页操作顺序共用同一判断：是否已有绑定本轮名单的资料连接。
+def has_current_connection(workflow, manifest) -> bool:
+    """只读判断；依据与准备页 automatic_docking.connection 相同，不创建连接或授权计算。"""
+    from contracts import fingerprint
+    try:
+        _, bound = workflow.automatic_binding(manifest["study_id"], manifest=manifest)
+        return workflow.current_automatic_connection(manifest, fingerprint(bound)) is not None
+    except (ValueError, KeyError):
+        # 绑定读取失败时准备页同样显示为未连接，这里保持一致。
+        return False
+
+
 # 待办直接说明Workflow给出的等待原因；等待事项不冒充后台正在计算。
 def inbox_text(module_id: str, state: dict) -> str:
     title = f"{module_id} {registry.SPECS[module_id].title_zh}"
@@ -224,8 +236,16 @@ class Views:
         if not scope['ready']:
             return {'module_id': 'A03_SELECT', 'code': 'waiting', 'text_zh': '先核对完整扩展名单：' + scope['reason_zh']}
         if a06 and not workflow.active(manifest, a06):
-            return {'module_id': 'A06_PREP', 'code': 'running' if active_task else 'ready',
-                    'text_zh': '本轮对接资料正在连接，可在准备页查看后台进度' if active_task else '新名单已复核，请在A06_PREP连接本轮资料并确认计算；旧批次保留'}
+            if active_task:
+                # 连续任务已获一次确认，不能再提示用户去连接或确认。
+                text = ('本轮已确认，后台正在连续补齐资料并计算，可在准备页查看进度' if active_task.get('kind') == 'a06_auto_start'
+                        else '本轮对接资料正在连接，可在准备页查看后台进度')
+            elif has_current_connection(workflow, manifest):
+                # 与A06_PREP操作顺序同一口径：已有本轮连接时下一步是核定范围并确认，不再提示连接。
+                text = '本轮资料已连接，请在A06_PREP核定范围并一次确认计算；旧批次保留'
+            else:
+                text = '新名单已复核，请在A06_PREP连接本轮资料并确认计算；旧批次保留'
+            return {'module_id': 'A06_PREP', 'code': 'running' if active_task else 'ready', 'text_zh': text}
         return fallback
 
     def study(self, study_id: str) -> dict:
