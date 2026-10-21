@@ -36,7 +36,7 @@ def context(view, result=None):
             add("connect", "连接本研究资料", "module-automatic-docking", "连接官方原件，不计算评分。")
             add("authorize", "核定范围并一次确认", "module-automatic-docking", "明确共晶参考或保留探索，执行后结果独立复核。")
             link("result", "查看运行与结果", "A06", "后台进度、评分和异常统一在A06查看。")
-            current = "result" if latest else "authorize" if automatic.get("connection") else "connect"
+            current = "result" if latest and latest.get("state") != "stale" else "authorize" if automatic.get("connection") else "connect"
             if automatic.get('scope') and not automatic['scope']['ready'] and not (latest and latest.get('state') == 'running'):
                 current = 'scope'
         else:

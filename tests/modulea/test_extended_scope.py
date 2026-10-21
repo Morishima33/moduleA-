@@ -184,6 +184,20 @@ class ExtendedScopeTests(unittest.TestCase):
         self.assertEqual(submitted[0][3]['policy_version'],'A06.automatic.3')
         self.assertNotIn('selected',submitted[0][3])
 
+    def test_ready_scope_with_stale_batch_guides_new_preparation(self):
+        from modulea.api.views import Views
+        w=Fixture(selected=15)
+        w.manifest['current']['A06']='old_a06'
+        original_run=w.run
+        w.run=lambda m,rid: {'config':{'schema_version':'A06.automatic.2'}} if rid=='old_a06' else original_run(m,rid)
+        w.active=lambda m,rid: rid!='old_a06'
+        states={m:{'code':'approved'} for m in ('A03','A03_SELECT','A04')}
+        for task in (None,{'kind':'a06_auto_connect'}):
+            view=SimpleNamespace(tasks=SimpleNamespace(active_for=lambda sid:task),_next_step=lambda _: {'module_id':'A06','code':'stale'})
+            action=Views._scope_next_step(view,w,w.manifest,states)
+            self.assertEqual(action['module_id'],'A06_PREP')
+            self.assertEqual(action['code'],'running' if task else 'ready')
+
     def test_next_action_points_to_scope_without_changing_scientific_states(self):
         from modulea.api.views import Views
         w=Fixture();states={m:{'code':'approved'} for m in ('A03','A03_SELECT','A04')}

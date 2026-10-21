@@ -209,7 +209,8 @@ class Views:
     def _scope_next_step(self, workflow, manifest, states):
         """导航指向扩展范围核查，不改变原批次的科研状态或批准。"""
         fallback = self._next_step(states)
-        if manifest.get('trashed') or self.tasks.active_for(manifest['study_id']):
+        active_task = self.tasks.active_for(manifest['study_id'])
+        if manifest.get('trashed') or (active_task and active_task.get('kind') != 'a06_auto_connect'):
             return fallback
         if not all(states.get(m, {}).get('code') == 'approved' for m in ('A03', 'A03_SELECT', 'A04')):
             return fallback
@@ -222,6 +223,9 @@ class Views:
         scope = scope_context(workflow, manifest)
         if not scope['ready']:
             return {'module_id': 'A03_SELECT', 'code': 'waiting', 'text_zh': '先核对完整扩展名单：' + scope['reason_zh']}
+        if a06 and not workflow.active(manifest, a06):
+            return {'module_id': 'A06_PREP', 'code': 'running' if active_task else 'ready',
+                    'text_zh': '本轮对接资料正在连接，可在准备页查看后台进度' if active_task else '新名单已复核，请在A06_PREP连接本轮资料并确认计算；旧批次保留'}
         return fallback
 
     def study(self, study_id: str) -> dict:

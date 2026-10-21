@@ -47,7 +47,7 @@ export default function AutomaticDocking({studyId,info,moduleId='A06_PREP',readO
     {info.scope&&!info.scope.ready&&<div className="stack"><Alert type="warning" showIcon message="扩展计算范围尚未确认" description={info.scope.reason_zh}/>
       <Button type="primary" style={{alignSelf:'flex-start'}} href={hrefFor({page:'study',studyId,moduleId:'A03_SELECT'})}>核查完整扩展名单</Button></div>}
     {moduleId==='A06_PREP'?<>
-      {latest?<><Alert type={latest.state==='completed'?'success':'info'} showIcon message={latest.state==='completed'?'本批计算已完成，准备依据已归档':'本批已有执行记录，请到结果页查看进度及异常'}/><Button type="primary" style={{alignSelf:'flex-start'}} href={hrefFor({page:'study',studyId,moduleId:'A06'})}>前往A06查看结果与复核</Button><Collapse items={[{key:'rerun',label:'重新连接或发起新一轮计算（原批次保留）',children:setup}]}/></>:setup}
+      {latest&&latest.state!=='stale'?<><Alert type={latest.state==='completed'?'success':'info'} showIcon message={latest.state==='completed'?'本批计算已完成，准备依据已归档':'本批已有执行记录，请到结果页查看进度及异常'}/><Button type="primary" style={{alignSelf:'flex-start'}} href={hrefFor({page:'study',studyId,moduleId:'A06'})}>前往A06查看结果与复核</Button><Collapse items={[{key:'rerun',label:'重新连接或发起新一轮计算（原批次保留）',children:setup}]}/></>:<>{latest?.state==='stale'&&<Alert type="info" showIcon message="名单或连接版本已更新，请连接本轮资料并确认计算" description="旧批次已保留供追溯，不代表本轮已经计算。"/>}{setup}</>}
     </>:<>{latest?<AutomaticResults key={latest.id} studyId={studyId} latest={latest} readOnly={readOnly}/>:<Alert type="info" message="尚未启动本研究对接，请先完成准备与执行确认。" action={<Button href={hrefFor({page:'study',studyId,moduleId:'A06_PREP'})}>前往准备</Button>}/>}</>}
   </section>;
 }

@@ -23,6 +23,17 @@ def current(info):
 class ModuleNavigationTests(unittest.TestCase):
     """验证候选、确认、复核、已批准及准备关联之间的导航区别。"""
 
+    def test_stale_automatic_batch_does_not_skip_new_connection(self):
+        value = view("A06_PREP")
+        value["automatic_docking"] = {"latest": {"state": "stale"}, "connection": None,
+                                      "scope": {"ready": True}}
+        self.assertEqual(current(context(value)), "connect")
+        value["automatic_docking"]["connection"] = {"id": "new_connection"}
+        self.assertEqual(current(context(value)), "authorize")
+        for state in ("running", "completed"):
+            value["automatic_docking"]["latest"]["state"] = state
+            self.assertEqual(current(context(value)), "result")
+
     def test_all_modules_and_history_are_readonly(self):
         """覆盖全部注册模块、缺结果及只读状态，不得回写权限或事实。"""
         for mid in ORDER:
