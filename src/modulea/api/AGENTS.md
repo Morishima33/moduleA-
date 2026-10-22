@@ -1,5 +1,15 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-10-22 文献单成分同输入研究
+
+ModuleA.literature_input.1复用现有ModuleView字段；A01/A02的kpis、flow、table、params按作者归档名单及实际标准化结果展示，不声称常规三库／五库新检索或方剂OB/DL筛选。该协议不显示source_uploads、disease_scope、normalization、disease_workflow及重复常规input_audit；operation_guide复用既有结构，提示查看文献来源、身份明细、独立复核和A03。A03的input_audit对该协议使用原始关系数及实际来源，不构造零条范围组或三库缺口。历史只读和常规协议保持。没有新增前端字段或默认审核授权。
+
+A07.report.config.26仅在明确登记single_compound_literature_comparison且A01/A02均为上述同研究协议时生成，绑定文献和完整化学身份，继承第25版矩阵/图表验证，独立说明历史输入及实验未复现。既有报告版本和常规采集流程不改变。
+
+后台任务列表可显示内部a06_resume（用户明确继续后的中断原件恢复）；没有新增公共写端点、GET执行或默认续算，原申请与取消记录保持。它只复核同研究原授权和已有证据、计算缺失区域，不能改变来源名单、位点或参数。
+
+原任务“重试”在同一第三版原授权仍有效、原任务确曾中断且批次未完成时转入a06_resume；不重新运行连接/准备，不新建计算批次。取消、已完成、名单/连接/批准改变时拒绝。后台失败摘要保留具体异常原因，组合进度采用当前真实完成数。
+
 ## 2026-10-21 显式一次确认后连接并计算
 
 新增POST `/studies/{sid}/modules/A06_PREP/actions/automatic_start`，字段为原第三版执行请求并增加固定`continuation_version: A06.connect_run.1`，`expected_connection_id`可为null，`reference_choices`必须明确提供（没有连接时只能为空），其余绑定、确认人、说明、confirmed:true均须真实提交。返回202后台任务`a06_auto_start`。这是明确授权后的串行连接及计算，不是GET自动计算或默认勾选确认。连接完成不再停第二次确认；连接失败、上游改变、回收站或版本冲突时停止，不自动重试计算。开始时及连接后均校验绑定和扩展范围；既有连接原件仅在本研究同批准版本且指纹一致时复用，补齐失败成分后再交原第三版执行校验器。参考选择按新连接复验，不自动选共晶配体、不改变质控或代签结果。

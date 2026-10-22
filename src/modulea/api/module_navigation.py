@@ -4,7 +4,8 @@
 def context(view, result=None):
     """按模块及实际可见入口给出操作顺序；建议位置不代表步骤已经完成。"""
     mid = view["module"]["module_id"]
-    if view["historical"] or mid == "A02":
+    literature = (result or {}).get('summary', {}).get('input_profile') == 'ModuleA.literature_input.1'
+    if view["historical"] or (mid == "A02" and not literature):
         return None
     steps = []
 
@@ -29,7 +30,13 @@ def context(view, result=None):
     current = "review"
     prep = view.get("trial_preparation")
     automatic = view.get("automatic_docking")
-    if automatic and mid in ("A06_PREP", "A06"):
+    if literature and mid in ('A01', 'A02'):
+        add('source', '核对文献原始名单', 'module-results', '查看作者公开补充表的来源与记录数；本轮未重新采集常规三库或五库。')
+        add('identity', '查看身份核查明细', 'module-details', '按稳定编号核对映射、去重和未决记录；未决身份暂不采用的依据完整保留。')
+        review()
+        link('intersection', '查看标准化交集', 'A03', '两侧当前结果复核后查看本研究交集，不混入其他疾病名单。')
+        current = 'intersection' if approved else 'review'
+    elif automatic and mid in ("A06_PREP", "A06"):
         latest = automatic.get("latest")
         if mid == "A06_PREP":
             link("scope", "核对完整扩展名单", "A03_SELECT", "先核对主候选及扩展筛查名单；名单复核后才连接全部对象。")

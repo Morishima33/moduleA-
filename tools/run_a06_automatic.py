@@ -17,7 +17,7 @@ def main():
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument("--study", required=True)
     parser.add_argument("--repair-packages", type=Path)
-    parser.add_argument("--mode", choices=("connect", "run", "connect-run"), required=True)
+    parser.add_argument("--mode", choices=("connect", "run", "connect-run", "resume"), required=True)
     args = parser.parse_args()
     from docking_runtime import activate
     runtime = activate(args.tools_root)
@@ -26,7 +26,11 @@ def main():
     workflow = full_workflow(args.data_root)
     payload = json.loads(args.request_file.read_text("utf-8"))
     progress = lambda value: print("PROGRESS " + value, flush=True)
-    if args.mode == "connect":
+    if args.mode == 'resume':
+        from science_modules.a06.interrupted_recovery import run
+        data = run(workflow,args.study,payload,args.tools_root,CODE,progress,args.repair_packages)
+        result = {'run_id':data['run_id'],'message_zh':'已核验原件并续算中断批次；原评分保留，新完整结果仍待独立复核。'}
+    elif args.mode == "connect":
         if payload.get("policy_version") in (None, "A06.automatic.2"):
             from modulea.core.automatic_coverage import AutomaticCoverageWorkflow
             from science_modules.a06.automatic_coverage_sources import connect

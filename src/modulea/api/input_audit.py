@@ -26,11 +26,13 @@ def context(workflow, manifest, module_id, run, result, stale=False):
     if formula:
         summary = formula.get("summary") or {}
         sources = source_databases("A01", manifest, formula)
-        expected = ["TCMSP", "HERB", "BATMAN"] if manifest.get("workflow_profile") in ("A00.preupload.1", "A00.preupload.2") else sources
+        if summary.get('input_profile') == 'ModuleA.literature_input.1':
+            sources = [row['database'] for row in formula.get('tables', {}).get('source_summary', [])]
+        expected = ["TCMSP", "HERB", "BATMAN"] if manifest.get("workflow_profile") in ("A00.preupload.1", "A00.preupload.2") and summary.get('input_profile') != 'ModuleA.literature_input.1' else sources
         missing = [source for source in expected if source not in sources]
         info["formula"] = {
             "run_id": formula["run_id"], "sources": sources, "missing_sources": missing,
-            "component_label_zh": "候选成分分组" if "候选成分分组数" in summary else "筛选后不同成分",
+            "component_label_zh": "文献指定成分" if summary.get('input_profile') == 'ModuleA.literature_input.1' else "候选成分分组" if "候选成分分组数" in summary else "筛选后不同成分",
             "component_count": summary.get("候选成分分组数", summary.get("筛选后不同成分数")),
             "target_count": summary.get("标准化基因数"),
             "relationship_count": len(formula["tables"]["normalized_compound_targets"]) if "normalized_compound_targets" in formula.get("tables", {}) else summary.get("去重成分—人类基因关系数"),
@@ -51,6 +53,9 @@ def context(workflow, manifest, module_id, run, result, stale=False):
         counts = [{"value": value, "label_zh": label,
                    "count": sum(row["scope"] == value for row in groups),
                    "records": sum(row["records"] for row in groups if row["scope"] == value)} for value, label in SCOPES.items()]
+        literature = summary.get('input_profile') == 'ModuleA.literature_input.1'
+        if literature:
+            counts = []
         reason = ""
         if summary.get("标准化基因数") == 0:
             if groups and all(row["scope"] in ("outside", "subtype") for row in groups):
@@ -59,7 +64,7 @@ def context(workflow, manifest, module_id, run, result, stale=False):
                 reason = "仍有待核验的疾病范围记录，尚不能据此判断本病没有基因。"
             else:
                 reason = "当前归档的标准化疾病集合为空，请核对采用范围和身份处理明细。"
-        info["disease"] = {"run_id": disease["run_id"], "candidate_count": summary.get("候选记录数"),
+        info["disease"] = {"run_id": disease["run_id"], "candidate_count": summary.get("原始关系记录数") if literature else summary.get("候选记录数"),
                            "target_count": summary.get("标准化基因数"), "scope_counts": counts, "empty_reason_zh": reason}
         if reason:
             info["checks"].append({"level": "warning", "label_zh": "疾病空集合的来源", "detail_zh": reason, "module_id": "A02"})

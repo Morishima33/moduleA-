@@ -313,7 +313,7 @@ from .drawing import run_figure, run_packages, run_bundle
 from .automatic_docking import execute as run_automatic
 from .automatic_display import run as run_automatic_display
 HANDLERS["a06_display"] = run_automatic_display
-HANDLERS.update({"a06_auto_connect": run_automatic, "a06_auto_run": run_automatic, "a06_auto_start": run_automatic})
+HANDLERS.update({"a06_auto_connect": run_automatic, "a06_auto_run": run_automatic, "a06_auto_start": run_automatic, "a06_resume": run_automatic})
 from .ranked_pathway_maps import run_ranked_maps
 HANDLERS["a05_pathway_maps"] = run_ranked_maps
 HANDLERS.update({"normalization_preview": run_normalization, "normalization_publish": run_normalization})

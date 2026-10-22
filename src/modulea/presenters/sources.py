@@ -5,8 +5,33 @@ from __future__ import annotations
 from .base import Parts, clean, focus, kpi, param, pick, step, table, tables_of
 
 
+def present_literature_input(result: dict, module: str) -> Parts:
+    """文献单成分来源按真实范围展示，不能冒充TCMSP筛选或现行常规五库采集。"""
+    s, t = result.get('summary') or {}, tables_of(result)
+    parts = Parts()
+    parts.kpis = clean([
+        kpi('指定成分', s.get('筛选后不同成分数'), '文献指定，非方剂筛选') if module == 'A01' else None,
+        kpi('原始不同标识', s.get('原始不同标识数'), '未把基因符号和蛋白缩写当作同一身份'),
+        kpi('标准化成分靶点' if module == 'A01' else '标准化疾病靶点', s.get('标准化基因数'), '明确人类HGNC身份'),
+        kpi('未决身份组', s.get('身份问题组数'), '本次暂不采用，原件及依据保留'),
+    ])
+    parts.flow = clean([
+        step('文献原始记录', s.get('原始关系记录数'), '作者公开历史名单', kind='main'),
+        step('不同原始标识', s.get('原始不同标识数'), '保留各来源位置'),
+        step('标准化靶点', s.get('标准化基因数'), '身份核对与去重', kind='end'),
+    ])
+    parts.flow_note_zh = '同输入方法对比，使用文献归档名单；不是本轮常规三库／五库独立新检索。单成分不套用方剂OB/DL筛选。'
+    parts.table = table([('database', '文献来源'), ('records', '原始记录'), ('availability', '资料状态')], t.get('source_summary') or [], 'source_summary')
+    parts.params = clean([param('输入协议', s.get('input_profile')), param('参考文献DOI', s.get('reference_doi')),
+                          param('基因身份规则', s.get('mapping_rule')), param('研究范围', s.get('资料阶段')),
+                          param('身份例外', s.get('身份问题处理'))])
+    return parts
+
+
 def present_a01(result: dict, ctx: dict) -> Parts:
     s = result.get("summary") or {}
+    if s.get('input_profile') == 'ModuleA.literature_input.1':
+        return present_literature_input(result, 'A01')
     if "候选成分分组数" in s:
         return present_a01_multisource(result, ctx)
     t = tables_of(result)
@@ -82,6 +107,8 @@ def present_a01_multisource(result: dict, ctx: dict) -> Parts:
 
 def present_a02(result: dict, ctx: dict) -> Parts:
     s = result.get("summary") or {}
+    if s.get('input_profile') == 'ModuleA.literature_input.1':
+        return present_literature_input(result, 'A02')
     t = tables_of(result)
     sources = source_display_rows(t.get("source_summary") or [])
     parts = Parts()

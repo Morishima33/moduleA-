@@ -12,6 +12,10 @@ def run_reports(workflow, study_id, expected_a07, reason, **kwargs): # 网页和
     manifest = workflow.load(study_id) # 读取本次科学与审批版本。
     a06 = manifest.get('current', {}).get('A06')
     if a06 and workflow.run(manifest, a06).get('config', {}).get('schema_version') in ('A06.automatic.1', 'A06.automatic.2', 'A06.automatic.3'):
+        a00 = manifest.get('current', {}).get('A00')
+        if a00 and workflow.result(manifest, a00)['summary'].get('study_type') == 'single_compound_literature_comparison':
+            from science_modules.a07.literature_reports import run_reports as generate
+            return generate(workflow, study_id, expected_a07, reason, **kwargs)
         from science_modules.a07.automatic_reports import run_reports as generate
         return generate(workflow, study_id, expected_a07, reason, **kwargs)
     if a06 and workflow.run(manifest, a06).get('config', {}).get('schema_version') == 'A06.trial.handoff.1':
@@ -45,9 +49,13 @@ def validator(root): # 新旧报告均按自身保存契约校验。
     from science_modules.a07.refined_reports import validator as refined_validator
     from science_modules.a07.appendix_reports import validator as appendix_validator
     from science_modules.a07.automatic_reports import validator as automatic_validator
-    return automatic_validator(root, appendix_validator(root, refined_validator(root, commented_validator(root, trial_validator(root, validate(root)))))) # 新模板继续保留各版历史校验。
+    from science_modules.a07.literature_reports import validator as literature_validator
+    return literature_validator(root, automatic_validator(root, appendix_validator(root, refined_validator(root, commented_validator(root, trial_validator(root, validate(root))))))) # 新模板继续保留各版历史校验。
 
 def require_alignment(workflow, manifest, run): # 完整报告批准前核对可选通路最新决定。
+    if run.get('config', {}).get('schema_version') == 'A07.report.config.26':
+        from science_modules.a07.literature_reports import require_alignment as literature_alignment
+        literature_alignment(workflow, manifest, run)
     if run.get('config', {}).get('schema_version') == 'A07.report.config.25':
         from science_modules.a07.automatic_reports import require_alignment as automatic_alignment
         automatic_alignment(workflow, manifest, run)

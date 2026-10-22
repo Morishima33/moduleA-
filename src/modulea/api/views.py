@@ -222,6 +222,8 @@ class Views:
         """导航指向扩展范围核查，不改变原批次的科研状态或批准。"""
         fallback = self._next_step(states)
         active_task = self.tasks.active_for(manifest['study_id'])
+        if active_task and active_task.get('kind') == 'a06_resume':
+            return {'module_id':'A06','code':'running','text_zh':'正在核验原件并续算未完成区域；已有评分保留，无需重新连接或确认。'}
         if manifest.get('trashed') or (active_task and active_task.get('kind') not in ('a06_auto_connect', 'a06_auto_start')):
             return fallback
         if not all(states.get(m, {}).get('code') == 'approved' for m in ('A03', 'A03_SELECT', 'A04')):
@@ -452,8 +454,17 @@ class Views:
         if historical and auto_result:
             from ..core.automatic_experience import historical_context
             response['automatic_docking'] = historical_context(workflow, real, run)
+        literature_input = bool(result and result.get('summary', {}).get('input_profile') == 'ModuleA.literature_input.1')
+        if literature_input and module_id in ('A01', 'A02'):
+            # 文献归档输入不伪装成常规采集表单，原件及身份明细仍可从表格、文件入口核对。
+            for key in ('source_uploads', 'disease_scope', 'normalization', 'disease_workflow'):
+                response[key] = None
+            response['module'].update(title_zh='单成分靶点' if module_id == 'A01' else '文献疾病靶点',
+                purpose_zh='核对作者公开历史名单及官方身份标准化结果；本研究为同输入方法对比。')
         response["operation_guide"] = operation_navigation(response, result)
         response["input_audit"] = input_audit_context(workflow, real, module_id, run, result, stale=not historical and state["code"] == "stale")
+        if literature_input and module_id in ('A01', 'A02'):
+            response['input_audit'] = None  # 两侧文献数量已由同源结果数量链展示，避免重复常规范围表。
         return response
 
     @staticmethod

@@ -103,11 +103,12 @@ def full_workflow(data_root: Path) -> Workflow:
     from science_modules.a06.automatic_engine import validator as automatic_validator
     from science_modules.a06.automatic_coverage_engine import validator as rescue_validator
     from science_modules.a06.reference_engine import validator as reference_validator
+    from science_modules.literature_input import validator as literature_validator
 
     root = data_root
     return DockingWorkflow(root, {
-        "A01": upload_validator(root, multisource_validator(root, normalization_validator(root, validate_components))),
-        "A02": normalization_validator(root, validate_disease),
+        "A01": literature_validator(root, "A01", upload_validator(root, multisource_validator(root, normalization_validator(root, validate_components)))),
+        "A02": literature_validator(root, "A02", normalization_validator(root, validate_disease)),
         "A03": validate_intersection,
         "A03_SELECT": validate_selection,
         "A04": ppi_validator(root),

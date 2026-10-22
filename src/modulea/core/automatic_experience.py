@@ -175,8 +175,11 @@ class AutomaticExperienceWorkflow(AutomaticCoverageWorkflow):
 
     def _begin(self, manifest, module, inputs, config, reason):
         """只对专用新报告版本绕过旧“不支持报告”提示，其余旧分支保持。"""
-        if module == 'A07' and config.get('schema_version') == 'A07.report.config.25':
+        if module == 'A07' and config.get('schema_version') in ('A07.report.config.25', 'A07.report.config.26'):
             require(is_automatic(self, manifest, manifest['current'].get('A06')), '新报告必须使用同批自动结果')
+            if config.get('schema_version') == 'A07.report.config.26':
+                a00 = self.result(manifest, manifest['current']['A00'])['summary']
+                require(a00.get('study_type') == 'single_compound_literature_comparison', '文献报告须由本研究登记明确启用')
             # 跳过两个旧自动协议的冻结报告阻断，继续走原Workflow依赖、批准和写锁检查。
             return super(AutomaticDockingWorkflow, self)._begin(manifest, module, inputs, config, reason)
         return super()._begin(manifest, module, inputs, config, reason)

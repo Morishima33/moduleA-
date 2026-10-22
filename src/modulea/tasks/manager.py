@@ -29,6 +29,7 @@ KINDS = {"a02_scope_review": "保存疾病范围核验", "a02_sources_retry": "�
 
 
 KINDS["a05_pathway_maps"] = "生成KEGG排名首位命中图"
+KINDS['a06_resume'] = '核验原件并续算明确授权的中断批次'
 KINDS.update({"a06_display": "生成同批对接图表与矩阵", "a06_auto_connect": "连接本研究对接资料（不评分）", "a06_auto_run": "一次授权自动准备、质控、对接和出图"})
 KINDS.update({"normalization_preview": "核查基因身份并生成标准化预览", "normalization_publish": "生成标准化结果，等待整体复核"})
 KINDS.update({"a06_figure": "验证并保存对接结果图片", "a06_pair_packages": "整理所选对接出图包",
@@ -127,6 +128,17 @@ class TaskManager:
     def active_for(self, study_id: str) -> dict | None:
         tasks = self.list(study_id, active_only=True, limit=1)
         return tasks[0] if tasks else None
+
+    def recovery_source(self, task: dict) -> dict:
+        """恢复只接受同请求真实中断的原计算任务，取消或失败不视为中断。"""
+        request = json.loads(task['payload'])
+        with self._connect() as db:
+            rows = db.execute("SELECT task_id,kind,state,payload FROM tasks WHERE study_id=? AND kind IN ('a06_auto_start','a06_auto_run','a06_resume') ORDER BY created_at DESC", (task['study_id'],)).fetchall()
+        matches = [r for r in rows if r['task_id'] != task.get('task_id') and json.loads(r['payload'] or '{}').get('request_id') == request['request_id']]
+        source = next((r for r in matches if r['kind'] in ('a06_auto_start','a06_auto_run') and r['state'] == 'interrupted'), None)
+        if source is None or (matches and matches[0]['state'] in ('cancelled','succeeded','running','queued')):
+            raise ValueError('仅能在明确继续后恢复同请求的中断任务；取消、失败或其他研究不适用')
+        return {'task_id':source['task_id'],'state':source['state']}
 
     def _public(self, row: sqlite3.Row) -> dict:
         data = dict(row)
@@ -238,7 +250,7 @@ class TaskManager:
             except OSError:
                 pass
         self.update(task_id, state="cancelled", finished_at=_now(), error_zh="用户取消；本次未完整提交的运行不可复用，原文件保留")
-        if task["kind"] in ("a06_auto_run", "a06_auto_start"):
+        if task["kind"] in ("a06_auto_run", "a06_auto_start", "a06_resume"):
             from ..core.kernel import Kernel
             payload = json.loads(task["payload"])
             Kernel(self.settings).workflow().fail_automatic(task["study_id"], payload["request_id"], "用户取消，已有原件和尝试保留")
@@ -256,6 +268,20 @@ class TaskManager:
             raise KeyError(task_id)
         if task["state"] in ACTIVE:
             return self.get(task_id), False
+        if task['kind'] in ('a06_auto_start','a06_auto_run','a06_resume') and task.get('payload'):
+            request = json.loads(task['payload'])
+            if request.get('policy_version') == 'A06.automatic.3' and task['state'] != 'cancelled':
+                from ..core.kernel import Kernel
+                from storage import read_json, verified_file
+                workflow = Kernel(self.settings).workflow()
+                manifest = workflow.load(task['study_id'])
+                batch = workflow.automatic_record(manifest,request['request_id'])
+                if batch and batch.get('state') == 'running' and batch.get('run_id') == manifest['current'].get('A06'):
+                    # 重试恢复原授权，不能把首次expected_a06旧值当作新建一批的请求。
+                    authorization = read_json(verified_file(workflow.location(task['study_id']),batch['authorization']))
+                    payload = authorization['request']
+                    self.recovery_source(dict(task,payload=json.dumps(payload)))
+                    return self.submit(task['study_id'],'a06_resume',requested_by,payload)
         return self.submit(task["study_id"], task["kind"], requested_by, json.loads(task["payload"]) if task.get("payload") else None)
 
     def log(self, task_id: str, offset: int = 0, limit: int = 65536) -> dict:

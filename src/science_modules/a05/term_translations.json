@@ -1948,5 +1948,125 @@
     "zh": "过氧化物酶体",
     "source": "https://www.kegg.jp/pathway/hsa04146",
     "translation_basis": "依据官方英文名称及术语定义人工核译；标准缩写及蛋白专名保留"
+  },
+  "GO:0030574": {
+    "english": "collagen catabolic process",
+    "zh": "胶原分解代谢过程",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0030574",
+    "translation_basis": "2026-10-22按QuickGO官方稳定编号及英文原名逐项核译；中文为本项目译名，非官方中文译名"
+  },
+  "GO:0043202": {
+    "english": "lysosomal lumen",
+    "zh": "溶酶体腔",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0043202",
+    "translation_basis": "2026-10-22按QuickGO官方稳定编号及英文原名逐项核译；中文为本项目译名，非官方中文译名"
+  },
+  "GO:0005925": {
+    "english": "focal adhesion",
+    "zh": "黏着斑",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0005925",
+    "translation_basis": "2026-10-22按QuickGO官方稳定编号及英文原名逐项核译；中文为本项目译名，非官方中文译名"
+  },
+  "GO:0030055": {
+    "english": "cell-substrate junction",
+    "zh": "细胞－基质连接",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0030055",
+    "translation_basis": "2026-10-22按QuickGO官方稳定编号及英文原名逐项核译；中文为本项目译名，非官方中文译名"
+  },
+  "GO:0019902": {
+    "english": "phosphatase binding",
+    "zh": "磷酸酶结合",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0019902",
+    "translation_basis": "2026-10-22按QuickGO官方稳定编号及英文原名逐项核译；中文为本项目译名，非官方中文译名"
+  },
+  "GO:0043491": {
+    "english": "phosphatidylinositol 3-kinase/protein kinase B signal transduction",
+    "zh": "磷脂酰肌醇3激酶／蛋白激酶B信号转导",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0043491",
+    "translation_basis": "2026-10-22按QuickGO官方稳定编号及英文原名逐项核译；中文为本项目译名，非官方中文译名"
+  },
+  "GO:0004713": {
+    "english": "protein tyrosine kinase activity",
+    "zh": "蛋白酪氨酸激酶活性",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0004713",
+    "translation_basis": "2026-10-22按QuickGO官方稳定编号及英文原名逐项核译；中文为本项目译名，非官方中文译名"
+  },
+  "GO:0031904": {
+    "english": "endosome lumen",
+    "zh": "内体腔",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0031904",
+    "translation_basis": "2026-10-22按QuickGO官方稳定编号及英文原名逐项核译；中文为本项目译名，非官方中文译名"
+  },
+  "GO:0031406": {
+    "english": "carboxylic acid binding",
+    "zh": "羧酸结合",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0031406",
+    "translation_basis": "2026-10-22按QuickGO官方稳定编号及英文原名逐项核译；中文为本项目译名，非官方中文译名"
+  },
+  "GO:0043177": {
+    "english": "organic acid binding",
+    "zh": "有机酸结合",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0043177",
+    "translation_basis": "2026-10-22按QuickGO官方稳定编号及英文原名逐项核译；中文为本项目译名，非官方中文译名"
+  },
+  "GO:1901681": {
+    "english": "sulfur compound binding",
+    "zh": "含硫化合物结合",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:1901681",
+    "translation_basis": "2026-10-22按QuickGO官方稳定编号及英文原名逐项核译；中文为本项目译名，非官方中文译名"
+  },
+  "GO:0035578": {
+    "english": "azurophil granule lumen",
+    "zh": "嗜天青颗粒腔",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0035578",
+    "translation_basis": "2026-10-22按QuickGO官方稳定编号及英文原名逐项核译；中文为本项目译名，非官方中文译名"
+  },
+  "GO:0034056": {
+    "english": "estrogen response element binding",
+    "zh": "雌激素反应元件结合",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0034056",
+    "translation_basis": "2026-10-22按QuickGO官方稳定编号及英文原名逐项核译；中文为本项目译名，非官方中文译名"
+  },
+  "GO:0051896": {
+    "english": "regulation of phosphatidylinositol 3-kinase/protein kinase B signal transduction",
+    "zh": "磷脂酰肌醇3激酶／蛋白激酶B信号转导调控",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0051896",
+    "translation_basis": "2026-10-22按QuickGO官方稳定编号及英文原名逐项核译；中文为本项目译名，非官方中文译名"
+  },
+  "GO:0051897": {
+    "english": "positive regulation of phosphatidylinositol 3-kinase/protein kinase B signal transduction",
+    "zh": "磷脂酰肌醇3激酶／蛋白激酶B信号转导正调控",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0051897",
+    "translation_basis": "2026-10-22按QuickGO官方稳定编号及英文原名逐项核译；中文为本项目译名，非官方中文译名"
+  },
+  "GO:1904813": {
+    "english": "ficolin-1-rich granule lumen",
+    "zh": "富含纤维胶凝蛋白1的颗粒腔",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:1904813",
+    "translation_basis": "2026-10-22按QuickGO官方稳定编号及英文原名逐项核译；中文为本项目译名，非官方中文译名"
+  },
+  "GO:0048732": {
+    "english": "gland development",
+    "zh": "腺体发育",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0048732",
+    "translation_basis": "2026-10-22按QuickGO官方稳定编号及英文原名逐项核译；中文为本项目译名，非官方中文译名"
+  },
+  "GO:0022617": {
+    "english": "extracellular matrix disassembly",
+    "zh": "细胞外基质解体",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0022617",
+    "translation_basis": "2026-10-22按QuickGO官方稳定编号及英文原名逐项核译；中文为本项目译名，非官方中文译名"
+  },
+  "GO:0007159": {
+    "english": "leukocyte cell-cell adhesion",
+    "zh": "白细胞间黏附",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0007159",
+    "translation_basis": "2026-10-22按QuickGO官方稳定编号及英文原名逐项核译；中文为本项目译名，非官方中文译名"
+  },
+  "GO:0019199": {
+    "english": "transmembrane receptor protein kinase activity",
+    "zh": "跨膜受体蛋白激酶活性",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0019199",
+    "translation_basis": "2026-10-22按QuickGO官方稳定编号及英文原名逐项核译；中文为本项目译名，非官方中文译名"
   }
 }
