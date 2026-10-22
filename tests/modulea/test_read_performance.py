@@ -1,6 +1,7 @@
 """虚构文件验证只读提速仍拒绝篡改、缺失、跨目录，并隔离并发读取。"""
 
 import hashlib
+import json
 import os
 from pathlib import Path
 import sys
@@ -48,6 +49,40 @@ class ReadArchiveTests(unittest.TestCase):
         self.path.unlink()
         with self.assertRaises(ContractError):
             ReadArchive().verify(self.root, self.record)
+
+    def test_large_attachment_is_fully_checked_including_its_last_byte(self):
+        self.path.write_bytes(b"x" * (2 * 1024 * 1024) + b"z")
+        record = file_record(self.root, self.path, "large")
+        reader = ReadArchive()
+        self.assertEqual(reader.verify(self.root, record), self.path.resolve())
+        saved = self.path.stat()
+        with self.path.open("r+b") as stream:
+            stream.seek(-1, os.SEEK_END)
+            stream.write(b"y")
+        os.utime(self.path, ns=(saved.st_atime_ns, saved.st_mtime_ns))
+        with self.assertRaises(ContractError):
+            reader.verify(self.root, record)
+
+    def test_json_read_rechecks_bytes_before_reusing_parsed_content(self):
+        self.path.write_text(json.dumps({"value": "研究"}, ensure_ascii=False), encoding="utf-8")
+        record = file_record(self.root, self.path, "json")
+        reader = ReadArchive()
+        self.assertEqual(reader.read(self.root, record), {"value": "研究"})
+        saved = self.path.stat()
+        self.path.write_text(json.dumps({"value": "篡改"}, ensure_ascii=False), encoding="utf-8")
+        os.utime(self.path, ns=(saved.st_atime_ns, saved.st_mtime_ns))
+        with self.assertRaises(ContractError):
+            reader.read(self.root, record)
+
+    def test_parallel_batch_checks_the_last_attachment(self):
+        records = []
+        for index in range(97):
+            path = self.root / f"group-{index}.txt"
+            path.write_bytes(b"original")
+            records.append(file_record(self.root, path, "test"))
+        (self.root / records[-1]["path"]).write_bytes(b"modified")
+        with self.assertRaises(ContractError):
+            ReadArchive().verify_all(self.root, records)
 
     def test_parallel_batch_rejects_any_bad_attachment(self):
         records = []
@@ -100,6 +135,23 @@ class ReadArchiveTests(unittest.TestCase):
 
 class SnapshotFlightTests(unittest.TestCase):
     """并发只合并正在读取的同一版本，结束、失败或新版本都重新读取。"""
+
+    def test_clones_keep_internal_aliases_without_sharing_original_containers(self):
+        shared = [1]
+        original = {"first": shared, "second": shared, "tuple": (1, 2)}
+        cloned = SnapshotFlight().run("version", lambda: original)
+        self.assertEqual(cloned, original)
+        self.assertIs(cloned["first"], cloned["second"])
+        self.assertIsInstance(cloned["tuple"], tuple)
+        cloned["first"].append(2)
+        self.assertEqual(original["first"], [1])
+
+    def test_non_archive_python_objects_use_the_original_copy_behavior(self):
+        original = {"path": Path("archive.json"), "rows": []}
+        cloned = SnapshotFlight().run("version", lambda: original)
+        self.assertEqual(cloned, original)
+        cloned["rows"].append(1)
+        self.assertEqual(original["rows"], [])
 
     def test_concurrent_read_is_shared_but_results_are_independent(self):
         flight = SnapshotFlight()

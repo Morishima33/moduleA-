@@ -30,6 +30,7 @@ export default function App() {
   const [crumb, setCrumb] = useState<string | null>(null); // 顶栏位置中的研究名
   const trackedRef = useRef(tracked); // 轮询回调中读取最新值
   trackedRef.current = tracked;
+  const needsFinalRefresh = useRef(false); // 只有实际跟踪过任务，结束后才补一次落盘核对。
 
   // 启动时读取会话（取得令牌和决定中文名）
   useEffect(() => {
@@ -59,15 +60,17 @@ export default function App() {
   // 启动、进入研究及重新回到页面时发现活动任务，避免漏掉快速完成的任务。
   useEffect(() => {
     let current = true;
-    async function recover() {
+    async function recover(refresh: boolean) {
       if (document.visibilityState === 'hidden') return;
-      try { const r = await api.tasks({ active: true }); if (current) { trackTasks(r.items); bumpRefresh(); } }
+      try { const r = await api.tasks({ active: true }); if (current) { trackTasks(r.items); if (refresh) bumpRefresh(); } }
       catch { /* 保留现有页面，下一次聚焦重试。 */ }
     }
-    void recover();
-    window.addEventListener('focus', recover);
-    document.addEventListener('visibilitychange', recover);
-    return () => { current = false; window.removeEventListener('focus', recover); document.removeEventListener('visibilitychange', recover); };
+    // 新页面自身已经读取当前归档；发现任务不再立即重发整套页面请求。
+    void recover(false);
+    const refocus = () => { void recover(true); };
+    window.addEventListener('focus', refocus);
+    document.addEventListener('visibilitychange', refocus);
+    return () => { current = false; window.removeEventListener('focus', refocus); document.removeEventListener('visibilitychange', refocus); };
   }, [trackTasks, bumpRefresh, route.studyId]);
 
   // 串行轻量轮询；终态刷新并补一次核对，不在每次轮询重载研究归档。
@@ -96,8 +99,9 @@ export default function App() {
 
   // 终态清空跟踪后再核对一次，覆盖任务落盘与页面读取的边界。
   useEffect(() => {
-    if (tracked.size) return;
-    const timer = window.setTimeout(bumpRefresh, 1000);
+    if (tracked.size) { needsFinalRefresh.current = true; return; }
+    if (!needsFinalRefresh.current) return;
+    const timer = window.setTimeout(() => { needsFinalRefresh.current = false; bumpRefresh(); }, 1000);
     return () => window.clearTimeout(timer);
   }, [tracked, bumpRefresh]);
 

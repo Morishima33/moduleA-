@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import hashlib
+import json
+import marshal
+import os
 import stat
 import threading
 from concurrent.futures import Future, ThreadPoolExecutor
@@ -10,7 +13,6 @@ from copy import deepcopy
 from pathlib import Path
 
 from contracts import ContractError, require, safe_id
-from storage import read_json
 
 
 class ReadArchive:
@@ -33,7 +35,7 @@ class ReadArchive:
         except OSError as error:
             raise ContractError("归档文件缺失") from error
 
-    def _verify(self, root, record):
+    def _verify(self, root, record, *, content=False):
         """目录仍须限于本研究，链接单独展开，实际文件字节仍按原指纹核验。"""
         require(isinstance(record, dict), "文件索引缺失")
         root = Path(root)
@@ -56,19 +58,34 @@ class ReadArchive:
         require(path.is_relative_to(root), "文件路径超出研究包")
         require(stat.S_ISREG(info.st_mode), "归档文件缺失")
         signature = self.signature(info)
-        data = path.read_bytes()
-        require(hashlib.sha256(data).hexdigest() == record.get("sha256")
-                and len(data) == record.get("bytes"), "归档文件校验失败，暂停使用")
+        # 大结构/报告只分块计算指纹，避免多个页面同时把整批附件读入内存。
+        # JSON则返回这次已核验的原始字节，不能另开文件解析未经核验的第二份内容。
+        with path.open("rb") as stream:
+            opened = self.signature(os.fstat(stream.fileno()))
+            # Windows的lstat与fstat对ctime的含义可能不同；跨接口比较共同身份字段，
+            # 句柄自身前后仍比较完整签名，路径自身前后也保持原完整检查。
+            require(opened[:4] == signature[:4],
+                    "归档文件读取期间发生变化，请刷新")
+            data = stream.read() if content else None
+            digest = hashlib.sha256(data).hexdigest() if content else hashlib.file_digest(stream, "sha256").hexdigest()
+            size = len(data) if content else info.st_size
+            require(self.signature(os.fstat(stream.fileno())) == opened,
+                    "归档文件读取期间发生变化，请刷新")
+        require(digest == record.get("sha256") and size == record.get("bytes"),
+                "归档文件校验失败，暂停使用")
         # 不凭文件时间跳过内容核验：Windows创建时间不等于内容变更时间。
         require(self.signature(path.stat()) == signature, "归档文件读取期间发生变化，请刷新")
-        return path
+        return (path, data) if content else path
 
     def read(self, root, record):
         """逐次核验字节；同一请求中不重复解析相同内容的JSON。"""
-        path = self.verify(root, record)
+        try:
+            path, data = self._verify(root, record, content=True)
+        except OSError as error:
+            raise ContractError("归档文件缺失") from error
         key = (path, record["sha256"], record["bytes"])
         if key not in self.json:
-            self.json[key] = read_json(path)
+            self.json[key] = json.loads(data.decode("utf-8"))
         return self.json[key]
 
     def verify_all(self, root, records):
@@ -78,8 +95,14 @@ class ReadArchive:
                 self.verify(root, record)
             return
         with ThreadPoolExecutor(max_workers=8, thread_name_prefix="archive-read") as pool:
+            # 小文件按批调度，减少几千个Future的内存与线程切换；每件仍完整核验。
+            chunk = min(32, max(1, len(records) // 32))
+            batches = [records[i:i + chunk] for i in range(0, len(records), chunk)]
+            def verify_batch(batch):
+                for record in batch:
+                    self.verify(root, record)
             # 取完迭代器以传播每项异常，不能把未等待的任务当核验完成。
-            list(pool.map(lambda record: self.verify(root, record), records))
+            list(pool.map(verify_batch, batches))
 
 
 class ReadResultMixin:
@@ -164,6 +187,18 @@ class SnapshotFlight:
         self._lock = threading.Lock()
         self._pending = {}
 
+    @staticmethod
+    def _clone(value):
+        """在内存中复制已核验的归档容器，保留别名和各请求的修改隔离。
+
+        编解码字节只由当前内存对象生成，不读取文件或接收外部序列化输入。
+        页面主要由JSON容器组成；遇到其他Python对象仍使用原deepcopy。
+        """
+        try:
+            return marshal.loads(marshal.dumps(value))
+        except (TypeError, ValueError):
+            return deepcopy(value)
+
     def run(self, key, read):
         """各请求取得独立副本，任何写请求仍独立重新核验。"""
         with self._lock:
@@ -178,7 +213,7 @@ class SnapshotFlight:
                     future.set_result(read())
                 except BaseException as error:
                     future.set_exception(error)
-            return deepcopy(future.result())
+            return self._clone(future.result())
         finally:
             if owner:
                 with self._lock:
