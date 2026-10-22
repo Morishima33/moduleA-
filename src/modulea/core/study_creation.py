@@ -91,7 +91,8 @@ class StudyCreation:
             else:
                 evidence = verify_mesh_identity(fields["mesh_term"], fields["mesh_id"])
                 intake = dict(fields, species=9606, disease_scope="仅本病，不纳入亚型",
-                              mesh_verification=evidence, creation_request_id=request_id)
+                              mesh_verification=evidence, creation_request_id=request_id,
+                              component_source_profile="A01.multisource.collect.1")
                 study_id = workflow.create(intake)
                 response = self._response(workflow, study_id, workflow.load(study_id)["current"]["A00"], True)
             write_json(ledger, {"input_hash": fingerprint(fields), "study_id": response["study_id"], "run_id": response["run_id"]})

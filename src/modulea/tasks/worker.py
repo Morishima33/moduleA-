@@ -96,7 +96,8 @@ def run_continue(settings: Settings, task: dict, manager: TaskManager) -> str:
     # 复用冻结编排，仅将该科学子进程的PPI入口显式绑定为新版本；不修改旧模块全局。
     from types import FunctionType
     from ppi_dispatch import run_ppi
-    continuation = FunctionType(continue_after_review.__code__, dict(continue_after_review.__globals__, run_ppi=run_ppi, run_enrichment=run_enrichment))
+    from science_modules.a01.collection_flow import run_components
+    continuation = FunctionType(continue_after_review.__code__, dict(continue_after_review.__globals__, run_ppi=run_ppi, run_enrichment=run_enrichment, run_components=run_components))
     result = continuation(workflow, task["study_id"])
     print("自动接续结果：", result, flush=True)
     manager.update(task["task_id"], progress={"step_zh": "已停在下一人工关口", "done": 1, "total": 1})
@@ -157,12 +158,51 @@ def run_source_upload(settings: Settings, task: dict, manager: TaskManager) -> s
 
 # 完整来源整理也走已有后台任务与Workflow，不自动推进到A03。
 def run_a01_sources(settings: Settings, task: dict, manager: TaskManager) -> str:
-    from science_modules.a01.uploads import process
+    from science_modules.a01.collection_flow import process
     payload = json.loads(task.get("payload") or "{}")
     manager.update(task["task_id"], progress={"step_zh": "按现有规则整理三库与统一身份", "done": 0, "total": 1})
     result = process(full_workflow(settings.data_root), task["study_id"], payload["expected_a00"], payload["expected_run"], payload["expected_staging"], payload["reason"])
     manager.update(task["task_id"], progress={"step_zh": "新A01结果待独立复核", "done": 1, "total": 1})
     return "已生成新的三库A01：" + result["run_id"] + "；身份问题保留，未自动批准或运行下游。"
+
+
+def run_a01_acquire(settings, task, manager):
+    """只获取并暂存原件；完整整理和批准是后续明确动作。"""
+    from science_modules.a01.collection_flow import acquire_sources
+    payload = json.loads(task["payload"])
+    def progress(text):
+        manager.update(task["task_id"], progress={"step_zh": text, "done": 0, "total": 1})
+    results = acquire_sources(full_workflow(settings.data_root), task["study_id"], payload["expected_a00"], payload["expected_run"],
+                              payload["expected_staging"], settings.data_root / "studies" / task["study_id"] / "raw/A01_acquisition" / payload.get("acquisition_id", task["task_id"]),
+                              payload["databases"], progress)
+    failed = [r for r in results if r["status"] != "success"]
+    if failed:
+        raise ValueError("；".join(r["database"] + "：" + r["message_zh"] for r in failed) + "；成功库原件已保留，请补齐失败库，未回退单库。")
+    return "所选库已获取并通过统一来源校验；请整理三库结果，当前A02保持。"
+
+
+def run_a01_resolve(settings, task, manager):
+    """只保存明确处理决定并追加待复核运行，不签署整体批准。"""
+    from science_modules.a01.collection_flow import process
+    p = json.loads(task["payload"])
+    result = process(full_workflow(settings.data_root), task["study_id"], p["expected_a00"], p["expected_run"], p["expected_staging"], p["note"], p)
+    return "A01核验处理已另存：" + result["run_id"] + "，请独立整体复核。A02未改变。"
+
+
+def run_a02_mapping_preview(settings, task, manager):
+    """候选与响应仅留独立目录；A02及其人工决定保持。"""
+    from science_modules.a02.disease_candidates import preview
+    from contracts import require
+    p = json.loads(task["payload"])
+    w = full_workflow(settings.data_root)
+    m = w.load(task["study_id"])
+    require(not m.get("trashed") and m["current"].get("A00") == p["expected_a00"] and m["current"].get("A02", "") == p["expected_run"], "研究版本已改变")
+    folder = w.location(task["study_id"]) / "raw/A02_mapping_previews" / task["task_id"]
+    preview(w, task["study_id"], p["databases"], folder,
+            progress=lambda text: manager.update(task["task_id"], progress={"step_zh": text, "done": 0, "total": 1}))
+    from storage import file_record, write_json
+    write_json(folder / "index.json", {"file": file_record(w.location(task["study_id"]), folder / "preview.json", "disease_mapping_preview")})
+    return "疾病映射候选已保存；仅供核验，当前A02原件、集合和批准未改变。"
 
 # 只生成本次绑定A03的PPI，停止在A04复核，不推进其他科学模块。
 def run_a04_ppi(settings: Settings, task: dict, manager: TaskManager) -> str:
@@ -317,6 +357,7 @@ HANDLERS.update({"a06_auto_connect": run_automatic, "a06_auto_run": run_automati
 from .ranked_pathway_maps import run_ranked_maps
 HANDLERS["a05_pathway_maps"] = run_ranked_maps
 HANDLERS.update({"normalization_preview": run_normalization, "normalization_publish": run_normalization})
+HANDLERS.update(a01_acquire=run_a01_acquire, a01_resolve=run_a01_resolve, a02_mapping_preview=run_a02_mapping_preview)
 HANDLERS.update({"a06_figure": run_figure, "a06_pair_packages": run_packages, "a06_pair_bundle": run_bundle})
 
 

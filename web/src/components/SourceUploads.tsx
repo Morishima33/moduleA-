@@ -5,6 +5,7 @@ import { api, errorText } from '../api/client';
 import type { SourceUploadInfo, SourceUploadItem, Task } from '../api/types';
 import { useApp } from '../lib/appContext';
 import { SectionHead } from './common';
+import SourceAutomation from './SourceAutomation';
 
 const OFFICIAL: Record<string, string> = { TCMSP: 'https://tcmsp-e.com/', HERB: 'https://herb.ac.cn/', BATMAN: 'https://bionet.ncpsb.org.cn/batman-tcm/', GeneCards: 'https://www.genecards.org/', OMIM: 'https://www.omim.org/', TTD: 'https://ttd.idrblab.cn/', PharmGKB: 'https://api.clinpgx.org/v1', OTP: 'https://platform.opentargets.org/', DisGeNET: 'https://www.disgenet.org/' };
 
@@ -84,6 +85,7 @@ export default function SourceUploads({ studyId, moduleId, info }: { studyId: st
     <SectionHead title={moduleId === 'A02' ? '第1步：检查五库资料' : '数据库资料上传与更新'} />
     <p className="small muted">{info.note_zh}</p>
     {!info.enabled && <Alert type="info" showIcon message={info.disabled_reason_zh} style={{ marginBottom: 12 }} />}
+    <SourceAutomation studyId={studyId} moduleId={moduleId} info={info}/>
     {info.sources.some(s => s.can_retry) && <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>{info.sources.filter(s => s.can_retry).map(s => <Button key={s.database} disabled={busy || !info.enabled} loading={busy} onClick={() => retry(s.database)}>重试 {s.label_zh} 获取</Button>)}</div>}
     {moduleId === 'A02' && notice && <Alert showIcon message={notice} style={{ marginBottom: 12 }} />}
     <Collapse items={info.sources.map(source => ({ key: source.database, label: <span><strong>{source.label_zh}</strong> · {source.status_zh}</span>, children: <UploadForm studyId={studyId} moduleId={moduleId} info={info} source={source} /> }))} />

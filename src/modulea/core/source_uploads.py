@@ -82,7 +82,17 @@ def context(workflow, manifest, module_id, result, historical=False, active=Fals
     a02 = manifest["current"].get("A02")
     mapping_available = bool(a02 and workflow.run(manifest, a02).get("inputs", {}).get("mapping_file")) or (workflow.root / "references/hgnc_complete_set_20260913.json").is_file()
     can_process = module_id == "A01" and enabled and complete and mapping_available and not processed
+    from .source_previews import latest
+    acquisition = {"enabled": enabled, "databases": [db for db in databases if db not in uploaded],
+                   "latest": latest(workflow, manifest, "acquisition")} if module_id == "A01" else None
+    verification = None
+    if module_id == "A01" and (result or {}).get("summary", {}).get("component_source_profile") == "A01.multisource.collect.1":
+        verification = {"enabled": enabled and processed, "version": "A01.multisource.collect.1",
+                        "coverage": (result or {}).get("tables", {}).get("source_coverage", []),
+                        "issues_count": (result or {}).get("summary", {}).get("未决身份组数", 0)}
+    mapping_preview = {"enabled": enabled, "latest": latest(workflow, manifest, "mapping")} if module_id == "A02" else None
     return {"enabled": enabled, "disabled_reason_zh": reason, "expected_a00": a00,
+            "acquisition": acquisition, "verification": verification, "mapping_preview": mapping_preview,
             "expected_run": manifest["current"].get(module_id, ""), "expected_staging": (manifest.get("current_component_uploads") or {}).get("sha256", "") if module_id == "A01" else "",
             "note_zh": "三库按库上传留存；完整来源与共同HGNC依据齐备后，点击整理生成新的待复核结果。上传本身不改变当前A01。" if module_id == "A01" else "每次上传只替换所选库，生成新的A02候选；范围、身份与总体复核仍按原流程确认。",
             "can_process": can_process, "process_reason_zh": "" if can_process else ("本批资料已整理，可核查当前结果；补充或替换后再整理" if processed else ("请先上传完整三库资料" if not complete else "尚无共同HGNC依据，请先准备身份快照或完成A02标准化")),

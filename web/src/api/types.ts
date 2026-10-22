@@ -230,7 +230,13 @@ export interface SourceUploadInfo {
   expected_a00: string; expected_run: string; expected_staging: string;
   note_zh: string; can_process: boolean; process_reason_zh: string; query_zh: string;
   sources: SourceUploadItem[];
+  acquisition?: {enabled: boolean; databases: string[]; latest: SourcePreviewSummary | null} | null;
+  mapping_preview?: {enabled: boolean; latest: SourcePreviewSummary | null} | null;
+  verification?: {enabled: boolean; version: string; coverage: {database: string; herb: string; records: number; complete: boolean; availability: string; basis: string}[]; issues_count: number} | null;
 }
+export interface SourcePreviewSummary {preview_id: string; databases: {database: string; status: string; status_zh?: string; message_zh?: string; error_zh?: string; candidates_count?: number}[]}
+export interface DiseaseCandidate {candidate_id: string; disease_id: string; disease_name: string; reason_zh: string; records_count: number | null; source_url: string; scope: string; source_rows: string[]; direct_gene_eligible: boolean}
+export interface DiseaseCandidatePage {preview_id: string; database: string; status_zh: string; error_zh?: string; total: number; page: number; size: number; items: DiseaseCandidate[]; current: boolean; note_zh: string}
 export interface SourceUploadItem {
   can_retry?: boolean; // 由后端判断当前失败来源可否重取
   database: string; label_zh: string; status_zh: string; hint_zh: string;

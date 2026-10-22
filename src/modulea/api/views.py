@@ -222,6 +222,10 @@ class Views:
         """导航指向扩展范围核查，不改变原批次的科研状态或批准。"""
         fallback = self._next_step(states)
         active_task = self.tasks.active_for(manifest['study_id'])
+        a01 = manifest['current'].get('A01')
+        collected = bool(a01 and workflow.run(manifest, a01).get('config', {}).get('version') == 'A01.multisource.collect.1')
+        if not manifest.get('trashed') and collected and not active_task and states.get('A01', {}).get('handoff_blocked'):
+            return {'module_id':'A01','code':'waiting','text_zh':'请在A01核对三库完整性与身份例外；当前已确认的疾病侧结果保持。'}
         if active_task and active_task.get('kind') == 'a06_resume':
             return {'module_id':'A06','code':'running','text_zh':'正在核验原件并续算未完成区域；已有评分保留，无需重新连接或确认。'}
         if manifest.get('trashed') or (active_task and active_task.get('kind') not in ('a06_auto_connect', 'a06_auto_start')):
@@ -500,6 +504,9 @@ class Views:
         batch = None
         if module_id in ("A01", "A02") and manifest.get("workflow_profile") in PREUPLOAD_PROFILES:
             batch = "A02" if module_id == "A01" else "A01"
+            a01 = manifest['current'].get('A01')
+            if a01 and workflow.run(manifest, a01).get('config', {}).get('version') == 'A01.multisource.collect.1':
+                batch = None  # 新三库独立复核，不能因补A01重新签署已经批准的A02。
         return {
             "current": ({k: review.get(k) for k in ("review_id", "decision", "reviewer", "note", "created_at", "batch")} if review else None),
             "history": reviews,

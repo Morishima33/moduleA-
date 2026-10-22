@@ -74,7 +74,7 @@ def main(argv: list[str] | None = None) -> int:
     return 1
 
 
-SCIENCE_DEPS = ("networkx", "docx", "rdkit", "meeko", "gemmi", "numpy")
+SCIENCE_DEPS = ("networkx", "docx", "rdkit", "meeko", "gemmi", "numpy", "openpyxl")
 
 
 def probe_science_python(executable: str) -> dict:
@@ -139,6 +139,14 @@ def doctor(settings) -> int:
             passed = False
             print("研究目录读取失败：", str(error))
     probe = probe_science_python(settings.science_python)
+    from .preflight import inspect_environment
+    environment = inspect_environment(settings, science_probe=probe)
+    print("代码版本：", environment["code"].get("commit") or "未核实", environment["code"].get("branch") or "")
+    if environment["code"].get("dirty"):
+        print("当前工作区有未提交修改，请核对实际运行代码。")
+    for item in environment["references"]:
+        print(item["label_zh"] + "：" + item["detail_zh"])
+    print(environment["note_zh"])
     if probe.get("executable"):
         print("实际科学解释器：", probe["executable"], "Python", ".".join(map(str, probe["version"])))
         for name in SCIENCE_DEPS:

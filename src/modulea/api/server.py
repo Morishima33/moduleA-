@@ -61,6 +61,11 @@ class App:
             ("POST", rf"/api/v1/studies/{ID}/modules/A06_PREP/actions/automatic_start", self.post_automatic_start),
             ("GET", rf"/api/v1/studies/{ID}/automatic_docking/{ID}/files/([0-9]+)", self.get_automatic_file),
             ("GET", r"/api/v1/session", self.session),
+            ("GET", r"/api/v1/environment", self.get_environment),
+            ("GET", rf"/api/v1/studies/{ID}/source_previews/{ID}", self.get_source_preview),
+            ("POST", rf"/api/v1/studies/{ID}/modules/A01/actions/acquire_sources", self.post_source_acquire),
+            ("POST", rf"/api/v1/studies/{ID}/modules/A01/actions/resolve_sources", self.post_source_resolve),
+            ("POST", rf"/api/v1/studies/{ID}/modules/A02/actions/mapping_preview", self.post_mapping_preview),
             ("GET", r"/api/v1/studies", self.list_studies),
             ("POST", r"/api/v1/studies", self.post_create_study),
             ("GET", rf"/api/v1/studies/{ID}", self.get_study),
@@ -110,6 +115,75 @@ class App:
         self.compiled = [(method, re.compile("^" + pattern + "$"), handler) for method, pattern, handler in self.routes]
 
     # ------------------------------------------------------------------ 读取
+    def get_environment(self, req):
+        """仅用户按需请求，避免每个模块页面反复读取大参考快照。"""
+        from ..preflight import inspect_environment
+        return inspect_environment(self.settings)
+
+    def get_source_preview(self, req, study_id, identity):
+        """按固定预览索引分页，不接收任意路径或返回完整原始响应。"""
+        from ..core.source_previews import mapping
+        workflow = self.kernel.read_workflow()
+        manifest = workflow.load(study_id)
+        value = mapping(workflow, manifest, identity)
+        database = req.query1("database") or "TTD"
+        if database not in ("TTD", "PharmGKB"):
+            raise ApiError(422, "VALIDATION_FAILED", "请选择TTD或PharmGKB")
+        try:
+            page, size = int(req.query1("page") or 1), int(req.query1("size") or 25)
+        except (ValueError, TypeError):
+            raise ApiError(422, "VALIDATION_FAILED", "分页参数应为整数")
+        if page < 1 or size < 1 or size > 100:
+            raise ApiError(422, "VALIDATION_FAILED", "分页参数超出范围")
+        row = next((r for r in value["databases"] if r["database"] == database), {"candidates": [], "status_zh": "本轮未查询此库"})
+        candidates = row.get("candidates", [])
+        return {"preview_id": identity, "database": database, "status_zh": row.get("status_zh"), "error_zh": row.get("error_zh"),
+                "page": page, "size": size, "total": len(candidates), "items": candidates[(page-1)*size:page*size],
+                "current": value["bound_a00"] == manifest["current"].get("A00") and value["bound_a02"] == manifest["current"].get("A02", ""),
+                "note_zh": "候选只供核验，当前A02未改变；合并疾病及亚型不自动纳入。"}
+
+    def _source_task(self, req, study_id, module_id, kind, allowed):
+        """公共版本和范围校验后排队，后台再次核验，不自动批准。"""
+        body = req.json()
+        info = self._source_versions(req, study_id, module_id, body)
+        databases = body.get("databases")
+        if not isinstance(databases, list) or not databases or not all(isinstance(v, str) for v in databases) or len(set(databases)) != len(databases) or not set(databases) <= set(allowed):
+            raise ApiError(422, "VALIDATION_FAILED", "请选择本入口支持的非重复数据库")
+        if not isinstance(body.get("reason"), str) or not 0 < len(body["reason"].strip()) <= 2000:
+            raise ApiError(422, "VALIDATION_FAILED", "请填写本次操作依据")
+        payload = {k: info[k] for k in ("expected_a00", "expected_run", "expected_staging")}
+        payload.update(databases=databases, reason=body["reason"].strip())
+        if kind == "a01_acquire":
+            payload["acquisition_id"] = "fetch_" + uuid.uuid4().hex
+        task, created = self.tasks.submit(study_id, kind, "网页来源核查", payload)
+        if not created:
+            raise ApiError(409, "GATE_BLOCKED", "当前研究已有后台任务，请完成后重试")
+        return {"task": task, "created": created, "message_zh": "操作已提交后台；原始资料与当前A02保留，未自动批准。"}, 202
+
+    def post_source_acquire(self, req, study_id):
+        """显式采集三库固定官方来源，浏览器不能提供目标URL。"""
+        return self._source_task(req, study_id, "A01", "a01_acquire", ("TCMSP", "HERB", "BATMAN"))
+
+    def post_mapping_preview(self, req, study_id):
+        """疾病定位独立预览，不保存范围决定或替换来源。"""
+        return self._source_task(req, study_id, "A02", "a02_mapping_preview", ("TTD", "PharmGKB"))
+
+    def post_source_resolve(self, req, study_id):
+        """确认本次完整性与身份例外，结果仍由原科学内核独立门控。"""
+        body = req.json()
+        info = self._source_versions(req, study_id, "A01", body)
+        if not (info.get("verification") or {}).get("enabled"):
+            raise ApiError(409, "GATE_BLOCKED", "请先整理当前完整三库并查看核验问题")
+        if body.get("confirmed") is not True or any(type(body.get(k)) is not bool for k in ("confirm_coverage", "omit_unresolved")):
+            raise ApiError(422, "VALIDATION_FAILED", "请明确选择并确认处理范围")
+        if any(not isinstance(body.get(k), str) or not 0 < len(body[k].strip()) <= 2000 for k in ("reviewer", "note")):
+            raise ApiError(422, "VALIDATION_FAILED", "请填写核验人及处理依据")
+        payload = {k: body[k] for k in ("expected_a00", "expected_run", "expected_staging", "confirmed", "confirm_coverage", "omit_unresolved", "reviewer", "note")}
+        task, created = self.tasks.submit(study_id, "a01_resolve", body["reviewer"].strip(), payload)
+        if not created:
+            raise ApiError(409, "GATE_BLOCKED", "当前研究已有后台任务")
+        return {"task": task, "created": created, "message_zh": "处理已提交；生成后仍须整体复核，当前A02保持。"}, 202
+
     def get_automatic_pairs(self, req, sid, batch):
         from .automatic_view import pairs
         return pairs(self, req, sid, batch)

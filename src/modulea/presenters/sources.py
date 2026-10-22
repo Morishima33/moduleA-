@@ -101,7 +101,9 @@ def present_a01_multisource(result: dict, ctx: dict) -> Parts:
         parts.focus.append(focus("本研究身份例外决定", str(excluded) + "；该决定仅适用于当前研究及绑定版本。", tier="should_know"))
     parts.focus.append(focus("已有关系的证据范围", "数据库已有关系及人类HGNC身份不等于人体直接结合实验证据；本方案未增加新的靶点预测。", tier="should_know"))
     if s.get("handoff_blocked"):
-        parts.focus.insert(0, focus("尚不能交给下游", "当前仍有未处理的资料或身份问题；历史病例决定不会自动应用。", blocks=["A03"]))
+        detail = (f"三库完整性待核 {s.get('完整性待核项数', 0)} 项，身份未决 {s.get('未决身份组数', 0)} 组。请在本页资料区核对并保存处理；当前A02保持。"
+                  if s.get('component_source_profile') == 'A01.multisource.collect.1' else "当前仍有未处理的资料或身份问题；历史病例决定不会自动应用。")
+        parts.focus.insert(0, focus("尚不能交给下游", detail, blocks=["A03"]))
     return parts
 
 

@@ -23,6 +23,14 @@ def current(info):
 class ModuleNavigationTests(unittest.TestCase):
     """验证候选、确认、复核、已批准及准备关联之间的导航区别。"""
 
+    def test_new_a01_collection_handles_issues_here_without_touching_a02(self):
+        value=view('A01')
+        info=context(value,{'summary':{'component_source_profile':'A01.multisource.collect.1','标准化基因数':12,'handoff_blocked':True}})
+        self.assertEqual(current(info),'identity')
+        step=next(r for r in info['steps'] if r['key']=='identity')
+        self.assertEqual(step['target'],'module-source-inputs')
+        self.assertNotIn('module_id',step)
+
     def test_confirmed_continuous_task_does_not_ask_for_second_confirmation(self):
         value = view("A06")
         value["automatic_docking"] = {"latest": {"state": "stale"}, "connection": {"id": "old"},

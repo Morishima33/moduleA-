@@ -1,5 +1,13 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-10-22 三库获取与疾病映射预览
+
+新登记A00绑定component_source_profile=A01.multisource.collect.1；旧研究不重解释。SourceUploadInfo新增可选acquisition:{enabled,databases,latest}、verification:{enabled,coverage,issues_count,version}、mapping_preview:{enabled,latest}。latest只显示同研究同A00/A01或A02版本的归档摘要、preview_id和各库状态计数，不含原响应。
+POST /studies/{sid}/modules/A01/actions/acquire_sources：{expected_a00,expected_run,expected_staging,databases,reason}，固定三库非空去重子集，后台a01_acquire逐库获取并经原stage校验归档；仅采集，不覆盖当前A01/A02或批准。缺库不回退单库。
+POST /studies/{sid}/modules/A01/actions/resolve_sources：{expected_a00,expected_run,expected_staging,reviewer,note,confirmed:true,confirm_coverage:boolean,omit_unresolved:boolean}，只有当前collect.1结果且来源未变才可处理。完整性确认不能替代缺库或零清单依据；身份例外绑定原问题内容，原件保持，新结果仍待独立复核。
+POST /studies/{sid}/modules/A02/actions/mapping_preview：{expected_a00,expected_run,expected_staging,databases,reason}，仅TTD/PharmGKB；后台a02_mapping_preview将原文和候选留raw/A02_mapping_previews/task_id，不改当前A02。候选默认pending，不能按子串或同一系统疾病自动纳入。
+GET /studies/{sid}/source_previews/{id}?database=TTD|PharmGKB&page=1&size=25读取同研究绑定预览的分页候选；index和文件指纹核对。GET /environment按需只读环境/代码版本预检，不获取数据库、不安装依赖。上述写请求沿用令牌、Origin、版本和后台互斥校验；历史、回收站只读，失败原件留存，不自动重试或批准。
+
 ## 2026-10-22 文献单成分同输入研究
 
 ModuleA.literature_input.1复用现有ModuleView字段；A01/A02的kpis、flow、table、params按作者归档名单及实际标准化结果展示，不声称常规三库／五库新检索或方剂OB/DL筛选。该协议不显示source_uploads、disease_scope、normalization、disease_workflow及重复常规input_audit；operation_guide复用既有结构，提示查看文献来源、身份明细、独立复核和A03。A03的input_audit对该协议使用原始关系数及实际来源，不构造零条范围组或三库缺口。历史只读和常规协议保持。没有新增前端字段或默认审核授权。

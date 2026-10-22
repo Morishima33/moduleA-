@@ -80,12 +80,16 @@ def context(view, result=None):
     elif mid == "A01":
         add("sources", "检查方剂来源资料", "module-source-inputs" if view.get("source_uploads") else "module-details", "核对本项目已有来源；需要补充时上传对应三库资料，再明确点击整理。有效归档无需重复上传。")
         add("relations", "核对成分与靶点关系", "module-results", "查看成分筛选、药味归属、靶点关系及数量变化，完整原值在结果明细。")
-        link("identity", "前往A02联合身份核查", "A02", "在A02先保存疾病范围，再核查两侧基因身份并确认生成标准化结果。")
+        collected = (result or {}).get("summary", {}).get("component_source_profile") == "A01.multisource.collect.1"
+        if collected:
+            add("identity", "核对完整性与身份例外", "module-source-inputs", "按数据库与药味核对完整性，再明确处理未决身份。只生成新的A01，已确认的A02保持。")
+        else:
+            link("identity", "前往A02联合身份核查", "A02", "在A02先保存疾病范围，再核查两侧基因身份并确认生成标准化结果。")
         review()
         link("intersection", "查看A03交集", "A03", "两侧标准化结果均通过复核后才能用于交集；进入页面不会代替复核。")
         normalized = "标准化基因数" in ((result or {}).get("summary") or {})
         if normalized:
-            current = "intersection" if approved else "review"
+            current = "identity" if collected and (result or {}).get("summary", {}).get("handoff_blocked") else "intersection" if approved else "review"
         else:
             current = "identity" if view["run"] else "sources"
     elif mid == "A03":

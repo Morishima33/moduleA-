@@ -130,6 +130,16 @@ export const api = {
   /** 整理当前已上传三库，结果停在复核 */
   processSources: (sid: string, body: { expected_a00: string; expected_run: string; expected_staging: string; reason: string }) =>
     request<{ task: Task; created: boolean; message_zh: string }>('POST', `/studies/${sid}/modules/A01/actions/process_sources`, body),
+  /** 固定官方来源获取与只读候选预览，当前A02不变。 */
+  acquireSources: (sid: string, body: {expected_a00: string; expected_run: string; expected_staging: string; databases: string[]; reason: string}) =>
+    request<{task: Task; created: boolean; message_zh: string}>('POST', `/studies/${sid}/modules/A01/actions/acquire_sources`, body),
+  mappingPreview: (sid: string, body: {expected_a00: string; expected_run: string; expected_staging: string; databases: string[]; reason: string}) =>
+    request<{task: Task; created: boolean; message_zh: string}>('POST', `/studies/${sid}/modules/A02/actions/mapping_preview`, body),
+  sourcePreview: (sid: string, id: string, database: string, page=1) =>
+    request<import('./types').DiseaseCandidatePage>('GET', `/studies/${sid}/source_previews/${id}${qs({database, page, size:25})}`),
+  resolveSources: (sid: string, body: {expected_a00: string; expected_run: string; expected_staging: string; reviewer: string; note: string; confirmed: boolean; confirm_coverage: boolean; omit_unresolved: boolean}) =>
+    request<{task: Task; created: boolean; message_zh: string}>('POST', `/studies/${sid}/modules/A01/actions/resolve_sources`, body),
+  environment: () => request<{code:{commit:string | null; branch:string | null; dirty:boolean | null}; note_zh:string; references:{label_zh:string; detail_zh:string}[]}>('GET', '/environment'),
   /** 只生成A04，停在复核；不自动运行富集和对接 */
   runPpi: (sid: string, body: { expected_a03: string; expected_a04: string; reason: string }) =>
     request<{ task: Task; created: boolean; message_zh: string }>('POST', `/studies/${sid}/modules/A04/actions/run_ppi`, body),

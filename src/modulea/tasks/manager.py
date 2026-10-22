@@ -30,6 +30,7 @@ KINDS = {"a02_scope_review": "保存疾病范围核验", "a02_sources_retry": "�
 
 KINDS["a05_pathway_maps"] = "生成KEGG排名首位命中图"
 KINDS['a06_resume'] = '核验原件并续算明确授权的中断批次'
+KINDS.update(a01_acquire="获取本研究三库原始资料", a01_resolve="保存A01完整性与身份例外处理", a02_mapping_preview="预览TTD与PharmGKB疾病候选（不改变A02）")
 KINDS.update({"a06_display": "生成同批对接图表与矩阵", "a06_auto_connect": "连接本研究对接资料（不评分）", "a06_auto_run": "一次授权自动准备、质控、对接和出图"})
 KINDS.update({"normalization_preview": "核查基因身份并生成标准化预览", "normalization_publish": "生成标准化结果，等待整体复核"})
 KINDS.update({"a06_figure": "验证并保存对接结果图片", "a06_pair_packages": "整理所选对接出图包",

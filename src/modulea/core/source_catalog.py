@@ -9,7 +9,7 @@ SOURCE_LABELS = {"BATMAN": "BATMAN-TCM", "OTP": "Open Targets Platform（OTP）"
 def source_databases(module_id: str, manifest: dict, result: dict | None) -> list[str]:
     summary = (result or {}).get("summary") or {}
     if module_id == "A01":
-        multisource = bool(summary.get("component_source_profile") or "候选成分分组数" in summary or (not result and manifest.get("component_source_profile")))
+        multisource = bool(summary.get("component_source_profile") or "候选成分分组数" in summary or (not result and (manifest.get("component_source_profile") or manifest.get("workflow_profile") in ("A00.preupload.1", "A00.preupload.2"))))
         return ["TCMSP", "HERB", "BATMAN"] if multisource else ["TCMSP"]
     if module_id == "A02":
         databases = summary.get("databases")
