@@ -26,21 +26,26 @@ export default function HomePage() {
 
   // 读取研究卡片与待办；刷新信号变化时重读
   useEffect(() => {
+    let current = true;
     api.studies()
       .then((r) => {
+        if (!current) return;
         setCards(r.items); // 更新卡片
         setError(null);
         app.trackTasks(r.items.map((c) => c.active_task)); // 跟踪活动任务
       })
-      .catch((e) => setError(errorText(e)));
-    api.inbox().then((r) => setInbox(r.items)).catch(() => undefined); // 待办读取失败不影响卡片
+      .catch((e) => { if (current) setError(errorText(e)); });
+    api.inbox().then((r) => { if (current) setInbox(r.items); }).catch(() => undefined); // 待办读取失败不影响卡片
+    return () => { current = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [app.refreshTick]);
 
   // 展开回收站时读取列表
   useEffect(() => {
     if (!showTrash) return;
-    api.trash().then((r) => setTrash(r.items)).catch((e) => setError(errorText(e)));
+    let current = true;
+    api.trash().then((r) => { if (current) setTrash(r.items); }).catch((e) => { if (current) setError(errorText(e)); });
+    return () => { current = false; };
   }, [showTrash, app.refreshTick]);
 
   return (

@@ -7,7 +7,10 @@
 from __future__ import annotations
 
 import mimetypes
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+
+from contracts import fingerprint
 
 from ..core import modules as registry
 from ..core.read_archive import SnapshotFlight
@@ -90,6 +93,8 @@ class Views:
         self.kernel = kernel
         self.tasks = tasks
         self._snapshot_flight = SnapshotFlight()
+        self._cards_flight = SnapshotFlight()
+        self._result_flight = SnapshotFlight()
 
     # ------------------------------------------------------------------ 基础读取
     def _snapshot(self, study_id: str):
@@ -159,11 +164,27 @@ class Views:
 
     # ------------------------------------------------------------------ 首页与研究
     def study_cards(self, trashed: bool = False) -> list[dict]:
-        cards = []
-        for manifest in self.kernel.read_workflow().studies(trashed=trashed):
-            cards.append(self.study_card(manifest["study_id"]))
+        cards = self._card_batch(trashed)
+        for card in cards:
+            card.pop("_states", None)
         cards.sort(key=lambda c: c["study"]["updated_at"] or "", reverse=True)
         return cards
+
+    def _card_batch(self, trashed: bool = False) -> list[dict]:
+        """首页与待办同时读取同一版本时共用组装，完成即清除，不缓存旧状态。"""
+        manifests = self.kernel.read_workflow().studies(trashed=trashed)
+        active = [self.tasks.active_for(m["study_id"]) for m in manifests]
+        key = (trashed, fingerprint(manifests), fingerprint(active))
+        return self._cards_flight.run(key, lambda: self._build_cards(manifests))
+
+    def _build_cards(self, manifests):
+        """独立研究最多三项并行只读，map保持原顺序；不触发后台科学计算。"""
+        def read(manifest):
+            return self.study_card(manifest["study_id"], with_states=True)
+        if len(manifests) < 2:
+            return [read(m) for m in manifests]
+        with ThreadPoolExecutor(max_workers=min(3, len(manifests))) as pool:
+            return list(pool.map(read, manifests))
 
     def study_card(self, study_id: str, with_states: bool = False) -> dict:
         workflow, view, error = self._snapshot(study_id)
@@ -293,8 +314,7 @@ class Views:
 
     def inbox(self) -> list[dict]:
         items = []
-        for manifest in self.kernel.read_workflow().studies(trashed=False):
-            card = self.study_card(manifest["study_id"], with_states=True)
+        for card in self._card_batch(trashed=False):
             states = card.pop("_states")
             for m in registry.ORDER:
                 if states[m]["code"] in ("review", "hold", "returned", "waiting", "failed"):
@@ -589,6 +609,11 @@ class Views:
                 out.append({"name": name, "kind": "object", "row_count": None, "columns": []})
         return out
 
+    def _read_result(self, workflow, manifest, run_id):
+        """同批表格/图像并发读取只合并正在进行的完整核验，结束或失败即清除。"""
+        key = (manifest["study_id"], run_id, fingerprint(manifest["runs"][run_id]))
+        return self._result_flight.run(key, lambda: workflow.result(manifest, run_id))
+
     def table(self, study_id: str, module_id: str, name: str, run_id: str | None, page: int, size: int, q: str) -> dict:
         workflow = self.kernel.read_workflow()
         manifest = self._manifest(study_id)
@@ -596,7 +621,7 @@ class Views:
         if not run_id or run_id not in manifest["runs"]:
             raise not_found("运行")
         try:
-            result = workflow.result(manifest, run_id)
+            result = self._read_result(workflow, manifest, run_id)
         except ContractError as error:
             raise from_contract(str(error))
         if not result or workflow.run(manifest, run_id)["module_id"] != module_id:
@@ -710,7 +735,8 @@ class Views:
         if run_id not in manifest["runs"]:
             raise not_found("文件")
         try:
-            result = workflow.result(manifest, run_id)
+            # 并发共享整批核验；下面仍逐个核验所选附件，不跳过下载指纹。
+            result = self._read_result(workflow, manifest, run_id)
         except ContractError as error:
             raise from_contract(str(error))
         if from_report_table:

@@ -42,7 +42,9 @@ export default function App() {
 
   // 每次刷新信号变化时更新全局待办数
   useEffect(() => {
-    api.inbox().then((r) => setInbox(r.items)).catch(() => undefined); // 待办读取失败不影响页面
+    let current = true;
+    api.inbox().then((r) => { if (current) setInbox(r.items); }).catch(() => undefined); // 待办读取失败不影响页面
+    return () => { current = false; }; // 新刷新后，不让旧请求覆盖最新待办。
   }, [refreshTick]);
 
   /** 登记活动任务；只跟踪排队中或运行中的任务 */

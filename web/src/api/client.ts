@@ -29,8 +29,30 @@ export class ApiError extends Error {
 // 内存中保存的操作令牌（不写入浏览器存储）
 let token: string | null = null;
 
-/** 发送请求并解析 JSON；非 2xx 时抛出 ApiError */
+// 只合并尚未完成的同URL读取；不保留完成结果。写请求前后清空，避免旧读挡住写后刷新。
+const pendingReads = new Map<string, Promise<unknown>>();
+
 async function request<T>(method: 'GET' | 'POST', path: string, body?: unknown, retried = false): Promise<T> {
+  if (method === 'POST') {
+    pendingReads.clear();
+    try { return await sendRequest<T>(method, path, body, retried); }
+    finally { pendingReads.clear(); }
+  }
+  let pending = pendingReads.get(path);
+  if (!pending) {
+    pending = sendRequest<T>(method, path, body, retried);
+    pendingReads.set(path, pending);
+  }
+  try {
+    // 每个调用者得到独立JSON容器，避免一个组件修改另一个组件的响应。
+    return structuredClone(await pending) as T;
+  } finally {
+    if (pendingReads.get(path) === pending) pendingReads.delete(path);
+  }
+}
+
+/** 发送请求并解析 JSON；非 2xx 时抛出 ApiError */
+async function sendRequest<T>(method: 'GET' | 'POST', path: string, body?: unknown, retried = false): Promise<T> {
   const headers: Record<string, string> = {}; // 请求头
   if (method === 'POST') {
     if (!token) await loadSession(); // 写请求前确保已取得令牌

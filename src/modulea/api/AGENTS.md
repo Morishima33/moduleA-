@@ -1,5 +1,9 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-10-23 网页并发读取与附件发送
+
+接口字段、排序、权限及版本冲突规则保持。首页与全局待办可共享同索引及活动任务版本正在进行的卡片组装；最多三项独立研究并行，结果保持原序，各请求取得独立容器，完成/失败不缓存。表格与普通运行文件请求可共享同研究/运行/索引版本进行中的完整结果核验；选定附件仍独立指纹验证，跨研究和历史边界保持。附件/静态资源分块发送，字节、Content-Length、Content-Disposition、CSP、no-store保持；浏览器中断不另发第二份响应。GET不计算、不批准，POST不进入合并读取。
+
 ## 2026-10-22 三库获取与疾病映射预览
 
 新登记A00绑定component_source_profile=A01.multisource.collect.1；旧研究不重解释。SourceUploadInfo新增可选acquisition:{enabled,databases,latest}、verification:{enabled,coverage,issues_count,version}、mapping_preview:{enabled,latest}。latest只显示同研究同A00/A01或A02版本的归档摘要、preview_id和各库状态计数，不含原响应。

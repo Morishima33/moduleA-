@@ -14,6 +14,7 @@ import json
 import hashlib
 import uuid
 import mimetypes
+import os
 import re
 import secrets
 import sys
@@ -918,10 +919,10 @@ def make_handler(app: App):
                 self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 
         # ---- 响应 ----
-        def _send(self, status: int, data: bytes, mime: str, csp: str, extra: dict | None = None):
+        def _headers(self, status: int, size: int, mime: str, csp: str, extra: dict | None = None):
             self.send_response(status)
             self.send_header("Content-Type", mime)
-            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Content-Length", str(size))
             self.send_header("Cache-Control", "no-store")
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("Content-Security-Policy", csp)
@@ -930,8 +931,19 @@ def make_handler(app: App):
                 self.send_header(key, value)
             self._cors()
             self.end_headers()
+
+        def _send(self, status: int, data: bytes, mime: str, csp: str, extra: dict | None = None):
+            self._headers(status, len(data), mime, csp, extra)
             if self.command != "HEAD":
                 self.wfile.write(data)
+
+        def _send_file(self, path, mime: str, csp: str, extra: dict | None = None):
+            """已授权文件分块发送，避免每个图片/下载请求再分配一整件附件的内存。"""
+            with Path(path).open("rb") as stream:
+                self._headers(200, os.fstat(stream.fileno()).st_size, mime, csp, extra)
+                if self.command != "HEAD":
+                    while data := stream.read(256 * 1024):
+                        self.wfile.write(data)
 
         def _json(self, status: int, payload):
             self._send(status, json.dumps(payload, ensure_ascii=False, default=str).encode("utf-8"), "application/json; charset=utf-8", API_CSP)
@@ -969,7 +981,7 @@ def make_handler(app: App):
                 if isinstance(result, tuple) and result and result[0] == "file":
                     _, path, name, mime, inline = result
                     disposition = ("inline" if inline else "attachment") + "; filename*=UTF-8''" + quote(name, safe="")
-                    return self._send(200, Path(path).read_bytes(), mime, FILE_CSP, {"Content-Disposition": disposition})
+                    return self._send_file(path, mime, FILE_CSP, {"Content-Disposition": disposition})
                 if isinstance(result, tuple) and result and result[0] == "download":
                     _, data, name, mime = result
                     disposition = "attachment; filename*=UTF-8''" + quote(name, safe="")
@@ -982,6 +994,9 @@ def make_handler(app: App):
                 self._error(error)
             except ContractError as error:
                 self._error(from_contract(str(error)))
+            except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+                # 浏览器已离开或取消下载，不再尝试向断开的连接发送第二份错误响应。
+                self.close_connection = True
             except Exception as error:  # 未预期错误：返回说明，不泄露路径细节
                 self._error(ApiError(500, "INTERNAL", f"服务内部错误：{type(error).__name__}"))
 
@@ -997,7 +1012,7 @@ def make_handler(app: App):
             mime = mimetypes.guess_type(target.name)[0] or "application/octet-stream"
             if mime.startswith("text/") or mime in ("application/javascript", "application/json"):
                 mime += "; charset=utf-8"
-            self._send(200, target.read_bytes(), mime, STATIC_CSP)
+            self._send_file(target, mime, STATIC_CSP)
 
     return Handler
 
