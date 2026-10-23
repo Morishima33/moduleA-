@@ -137,6 +137,32 @@ def process(workflow, sid, expected_a00, expected_a01, expected_staging, reason,
         return result
 
 
+def herb_resume_folders(home, folder, binding):
+    """仅查本研究同A00/A01的先前采集；旧版须有结束记录佐证，不跨研究复用。"""
+    root = Path(home).resolve() / "raw/A01_acquisition"
+    folder = Path(folder)
+    require(folder.resolve().is_relative_to(root.resolve()) and folder.parent.resolve() == root.resolve()
+            and not folder.is_symlink(), "采集目录不属于本研究")
+    candidates = []
+    for prior in sorted(root.iterdir()) if root.exists() else []:
+        if not prior.is_dir() or prior.is_symlink() or prior.resolve() == folder.resolve():
+            continue
+        marker = prior / "acquisition_binding.json"
+        records = [marker] if marker.exists() else sorted(prior.glob("acquisition_result_*.json"))
+        for record in records:
+            require(not record.is_symlink(), "旧采集绑定路径改变")
+            data = read_json(record)
+            if all(data.get(k) == binding[k] for k in ("study_id", "bound_a00", "bound_a01")):
+                if "herbs" in data and data["herbs"] != binding["herbs"]:
+                    continue
+                requests = prior / "HERB/original_requests"
+                require(not (prior / "HERB").is_symlink() and not requests.is_symlink()
+                        and requests.resolve().is_relative_to(root.resolve()), "旧采集原件路径改变")
+                candidates.append(requests)
+                break
+    return candidates
+
+
 def acquire_sources(workflow, sid, expected_a00, expected_a01, expected_staging, folder, databases=None, progress=None):
     """缺库逐个获取并复用统一stage；失败归档，不撤销已成功的库。"""
     from .acquisition import acquire
@@ -153,13 +179,24 @@ def acquire_sources(workflow, sid, expected_a00, expected_a01, expected_staging,
     require(isinstance(wanted, list) and len(wanted) == len(set(wanted)) and set(wanted) <= set(uploads.DATABASES), "三库获取范围无效")
     folder = Path(folder)
     folder.mkdir(parents=True, exist_ok=True)
+    binding = {"study_id": sid, "bound_a00": expected_a00, "bound_a01": expected_a01, "herbs": herbs}
+    resume_folders = herb_resume_folders(workflow.location(sid), folder, binding) if "HERB" in wanted else []
+    marker = folder / "acquisition_binding.json"
+    require(not marker.is_symlink(), "本次采集绑定路径改变")
+    if marker.exists():
+        require(read_json(marker) == binding, "本次采集目录绑定已改变")
+    else:
+        write_json(marker, binding)
     results = []
     for db in wanted:
         try:
+            require(not (folder / db).is_symlink() and (folder / db).resolve().is_relative_to(folder.resolve()),
+                    "本次采集数据库目录改变")
             if progress:
                 progress("获取 " + db + " 原始资料")
-            source = acquire(db, herbs, folder / db, progress=progress)
-            uploads.stage(workflow, sid, expected_a00, expected_a01, expected_staging, source, folder / "validation")
+            source = acquire(db, herbs, folder / db, progress=progress, resume_folders=resume_folders if db == "HERB" else ())
+            uploads.stage(workflow, sid, expected_a00, expected_a01, expected_staging, source, folder / "validation",
+                          automatic_herb=db == "HERB")
             m = workflow.load(sid)
             expected_staging = m["current_component_uploads"]["sha256"]
             results.append({"database": db, "status": "success", "message_zh": "原件已通过统一上传校验并归档"})
@@ -171,7 +208,7 @@ def acquire_sources(workflow, sid, expected_a00, expected_a01, expected_staging,
     return results
 
 
-def run_components(workflow, sid, expected_a00, expected_a01, reason):
+def run_components(workflow, sid, expected_a00, expected_a01, reason, progress=None):
     """新登记只走完整三库；历史研究保持原版本，显式升级由网页提交。"""
     m = workflow.load(sid)
     intake = workflow.result(m, expected_a00)["summary"]
@@ -185,7 +222,7 @@ def run_components(workflow, sid, expected_a00, expected_a01, reason):
     available = {r["database"] for r in source["datasets"]} if source and source["a00_run_id"] == expected_a00 else set()
     if available != set(uploads.DATABASES):
         acquire_sources(workflow, sid, expected_a00, expected_a01, (m.get("current_component_uploads") or {}).get("sha256", ""),
-                        workflow.location(sid) / "raw/A01_acquisition" / new_id("fetch"))
+                        workflow.location(sid) / "raw/A01_acquisition" / new_id("fetch"), progress=progress)
     m = workflow.load(sid)
     source = uploads.current(workflow, m)
     require(source and {r["database"] for r in source["datasets"]} == set(uploads.DATABASES),

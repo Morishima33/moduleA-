@@ -97,7 +97,13 @@ def run_continue(settings: Settings, task: dict, manager: TaskManager) -> str:
     from types import FunctionType
     from ppi_dispatch import run_ppi
     from science_modules.a01.collection_flow import run_components
-    continuation = FunctionType(continue_after_review.__code__, dict(continue_after_review.__globals__, run_ppi=run_ppi, run_enrichment=run_enrichment, run_components=run_components))
+    def source_progress(text):
+        """自动接续也展示真实采集/重试进度，不再长时间只显示第0步。"""
+        manager.update(task["task_id"], progress={"step_zh": text, "done": 0, "total": 1})
+        print(text, flush=True)
+    def collect_components(*args, **kwargs):
+        return run_components(*args, **kwargs, progress=source_progress)
+    continuation = FunctionType(continue_after_review.__code__, dict(continue_after_review.__globals__, run_ppi=run_ppi, run_enrichment=run_enrichment, run_components=collect_components))
     result = continuation(workflow, task["study_id"])
     print("自动接续结果：", result, flush=True)
     manager.update(task["task_id"], progress={"step_zh": "已停在下一人工关口", "done": 1, "total": 1})
@@ -172,6 +178,7 @@ def run_a01_acquire(settings, task, manager):
     payload = json.loads(task["payload"])
     def progress(text):
         manager.update(task["task_id"], progress={"step_zh": text, "done": 0, "total": 1})
+        print(text, flush=True)
     results = acquire_sources(full_workflow(settings.data_root), task["study_id"], payload["expected_a00"], payload["expected_run"],
                               payload["expected_staging"], settings.data_root / "studies" / task["study_id"] / "raw/A01_acquisition" / payload.get("acquisition_id", task["task_id"]),
                               payload["databases"], progress)

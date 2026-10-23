@@ -4,6 +4,7 @@ import hashlib
 import html
 import io
 import json
+import http.client
 import re
 import time
 import urllib.parse
@@ -13,7 +14,7 @@ import zipfile
 from pathlib import Path
 
 from contracts import require
-from storage import now, read_json, write_json
+from storage import new_id, now, read_json, write_json
 
 HERB_API = "http://herb.ac.cn/chedi/api/"
 BATMAN = "http://batman2.cloudna.cn/downloadApiFile/data/browser/"
@@ -21,14 +22,57 @@ TCMSP = "https://old.tcmsp-e.com/"
 HOSTS = {"herb.ac.cn", "batman2.cloudna.cn", "old.tcmsp-e.com", "rest.uniprot.org"}
 
 
+class HerbResponseError(ValueError):
+    """官方接口暂时返回HTML或非JSON对象，不能当作成功原件缓存。"""
+
+
+def _herb_json(raw):
+    """传输层只检查JSON对象；疾病、成分和完整性仍由原有解析器严格核查。"""
+    try:
+        value = json.loads(raw)
+    except (ValueError, UnicodeError) as error:
+        raise HerbResponseError("HERB返回非JSON响应，可能为临时网关错误页") from error
+    if not isinstance(value, dict):
+        raise HerbResponseError("HERB返回非JSON对象，未当作完整资料采用")
+    return value
+
+
+def _herb_transient(error):
+    """仅对临时网关、限流、超时和连接中断退避；404及科研校验错误不重试。"""
+    if isinstance(error, urllib.error.HTTPError):
+        return error.code in (408, 429, 500, 502, 503, 504)
+    return isinstance(error, (urllib.error.URLError, TimeoutError, ConnectionError,
+                              http.client.IncompleteRead, HerbResponseError))
+
+
 class Fetcher:
     """同目录固定请求键断点复用；不同研究不自动借用资料。"""
-    def __init__(self, folder, opener, sleeper):
+    def __init__(self, folder, opener, sleeper, progress=None, resume_folders=()):
         self.folder = Path(folder)
         self.folder.mkdir(parents=True, exist_ok=True)
         self.opener, self.sleeper = opener, sleeper
+        self.progress = progress
+        self.resume_folders = [Path(p) for p in resume_folders]
+        self.reused_requests = 0
 
-    def get(self, url, payload=None):
+    def _cached(self, folder, token, url, payload, validate):
+        """恢复前核对请求和内容，不接受外部目录跳转或损坏原件。"""
+        index, path = folder / (token + ".json"), folder / (token + ".bin")
+        if not index.exists():
+            return None
+        require(not index.is_symlink() and not path.is_symlink()
+                and index.resolve().is_relative_to(folder.resolve()) and path.resolve().is_relative_to(folder.resolve()),
+                "缓存原件路径改变")
+        record = read_json(index)
+        raw = path.read_bytes()
+        require(record["url"] == url and record["payload"] == payload
+                and record["bytes"] == len(raw) and record["sha256"] == hashlib.sha256(raw).hexdigest(),
+                "缓存原件或请求指纹改变")
+        if validate:
+            validate(raw)
+        return raw, record
+
+    def get(self, url, payload=None, validate=None):
         parsed = urllib.parse.urlsplit(url)
         require(parsed.hostname in HOSTS and parsed.scheme in ("http", "https") and not parsed.username and not parsed.password,
                 "采集来源不在固定官方名单")
@@ -36,12 +80,23 @@ class Fetcher:
         token = hashlib.sha256(url.encode() + (body or b"")).hexdigest()
         path = self.folder / (token + ".bin")
         index = self.folder / (token + ".json")
-        if index.exists():
-            record = read_json(index)
-            raw = path.read_bytes()
-            require(record["url"] == url and record["payload"] == payload and record["sha256"] == hashlib.sha256(raw).hexdigest(), "缓存原件或请求指纹改变")
-            return raw
-        for attempt in range(2):
+        cached = self._cached(self.folder, token, url, payload, validate)
+        if cached is not None:
+            self.reused_requests += 1
+            return cached[0]
+        for prior in self.resume_folders:
+            cached = self._cached(prior, token, url, payload, validate)
+            if cached is not None:
+                raw, record = cached
+                with path.open("xb") as stream:
+                    stream.write(raw)
+                write_json(index, dict(record, resumed_from=prior.parent.parent.name))
+                self.reused_requests += 1
+                return raw
+        herb_request = url == HERB_API and payload is not None
+        attempts = 5 if herb_request else 2
+        for attempt in range(attempts):
+            raw = None
             try:
                 self.sleeper(0.5)
                 request = urllib.request.Request(url, data=body, headers={"User-Agent": "ModuleA/1.0", "Content-Type": "application/json"})
@@ -51,19 +106,37 @@ class Fetcher:
                     require(response.status == 200 and len(raw) <= 64 * 1024 * 1024, "官方响应失败或超出容量，未截断采用")
                     length = response.headers.get("Content-Length")
                     require(not length or len(raw) == int(length), "官方响应下载不完整")
+                if validate:
+                    validate(raw)
                 path.write_bytes(raw)
                 write_json(index, {"url": url, "payload": payload, "retrieved_at": now(), "bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()})
                 return raw
             except Exception as error:
                 failure = self.folder / (token + "_failure_" + str(attempt) + "_" + str(time.time_ns()))
                 if isinstance(error, urllib.error.HTTPError):
-                    failure.with_suffix(".bin").write_bytes(error.read(8 * 1024 * 1024))
-                write_json(failure.with_suffix(".json"), {"url": url, "payload": payload, "error": str(error), "at": now()})
-                if attempt:
+                    try:
+                        raw = error.read(8 * 1024 * 1024)
+                    finally:
+                        error.close()
+                if raw is not None:
+                    failure.with_suffix(".bin").write_bytes(raw)
+                retry = attempt + 1 < attempts and (not herb_request or _herb_transient(error))
+                delay = min(30, 2 ** (attempt + 1)) if herb_request else 0
+                if herb_request and isinstance(error, urllib.error.HTTPError):
+                    retry_after = (error.headers or {}).get("Retry-After", "")
+                    if str(retry_after).isdigit():
+                        delay = min(60, max(delay, int(retry_after)))
+                write_json(failure.with_suffix(".json"), {"url": url, "payload": payload, "error": str(error), "at": now(),
+                                                       "attempt": attempt + 1, "will_retry": retry, "retry_seconds": delay if retry else None})
+                if not retry:
                     raise
+                if herb_request:
+                    if self.progress:
+                        self.progress(f"HERB连接暂时失败（{error}）；{delay}秒后重试（{attempt + 2}/{attempts}），已下载原件保留")
+                    self.sleeper(delay)
 
     def herb(self, func, **values):
-        return json.loads(self.get(HERB_API, dict(func_name=func, **values)))
+        return _herb_json(self.get(HERB_API, dict(func_name=func, **values), validate=_herb_json))
 
 
 def _table(rows):
@@ -131,7 +204,7 @@ def _herb(fetch, herbs, progress):
     files["HERB_target_browse_page001.json"] = json.dumps({"total_num": total, "browse_data": [["Target id", "Gene name", "Gene alias"]] + target_rows}, ensure_ascii=False).encode()
     for i, (cid, name) in enumerate(sorted(compounds.items()), 1):
         if progress:
-            progress(f"HERB已有关系 {i}/{len(compounds)}")
+            progress(f"HERB成分详情 {i}/{len(compounds)}；已复用{fetch.reused_requests}份原件")
         detail = fetch.herb("detail_api", label="Ingredient", v=cid, key_id=cid)
         summary = detail.get("summary", [])
         require(len(summary) == 2 and summary[1][0] == cid, "HERB成分身份冲突")
@@ -241,7 +314,7 @@ def _tcmsp(fetch, herbs, progress):
     return files, counts, {"encoding": "utf-8-sig"}
 
 
-def acquire(database, herbs, folder, progress=None, opener=urllib.request.urlopen, sleeper=time.sleep):
+def acquire(database, herbs, folder, progress=None, opener=urllib.request.urlopen, sleeper=time.sleep, resume_folders=()):
     """返回stage兼容资料包；成功包与失败轨迹留存，数量由真实原件决定。"""
     require(database in ("TCMSP", "HERB", "BATMAN") and isinstance(herbs, list) and herbs and len(set(herbs)) == len(herbs), "采集数据库或药味清单无效")
     folder = Path(folder)
@@ -254,7 +327,8 @@ def acquire(database, herbs, folder, progress=None, opener=urllib.request.urlope
             require(path.is_relative_to(folder.resolve()) and hashlib.sha256(path.read_bytes()).hexdigest() == record["sha256"], "已保存来源原件指纹改变")
         data = (folder / "source.zip").read_bytes()
         return dict(saved["source"], data=data)
-    fetch = Fetcher(folder / "original_requests", opener, sleeper)
+    fetch = Fetcher(folder / "original_requests", opener, sleeper, progress=progress,
+                    resume_folders=resume_folders if database == "HERB" else ())
     files, counts, meta = {"TCMSP": _tcmsp, "HERB": _herb, "BATMAN": _batman}[database](fetch, herbs, progress)
     complete = {h: {"status": "complete", "records": counts[h], "basis": "original_requests中完整官方响应及固定请求指纹；完整药味清单逐项解析"} for h in herbs}
     files["modulea_source.json"] = json.dumps(dict(version="A01.source_package.1", database=database, herbs=herbs, completeness=complete, **meta), ensure_ascii=False).encode()
@@ -266,7 +340,8 @@ def acquire(database, herbs, folder, progress=None, opener=urllib.request.urlope
         for name, data in files.items():
             archive.writestr(name, data)
     data = stream.getvalue()
-    require(len(data) <= 16 * 1024 * 1024, "完整来源包超过16MiB上传限制，未截断采用；请按原始资料上传规范处理")
+    limit = (64 if database == "HERB" else 16) * 1024 * 1024
+    require(len(data) <= limit, f"完整来源包超过{limit // (1024 * 1024)}MiB后台容量，未截断采用；原件保留")
     with (folder / "source.zip").open("xb") as stream:
         stream.write(data)
     source = {"database": database, "format": "source_zip", "name": database + "_official.zip", "data": data,
@@ -276,4 +351,7 @@ def acquire(database, herbs, folder, progress=None, opener=urllib.request.urlope
                for p in [folder / "source.zip", *sorted(fetch.folder.iterdir())] if p.is_file()]
     write_json(package_index, {"database": database, "herbs": herbs, "files": records,
                                "source": {k:v for k,v in source.items() if k != "data"}})
+    if database == "HERB":
+        write_json(folder / ("resume_summary_" + new_id("attempt") + ".json"), {"reused_requests": fetch.reused_requests,
+                   "source_attempts": [p.parent.parent.name for p in fetch.resume_folders], "complete": True})
     return source

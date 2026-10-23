@@ -26,8 +26,10 @@ def current(workflow, manifest):
     return read_json(verified_file(workflow.location(manifest["study_id"]), record)) if record else None
 
 # 解压前检查全部成员；不接受路径穿越、盘符、链接、重复名称或超大展开内容。
-def unpack(data, folder):
-    require(len(data) <= 16 * 1024 * 1024, "资料包超过16MiB，请按库分包")
+def unpack(data, folder, *, max_compressed=16 * 1024 * 1024):
+    # 网页仍限16MiB；仅服务端HERB完整采集可选择64MiB，不放开展开体积/路径检查。
+    require(max_compressed in (16 * 1024 * 1024, 64 * 1024 * 1024), "资料包容量配置无效")
+    require(len(data) <= max_compressed, f"资料包超过{max_compressed // (1024 * 1024)}MiB，未截断采用")
     try:
         with zipfile.ZipFile(io.BytesIO(data)) as archive:
             members = archive.infolist()
@@ -96,9 +98,14 @@ def validate_package(folder, database, herbs):
     return meta
 
 # 校验后才归档一个库；上传版本和原始ZIP全部留存，当前计算结果不在这里改变。
-def stage(workflow, study_id, expected_a00, expected_a01, expected_staging, source, runtime_dir):
+def stage(workflow, study_id, expected_a00, expected_a01, expected_staging, source, runtime_dir, *, automatic_herb=False):
     require(source.get("database") in DATABASES, "A01不支持此来源库")
     require(source.get("format") == "source_zip", "A01请上传按模板包装的官方资料ZIP")
+    if automatic_herb:
+        # 该关键字仅由后端固定采集流程传递，浏览器JSON及资料包不能启用它。
+        from .acquisition import HERB_API
+        require(source["database"] == "HERB" and source.get("source_url") == HERB_API
+                and source.get("version") == "A01.acquisition.1；以原响应固定", "非本机HERB采集包不能使用后台容量")
     with write_lock(workflow.root):
         manifest = workflow.load(study_id)
         require(not manifest.get("trashed"), "研究在回收站中，请先恢复")
@@ -111,7 +118,7 @@ def stage(workflow, study_id, expected_a00, expected_a01, expected_staging, sour
         Path(runtime_dir).mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory(prefix="a01_parse_", dir=runtime_dir) as temporary:
             folder = Path(temporary)
-            unpack(source["data"], folder)
+            unpack(source["data"], folder, max_compressed=(64 if automatic_herb else 16) * 1024 * 1024)
             validate_package(folder, source["database"], herbs)
             old = current(workflow, manifest)
             slots = {s["database"]: s for s in old.get("datasets", [])} if old and old["a00_run_id"] == expected_a00 else {}
