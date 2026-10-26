@@ -1,5 +1,13 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-10-26 双版本方案第一阶段
+
+新增只读`GET /api/v1/analysis-plans/parameters`，返回统一参数定义、固定保护规则、阶段依赖及`execution_ready:false`。`POST /api/v1/analysis-plans/validate`接受`{specification,previous?}`；specification为`{schema_version?,mode:standard|personalized,parameters?}`，parameters只接受目录中的点分键。返回`{plan,impact|null,execution_available:false}`；previous若提供须为原样已编译方案。该接口仅校验和计算失效范围，不写研究、不联网、不批准、不执行科研。POST仍要求令牌、Origin和Host校验。
+
+新增`GET /api/v1/studies/{sid}/analysis-plan`和`POST /api/v1/studies/{sid}/analysis-plan/drafts`，后者仅接受`{request_id:planreq_<32hex>,expected_a00,expected_draft_id,specification,author,note}`。只有A00显式登记`analysis_plan_profile=ModuleA.analysis_plan.1`的新协议研究支持草稿；旧研究写入拒绝。相同request_id同内容幂等，改内容或草稿版本冲突409，回收站只读423。写入仅经Workflow公开方法，在原写锁中追加`decisions/analysis_plans`与manifest索引，不改变current/runs/reviews或活动计算。运行中编辑仅保存草稿，不改变旧批。
+
+当前阶段没有新建表单、启动或自动批准能力；新建旧接口字段及行为保持，不能靠客户端字段开启新协议。后续实际执行器接通并验收后才开放创建入口，避免可调界面与真实计算脱节。
+
 ## 2026-10-23 HERB后台采集容量及断点
 
 接口和客户端上传容量不变。仅服务器固定HERB采集生成的完整包允许64MiB，原统一stage再次检查ZIP成员/256MiB展开量、路径、药味、身份和当前版本。客户端不能以来源JSON字段选择该容量。再次显式采集可按同研究、同A00/A01及药味绑定恢复成功原响应，不跨研究复用；GET不联网，复核和A02不改变。任务progress.step_zh显示成分序号、原件复用数或当前退避重试，原done/total为整体包装步骤，不表示下载百分比。

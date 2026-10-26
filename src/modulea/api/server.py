@@ -51,6 +51,10 @@ class App:
         self.creation = StudyCreation(self.kernel)
         self.token = secrets.token_urlsafe(32)
         self.routes = [
+            ("GET", r"/api/v1/analysis-plans/parameters", self.get_analysis_parameters),
+            ("POST", r"/api/v1/analysis-plans/validate", self.post_analysis_validate),
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan", self.get_analysis_plan),
+            ("POST", rf"/api/v1/studies/{ID}/analysis-plan/drafts", self.post_analysis_draft),
             ("GET", rf"/api/v1/studies/{ID}/automatic_docking/{ID}/pairs", self.get_automatic_pairs),
             ("GET", rf"/api/v1/studies/{ID}/automatic_docking/{ID}/pairs/{ID}", self.get_automatic_evidence),
             ("GET", rf"/api/v1/studies/{ID}/automatic_docking/{ID}/files", self.get_automatic_files),
@@ -208,6 +212,26 @@ class App:
     def get_automatic_display_file(self, req, sid, identity, index):
         from .automatic_view import display_file
         return display_file(self, req, sid, identity, index)
+
+    def get_analysis_parameters(self, req):
+        """读取参数定义，不创建研究或启动任务。"""
+        from .analysis_plan_view import schema
+        return schema(self, req)
+
+    def post_analysis_validate(self, req):
+        """校验方案；全流程执行未接通前保持不可启动。"""
+        from .analysis_plan_view import validate
+        return validate(self, req)
+
+    def get_analysis_plan(self, req, study_id):
+        """仅读取本研究显式新协议的方案草稿。"""
+        from .analysis_plan_view import info
+        return info(self, req, study_id)
+
+    def post_analysis_draft(self, req, study_id):
+        """保存草稿，不触碰活动计算。"""
+        from .analysis_plan_view import draft
+        return draft(self, req, study_id)
 
     def _automatic_ready(self, study_id):
         """只读校验工具、当前上游及并发状态；不自动签署授权。"""
