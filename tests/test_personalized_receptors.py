@@ -48,6 +48,16 @@ class PersonalizedReceptorTests(unittest.TestCase):
         self.assertEqual(set(self.ids(result)), {f"HGNC:{i:03d}" for i in range(18)})
         self.assertEqual(len(result["thresholds"]), 4)
 
+    def test_two_receptors_are_selected_in_each_mode(self):
+        expected = {"degree": ["HGNC:000", "HGNC:001"],
+                    "bc_cc": ["HGNC:005", "HGNC:006"], "dual_ab": ["HGNC:005", "HGNC:006"]}
+        for mode, targets in expected.items():
+            with self.subTest(mode=mode):
+                result = select_receptors(fixture(), self.plan(mode, count=2))
+                self.assertEqual(result["requested_count"], 2)
+                self.assertEqual(result["actual_count"], 2)
+                self.assertEqual(self.ids(result), targets)
+
     def test_shortfall_and_empty_keep_actual_range_without_backfill(self):
         short = select_receptors(fixture(), self.plan(count=25))
         self.assertEqual(short["actual_count"], 15)

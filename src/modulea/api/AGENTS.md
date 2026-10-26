@@ -8,6 +8,8 @@
 
 当前参数目录另返回preview:{version,preview_only:true,groups,details,source_rules,fixed_rules_zh,message_zh}，只提供中文界面分组和真实接通状态；默认值、合法值及保护规则仍来自原目录。前端独立`#/parameters-preview`可切换标准/个性化、编辑目录内参数、调用原validate进行内存校验，并在校验后下载标有preview_only的本地方案JSON；不创建研究、不保存研究草稿、不提交科研任务。旧新建窗口只提供独立预览链接，原创建payload和行为保持，预览值不带入旧流程建档。后续实际执行器接通并验收后才开放新流程创建入口，避免可调界面与真实计算脱节。
 
+用户确认目标成分数和目标受体数改为自由整数输入：a06.component_count及a06.receptor_count目录改用type:integer、min:1、max:25，不再返回choices；默认均15，其他图表数量和A/B窗口的10/15/20/25选项保持。校验接口支持2×2等范围，拒绝越界、非整数、布尔值及字符串；并列处理规则和execution_available:false保持。现有合法方案内容及指纹不改变。
+
 ## 2026-10-26 研究追溯与导出
 
 新增只读`GET /studies/{sid}/trace`，返回当前研究各模块的run_id、父运行、输入/配置/代码/环境指纹、结果摘要、结果表名、方案草稿及导出链接；普通读取不携带完整表。`GET /studies/{sid}/trace/export.json`下载同一研究当前版本的完整追溯JSON，包含结果表和已登记文件相对路径、角色、大小与SHA-256；`GET /studies/{sid}/trace/export.csv`下载所有当前结果表的UTF-8 CSV，列为study_id、module_id、run_id、table_name、row_index、record_json。三个入口均为只读，不启动任务、不改变current、reviews或结果。

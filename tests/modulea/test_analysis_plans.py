@@ -90,6 +90,23 @@ class AnalysisPlanApiTests(unittest.TestCase):
             self.assertEqual(status, 403)
         self.assertFalse(self.settings.studies_dir.exists())
 
+    def test_target_counts_use_bounded_number_inputs_and_validate_two_by_two(self):
+        _, catalog = self.call("GET", "/analysis-plans/parameters")
+        for key in ("a06.component_count", "a06.receptor_count"):
+            self.assertNotIn("choices", catalog["parameters"][key])
+            self.assertEqual((catalog["parameters"][key]["min"], catalog["parameters"][key]["max"]), (1, 25))
+        status, result = self.call("POST", "/analysis-plans/validate", {"specification": {
+            "mode": "personalized", "parameters": {"a06.component_count": 2, "a06.receptor_count": 2}}})
+        self.assertEqual(status, 200, result)
+        self.assertEqual(result["plan"]["parameters"]["a06.component_count"], 2)
+        self.assertEqual(result["plan"]["parameters"]["a06.receptor_count"], 2)
+        for key in ("a06.component_count", "a06.receptor_count"):
+            status, _ = self.call("POST", "/analysis-plans/validate", {"specification": {
+                "mode": "personalized", "parameters": {key: 26}}})
+            self.assertEqual(status, 422)
+        self.assertFalse(self.settings.studies_dir.exists())
+        self.assertEqual(self.app.tasks.list(), [])
+
     def test_draft_is_immutable_idempotent_and_never_changes_runs_or_reviews(self):
         sid = self.study()
         before = self.workflow.load(sid)

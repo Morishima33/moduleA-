@@ -35,7 +35,7 @@ class AnalysisProtocolTests(unittest.TestCase):
                {"a06.exhaustiveness": 0}, {"a06.energy_range": float("nan")},
                {"a06.box_padding": float("inf")}, {"a06.redocking_rmsd_max": 0}, {"a01.dl_min": 10 ** 400},
                {"a04.required_score": .9001}, {"a04.mode": "all"},
-               {"species": 10090}, {"vina_version": "latest"}, {"a06.receptor_count": 16}]
+               {"species": 10090}, {"vina_version": "latest"}, {"a06.receptor_count": 26}]
         for values in bad:
             with self.subTest(values=values), self.assertRaises(ContractError):
                 self.plan(**values)
@@ -85,6 +85,17 @@ class AnalysisProtocolTests(unittest.TestCase):
         self.assertNotIn("A03", changed["stages"])
         self.assertNotIn("A04_NETWORK", changed["stages"])
         self.assertNotIn("A05_STATISTICS", changed["stages"])
+
+    def test_target_counts_accept_integer_range_and_reject_invalid_values(self):
+        for count in (1, 2, 7, 16, 24, 25):
+            plan = self.plan(**{"a06.component_count": count, "a06.receptor_count": count})
+            self.assertEqual(plan["parameters"]["a06.component_count"], count)
+            self.assertEqual(plan["parameters"]["a06.receptor_count"], count)
+            self.assertEqual(checked_plan(plan), plan)
+        for key in ("a06.component_count", "a06.receptor_count"):
+            for value in (0, -1, 26, 2.5, True, "2"):
+                with self.subTest(key=key, value=value), self.assertRaises(ContractError):
+                    self.plan(**{key: value})
 
     def test_fingerprints_bind_input_tools_and_relevant_parameters(self):
         inputs, tools = {"ligand": "a" * 64, "receptor": "b" * 64}, {"vina": "1.2.7", "environment": "fixture"}
