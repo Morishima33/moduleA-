@@ -8,7 +8,8 @@ from .errors import ApiError, from_contract
 
 def schema(app, req):
     """参数目录来自统一定义，不在网页维护第二份默认值。"""
-    return parameter_catalog()
+    from .analysis_plan_preview import presentation
+    return dict(parameter_catalog(), preview=presentation())
 
 
 def validate(app, req):

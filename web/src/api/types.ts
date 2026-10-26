@@ -24,6 +24,31 @@ export interface ProjectStorage {
   folders: { name: string; label_zh: string }[];
 }
 
+/** 独立参数预览仅读目录并调用原校验器，不提供研究执行。 */
+export type PlanValue = string | number | boolean;
+export interface AnalysisParameter {
+  label: string; default: PlanValue; type: 'number' | 'integer' | 'boolean' | 'enum';
+  unit?: string; min?: number; min_exclusive?: number; max?: number; resolution?: number;
+  choices?: (string | number)[]; active_when?: Record<string, PlanValue>;
+}
+export interface CompiledAnalysisPlan {
+  schema_version: string; mode: 'standard' | 'personalized'; parameters: Record<string, PlanValue>;
+  fixed: Record<string, unknown>; parameter_hash: string;
+  warnings: { code: string; message_zh: string }[];
+}
+export interface AnalysisParameterCatalog {
+  schema_version: string; parameters: Record<string, AnalysisParameter>; fixed: Record<string, unknown>;
+  execution_ready: boolean; message_zh: string;
+  preview: {
+    version: string; preview_only: true; message_zh: string;
+    groups: {key: string; title_zh: string; stage_zh: string; status: string; status_zh: string;
+      description_zh: string; fields: string[]; advanced_fields: string[]}[];
+    details: Record<string, {help_zh: string; choices_zh?: Record<string, string>}>;
+    source_rules: {name: string; rule_zh: string}[]; fixed_rules_zh: string[];
+  };
+}
+export interface AnalysisPlanValidation { plan: CompiledAnalysisPlan; impact: unknown; execution_available: false }
+
 /** 研究级只读追溯摘要；完整结果通过页面上的显式导出下载。 */
 export interface TraceModuleSummary {
   module_id: string;

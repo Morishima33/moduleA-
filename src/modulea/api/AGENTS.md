@@ -6,7 +6,7 @@
 
 新增`GET /api/v1/studies/{sid}/analysis-plan`和`POST /api/v1/studies/{sid}/analysis-plan/drafts`，后者仅接受`{request_id:planreq_<32hex>,expected_a00,expected_draft_id,specification,author,note}`。只有A00显式登记`analysis_plan_profile=ModuleA.analysis_plan.1`的新协议研究支持草稿；旧研究写入拒绝。相同request_id同内容幂等，改内容或草稿版本冲突409，回收站只读423。写入仅经Workflow公开方法，在原写锁中追加`decisions/analysis_plans`与manifest索引，不改变current/runs/reviews或活动计算。运行中编辑仅保存草稿，不改变旧批。
 
-当前阶段没有新建表单、启动或自动批准能力；新建旧接口字段及行为保持，不能靠客户端字段开启新协议。后续实际执行器接通并验收后才开放创建入口，避免可调界面与真实计算脱节。
+当前参数目录另返回preview:{version,preview_only:true,groups,details,source_rules,fixed_rules_zh,message_zh}，只提供中文界面分组和真实接通状态；默认值、合法值及保护规则仍来自原目录。前端独立`#/parameters-preview`可切换标准/个性化、编辑目录内参数、调用原validate进行内存校验，并在校验后下载标有preview_only的本地方案JSON；不创建研究、不保存研究草稿、不提交科研任务。旧新建窗口只提供独立预览链接，原创建payload和行为保持，预览值不带入旧流程建档。后续实际执行器接通并验收后才开放新流程创建入口，避免可调界面与真实计算脱节。
 
 ## 2026-10-26 研究追溯与导出
 

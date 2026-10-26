@@ -65,6 +65,12 @@ class AnalysisPlanApiTests(unittest.TestCase):
         status, catalog = self.call("GET", "/analysis-plans/parameters")
         self.assertEqual(status, 200)
         self.assertFalse(catalog["execution_ready"])
+        preview = catalog["preview"]
+        self.assertTrue(preview["preview_only"])
+        visible = [key for group in preview["groups"] for key in group["fields"] + group["advanced_fields"]]
+        self.assertEqual(len(visible), len(set(visible)))
+        self.assertEqual(set(visible), set(catalog["parameters"]))
+        self.assertEqual(set(preview["details"]), set(catalog["parameters"]))
         baseline = compile_plan({"mode": "personalized"})
         status, result = self.call("POST", "/analysis-plans/validate", {"specification": {"mode": "personalized", "parameters": {"a05.go_plot_top": 25}}, "previous": baseline})
         self.assertEqual(status, 200, result)

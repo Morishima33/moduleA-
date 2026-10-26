@@ -1,9 +1,9 @@
 // 文件用途：新研究登记窗口；官方身份核对成功后独立建档，创建不批准或启动计算。
-import { Alert, App as AntApp, Col, Form, Input, Modal, Radio, Row } from 'antd';
+import { Alert, App as AntApp, Button, Col, Form, Input, Modal, Radio, Row } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import { api, errorText } from '../api/client';
 import type { NewStudyInput } from '../api/types';
-import { navigate } from '../lib/route';
+import { hrefFor, navigate } from '../lib/route';
 
 type Fields = Omit<NewStudyInput, 'request_id'>;
 
@@ -51,6 +51,10 @@ export default function NewStudyModal({ open, onClose, onCreated }: { open: bool
   return (
     <Modal title="新建研究" open={open} width={720} onCancel={onClose} onOk={submit}
       okText={saving ? '正在核对MeSH并创建…' : '核对MeSH并创建'} cancelText="取消"
+      footer={(_, {OkBtn, CancelBtn}) => <div style={{display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 10}}>
+        <Button href={hrefFor({page: 'parameters-preview'})} target="_blank" rel="noreferrer" disabled={saving}>详细参数预览</Button>
+        <div style={{display: 'flex', gap: 8}}><CancelBtn /><OkBtn /></div>
+      </div>}
       confirmLoading={saving} cancelButtonProps={{ disabled: saving }} closable={!saving} maskClosable={!saving} keyboard={!saving}>
       <p className="small muted">一个方剂和一个疾病独立建档。同病再次创建也会获得新的项目文件夹。</p>
       <Form form={form} layout="vertical" requiredMark={false} disabled={saving}>
@@ -73,6 +77,7 @@ export default function NewStudyModal({ open, onClose, onCreated }: { open: bool
       {saving && <p role="status" className="small">正在向NLM官方服务核对疾病身份，请稍候。</p>}
       {error && <Alert style={{ marginTop: 12 }} type="error" showIcon message={error} />}
       <p className="small muted">创建后进入A00，先核对登记和准备资料；此次操作不会启动分析计算。</p>
+      <p className="small muted">本窗口沿用当前固定流程；独立预览中的个性化参数尚不用于本次建档。</p>
     </Modal>
   );
 }

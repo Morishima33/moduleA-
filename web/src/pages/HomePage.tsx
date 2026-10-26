@@ -56,7 +56,10 @@ export default function HomePage() {
           <h1 style={{ margin: 0, fontSize: 26 }}>我的研究</h1>
           <p className="muted small" style={{ margin: '4px 0 0' }}>一个方剂 + 一个疾病 = 一项研究。点击研究进入工作页。</p>
         </div>
-        <Button type="primary" size="large" disabled={!app.session?.capabilities.create_study} onClick={app.openNewStudy}>新建研究</Button>
+        <div style={{display: 'flex', flexWrap: 'wrap', gap: 10}}>
+          <Button size="large" href={hrefFor({page: 'parameters-preview'})}>个性化参数预览</Button>
+          <Button type="primary" size="large" disabled={!app.session?.capabilities.create_study} onClick={app.openNewStudy}>新建研究</Button>
+        </div>
       </div>
       <div className="small muted" style={{ marginTop: -12 }}>每项研究独立保存资料、运行结果、复核记录和报告。</div>
 

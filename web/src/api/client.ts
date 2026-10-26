@@ -103,6 +103,10 @@ function qs(params: Record<string, string | number | undefined | null>): string 
 
 // 各端点的薄封装；路径与契约第 3 节一致
 export const api = {
+  /** 目录和校验均不创建研究、不提交任务。 */
+  analysisParameters: () => request<import('./types').AnalysisParameterCatalog>('GET', '/analysis-plans/parameters'),
+  validateAnalysisPlan: (specification: {mode: 'standard' | 'personalized'; parameters?: Record<string, import('./types').PlanValue>}) =>
+    request<import('./types').AnalysisPlanValidation>('POST', '/analysis-plans/validate', {specification}),
   automaticPairs: (sid:string,batch:string,page=1,q='') => request<import('./types').AutomaticPage<import('./types').AutomaticPair>>('GET',`/studies/${sid}/automatic_docking/${batch}/pairs${qs({page,size:20,q})}`),
   automaticEvidence: (sid:string,batch:string,key:string) => request<import('./types').AutomaticPair>('GET',`/studies/${sid}/automatic_docking/${batch}/pairs/${key}`),
   automaticFiles: (sid:string,batch:string,page=1,q='') => request<import('./types').AutomaticPage<import('./types').AutomaticFile>>('GET',`/studies/${sid}/automatic_docking/${batch}/files${qs({page,size:20,q})}`),

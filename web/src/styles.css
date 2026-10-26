@@ -142,3 +142,50 @@ a:hover { color: #0A4350; }
 
 /* 对接名单的勾选只是本地选择，用浅色保持身份和资料状态可读。 */
 .docking-compound-table .ant-table-tbody > tr.ant-table-row-selected > td { background: #eaf3fa !important; }
+
+/* 第一部分参数预览：保留研究工作台配色，分组展示并给输入和说明留足空间。 */
+.plan-preview-page { max-width: 1240px; gap: 20px; }
+.plan-page-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.plan-page-heading h1 { margin: 8px 0 6px; font-size: 26px; }
+.plan-page-heading p { margin: 0; }
+.plan-section-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+.plan-section-heading h3 { margin: 0; font-size: 18px; }
+.plan-mode-section { padding: 22px 24px; }
+.plan-mode-options { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; width: 100%; margin-top: 18px; }
+.plan-mode-card { border: 1px solid #DCE1E5; border-radius: 10px; padding: 22px; background: white; font-size: 14px; }
+.plan-mode-card.selected { border: 2px solid #0F5E6E; padding: 21px; background: #F0F7F7; }
+.plan-mode-card strong { font-size: 17px; margin-right: 12px; }
+.plan-mode-card p { color: #56636F; line-height: 1.7; margin: 12px 0 0 24px; }
+.plan-summary-strip { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px 26px; padding: 18px 24px; background: #EAF3F4; border: 1px solid #C4DCDF; border-radius: 12px; }
+.plan-summary-strip > div { display: flex; flex-direction: column; gap: 5px; }
+.plan-summary-strip strong { font-size: 28px; color: #0F5E6E; }
+.plan-summary-strip b { font-weight: 500; }
+.plan-summary-strip p { grid-column: 1 / -1; margin: 0; }
+.plan-parameter-section { padding: 22px 24px; }
+.plan-parameter-layout { display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: 26px; margin-top: 22px; }
+.plan-group-nav { display: flex; flex-direction: column; gap: 10px; }
+.plan-group-nav button { font: inherit; text-align: left; padding: 16px; border: 1px solid #E1E6EA; background: #FAFBFC; border-radius: 8px; cursor: pointer; display: flex; flex-direction: column; gap: 6px; }
+.plan-group-nav button.selected { border-color: #0F5E6E; color: #0F5E6E; background: #EAF3F4; }
+.plan-group-body { min-width: 0; }
+.plan-group-body > p { margin: 12px 0 22px; line-height: 1.7; }
+.plan-field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px 26px; }
+.plan-field { min-width: 0; }
+.plan-field label { display: block; font-weight: 600; margin-bottom: 10px; }
+.plan-field-help { line-height: 1.65; margin-top: 9px; }
+.plan-field.inactive { opacity: .6; }
+.plan-source-rules { display: grid; gap: 12px; margin-top: 24px; padding-top: 20px; border-top: 1px solid #E5E9EC; }
+.plan-source-rules > div { display: grid; grid-template-columns: 80px minmax(0, 1fr); gap: 12px; line-height: 1.7; }
+.plan-advanced { margin-top: 24px; }
+.plan-preview-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
+.plan-preview-actions > div { display: flex; flex-wrap: wrap; gap: 10px; }
+@media (max-width: 720px) {
+  .plan-page-heading h1 { font-size: 22px; }
+  .plan-mode-options, .plan-field-grid, .plan-summary-strip { grid-template-columns: minmax(0, 1fr); }
+  .plan-parameter-layout { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .plan-group-nav { display: grid; grid-template-columns: 1fr 1fr; }
+  .plan-mode-card { padding: 18px; }
+  .plan-mode-card.selected { padding: 17px; }
+  .plan-mode-card p { margin-left: 0; }
+  .plan-preview-actions > div { width: 100%; }
+  .plan-preview-actions > div button { flex: 1 1 auto; }
+}

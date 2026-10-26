@@ -11,6 +11,7 @@ import StudyPage from './pages/StudyPage';
 import TaskDrawer from './components/TaskDrawer';
 import InboxDrawer from './components/InboxDrawer';
 import NewStudyModal from './components/NewStudyModal';
+import AnalysisPlanPreviewPage from './pages/AnalysisPlanPreviewPage';
 
 // 任务仍在进行的状态
 const ACTIVE = new Set(['queued', 'running']);
@@ -184,6 +185,8 @@ export default function App() {
       {/* 页面主体：会话就绪后再渲染 */}
       {!session ? (
         <div style={{ padding: 80, textAlign: 'center' }}><Spin tip="正在连接本机服务…"><div style={{ height: 40 }} /></Spin></div>
+      ) : route.page === 'parameters-preview' ? (
+        <AnalysisPlanPreviewPage />
       ) : route.page === 'study' && route.studyId ? (
         <StudyPage key={route.studyId} studyId={route.studyId} moduleId={route.moduleId} runId={route.runId} />
       ) : (
