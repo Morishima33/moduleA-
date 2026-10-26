@@ -55,6 +55,9 @@ class App:
             ("POST", r"/api/v1/analysis-plans/validate", self.post_analysis_validate),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan", self.get_analysis_plan),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/drafts", self.post_analysis_draft),
+            ("GET", rf"/api/v1/studies/{ID}/trace", self.get_study_trace),
+            ("GET", rf"/api/v1/studies/{ID}/trace/export.json", self.export_study_trace_json),
+            ("GET", rf"/api/v1/studies/{ID}/trace/export.csv", self.export_study_trace_csv),
             ("GET", rf"/api/v1/studies/{ID}/automatic_docking/{ID}/pairs", self.get_automatic_pairs),
             ("GET", rf"/api/v1/studies/{ID}/automatic_docking/{ID}/pairs/{ID}", self.get_automatic_evidence),
             ("GET", rf"/api/v1/studies/{ID}/automatic_docking/{ID}/files", self.get_automatic_files),
@@ -232,6 +235,21 @@ class App:
         """保存草稿，不触碰活动计算。"""
         from .analysis_plan_view import draft
         return draft(self, req, study_id)
+
+    def get_study_trace(self, req, study_id):
+        """返回当前研究的只读追溯摘要；详细数据通过显式导出下载。"""
+        from .trace_actions import trace_summary
+        return trace_summary(self, req, study_id)
+
+    def export_study_trace_json(self, req, study_id):
+        """下载完整参数、版本、来源和结果追溯JSON。"""
+        from .trace_actions import export_trace_json
+        return export_trace_json(self, req, study_id)
+
+    def export_study_trace_csv(self, req, study_id):
+        """下载当前模块结果表的UTF-8 CSV。"""
+        from .trace_actions import export_trace_csv
+        return export_trace_csv(self, req, study_id)
 
     def _automatic_ready(self, study_id):
         """只读校验工具、当前上游及并发状态；不自动签署授权。"""

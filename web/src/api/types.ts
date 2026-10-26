@@ -24,6 +24,29 @@ export interface ProjectStorage {
   folders: { name: string; label_zh: string }[];
 }
 
+/** 研究级只读追溯摘要；完整结果通过页面上的显式导出下载。 */
+export interface TraceModuleSummary {
+  module_id: string;
+  label_zh: string;
+  run_id: string | null;
+  state: string;
+  result: { outcome?: string | null; summary?: Record<string, unknown>; anomalies?: unknown[]; table_names?: string[] } | null;
+  table_names: string[];
+}
+export interface TraceSummary {
+  trace_version: string;
+  study_id: string;
+  workflow_profile: string | null;
+  current: Record<string, string | null>;
+  modules: TraceModuleSummary[];
+  plans: { plan_id: string | null; state: string | null; created_at: string | null }[];
+  file_count: number;
+  read_only: true;
+  export_json_url: string;
+  export_csv_url: string;
+  message_zh: string;
+}
+
 /** 状态码：与契约第 2 节一致 */
 export type StateCode =
   | 'idle' | 'ready' | 'running' | 'incomplete' | 'failed' | 'waiting' | 'empty'

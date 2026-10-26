@@ -1,0 +1,133 @@
+"""研究级追溯与数据导出；只读当前研究归档，不启动任务、不改变复核。"""
+
+import csv
+import io
+import json
+from copy import deepcopy
+
+from contracts import MODULES, SCHEMA_VERSION, require
+from storage import read_json, verified_file
+
+TRACE_VERSION = "ModuleA.trace_export.1"
+
+
+def _record(value):
+    """从任意输入结构提取已经登记的研究相对文件记录，不接受裸路径。"""
+    if not isinstance(value, dict):
+        return None
+    if not all(key in value for key in ("path", "sha256", "bytes")):
+        return None
+    if not isinstance(value["path"], str) or not isinstance(value["sha256"], str):
+        return None
+    return {key: value[key] for key in ("path", "sha256", "bytes", "role") if key in value}
+
+
+def _records(value, output):
+    """递归收集输入、结果、附件和证据文件记录，去重后仍保留出现顺序。"""
+    item = _record(value)
+    if item is not None:
+        key = (item["path"], item["sha256"])
+        if key not in {(row["path"], row["sha256"]) for row in output}:
+            output.append(item)
+        return
+    if isinstance(value, dict):
+        for child in value.values():
+            _records(child, output)
+    elif isinstance(value, list):
+        for child in value:
+            _records(child, output)
+
+
+def _verified_records(root, records):
+    """导出前逐件核验归档文件；修改或缺失时整个导出阻断。"""
+    verified = []
+    for record in records:
+        path = verified_file(root, record)
+        item = dict(record)
+        item["filename"] = path.name
+        verified.append(item)
+    return verified
+
+
+def build_trace(workflow, study_id, include_data=False):
+    """生成同一研究的模块、版本、来源、参数、结果和文件指纹清单。"""
+    manifest = workflow.load(study_id)
+    root = workflow.location(study_id)
+    modules = []
+    all_files = []
+    for module_id, (label, dependencies) in MODULES.items():
+        run_id = manifest.get("current", {}).get(module_id)
+        item = {"module_id": module_id, "label_zh": label, "dependencies": list(dependencies),
+                "run_id": run_id, "state": "idle", "result": None, "files": []}
+        if run_id:
+            run = workflow.run(manifest, run_id)
+            item.update({"state": "completed" if manifest["runs"][run_id].get("result_file") else "running",
+                         "parent_runs": deepcopy(run.get("parent_runs", {})),
+                         "parent_review_ids": deepcopy(run.get("parent_review_ids", {})),
+                         "input_hash": run.get("input_hash"), "config_hash": run.get("config_hash"),
+                         "code_version": run.get("code_version"), "environment_version": run.get("environment_version"),
+                         "inputs": deepcopy(run.get("inputs", {})), "config": deepcopy(run.get("config", {})),
+                         "reason": run.get("reason"), "created_at": run.get("created_at")})
+            _records(run.get("inputs", {}), all_files)
+            _records(run.get("config", {}), all_files)
+            run_ref = manifest["runs"][run_id].get("run_file")
+            _records(run_ref, all_files)
+            if manifest["runs"][run_id].get("result_file"):
+                result = workflow.result(manifest, run_id)
+                item["result"] = {"outcome": result.get("outcome"), "summary": deepcopy(result.get("summary", {})),
+                                   "anomalies": deepcopy(result.get("anomalies", [])),
+                                   "table_names": sorted(result.get("tables", {}).keys())}
+                _records(result, all_files)
+                if include_data:
+                    item["result"]["tables"] = deepcopy(result.get("tables", {}))
+                result_ref = manifest["runs"][run_id].get("result_file")
+                _records(result_ref, all_files)
+        item["files"] = [row for row in all_files if row.get("role", "").startswith(module_id.lower())]
+        modules.append(item)
+
+    # 将运行文件与结果文件按模块绑定；未知role仍进入总清单，不能因标签缺失而丢失。
+    verified = _verified_records(root, all_files)
+    plans = []
+    for reference in manifest.get("analysis_plan_records", []):
+        plan = read_json(verified_file(root, reference))
+        plans.append({"plan_id": plan.get("plan_id"), "parent_draft_id": plan.get("parent_draft_id"),
+                      "state": plan.get("state"), "created_at": plan.get("created_at"),
+                      "request_hash": plan.get("request_hash"), "plan": deepcopy(plan.get("plan", {})),
+                      "file": deepcopy(reference)})
+        _records(reference, all_files)
+    # 方案文件加入后再次核验，并把每个运行目录中的文件回挂到对应模块。
+    verified = _verified_records(root, all_files)
+    for item in modules:
+        marker = f"/runs/{item['module_id']}/"
+        item["files"] = [row for row in verified if marker in row["path"]]
+    payload = {"schema_version": SCHEMA_VERSION, "trace_version": TRACE_VERSION, "study_id": study_id,
+               "manifest_updated_at": manifest.get("updated_at"), "created_at": manifest.get("created_at"),
+               "workflow_profile": manifest.get("workflow_profile"), "kind": manifest.get("kind"),
+               "current": deepcopy(manifest.get("current", {})), "modules": modules, "plans": plans,
+               "files": verified, "file_count": len(verified), "include_data": include_data,
+               "read_only": True, "note_zh": "本清单及导出数据来自同一研究的当前归档版本；文件均已在导出前核验指纹。"}
+    return payload
+
+
+def trace_csv(payload):
+    """将每个模块每张结果表展开为可在Excel中继续处理的UTF-8 CSV。"""
+    output = io.StringIO(newline="")
+    writer = csv.writer(output)
+    writer.writerow(["study_id", "module_id", "run_id", "table_name", "row_index", "record_json"])
+    for module in payload["modules"]:
+        result = module.get("result") or {}
+        tables = result.get("tables", {})
+        for name, value in tables.items():
+            rows = value if isinstance(value, list) else [value]
+            for index, row in enumerate(rows):
+                writer.writerow([payload["study_id"], module["module_id"], module.get("run_id"), name, index,
+                                 json.dumps(row, ensure_ascii=False, separators=(",", ":"))])
+        if result.get("summary"):
+            writer.writerow([payload["study_id"], module["module_id"], module.get("run_id"), "__summary__", 0,
+                             json.dumps(result["summary"], ensure_ascii=False, separators=(",", ":"))])
+    return output.getvalue().encode("utf-8-sig")
+
+
+def trace_file_json(payload):
+    """保留完整结构化追溯包，便于后续恢复和机器核对。"""
+    return json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8")

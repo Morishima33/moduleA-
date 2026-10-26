@@ -11,6 +11,7 @@ import { DownstreamCard } from '../components/ModuleSections';
 import ModulePage from '../components/ModulePage';
 import ReviewPanel from '../components/ReviewPanel';
 import ProjectStorage from '../components/ProjectStorage';
+import TraceExportPanel from '../components/TraceExportPanel';
 import { useApp } from '../lib/appContext';
 import { hrefFor, navigate } from '../lib/route';
 import { LEGEND, stateStyle } from '../lib/theme';
@@ -233,6 +234,8 @@ export default function StudyPage({ studyId, moduleId, runId }: { studyId: strin
               )}
             </div>
           )}
+          {/* 研究级追溯与导出：默认折叠，避免进入页面时加载完整归档。 */}
+          <TraceExportPanel studyId={studyId} />
           {/* 模块页 */}
           {moduleError ? (
             moduleError.code === 'ARCHIVE_UNAVAILABLE' ? (study.archive_ok ? <ArchiveAlert error={moduleError.messageZh} /> : null) : (

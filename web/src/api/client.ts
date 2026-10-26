@@ -130,6 +130,8 @@ export const api = {
   trash: () => request<{ items: StudyCard[] }>('GET', '/trash'),
   /** 研究页 */
   study: (sid: string) => request<StudyView>('GET', `/studies/${sid}`),
+  /** 当前研究只读追溯摘要；完整结果由页面显式下载。 */
+  studyTrace: (sid: string) => request<import('./types').TraceSummary>('GET', `/studies/${sid}/trace`),
   /** 模块页；runId 用于查看历史版本 */
   module: (sid: string, mid: string, runId?: string | null) => request<ModuleView>('GET', `/studies/${sid}/modules/${mid}${qs({ run_id: runId })}`),
   /** 运行历史 */
@@ -215,6 +217,12 @@ export const api = {
 /** 归档文件下载地址；inline 为 true 时图片内嵌显示 */
 export function fileUrl(sid: string, key: string, inline = false): string {
   return `${API_BASE}/studies/${sid}/files/${encodeURIComponent(key)}${inline ? '?inline=1' : ''}`;
+}
+
+/** 将后端返回的下载相对地址转换为开发或生产页面可用地址。 */
+export function apiUrl(path: string): string {
+  if (/^https?:\/\//i.test(path)) return path;
+  return `${import.meta.env.DEV ? DEV_BASE : ''}${path}`;
 }
 
 /** 把任意异常转成中文说明 */
