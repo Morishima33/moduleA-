@@ -23,6 +23,16 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
         from science_modules.a01.plan_flow import acquire_sources
         return acquire_sources(self, study_id, payload, progress=progress)
 
+    def fetch_analysis_plan_a04_network(self, targets, plan, *, opener=None):
+        """按已编译方案请求STRING；只返回来源包，不写研究、不启动任务。"""
+        from science_modules.a04.plan_flow import fetch
+        return fetch(targets, plan, opener=opener)
+
+    def evaluate_analysis_plan_a04_network(self, targets, bundle, plan):
+        """用同一方案复算A04网络，供发布前指纹校验与后续任务接入。"""
+        from science_modules.a04.plan_flow import evaluate
+        return evaluate(targets, bundle, plan)
+
     def _analysis_plan_records(self, manifest):
         """逐件核验本研究索引，不从任意目录猜测最新草稿。"""
         root = self.location(manifest["study_id"])
