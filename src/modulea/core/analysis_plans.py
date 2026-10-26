@@ -13,6 +13,16 @@ class AnalysisPlanConflict(ContractError):
 class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
     """旧研究继承原行为；只有显式新方案登记支持草稿写入。"""
 
+    def publish_analysis_plan_a01(self, study_id, payload):
+        """科学子进程显式发布绑定方案的A01；不自动批准或开始下游。"""
+        from science_modules.a01.plan_flow import publish
+        return publish(self, study_id, payload)
+
+    def acquire_analysis_plan_a01_sources(self, study_id, payload, *, progress=None):
+        """科学子进程显式采集方案来源，只暂存原件，不批准或启动下游。"""
+        from science_modules.a01.plan_flow import acquire_sources
+        return acquire_sources(self, study_id, payload, progress=progress)
+
     def _analysis_plan_records(self, manifest):
         """逐件核验本研究索引，不从任意目录猜测最新草稿。"""
         root = self.location(manifest["study_id"])
