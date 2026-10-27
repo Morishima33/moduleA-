@@ -81,6 +81,34 @@ class ReferencePreparationTests(unittest.TestCase):
         self.assertTrue(check["can_enter_review"])
         self.assertEqual(check["scored_pairs"], 0)
 
+    def test_full_reference_review_binding_and_qualification_chain(self):
+        from tests.modulea.test_plan_pockets import PocketReviewTests
+        from science_modules.a06 import reference_review
+
+        base = PocketReviewTests("test_confirmation_revision_preserves_sources_and_na_without_scoring")
+        base.setUp()
+        self.addCleanup(base.tearDown)
+        workflow, sid = base.workflow, base.sid
+        review_payload = {"expected_input_id": base.input_record["input_id"],
+                          "expected_preparation_run_id": base.source_run_id,
+                          "request_id": "refreq_" + uuid4().hex,
+                          "reviewer": "隔离核查人", "note": "空清单链路核查",
+                          "confirmed": True, "choices": []}
+        review_result = reference_review.run(workflow, sid, review_payload,
+                                             Path(base.base.temp.name), lambda _: None)
+        review_id = review_result["review"]["review_id"]
+        bind_payload = {"expected_input_id": base.input_record["input_id"],
+                        "expected_preparation_run_id": base.source_run_id,
+                        "expected_review_id": review_id,
+                        "request_id": "refprep_" + uuid4().hex,
+                        "reviewer": "隔离绑定人", "note": "绑定空参考清单链路",
+                        "confirmed": True}
+        bound = reference_preparation.publish(workflow, sid, bind_payload)
+        check = qualification(workflow, sid)
+        self.assertEqual(bound["run_id"], check["current_run_id"])
+        self.assertTrue(check["qualified"], check)
+        self.assertEqual(check["scored_pairs"], 0)
+
 
 if __name__ == "__main__":
     unittest.main()
