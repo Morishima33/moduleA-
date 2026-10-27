@@ -359,6 +359,7 @@ export interface ModuleView {
   docking_review?:DockingReviewInfo|null;
   compound_selection?:CompoundSelectionInfo|null;
   docking_preparation?:DockingPreparationInfo|null;
+  reference_qualification?:ReferenceQualificationInfo|null;
   docking_coverage?:DockingCoverageInfo|null;
   docking_candidates?: DockingCandidatesInfo | null;
   module: { module_id: string; title_zh: string; group_zh: string; purpose_zh: string; sub: boolean; depends_on: string[] };
@@ -489,6 +490,9 @@ export interface SourceInspectionReview {review_id:string;created_at:string;note
 export interface DockingPreparationInfo {
   quality_status_zh?: string; // 本轮实际质控归档状态，由服务端给出。
 source_review?:SourceInspectionReview|null;expected_source_review_id?:string|null;confirmation:TwoPassConfirmation;expected_draft_id?:string|null;draft?:TwoPassDraftInfo|null;metadata_review?:ReceptorMetadataReview|null;enabled:boolean;disabled_reason_zh:string;expected_source:string;expected_plan_id:string|null;policy_version:string;plan:TwoPassPlan;checks:PlanRowCheck[];materials:DockingMaterial[];context:{receptors:DockingCandidateRow[];compounds:{compound_id:string;name:string;herbs:string[]}[]};planned_pair_count:number;execution_allowed:false;status_zh:string;latest?:{reviewer:string;note:string;created_at:string}|null}
+
+// 新版A06绑定准备的整体复核资格；只显示服务端复算，不代替人工批准。
+export interface ReferenceQualificationInfo {supported:boolean;enabled:boolean;qualified:boolean;can_enter_review:boolean;execution_available:false;current_run_id?:string;scored_pairs:number|null;checked_files?:number;summary?:Record<string,unknown>|null;blockers:string[];reason_zh:string}
 
 // 研究核查草案与同批矩阵只读，身份预核查不代替人工确认。
 export interface DockingReviewCompound extends CompoundChoiceRow {name_zh:string;cid:string;identity_prechecked:boolean;identity_state_zh:string;source_3d_state_zh:string;evidence_zh:string;manual_reason_zh:string}
