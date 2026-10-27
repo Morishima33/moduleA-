@@ -10,6 +10,8 @@
 
 `GET /api/v1/studies/{sid}/analysis-plan/a06-references`只读取当前新版准备事实包中的共晶候选，返回目标、候选稳定键、PDB、组件、链、邻域距离和可选原因；不联网、不准备、不改变研究。`POST /api/v1/studies/{sid}/analysis-plan/a06-references/reviews`严格接受`{expected_input_id,expected_preparation_run_id,request_id:refreq_<32hex>,reviewer,note,confirmed:true,choices:[{target_id,candidate_key,reference_key}]}`，可提交空清单表示明确不采用参考。后台`a06_plan_reference_review`在隔离科学环境重新核对同批mmCIF、CCD、序列、Meeko、搜索盒及实际参考重对接，追加`A06.plan_reference_review.1`证据决定；不切换`current`、不写模块reviews、不计算成分×受体组合。请求不接受路径、坐标、PDB参数或客户端质控结论，候选失效、输入过期或研究任务忙碌时拒绝。
 
+`GET /api/v1/studies/{sid}/analysis-plan/a06-reference-preparation`返回参考证据是否已绑定当前新版准备。`POST /api/v1/studies/{sid}/analysis-plan/a06-reference-preparation`严格接受`{expected_input_id,expected_preparation_run_id,expected_review_id:refreview_<32hex>,request_id:refprep_<32hex>,reviewer,note,confirmed:true}`，后台`a06_plan_reference_preparation`追加`A06.plan_reference_preparation.1`准备版本，完整保留原准备、参考核查和文件指纹；新版仍`handoff_blocked:true`、`scored_pairs:0`，不自动批准、不启动成分×受体评分。当前准备或参考核查过期时拒绝，绑定后旧版本只读保留。
+
 清单另返回`current_summary`和当前已完整归档的`saved_decisions`；null口袋键始终回到原第二版状态，修订不能误认为沿用上次已采用口袋。网页独立`#/plan-pockets/{sid}`展示清单、盒参数、残基和两次文件指纹；A06_PREP页顶栏提供入口。保存过的选择可回显，首次不预选采用，提交确认框始终默认未勾选。网页只消费服务端`eligible`和摘要，不计算科学通过与否。
 
 ## 2026-10-27 新方案A06实际准备

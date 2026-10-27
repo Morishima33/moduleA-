@@ -358,6 +358,38 @@ def run_a06_plan_reference_review(settings, task, manager):
                    "done": 1, "total": 1})
     return "共晶参考证据已归档：" + result["review_id"] + "；未批准A06或启动批量评分。"
 
+
+def run_a06_plan_reference_preparation(settings, task, manager):
+    """将已核查共晶参考绑定到新版准备；不重新下载或运行评分。"""
+    import subprocess
+    if settings.science_tools_root is None:
+        raise ValueError("本机未配置science_tools_root，不能绑定参考证据准备")
+    folder = settings.runtime_dir / "a06_plan_reference_preparation_requests" / task["task_id"]
+    folder.mkdir(parents=True, exist_ok=False)
+    request, output = folder / "request.json", folder / "result.json"
+    payload = json.loads(task.get("payload") or "{}")
+    payload["task_id"] = task["task_id"]
+    request.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    command = [settings.science_python, "-I", "-S", "-B",
+               str(settings.project_root / "tools/run_a06_reference_preparation.py"),
+               "--request-file", str(request), "--result-file", str(output),
+               "--tools-root", str(settings.science_tools_root),
+               "--data-root", str(settings.data_root), "--study", task["study_id"]]
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                               text=True, encoding="utf-8", errors="replace",
+                               env=dict(os.environ, TEMP=str(folder), TMP=str(folder),
+                                        PYTHONDONTWRITEBYTECODE="1", PYTHONUTF8="1"))
+    for line in process.stdout:
+        print(line, end="", flush=True)
+        if line.startswith("PROGRESS "):
+            manager.update(task["task_id"], progress={"step_zh": line[9:].strip(), "done": 0, "total": 1})
+    if process.wait() != 0 or not output.is_file():
+        raise ValueError("参考证据准备绑定未完整归档；原准备和参考证据均已保留")
+    result = json.loads(output.read_text(encoding="utf-8"))
+    manager.update(task["task_id"], progress={"step_zh": "参考证据已绑定新版准备，仍待整体复核",
+                   "done": 1, "total": 1})
+    return "参考证据已绑定新版准备：" + result["run_id"] + "；未批准A06或启动批量评分。"
+
 def run_a06_plan(settings,task,manager):
     payload=json.loads(task.get("payload") or "{}")
     data=full_workflow(settings.data_root).save_two_pass(task["study_id"],payload)
@@ -443,6 +475,7 @@ HANDLERS["a06_plan_input"] = run_a06_plan_input
 HANDLERS["a06_plan_preparation"] = run_a06_plan_preparation
 HANDLERS["a06_plan_pocket_review"] = run_a06_plan_preparation
 HANDLERS["a06_plan_reference_review"] = run_a06_plan_reference_review
+HANDLERS["a06_plan_reference_preparation"] = run_a06_plan_reference_preparation
 
 
 from .drawing import run_figure, run_packages, run_bundle

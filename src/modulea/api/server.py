@@ -63,6 +63,8 @@ class App:
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a06-pockets/reviews", self.post_analysis_a06_pockets),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a06-references", self.get_analysis_a06_references),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a06-references/reviews", self.post_analysis_a06_references),
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a06-reference-preparation", self.get_analysis_a06_reference_preparation),
+            ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a06-reference-preparation", self.post_analysis_a06_reference_preparation),
             ("GET", rf"/api/v1/studies/{ID}/trace", self.get_study_trace),
             ("GET", rf"/api/v1/studies/{ID}/trace/export.json", self.export_study_trace_json),
             ("GET", rf"/api/v1/studies/{ID}/trace/export.csv", self.export_study_trace_csv),
@@ -283,6 +285,16 @@ class App:
         """提交显式共晶参考选择，交由隔离科学任务复核。"""
         from .analysis_reference_view import review
         return review(self, req, study_id)
+
+    def get_analysis_a06_reference_preparation(self, req, study_id):
+        """只读当前参考证据绑定准备状态。"""
+        from .analysis_reference_preparation_view import info
+        return info(self, req, study_id)
+
+    def post_analysis_a06_reference_preparation(self, req, study_id):
+        """提交参考证据绑定新版准备任务。"""
+        from .analysis_reference_preparation_view import prepare
+        return prepare(self, req, study_id)
 
     def get_study_trace(self, req, study_id):
         """返回当前研究的只读追溯摘要；详细数据通过显式导出下载。"""

@@ -40,6 +40,7 @@ KINDS["a06_plan_input"] = "绑定已复核成分与受体，保存新版A06准�
 KINDS["a06_plan_preparation"] = "连接官方来源并准备新方案A06结构与配体（不评分）"
 KINDS["a06_plan_pocket_review"] = "复验预测口袋决定并归档新准备版本（不评分）"
 KINDS["a06_plan_reference_review"] = "复核明确共晶参考并追加证据（不评分）"
+KINDS["a06_plan_reference_preparation"] = "将共晶参考证据绑定新版准备（不评分）"
 
 
 def _now() -> str:

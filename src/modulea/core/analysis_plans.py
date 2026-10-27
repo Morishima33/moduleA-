@@ -48,6 +48,21 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
         from .reference_review import publish
         return publish(self, study_id, payload, packet)
 
+    def analysis_plan_a06_reference_preparation_info(self, study_id):
+        """只读呈现参考证据是否已绑定新版准备。"""
+        from .reference_preparation import info
+        return info(self, study_id)
+
+    def validate_analysis_plan_a06_reference_preparation_request(self, study_id, payload):
+        """绑定请求只核对当前准备和参考证据版本，不运行科学工具。"""
+        from .reference_preparation import validate
+        return validate(self, study_id, payload)
+
+    def publish_analysis_plan_a06_reference_preparation(self, study_id, payload):
+        """锁内追加参考证据准备版本，继续保留评分阻断。"""
+        from .reference_preparation import publish
+        return publish(self, study_id, payload)
+
     def publish_analysis_plan_a01(self, study_id, payload):
         """科学子进程显式发布绑定方案的A01；不自动批准或开始下游。"""
         from science_modules.a01.plan_flow import publish
