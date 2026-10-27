@@ -38,6 +38,11 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
         from science_modules.a04.plan_flow import publish
         return publish(self, study_id, payload)
 
+    def select_analysis_plan_a04_receptors(self, network_run_id, network_summary, network_tables, plan):
+        """按同一方案从A04完整指标表选择受体；不改网络运行。"""
+        from science_modules.a04.selection_flow import select_from_network
+        return select_from_network(network_run_id, network_summary, network_tables, plan)
+
     def _analysis_plan_records(self, manifest):
         """逐件核验本研究索引，不从任意目录猜测最新草稿。"""
         root = self.location(manifest["study_id"])
