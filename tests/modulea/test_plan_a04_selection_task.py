@@ -1,6 +1,7 @@
 """隔离验证A04方案受体选择经接口路由与后台任务归档；不联网或执行真实研究。"""
 
 import json
+from copy import deepcopy
 from pathlib import Path
 import re
 import tempfile
@@ -17,6 +18,7 @@ from modulea.tasks.worker import run_task
 from science_modules.analysis_protocol import VERSION as PLAN_VERSION
 from science_modules.a04.plan_flow import validator as a04_validator
 from science_modules.a04.selection_flow import validate_selection
+from science_modules.a06.plan_input import pair_statuses
 from storage import file_record, write_json
 
 
@@ -39,10 +41,12 @@ class PlanA04SelectionTaskTests(unittest.TestCase):
                 "a04.mode": "degree", "a06.receptor_count": 2}},
             "author": "隔离测试", "note": "仅测试受体选择"})["draft"]
         targets = [{"target_id": "HGNC:" + str(i), "symbol": "G" + str(i)} for i in range(1, 9)]
-        for module in ("A01", "A02", "A03"):
+        for module in ("A01", "A02", "A03", "A03_SELECT"):
             run = self.workflow.begin(self.sid, module, {}, {}, "隔离上游")
-            self.workflow.finish(self.sid, run["run_id"], {},
-                                 {"intersection_targets": targets} if module == "A03" else {})
+            tables = ({"intersection_targets": targets} if module == "A03" else
+                      {"selected": [{"compound_id": "CMP1", "name": "成分一"},
+                                    {"compound_id": "CMP2", "name": "成分二"}]} if module == "A03_SELECT" else {})
+            self.workflow.finish(self.sid, run["run_id"], {}, tables)
             self.workflow.review(self.sid, run["run_id"], "approved", "隔离测试", "核对上游")
         mapping = [{"queryIndex": i, "ncbiTaxonId": 9606, "preferredName": target["symbol"],
                     "stringId": "9606." + str(i + 1)} for i, target in enumerate(targets)]
@@ -81,6 +85,21 @@ class PlanA04SelectionTaskTests(unittest.TestCase):
         return dict({"request_id": "planreq_" + uuid4().hex, "expected_a00": self.a00,
                      "expected_a04": self.a04, "expected_plan_id": self.plan_record["plan_id"],
                      "author": "隔离测试", "note": "仅保存选择"}, **changes)
+
+    def review_payload(self, selection_id, **changes):
+        return dict({"request_id": "planreq_" + uuid4().hex, "expected_a00": self.a00,
+                     "expected_a04": self.a04, "selection_id": selection_id,
+                     "expected_review_id": None, "decision": "approved",
+                     "reviewer": "隔离复核", "note": "核对方案、网络和完整受体顺序"}, **changes)
+
+    def a06_payload(self, selection, review, **changes):
+        return dict({"request_id": "planreq_" + uuid4().hex, "expected_a00": self.a00,
+                     "expected_a03": self.workflow.load(self.sid)["current"]["A03"],
+                     "expected_a03_select": self.workflow.load(self.sid)["current"]["A03_SELECT"],
+                     "expected_a04": self.a04, "expected_selection_id": selection["selection_id"],
+                     "expected_selection_review_id": review["review_id"],
+                     "expected_plan_id": self.plan_record["plan_id"],
+                     "author": "隔离测试", "note": "只编制准备输入"}, **changes)
 
     def call(self, method, path, body=None):
         class Request:
@@ -155,6 +174,95 @@ class PlanA04SelectionTaskTests(unittest.TestCase):
         reference = self.workflow.load(self.sid)["analysis_plan_selection_records"][0]
         (self.workflow.location(self.sid) / reference["path"]).write_text("{}", encoding="utf-8")
         self.assertEqual(self.call("GET", f"/studies/{self.sid}/analysis-plan")[0], 503)
+
+    def test_a06_input_requires_separate_selection_review_and_keeps_all_na_pairs(self):
+        selection = self.workflow.save_analysis_plan_a04_selection(self.sid, self.payload())["record"]
+        pending = self.a06_payload(selection, {"review_id": "selectionreview_" + "0" * 32})
+        with self.assertRaises(ContractError):
+            self.workflow.save_analysis_plan_a06_preparation_input(self.sid, pending)
+        review_body = self.review_payload(selection["selection_id"])
+        status, answer = self.call("POST", f"/studies/{self.sid}/analysis-plan/a04-selection/{selection['selection_id']}/reviews", review_body)
+        self.assertEqual(status, 201, answer)
+        review = answer["review"]
+        self.assertEqual(self.call("POST", f"/studies/{self.sid}/analysis-plan/a04-selection/{selection['selection_id']}/reviews", review_body)[0], 200)
+        before = self.workflow.load(self.sid)
+        body = self.a06_payload(selection, review)
+        with patch.object(self.app.tasks, "_spawn"):
+            status, queued = self.call("POST", f"/studies/{self.sid}/analysis-plan/a06-preparation-input", body)
+        self.assertEqual(status, 202, queued)
+        self.assertEqual(run_task(self.settings, queued["task"]["task_id"]), 0)
+        after = self.workflow.load(self.sid)
+        for key in ("current", "runs", "reviews"):
+            self.assertEqual(after[key], before[key])
+        self.assertEqual(len(after["analysis_plan_a06_input_records"]), 1)
+        _, info = self.call("GET", f"/studies/{self.sid}/analysis-plan")
+        packet = info["a06_preparation_input"]["packet"]
+        self.assertFalse(packet["execution_available"])
+        self.assertEqual(packet["pair_count"], 4)
+        self.assertEqual([row["target_id"] for row in packet["receptors"]],
+                         [row["target_id"] for row in selection["selection"]["selected"]])
+        compounds = {row["compound_id"]: {"state": "ready", "reason_zh": ""}
+                     for row in packet["compounds"]}
+        receptors = {row["target_id"]: {"state": "ready", "reason_zh": ""}
+                     for row in packet["receptors"]}
+        receptors[packet["receptors"][0]["target_id"]] = {"state": "NA", "reason_zh": "结构质控失败"}
+        pairs = pair_statuses(packet, compounds, receptors)
+        self.assertEqual(len(pairs), 4)
+        self.assertEqual(sum(row["state"] == "NA" for row in pairs), 2)
+        self.assertTrue(all(row["score"] is None for row in pairs))
+        self.assertEqual({row["target_id"] for row in pairs},
+                         {row["target_id"] for row in packet["receptors"]})
+        changed = deepcopy(packet)
+        changed["receptors"][0]["target_id"] = "HGNC:999"
+        with self.assertRaises(ContractError):
+            pair_statuses(changed, compounds, receptors)
+        repeated = self.workflow.save_analysis_plan_a06_preparation_input(self.sid, body)
+        self.assertFalse(repeated["created"])
+        with self.assertRaises(AnalysisPlanConflict):
+            self.workflow.save_analysis_plan_a06_preparation_input(self.sid, dict(body, note="不同内容"))
+
+    def test_review_revocation_invalidates_current_a06_input_without_deleting_history(self):
+        selection = self.workflow.save_analysis_plan_a04_selection(self.sid, self.payload())["record"]
+        review = self.workflow.review_analysis_plan_a04_selection(
+            self.sid, self.review_payload(selection["selection_id"]))["review"]
+        body = self.a06_payload(selection, review)
+        self.workflow.save_analysis_plan_a06_preparation_input(self.sid, body)
+        revoked = self.workflow.review_analysis_plan_a04_selection(
+            self.sid, self.review_payload(selection["selection_id"],
+                expected_review_id=review["review_id"], decision="pending"))["review"]
+        self.assertEqual(revoked["decision"], "pending")
+        _, info = self.call("GET", f"/studies/{self.sid}/analysis-plan")
+        self.assertIsNone(info["a06_preparation_input"])
+        self.assertEqual(info["a06_preparation_input_history_count"], 1)
+        with self.assertRaises(ContractError):
+            self.workflow.save_analysis_plan_a06_preparation_input(self.sid, body)
+
+    def test_tampered_a06_input_archive_blocks_read(self):
+        selection = self.workflow.save_analysis_plan_a04_selection(self.sid, self.payload())["record"]
+        review = self.workflow.review_analysis_plan_a04_selection(
+            self.sid, self.review_payload(selection["selection_id"]))["review"]
+        self.workflow.save_analysis_plan_a06_preparation_input(
+            self.sid, self.a06_payload(selection, review))
+        reference = self.workflow.load(self.sid)["analysis_plan_a06_input_records"][0]
+        (self.workflow.location(self.sid) / reference["path"]).write_text("{}", encoding="utf-8")
+        self.assertEqual(self.call("GET", f"/studies/{self.sid}/analysis-plan")[0], 503)
+
+    def test_a03_select_review_change_invalidates_a06_input(self):
+        selection = self.workflow.save_analysis_plan_a04_selection(self.sid, self.payload())["record"]
+        review = self.workflow.review_analysis_plan_a04_selection(
+            self.sid, self.review_payload(selection["selection_id"]))["review"]
+        body = self.a06_payload(selection, review)
+        self.workflow.save_analysis_plan_a06_preparation_input(self.sid, body)
+        manifest = self.workflow.load(self.sid)
+        selected_run = manifest["current"]["A03_SELECT"]
+        previous = self.workflow.latest_review(manifest, self.workflow.run(manifest, selected_run)["artifact_id"])
+        self.workflow.review(self.sid, selected_run, "pending", "隔离测试", "撤回成分选择",
+                             expected_review=previous["review_id"])
+        _, info = self.call("GET", f"/studies/{self.sid}/analysis-plan")
+        self.assertIsNone(info["a06_preparation_input"])
+        self.assertEqual(info["a06_preparation_input_history_count"], 1)
+        with self.assertRaises(ContractError):
+            self.workflow.save_analysis_plan_a06_preparation_input(self.sid, body)
 
 
 if __name__ == "__main__":

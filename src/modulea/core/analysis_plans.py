@@ -7,6 +7,8 @@ from .automatic_experience import AutomaticExperienceWorkflow
 
 
 A04_SELECTION_VERSION = "A04.plan_selection.1"
+A04_SELECTION_REVIEW_VERSION = "A04.plan_selection_review.1"
+A06_INPUT_RECORD_VERSION = "A06.plan_preparation_record.1"
 
 
 class AnalysisPlanConflict(ContractError):
@@ -76,6 +78,36 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
             records.append(record)
         return records
 
+    def _analysis_plan_selection_reviews(self, manifest):
+        """审核单独追加，不借用A04科学运行的reviews替代选择审核。"""
+        root = self.location(manifest["study_id"])
+        records = []
+        for reference in manifest.get("analysis_plan_selection_reviews", []):
+            record = read_json(verified_file(root, reference))
+            require(record.get("schema_version") == A04_SELECTION_REVIEW_VERSION
+                    and record.get("study_id") == manifest["study_id"],
+                    "A04选择复核归属或版本不一致")
+            safe_id(record.get("review_id"), "selectionreview")
+            safe_id(record.get("selection_id"), "selection")
+            require(record.get("decision") in ("approved", "rejected", "pending"),
+                    "A04选择复核决定不合法")
+            records.append(record)
+        return records
+
+    def _analysis_plan_a06_input_records(self, manifest):
+        """逐件核验新版准备输入索引，历史记录不随当前指针覆盖。"""
+        root = self.location(manifest["study_id"])
+        records = []
+        for reference in manifest.get("analysis_plan_a06_input_records", []):
+            record = read_json(verified_file(root, reference))
+            require(record.get("schema_version") == A06_INPUT_RECORD_VERSION
+                    and record.get("study_id") == manifest["study_id"],
+                    "A06准备输入归属或版本不一致")
+            safe_id(record.get("input_id"), "input")
+            require(isinstance(record.get("packet"), dict), "A06准备输入内容缺失")
+            records.append(record)
+        return records
+
     def analysis_plan_info(self, study_id):
         """只读呈现草稿能力；不初始化文件、不激活方案或调度任务。"""
         manifest = self.load(study_id)
@@ -84,6 +116,8 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
         enabled = intake.get("analysis_plan_profile") == VERSION
         records = self._analysis_plan_records(manifest) if enabled else []
         selections = self._analysis_plan_selection_records(manifest) if enabled else []
+        selection_reviews = self._analysis_plan_selection_reviews(manifest) if enabled else []
+        a06_inputs = self._analysis_plan_a06_input_records(manifest) if enabled else []
         latest = records[-1] if records else None
         current = latest if latest and latest["expected_a00"] == a00 else None
         latest_selection = selections[-1] if selections else None
@@ -91,10 +125,26 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
                                  or latest_selection["expected_a04"] != manifest["current"].get("A04")
                                  or not self.approved(manifest, latest_selection["expected_a04"])):
             latest_selection = None
+        current_selection_review = next((row for row in reversed(selection_reviews)
+                                         if latest_selection and row["selection_id"] == latest_selection["selection_id"]), None)
+        latest_a06_input = a06_inputs[-1] if a06_inputs else None
+        if (not latest_a06_input or not current_selection_review
+                or current_selection_review["decision"] != "approved"
+                or latest_a06_input["packet"]["runs"].get("A03_SELECT") != manifest["current"].get("A03_SELECT")
+                or latest_a06_input["packet"]["runs"].get("A04") != manifest["current"].get("A04")
+                or latest_a06_input["selection_review_id"] != current_selection_review["review_id"]
+                or any(manifest["current"].get(module) != run_id
+                       or not self.approved(manifest, run_id)
+                       or self.latest_review(manifest, self.run(manifest, run_id)["artifact_id"])["review_id"]
+                       != latest_a06_input["packet"]["reviews"].get(module)
+                       for module, run_id in latest_a06_input["packet"]["runs"].items())):
+            latest_a06_input = None
         return {"supported": enabled, "expected_a00": a00,
                 "expected_draft_id": latest["plan_id"] if latest else "", "draft": current,
                 "history_count": len(records), "a04_selection_history_count": len(selections),
-                "a04_selection": latest_selection, "execution_available": False,
+                "a04_selection": latest_selection, "a04_selection_review": current_selection_review,
+                "a06_preparation_input_history_count": len(a06_inputs),
+                "a06_preparation_input": latest_a06_input, "execution_available": False,
                 "message_zh": "方案修改仅保存新草稿，不影响正在执行的批次；全流程执行接入尚未完成。" if enabled else "历史固定流程保持；不向旧研究追加新自动方案。"}
 
     def save_analysis_plan_a04_selection(self, study_id, payload):
@@ -165,6 +215,161 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
             self.save(manifest)
             return {"selection": selection, "record": record, "created": True,
                     "execution_available": False}
+
+    def _validated_current_plan_selection(self, manifest, selection_id):
+        """在当前批准链上复算选择，供独立复核和A06准备输入共同使用。"""
+        records = self._analysis_plan_selection_records(manifest)
+        require(records and records[-1]["selection_id"] == selection_id,
+                "A04选择已更新，请刷新")
+        selection = records[-1]
+        a00, a04 = selection["expected_a00"], selection["expected_a04"]
+        require(manifest["current"].get("A00") == a00
+                and manifest["current"].get("A04") == a04
+                and self.approved(manifest, a04), "A04选择来源已失效，请刷新")
+        run = self.run(manifest, a04)
+        require(run["module_id"] == "A04" and run["config"].get("version") == "A04.plan_network.1",
+                "A04选择来源不是新方案运行")
+        plan_records = self._analysis_plan_records(manifest)
+        plan_index = next((index for index, row in enumerate(plan_records)
+                           if row["plan_id"] == selection["plan_id"] and row["expected_a00"] == a00), None)
+        require(plan_index is not None, "A04选择方案与当前研究登记不一致")
+        plan_record = plan_records[plan_index]
+        plan = checked_plan(plan_record["plan"])
+        require(plan["parameter_hash"] == selection["analysis_parameter_hash"]
+                and run["config"].get("analysis_plan_id") == plan_record["plan_id"]
+                and run["config"].get("analysis_parameter_hash") == plan["parameter_hash"],
+                "A04选择方案指纹与网络运行不一致")
+        result = self.result(manifest, a04)
+        from science_modules.a04.selection_flow import validate_selection
+        validate_selection(selection["selection"], a04, result["summary"], result["tables"], plan)
+        root = self.location(manifest["study_id"])
+        for reference in selection["source"].values():
+            verified_file(root, reference)
+        return selection, manifest["analysis_plan_selection_records"][-1], \
+            plan_record, manifest["analysis_plan_records"][plan_index]
+
+    def review_analysis_plan_a04_selection(self, study_id, payload):
+        """选择复核单独留存；不代签A04运行、不启动结构准备。"""
+        fields = {"request_id", "expected_a00", "expected_a04", "selection_id",
+                  "expected_review_id", "decision", "reviewer", "note"}
+        require(isinstance(payload, dict) and set(payload) == fields,
+                "A04选择复核字段不完整或含不支持选项")
+        safe_id(payload["request_id"], "planreq")
+        safe_id(payload["expected_a00"], "run")
+        safe_id(payload["expected_a04"], "run")
+        safe_id(payload["selection_id"], "selection")
+        require(payload["expected_review_id"] is None or
+                safe_id(payload["expected_review_id"], "selectionreview"), "复核版本不合法")
+        require(payload["decision"] in ("approved", "rejected", "pending"), "请选择A04选择复核决定")
+        require(all(isinstance(payload[key], str) and 0 < len(payload[key].strip()) <= 2000
+                    for key in ("reviewer", "note")), "请填写复核人与依据")
+        request_hash = fingerprint(payload)
+        with write_lock(self.root):
+            manifest = self.load(study_id)
+            require(not manifest.get("trashed"), "回收站研究只读")
+            require(manifest["current"].get("A00") == payload["expected_a00"]
+                    and manifest["current"].get("A04") == payload["expected_a04"],
+                    "A00或A04版本已更新，请刷新")
+            selection, selection_ref, _, _ = self._validated_current_plan_selection(
+                manifest, payload["selection_id"])
+            history = self._analysis_plan_selection_reviews(manifest)
+            for old in history:
+                if old["request_id"] == payload["request_id"]:
+                    if old["request_hash"] != request_hash:
+                        raise AnalysisPlanConflict("A04选择复核提交编号已用于其他内容")
+                    latest = next((row for row in reversed(history)
+                                   if row["selection_id"] == old["selection_id"]), None)
+                    return {"review": old, "created": False,
+                            "current": latest["review_id"] == old["review_id"]}
+            previous = next((row for row in reversed(history)
+                             if row["selection_id"] == selection["selection_id"]), None)
+            if (previous["review_id"] if previous else None) != payload["expected_review_id"]:
+                raise AnalysisPlanConflict("A04选择复核已更新，请刷新")
+            record = {"schema_version": A04_SELECTION_REVIEW_VERSION,
+                      "study_id": study_id, "review_id": new_id("selectionreview"),
+                      "selection_id": selection["selection_id"], "selection_ref": selection_ref,
+                      "expected_a00": payload["expected_a00"], "expected_a04": payload["expected_a04"],
+                      "previous_review_id": payload["expected_review_id"],
+                      "request_id": payload["request_id"], "request_hash": request_hash,
+                      "decision": payload["decision"], "reviewer": payload["reviewer"].strip(),
+                      "note": payload["note"].strip(), "created_at": now()}
+            root = self.location(study_id)
+            target = within(root, "decisions/analysis_plans/a04_selection_reviews/" + record["review_id"] + ".json")
+            write_json(target, record)
+            manifest.setdefault("analysis_plan_selection_reviews", []).append(
+                file_record(root, target, "analysis_plan_a04_selection_review"))
+            self.save(manifest)
+            return {"review": record, "created": True, "current": True}
+
+    def save_analysis_plan_a06_preparation_input(self, study_id, payload):
+        """归档两份已复核选择的同批准备输入；不生成A06_PREP运行或计算授权。"""
+        fields = {"request_id", "expected_a00", "expected_a03", "expected_a03_select",
+                  "expected_a04", "expected_selection_id", "expected_selection_review_id",
+                  "expected_plan_id", "author", "note"}
+        require(isinstance(payload, dict) and set(payload) == fields,
+                "A06准备输入字段不完整或含不支持选项")
+        safe_id(payload["request_id"], "planreq")
+        for key in ("expected_a00", "expected_a03", "expected_a03_select", "expected_a04"):
+            safe_id(payload[key], "run")
+        safe_id(payload["expected_selection_id"], "selection")
+        safe_id(payload["expected_selection_review_id"], "selectionreview")
+        safe_id(payload["expected_plan_id"], "plan")
+        require(all(isinstance(payload[key], str) and 0 < len(payload[key].strip()) <= 2000
+                    for key in ("author", "note")), "请填写A06准备输入登记人与依据")
+        request_hash = fingerprint(payload)
+        with write_lock(self.root):
+            manifest = self.load(study_id)
+            require(not manifest.get("trashed"), "回收站研究只读")
+            runs = {module: payload[field] for module, field in
+                    (("A00", "expected_a00"), ("A03", "expected_a03"),
+                     ("A03_SELECT", "expected_a03_select"), ("A04", "expected_a04"))}
+            require(all(manifest["current"].get(module) == run_id for module, run_id in runs.items()),
+                    "A06准备上游版本已更新，请刷新")
+            require(all(self.approved(manifest, run_id) for run_id in runs.values()),
+                    "A06准备上游须逐项复核通过")
+            require(self.run(manifest, runs["A03_SELECT"])["parent_runs"].get("A03") == runs["A03"]
+                    and self.run(manifest, runs["A04"])["parent_runs"].get("A03") == runs["A03"],
+                    "成分选择与A04网络不属于同一A03交集")
+            selection, selection_ref, plan_record, plan_ref = self._validated_current_plan_selection(
+                manifest, payload["expected_selection_id"])
+            require(selection["plan_id"] == payload["expected_plan_id"],
+                    "A06准备方案与受体选择不一致")
+            history = self._analysis_plan_selection_reviews(manifest)
+            review_index = next((index for index in range(len(history) - 1, -1, -1)
+                                 if history[index]["selection_id"] == selection["selection_id"]), None)
+            require(review_index is not None
+                    and history[review_index]["review_id"] == payload["expected_selection_review_id"]
+                    and history[review_index]["decision"] == "approved",
+                    "A04受体选择尚未独立复核通过或复核已改变")
+            selection_review_ref = manifest["analysis_plan_selection_reviews"][review_index]
+            selected = self.result(manifest, runs["A03_SELECT"])["tables"].get("selected")
+            require(isinstance(selected, list) and selected, "A03_SELECT成分选择为空")
+            reviews = {module: self.latest_review(manifest, self.run(manifest, run_id)["artifact_id"])["review_id"]
+                       for module, run_id in runs.items()}
+            result_refs = {module: manifest["runs"][run_id]["result_file"] for module, run_id in runs.items()}
+            from science_modules.a06.plan_input import build
+            packet = build(study_id, runs, reviews, result_refs, selection_ref,
+                           selection_review_ref, plan_ref, selection["selection"], selected)
+            for old in self._analysis_plan_a06_input_records(manifest):
+                if old["request_id"] == payload["request_id"]:
+                    if old["request_hash"] != request_hash:
+                        raise AnalysisPlanConflict("A06准备输入提交编号已用于其他内容")
+                    return {"record": old, "created": False, "execution_available": False}
+            record = {"schema_version": A06_INPUT_RECORD_VERSION, "study_id": study_id,
+                      "input_id": new_id("input"), "selection_id": selection["selection_id"],
+                      "selection_review_id": history[review_index]["review_id"],
+                      "plan_id": plan_record["plan_id"], "packet": packet,
+                      "request_id": payload["request_id"], "request_hash": request_hash,
+                      "created_at": now(), "author": payload["author"].strip(),
+                      "note": payload["note"].strip(), "state": "pending_structure_preparation",
+                      "execution_available": False}
+            root = self.location(study_id)
+            target = within(root, "decisions/analysis_plans/a06_preparation_inputs/" + record["input_id"] + ".json")
+            write_json(target, record)
+            manifest.setdefault("analysis_plan_a06_input_records", []).append(
+                file_record(root, target, "analysis_plan_a06_preparation_input"))
+            self.save(manifest)
+            return {"record": record, "created": True, "execution_available": False}
 
     def save_analysis_plan_draft(self, study_id, payload):
         """同编号重试幂等，版本冲突拒绝；不改变current、runs、reviews及活动方案。"""

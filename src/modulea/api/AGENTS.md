@@ -1,5 +1,11 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-10-27 新方案A04选择复核与A06准备输入
+
+新增`POST /api/v1/studies/{sid}/analysis-plan/a04-selection/{selection_id}/reviews`，JSON严格为`{request_id,expected_a00,expected_a04,selection_id,expected_review_id:null|selectionreview_<32hex>,decision:approved|rejected|pending,reviewer,note}`，路径与正文选择编号必须相同。仅对当前已批准A04的最新同研究选择复算后，追加独立复核记录；重复编号同内容幂等，过期复核409。该决定不写原科学运行的reviews，也不批准A06。
+
+新增`POST /api/v1/studies/{sid}/analysis-plan/a06-preparation-input`，严格接受`{request_id,expected_a00,expected_a03,expected_a03_select,expected_a04,expected_selection_id,expected_selection_review_id,expected_plan_id,author,note}`，提交后台`a06_plan_input`。任务再次核验当前且已批准A03_SELECT与A04同源A03，A04受体选择独立复核为approved、原结果和方案完整复算，然后追加A06新版本准备输入索引。`GET /analysis-plan`新增`a04_selection_review`、`a06_preparation_input_history_count`、`a06_preparation_input`；上游运行或复核改变时只保留历史数。此输入尚未执行结构准备或Vina，`execution_available:false`，不改变current/runs/reviews，不代签。所有POST沿用Host、Origin、令牌、任务互斥及回收站保护。
+
 ## 2026-10-27 A04新方案受体选择归档
 
 新增`POST /api/v1/studies/{sid}/analysis-plan/a04-selection`，仅接受`{request_id:planreq_<32hex>,expected_a00,expected_a04,expected_plan_id,author,note}`。通过`a04_plan_selection`后台任务，从本研究当前已批准的新方案A04完整指标表按该A04绑定的方案复算受体名单，并在研究包内追加指纹索引。重复request_id及同内容幂等，改内容冲突；旧A04、过期版本、回收站和未批准A04拒绝。`GET /api/v1/studies/{sid}/analysis-plan`新增`a04_selection_history_count`及当前A00/A04匹配的`a04_selection`，旧研究返回0/null。选择仅为待独立复核的决定草稿，`execution_available:false`；不更改current/runs/reviews，不批准、不启动A06准备或Vina。写请求仍要求原令牌、Origin、Host及同研究任务互斥保护。

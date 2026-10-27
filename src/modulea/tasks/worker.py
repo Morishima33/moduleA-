@@ -282,6 +282,15 @@ def run_a04_plan_selection(settings, task, manager):
     manager.update(task["task_id"], progress={"step_zh": "受体选择已归档，等待独立核查", "done": 1, "total": 1})
     return "A04方案受体选择已归档：" + result["record"]["selection_id"] + "；未批准或启动A06。"
 
+def run_a06_plan_input(settings, task, manager):
+    """锁内核对两份独立选择并归档准备输入，不启动结构工具。"""
+    payload = json.loads(task.get("payload") or "{}")
+    manager.update(task["task_id"], progress={"step_zh": "核验成分、受体和复核版本", "done": 0, "total": 1})
+    result = full_workflow(settings.data_root).save_analysis_plan_a06_preparation_input(
+        task["study_id"], payload)
+    manager.update(task["task_id"], progress={"step_zh": "新版准备输入已归档，结构准备仍未开始", "done": 1, "total": 1})
+    return "A06准备输入已归档：" + result["record"]["input_id"] + "；未准备结构或启动Vina。"
+
 def run_a06_plan(settings,task,manager):
     payload=json.loads(task.get("payload") or "{}")
     data=full_workflow(settings.data_root).save_two_pass(task["study_id"],payload)
@@ -363,6 +372,7 @@ def run_a06_trial(settings, task, manager):
 
 HANDLERS = {"a02_scope_review": run_a02_scope_review, "a02_sources_retry": run_a02_sources_retry, "a06_trial":run_a06_trial,"a06_coverage_confirm":run_a06_coverage_confirm,"a06_coverage":run_a06_quality,"a06_quality":run_a06_quality,"a03_selection":run_a03_selection,"a06_plan":run_a06_plan,"a06_candidates": run_a06_candidates, "a05_display": run_a05_display, "a04_identity": run_a04_identity, "a04_ppi": run_a04_ppi, "continue": run_continue, "source_upload": run_source_upload, "a01_sources": run_a01_sources}
 HANDLERS["a04_plan_selection"] = run_a04_plan_selection
+HANDLERS["a06_plan_input"] = run_a06_plan_input
 
 
 from .drawing import run_figure, run_packages, run_bundle
