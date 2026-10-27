@@ -111,6 +111,10 @@ export const api = {
   a06References: (sid: string) => request<import('./types').ReferenceReviewInfo>('GET', `/studies/${sid}/analysis-plan/a06-references`),
   reviewA06References: (sid: string, body: unknown) =>
     request<{task?: Task; review_id?: string; created: boolean; message_zh: string}>('POST', `/studies/${sid}/analysis-plan/a06-references/reviews`, body),
+  /** 已完成参考复核后，明确绑定新版准备版本。 */
+  a06ReferencePreparation: (sid: string) => request<import('./types').ReferencePreparationInfo>('GET', `/studies/${sid}/analysis-plan/a06-reference-preparation`),
+  bindA06ReferencePreparation: (sid: string, body: unknown) =>
+    request<{task?: Task; run_id?: string; created: boolean; message_zh: string}>('POST', `/studies/${sid}/analysis-plan/a06-reference-preparation`, body),
   /** 目录和校验均不创建研究、不提交任务。 */
   analysisParameters: () => request<import('./types').AnalysisParameterCatalog>('GET', '/analysis-plans/parameters'),
   validateAnalysisPlan: (specification: {mode: 'standard' | 'personalized'; parameters?: Record<string, import('./types').PlanValue>}) =>
