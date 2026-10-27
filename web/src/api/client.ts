@@ -107,6 +107,10 @@ export const api = {
   planPockets: (sid: string) => request<import('./types').PlanPocketInfo>('GET', `/studies/${sid}/analysis-plan/a06-pockets`),
   reviewPlanPockets: (sid: string, body: import('./types').PlanPocketRequest) =>
     request<{task?: Task; run_id?: string; created: boolean; message_zh: string}>('POST', `/studies/${sid}/analysis-plan/a06-pockets/reviews`, body),
+  /** 共晶参考只读候选与明确选择复核；首次不预选。 */
+  a06References: (sid: string) => request<import('./types').ReferenceReviewInfo>('GET', `/studies/${sid}/analysis-plan/a06-references`),
+  reviewA06References: (sid: string, body: unknown) =>
+    request<{task?: Task; review_id?: string; created: boolean; message_zh: string}>('POST', `/studies/${sid}/analysis-plan/a06-references/reviews`, body),
   /** 目录和校验均不创建研究、不提交任务。 */
   analysisParameters: () => request<import('./types').AnalysisParameterCatalog>('GET', '/analysis-plans/parameters'),
   validateAnalysisPlan: (specification: {mode: 'standard' | 'personalized'; parameters?: Record<string, import('./types').PlanValue>}) =>
