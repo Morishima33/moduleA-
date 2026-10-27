@@ -6,11 +6,15 @@
 
 `POST /api/v1/studies/{sid}/analysis-plan/a06-pockets/reviews`严格接受`{request_id:pocketreq_<32hex>,expected_input_id,expected_preparation_run_id,reviewer,note,confirmed:true,decisions:[{target_id,pocket_key:null|64hex}]}`。decisions按原固定受体顺序完整提供；null保留原状态，只能选择该受体已归档且身份、结构、环境及两次预测一致的口袋。后台`a06_plan_pocket_review`在隔离科学环境重新核验第二版来源和决定，追加独立决定及`A06.plan_preparation.3`准备运行；已有请求同内容幂等，改内容或过期输入拒绝。确认只代表采用预测位点作探索，第三版仍`handoff_blocked:true`、`scored_pairs:0`，不代签模块复核或执行评分。修订决定必须绑定当前第三版，来源第二版和历史决定保持。请求不接受结构路径、坐标、评分、质控状态或伪造确认人签名。
 
+## 新方案A06共晶参考证据
+
+`GET /api/v1/studies/{sid}/analysis-plan/a06-references`只读取当前新版准备事实包中的共晶候选，返回目标、候选稳定键、PDB、组件、链、邻域距离和可选原因；不联网、不准备、不改变研究。`POST /api/v1/studies/{sid}/analysis-plan/a06-references/reviews`严格接受`{expected_input_id,expected_preparation_run_id,request_id:refreq_<32hex>,reviewer,note,confirmed:true,choices:[{target_id,candidate_key,reference_key}]}`，可提交空清单表示明确不采用参考。后台`a06_plan_reference_review`在隔离科学环境重新核对同批mmCIF、CCD、序列、Meeko、搜索盒及实际参考重对接，追加`A06.plan_reference_review.1`证据决定；不切换`current`、不写模块reviews、不计算成分×受体组合。请求不接受路径、坐标、PDB参数或客户端质控结论，候选失效、输入过期或研究任务忙碌时拒绝。
+
 清单另返回`current_summary`和当前已完整归档的`saved_decisions`；null口袋键始终回到原第二版状态，修订不能误认为沿用上次已采用口袋。网页独立`#/plan-pockets/{sid}`展示清单、盒参数、残基和两次文件指纹；A06_PREP页顶栏提供入口。保存过的选择可回显，首次不预选采用，提交确认框始终默认未勾选。网页只消费服务端`eligible`和摘要，不计算科学通过与否。
 
 ## 2026-10-27 新方案A06实际准备
 
-新增`POST /api/v1/studies/{sid}/analysis-plan/a06-preparation`，严格接受`{expected_input_id,request_id:planprep_<32hex>,author,note,confirmed:true}`。仅当前已归档且上游复核仍有效的新版A06输入可提交`a06_plan_preparation`后台任务。科学工具根目录只从服务器本机配置读取，请求不能提供路径、名单、质控状态或Vina参数。第二版`A06.plan_preparation.2`从绑定方案读取Vina参数及搜索盒外扩；严格RMSD须同时符合默认2 Å及更严格的方案上限。第二版本身保持`execution_available:false`、`scored_pairs:0`、`handoff_blocked:true`；其自动检索只生成未确认预测口袋，采用入口和第三版见本文件前节。共晶参考输入接入和真实来源成功验收仍待完成。第一版和历史规则由原校验器处理。
+新增`POST /api/v1/studies/{sid}/analysis-plan/a06-preparation`，严格接受`{expected_input_id,request_id:planprep_<32hex>,author,note,confirmed:true}`。仅当前已归档且上游复核仍有效的新版A06输入可提交`a06_plan_preparation`后台任务。科学工具根目录只从服务器本机配置读取，请求不能提供路径、名单、质控状态或Vina参数。第二版`A06.plan_preparation.2`从绑定方案读取Vina参数及搜索盒外扩；严格RMSD须同时符合默认2 Å及更严格的方案上限。第二版本身保持`execution_available:false`、`scored_pairs:0`、`handoff_blocked:true`；其自动检索只生成未确认预测口袋，采用入口和第三版见本文件前节。共晶参考候选与独立复核接口已接入，但通过项仍不自动升格为准备批准或评分输入。第一版和历史规则由原校验器处理。
 
 ## 2026-10-27 新方案A04选择复核与A06准备输入
 

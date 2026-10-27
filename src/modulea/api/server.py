@@ -61,6 +61,8 @@ class App:
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a06-preparation", self.post_analysis_a06_preparation),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a06-pockets", self.get_analysis_a06_pockets),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a06-pockets/reviews", self.post_analysis_a06_pockets),
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a06-references", self.get_analysis_a06_references),
+            ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a06-references/reviews", self.post_analysis_a06_references),
             ("GET", rf"/api/v1/studies/{ID}/trace", self.get_study_trace),
             ("GET", rf"/api/v1/studies/{ID}/trace/export.json", self.export_study_trace_json),
             ("GET", rf"/api/v1/studies/{ID}/trace/export.csv", self.export_study_trace_csv),
@@ -270,6 +272,16 @@ class App:
     def post_analysis_a06_pockets(self, req, study_id):
         """提交明确口袋采用决定，结果仍待独立核查。"""
         from .analysis_pocket_view import review
+        return review(self, req, study_id)
+
+    def get_analysis_a06_references(self, req, study_id):
+        """只读共晶参考候选；不联网、不准备、不保存选择。"""
+        from .analysis_reference_view import info
+        return info(self, req, study_id)
+
+    def post_analysis_a06_references(self, req, study_id):
+        """提交显式共晶参考选择，交由隔离科学任务复核。"""
+        from .analysis_reference_view import review
         return review(self, req, study_id)
 
     def get_study_trace(self, req, study_id):

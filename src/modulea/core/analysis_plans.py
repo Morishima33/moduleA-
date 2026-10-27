@@ -33,6 +33,21 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
         from .plan_pockets import validate
         return validate(self, study_id, payload)
 
+    def analysis_plan_a06_reference_info(self, study_id):
+        """只读呈现当前新版准备的共晶参考候选和已归档核查。"""
+        from .reference_review import info
+        return info(self, study_id)
+
+    def validate_analysis_plan_a06_reference_request(self, study_id, payload):
+        """共晶选择只做同批稳定键预检，不在接口进程运行科学工具。"""
+        from .reference_review import validate
+        return validate(self, study_id, payload)
+
+    def publish_analysis_plan_a06_reference_review(self, study_id, payload, packet):
+        """锁内追加共晶参考证据决定，不切换准备运行或模块复核状态。"""
+        from .reference_review import publish
+        return publish(self, study_id, payload, packet)
+
     def publish_analysis_plan_a01(self, study_id, payload):
         """科学子进程显式发布绑定方案的A01；不自动批准或开始下游。"""
         from science_modules.a01.plan_flow import publish
