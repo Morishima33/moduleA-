@@ -6,7 +6,7 @@ from uuid import uuid4
 from unittest.mock import Mock
 
 from contracts import ContractError
-from modulea.core.reference_preparation import info, qualification, scoring_readiness
+from modulea.core.reference_preparation import info, qualification, scoring_readiness, validate
 from science_modules.a06 import reference_preparation
 from science_modules.a06.reference_preparation_contract import validate_request
 from storage import file_record, write_json
@@ -74,6 +74,9 @@ class ReferencePreparationTests(unittest.TestCase):
                    "expected_review_id": review_id, "request_id": "refprep_" + uuid4().hex,
                    "reviewer": "隔离核查人", "note": "绑定测试参考证据", "confirmed": True}
         result = reference_preparation.publish(workflow, sid, payload)
+        self.assertEqual(validate(workflow, sid, payload), {"repeated": True, "run_id": result["run_id"]})
+        with self.assertRaises(ContractError):
+            validate(workflow, sid, dict(payload, note="不同内容"))
         self.assertEqual(workflow.run(workflow.load(sid), result["run_id"])["config"]["version"],
                          "A06.plan_reference_preparation.1")
         self.assertTrue(result["summary"]["handoff_blocked"])

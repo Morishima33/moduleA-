@@ -159,6 +159,21 @@ def validate(workflow, sid, payload):
     from science_modules.a06.reference_preparation_contract import validate_request
 
     validate_request(payload)
+    manifest = workflow.load(sid)
+    require(not manifest.get("trashed"), "回收站研究只读")
+    for entry in manifest.get("analysis_plan_a06_reference_preparation_records", []):
+        old = read_json(verified_file(workflow.location(sid), entry["decision"]))
+        if old["request"]["request_id"] == payload["request_id"]:
+            require(old["study_id"] == sid and old["request_hash"] == fingerprint(payload),
+                    "参考准备请求编号已用于其他内容，请刷新")
+            require(manifest["current"].get("A06_PREP") == entry["run_id"] and
+                    workflow.active(manifest, entry["run_id"]) and
+                    workflow.result(manifest, entry["run_id"]) is not None,
+                    "参考准备已有后续版本或尚未完整归档，请刷新")
+            current_input = workflow.analysis_plan_info(sid).get("a06_preparation_input")
+            require(current_input and current_input["input_id"] == payload["expected_input_id"],
+                    "准备输入或上游复核已更新，请刷新")
+            return {"repeated": True, "run_id": entry["run_id"]}
     data = _base(workflow, sid)
     require(payload["expected_input_id"] == data["input_record"]["input_id"] and
             payload["expected_preparation_run_id"] == data["current_run"]["run_id"],
@@ -166,12 +181,6 @@ def validate(workflow, sid, payload):
     record, packet, _ = _review(workflow, sid, data, payload["expected_review_id"])
     require(packet["summary"]["scored_pairs"] == 0 and packet["summary"]["handoff_blocked"] is True,
             "参考证据包已包含评分或解除阻断标记，不能绑定")
-    for entry in workflow.load(sid).get("analysis_plan_a06_reference_preparation_records", []):
-        old = read_json(verified_file(workflow.location(sid), entry["decision"]))
-        if old["request"]["request_id"] == payload["request_id"]:
-            require(old["request_hash"] == fingerprint(payload),
-                    "参考准备请求编号已用于其他内容，请刷新")
-            return {"repeated": True, "run_id": old["run_id"]}
     return {"repeated": False, "review_id": record["review_id"]}
 
 
