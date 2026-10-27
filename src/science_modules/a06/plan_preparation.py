@@ -159,7 +159,9 @@ def validator(root, previous):
                 "A06准备事实包路径不属于当前运行")
         fact = read_json(verified_file(home, records[0]))
         packet = read_json(verified_file(home, run["inputs"]["a06_plan_input"]))["packet"]
-        require(fact["study_id"] == run["study_id"] and fact["input_key"] == packet["input_key"],
+        require(fact.get("schema_version") == VERSION and
+                packet.get("schema_version") == "A06.plan_preparation_input.1" and
+                fact["study_id"] == run["study_id"] and fact["input_key"] == packet["input_key"],
                 "A06准备证据与本次输入不符")
         require(all(run["parent_runs"].get(k) == packet["runs"].get(k)
                     for k in ("A03", "A03_SELECT", "A04")) and

@@ -295,14 +295,13 @@ def run_a06_plan_input(settings, task, manager):
 def run_a06_plan_preparation(settings, task, manager):
     """固定科学环境中的实际准备；运行失败保留原件和任务日志。"""
     import subprocess
-    import sys
     if settings.science_tools_root is None:
         raise ValueError("本机未配置science_tools_root，不能执行真实结构准备")
     folder = settings.runtime_dir / "a06_plan_preparation_requests" / task["task_id"]
     folder.mkdir(parents=True, exist_ok=False)
     request, output = folder / "request.json", folder / "result.json"
     request.write_text(task.get("payload") or "{}", encoding="utf-8")
-    command = [sys.executable, "-I", "-S", "-B",
+    command = [settings.science_python, "-I", "-S", "-B",
                str(settings.project_root / "tools/run_a06_plan_preparation.py"),
                "--request-file", str(request), "--result-file", str(output),
                "--tools-root", str(settings.science_tools_root),
