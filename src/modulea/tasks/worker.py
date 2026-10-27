@@ -291,6 +291,40 @@ def run_a06_plan_input(settings, task, manager):
     manager.update(task["task_id"], progress={"step_zh": "新版准备输入已归档，结构准备仍未开始", "done": 1, "total": 1})
     return "A06准备输入已归档：" + result["record"]["input_id"] + "；未准备结构或启动Vina。"
 
+
+def run_a06_plan_preparation(settings, task, manager):
+    """固定科学环境中的实际准备；运行失败保留原件和任务日志。"""
+    import subprocess
+    import sys
+    if settings.science_tools_root is None:
+        raise ValueError("本机未配置science_tools_root，不能执行真实结构准备")
+    folder = settings.runtime_dir / "a06_plan_preparation_requests" / task["task_id"]
+    folder.mkdir(parents=True, exist_ok=False)
+    request, output = folder / "request.json", folder / "result.json"
+    request.write_text(task.get("payload") or "{}", encoding="utf-8")
+    command = [sys.executable, "-I", "-S", "-B",
+               str(settings.project_root / "tools/run_a06_plan_preparation.py"),
+               "--request-file", str(request), "--result-file", str(output),
+               "--tools-root", str(settings.science_tools_root),
+               "--data-root", str(settings.data_root), "--study", task["study_id"]]
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                               text=True, encoding="utf-8", errors="replace",
+                               env=dict(os.environ, TEMP=str(folder), TMP=str(folder),
+                                        PYTHONDONTWRITEBYTECODE="1", PYTHONUTF8="1"))
+    for line in process.stdout:
+        print(line, end="", flush=True)
+        if line.startswith("PROGRESS "):
+            manager.update(task["task_id"], progress={"step_zh": line[9:].strip(),
+                           "done": 0, "total": 1})
+    if process.wait() != 0 or not output.is_file():
+        raise ValueError("A06实际准备未完整归档；请查看任务日志与该次来源文件")
+    result = json.loads(output.read_text(encoding="utf-8"))
+    manager.update(task["task_id"], progress={"step_zh": "A06准备证据已归档，等待独立复核",
+                   "done": 1, "total": 1})
+    return ("A06新方案准备已归档：" + result["run_id"] + "；可用组合"
+            + str(result["summary"]["ready_pairs"]) + "/"
+            + str(result["summary"]["pair_count"]) + "；未评分、未批准。")
+
 def run_a06_plan(settings,task,manager):
     payload=json.loads(task.get("payload") or "{}")
     data=full_workflow(settings.data_root).save_two_pass(task["study_id"],payload)
@@ -373,6 +407,7 @@ def run_a06_trial(settings, task, manager):
 HANDLERS = {"a02_scope_review": run_a02_scope_review, "a02_sources_retry": run_a02_sources_retry, "a06_trial":run_a06_trial,"a06_coverage_confirm":run_a06_coverage_confirm,"a06_coverage":run_a06_quality,"a06_quality":run_a06_quality,"a03_selection":run_a03_selection,"a06_plan":run_a06_plan,"a06_candidates": run_a06_candidates, "a05_display": run_a05_display, "a04_identity": run_a04_identity, "a04_ppi": run_a04_ppi, "continue": run_continue, "source_upload": run_source_upload, "a01_sources": run_a01_sources}
 HANDLERS["a04_plan_selection"] = run_a04_plan_selection
 HANDLERS["a06_plan_input"] = run_a06_plan_input
+HANDLERS["a06_plan_preparation"] = run_a06_plan_preparation
 
 
 from .drawing import run_figure, run_packages, run_bundle

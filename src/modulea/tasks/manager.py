@@ -37,6 +37,7 @@ KINDS.update({"a06_figure": "验证并保存对接结果图片", "a06_pair_packa
               "a06_pair_bundle": "汇集所选对接包下载"})
 KINDS["a04_plan_selection"] = "保存A04方案受体选择，等待独立复核"
 KINDS["a06_plan_input"] = "绑定已复核成分与受体，保存新版A06准备输入"
+KINDS["a06_plan_preparation"] = "连接官方来源并准备新方案A06结构与配体（不评分）"
 
 
 def _now() -> str:

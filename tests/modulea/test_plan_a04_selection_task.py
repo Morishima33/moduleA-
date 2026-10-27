@@ -19,6 +19,7 @@ from science_modules.analysis_protocol import VERSION as PLAN_VERSION
 from science_modules.a04.plan_flow import validator as a04_validator
 from science_modules.a04.selection_flow import validate_selection
 from science_modules.a06.plan_input import pair_statuses
+from science_modules.a06 import plan_preparation
 from storage import file_record, write_json
 
 
@@ -220,6 +221,14 @@ class PlanA04SelectionTaskTests(unittest.TestCase):
         self.assertFalse(repeated["created"])
         with self.assertRaises(AnalysisPlanConflict):
             self.workflow.save_analysis_plan_a06_preparation_input(self.sid, dict(body, note="不同内容"))
+        self.settings.science_tools_root = Path(self.temp.name)
+        with patch.object(self.app.tasks, "_spawn"):
+            status, queued = self.call("POST", f"/studies/{self.sid}/analysis-plan/a06-preparation", {
+                "expected_input_id": repeated["record"]["input_id"],
+                "request_id": "planprep_" + uuid4().hex, "author": "隔离测试",
+                "note": "明确准备固定对象", "confirmed": True})
+        self.assertEqual(status, 202, queued)
+        self.assertEqual(queued["task"]["kind"], "a06_plan_preparation")
 
     def test_review_revocation_invalidates_current_a06_input_without_deleting_history(self):
         selection = self.workflow.save_analysis_plan_a04_selection(self.sid, self.payload())["record"]
@@ -263,6 +272,50 @@ class PlanA04SelectionTaskTests(unittest.TestCase):
         self.assertEqual(info["a06_preparation_input_history_count"], 1)
         with self.assertRaises(ContractError):
             self.workflow.save_analysis_plan_a06_preparation_input(self.sid, body)
+
+    def test_a06_preparation_archives_failed_sources_as_na_without_scoring(self):
+        """实际准备发布必须有同一固定输入和完整矩阵；来源失败不能补位。"""
+        from modulea.core.kernel import full_workflow
+        selection = self.workflow.save_analysis_plan_a04_selection(self.sid, self.payload())["record"]
+        review = self.workflow.review_analysis_plan_a04_selection(
+            self.sid, self.review_payload(selection["selection_id"]))["review"]
+        input_record = self.workflow.save_analysis_plan_a06_preparation_input(
+            self.sid, self.a06_payload(selection, review))["record"]
+        packet = input_record["packet"]
+        fake_vina = Path(self.temp.name) / "fixed_vina.exe"
+        fake_vina.write_bytes(b"isolated-test-only")
+        source = {"id": "isolated", "files": [],
+                  "compounds": [{**row, "state": "NA", "reason_zh": "官方来源不可用"}
+                                for row in packet["compounds"]],
+                  "receptors": [{**row, "state": "NA", "reason_zh": "结构身份未通过",
+                                 "candidates": []} for row in packet["receptors"]]}
+        ligands = [{"compound_id": row["compound_id"], "state": "NA",
+                    "reason_zh": "官方来源不可用"} for row in packet["compounds"]]
+        proteins = [{"target_id": row["target_id"], "symbol": row["symbol"],
+                     "state": "NA", "reason_zh": "结构身份未通过", "quality": "待核查",
+                     "attempts": []} for row in packet["receptors"]]
+        workflow = full_workflow(self.settings.data_root)
+        request = {"expected_input_id": input_record["input_id"],
+                   "request_id": "planprep_" + uuid4().hex,
+                   "author": "隔离测试", "note": "测试失败来源完整留NA", "confirmed": True}
+        with patch.object(plan_preparation, "_version", return_value=fake_vina), \
+             patch.object(plan_preparation, "connect", return_value=source), \
+             patch.object(plan_preparation, "prepare", return_value=(ligands, proteins)):
+            result = plan_preparation.run(workflow, self.sid, request,
+                                          Path(self.temp.name), lambda _: None)
+        self.assertEqual(result["summary"]["pair_count"], 4)
+        self.assertEqual(result["summary"]["ready_pairs"], 0)
+        self.assertEqual(result["summary"]["na_pairs"], 4)
+        self.assertEqual(result["summary"]["scored_pairs"], 0)
+        self.assertTrue(result["summary"]["handoff_blocked"])
+        self.assertTrue(all(row["score"] is None and row["state"] == "NA"
+                            for row in result["tables"]["planned_pairs"]))
+        self.assertFalse(workflow.approved(workflow.load(self.sid), result["run_id"]))
+        self.assertEqual(plan_preparation.run(workflow, self.sid, request,
+                         Path(self.temp.name), lambda _: None)["run_id"], result["run_id"])
+        with self.assertRaises(ContractError):
+            plan_preparation.run(workflow, self.sid, dict(request, note="不同请求内容"),
+                                 Path(self.temp.name), lambda _: None)
 
 
 if __name__ == "__main__":

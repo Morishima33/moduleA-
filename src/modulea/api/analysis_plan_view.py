@@ -118,3 +118,30 @@ def a06_preparation_input(app, req, study_id):
         raise ApiError(409, "GATE_BLOCKED", "当前研究已有后台任务")
     return {"task": task, "created": True,
             "message_zh": "新版A06准备输入已提交；归档不代表结构质控通过或允许Vina执行。"}, 202
+
+
+def a06_preparation(app, req, study_id):
+    """只接受固定输入和明确确认；工具与来源路径均由服务端确定。"""
+    body = req.json()
+    fields = {"expected_input_id", "request_id", "author", "note", "confirmed"}
+    try:
+        require(isinstance(body, dict) and set(body) == fields, "A06准备请求字段不完整")
+        safe_id(body["expected_input_id"], "input")
+        safe_id(body["request_id"], "planprep")
+        require(body["confirmed"] is True and all(isinstance(body[k], str)
+                and body[k].strip() for k in ("author", "note")),
+                "请明确确认本次结构准备范围与执行人")
+        info = app.kernel.workflow().analysis_plan_info(study_id)
+        current = info.get("a06_preparation_input")
+    except ContractError as error:
+        raise from_contract(str(error)) from error
+    if not current or current["input_id"] != body["expected_input_id"]:
+        raise ApiError(409, "STALE_VERSION", "准备输入或上游复核已更新，请刷新")
+    if app.kernel.settings.science_tools_root is None:
+        raise ApiError(409, "GATE_BLOCKED", "本机未配置固定科学工具目录")
+    task, created = app.tasks.submit(study_id, "a06_plan_preparation",
+                                     body["author"].strip(), body)
+    if not created:
+        raise ApiError(409, "GATE_BLOCKED", "当前研究已有后台任务")
+    return {"task": task, "created": True,
+            "message_zh": "实际来源连接与准备已提交；失败留NA，评分及自动批准均关闭。"}, 202

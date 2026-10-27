@@ -101,6 +101,7 @@ def full_workflow(data_root: Path) -> Workflow:
     from docking_formal import prep_validator, formal_validator
     from report_dispatch import validator as report_validator
     from science_modules.a06.quality_flow import validator as quality_validator
+    from science_modules.a06.plan_preparation import validator as plan_preparation_validator
     from science_modules.a06.coverage_flow import validator as coverage_validator
     from science_modules.a06.trial_handoff import validator as trial_handoff_validator
     from science_modules.a06.automatic_engine import validator as automatic_validator
@@ -116,7 +117,7 @@ def full_workflow(data_root: Path) -> Workflow:
         "A03_SELECT": validate_selection,
         "A04": plan_ppi_validator(root, ppi_validator(root)),
         "A05": enrichment_validator(root),
-        "A06_PREP": coverage_validator(root, quality_validator(root, docking_validator(root, prep_validator(root)))),
+        "A06_PREP": plan_preparation_validator(root, coverage_validator(root, quality_validator(root, docking_validator(root, prep_validator(root))))),
         "A06": reference_validator(root, rescue_validator(root, automatic_validator(root, trial_handoff_validator(root, formal_validator(root))))),
         "A07": report_validator(root),
     })

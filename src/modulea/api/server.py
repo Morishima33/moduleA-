@@ -58,6 +58,7 @@ class App:
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a04-selection", self.post_analysis_a04_selection),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a04-selection/{ID}/reviews", self.post_analysis_a04_selection_review),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a06-preparation-input", self.post_analysis_a06_preparation_input),
+            ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a06-preparation", self.post_analysis_a06_preparation),
             ("GET", rf"/api/v1/studies/{ID}/trace", self.get_study_trace),
             ("GET", rf"/api/v1/studies/{ID}/trace/export.json", self.export_study_trace_json),
             ("GET", rf"/api/v1/studies/{ID}/trace/export.csv", self.export_study_trace_csv),
@@ -253,6 +254,11 @@ class App:
         """提交两份已复核选择的新版A06准备输入归档任务。"""
         from .analysis_plan_view import a06_preparation_input
         return a06_preparation_input(self, req, study_id)
+
+    def post_analysis_a06_preparation(self, req, study_id):
+        """提交真实来源连接及结构/配体准备任务，组合评分仍关闭。"""
+        from .analysis_plan_view import a06_preparation
+        return a06_preparation(self, req, study_id)
 
     def get_study_trace(self, req, study_id):
         """返回当前研究的只读追溯摘要；详细数据通过显式导出下载。"""
