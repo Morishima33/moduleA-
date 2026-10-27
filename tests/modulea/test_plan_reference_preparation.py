@@ -1,9 +1,12 @@
 import unittest
+import json
+import sys
 from pathlib import Path
 from uuid import uuid4
+from unittest.mock import Mock
 
 from contracts import ContractError
-from modulea.core.reference_preparation import info, qualification
+from modulea.core.reference_preparation import info, qualification, scoring_readiness
 from science_modules.a06 import reference_preparation
 from science_modules.a06.reference_preparation_contract import validate_request
 from storage import file_record, write_json
@@ -78,8 +81,12 @@ class ReferencePreparationTests(unittest.TestCase):
         self.assertFalse(workflow.approved(workflow.load(sid), result["run_id"]))
         check = qualification(workflow, sid)
         self.assertTrue(check["qualified"], check)
-        self.assertTrue(check["can_enter_review"])
+        self.assertFalse(check["can_enter_review"])
         self.assertEqual(check["scored_pairs"], 0)
+        readiness = scoring_readiness(workflow, sid)
+        self.assertFalse(readiness["scoring_allowed"])
+        self.assertFalse(readiness["execution_available"])
+        self.assertIn("新版评分执行入口尚未接通", readiness["blockers"])
 
     def test_full_reference_review_binding_and_qualification_chain(self):
         from tests.modulea.test_plan_pockets import PocketReviewTests
@@ -108,6 +115,41 @@ class ReferencePreparationTests(unittest.TestCase):
         self.assertEqual(bound["run_id"], check["current_run_id"])
         self.assertTrue(check["qualified"], check)
         self.assertEqual(check["scored_pairs"], 0)
+
+    def test_real_worker_subprocesses_accept_exact_request_and_archive(self):
+        from tests.modulea.test_plan_pockets import PocketReviewTests
+        from modulea.tasks.worker import run_a06_plan_reference_review, run_a06_plan_reference_preparation
+        from modulea.config import PROJECT_ROOT
+
+        tools = PROJECT_ROOT.parent / "environment" / "a06_runtime_v1"
+        if not tools.is_dir():
+            self.skipTest("固定科学工具未安装")
+        base = PocketReviewTests("test_confirmation_revision_preserves_sources_and_na_without_scoring")
+        base.setUp()
+        self.addCleanup(base.doCleanups)
+        settings = base.base.settings
+        settings.science_python = sys.executable
+        settings.science_tools_root = tools
+        review = {"expected_input_id": base.input_record["input_id"],
+                  "expected_preparation_run_id": base.source_run_id,
+                  "request_id": "refreq_" + uuid4().hex, "reviewer": "测试",
+                  "note": "隔离测试空选择", "confirmed": True, "choices": []}
+        task = {"task_id": "task_" + uuid4().hex, "study_id": base.sid, "payload": json.dumps(review)}
+        manager = Mock()
+        run_a06_plan_reference_review(settings, task, manager)
+        manifest = base.workflow.load(base.sid)
+        from storage import read_json, verified_file
+        record = read_json(verified_file(base.home, manifest["analysis_plan_a06_reference_records"][-1]["decision"]))
+        bind = {"expected_input_id": base.input_record["input_id"],
+                "expected_preparation_run_id": base.source_run_id,
+                "expected_review_id": record["review_id"], "request_id": "refprep_" + uuid4().hex,
+                "reviewer": "测试", "note": "隔离绑定", "confirmed": True}
+        task = {"task_id": "task_" + uuid4().hex, "study_id": base.sid, "payload": json.dumps(bind)}
+        run_a06_plan_reference_preparation(settings, task, manager)
+        manifest = base.workflow.load(base.sid)
+        result = base.workflow.result(manifest, manifest["current"]["A06_PREP"])
+        self.assertTrue(result["summary"]["handoff_blocked"])
+        self.assertEqual(result["summary"]["scored_pairs"], 0)
 
 
 if __name__ == "__main__":

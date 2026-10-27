@@ -336,7 +336,6 @@ def run_a06_plan_reference_review(settings, task, manager):
     folder.mkdir(parents=True, exist_ok=False)
     request, output = folder / "request.json", folder / "result.json"
     payload = json.loads(task.get("payload") or "{}")
-    payload["task_id"] = task["task_id"]
     request.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
     command = [settings.science_python, "-I", "-S", "-B",
                str(settings.project_root / "tools/run_a06_reference_review.py"),
@@ -347,10 +346,11 @@ def run_a06_plan_reference_review(settings, task, manager):
                                text=True, encoding="utf-8", errors="replace",
                                env=dict(os.environ, TEMP=str(folder), TMP=str(folder),
                                         PYTHONDONTWRITEBYTECODE="1", PYTHONUTF8="1"))
-    for line in process.stdout:
-        print(line, end="", flush=True)
-        if line.startswith("PROGRESS "):
-            manager.update(task["task_id"], progress={"step_zh": line[9:].strip(), "done": 0, "total": 1})
+    with process.stdout:
+        for line in process.stdout:
+            print(line, end="", flush=True)
+            if line.startswith("PROGRESS "):
+                manager.update(task["task_id"], progress={"step_zh": line[9:].strip(), "done": 0, "total": 1})
     if process.wait() != 0 or not output.is_file():
         raise ValueError("共晶参考复核未完整归档；原始证据及失败原因已保留")
     result = json.loads(output.read_text(encoding="utf-8"))
@@ -368,7 +368,6 @@ def run_a06_plan_reference_preparation(settings, task, manager):
     folder.mkdir(parents=True, exist_ok=False)
     request, output = folder / "request.json", folder / "result.json"
     payload = json.loads(task.get("payload") or "{}")
-    payload["task_id"] = task["task_id"]
     request.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
     command = [settings.science_python, "-I", "-S", "-B",
                str(settings.project_root / "tools/run_a06_reference_preparation.py"),
@@ -379,10 +378,11 @@ def run_a06_plan_reference_preparation(settings, task, manager):
                                text=True, encoding="utf-8", errors="replace",
                                env=dict(os.environ, TEMP=str(folder), TMP=str(folder),
                                         PYTHONDONTWRITEBYTECODE="1", PYTHONUTF8="1"))
-    for line in process.stdout:
-        print(line, end="", flush=True)
-        if line.startswith("PROGRESS "):
-            manager.update(task["task_id"], progress={"step_zh": line[9:].strip(), "done": 0, "total": 1})
+    with process.stdout:
+        for line in process.stdout:
+            print(line, end="", flush=True)
+            if line.startswith("PROGRESS "):
+                manager.update(task["task_id"], progress={"step_zh": line[9:].strip(), "done": 0, "total": 1})
     if process.wait() != 0 or not output.is_file():
         raise ValueError("参考证据准备绑定未完整归档；原准备和参考证据均已保留")
     result = json.loads(output.read_text(encoding="utf-8"))

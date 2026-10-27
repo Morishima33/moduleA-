@@ -10,7 +10,7 @@ export default function ReferenceQualification({ info }: { info: ReferenceQualif
     <section className="card" id="a06-reference-qualification" aria-label="A06整体复核资格">
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         <h2 style={{ margin: 0, fontSize: 17 }}>A06_PREP 整体复核资格</h2>
-        <Tag color={good ? 'green' : 'orange'}>{good ? '资料可进入人工整体复核' : '仍有阻塞项'}</Tag>
+        <Tag color={good ? 'green' : 'orange'}>{good ? '可进入人工复核' : '正式复核通过尚未开放'}</Tag>
       </div>
       <Alert
         type={good ? 'success' : 'warning'}

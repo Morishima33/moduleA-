@@ -23,6 +23,14 @@ def qualification(app, req, sid):
         raise from_contract(str(error))
 
 
+def scoring_readiness(app, req, sid):
+    """GET只读正式评分闸门，不创建任务。"""
+    try:
+        return app.kernel.workflow().analysis_plan_a06_scoring_readiness(sid)
+    except ContractError as error:
+        raise from_contract(str(error))
+
+
 def prepare(app, req, sid):
     """提交显式绑定请求；后台只重建准备证据，不运行评分。"""
     body = req.json()

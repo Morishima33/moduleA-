@@ -40,6 +40,7 @@ import IdentityReview, { IdentityPlanStatus } from './IdentityReview';
 import ReferenceQualification from './ReferenceQualification';
 import ReferenceEvidencePanel from './ReferenceEvidencePanel';
 import ReferencePreparationBinding from './ReferencePreparationBinding';
+import ScoringReadiness from './ScoringReadiness';
 
 // 需要在标题下方用说明框强调的状态（其他状态只有接口给出 reason_zh 时才显示说明框）
 // 新拟定名单不可借用旧评分或旧规模指标。
@@ -104,6 +105,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       {m.module_id === 'A06_PREP' && view.reference_qualification && <ReferenceQualification info={view.reference_qualification} />}
       {m.module_id === 'A06_PREP' && !view.historical && <ReferenceEvidencePanel studyId={studyId} />}
       {m.module_id === 'A06_PREP' && !view.historical && <ReferencePreparationBinding studyId={studyId} />}
+      {m.module_id === 'A06_PREP' && view.scoring_readiness && <ScoringReadiness info={view.scoring_readiness} />}
       {m.module_id === 'A07' && <div id="module-report-downloads"><ReportSummary special={sp} studyId={studyId} downloadsOnly />{!sp.report_files?.length && <Alert type="info" message="本版报告尚未生成，请先查看当前模块状态与输入条件。"/>}</div>}
       {view.disease_workflow && <DiseaseWorkflowGuide studyId={studyId} info={view.disease_workflow} scopeDirty={scopeDirty} />}
       {view.input_audit && <InputAudit studyId={studyId} moduleId={m.module_id} info={view.input_audit} archived={oldIntersection}/>}

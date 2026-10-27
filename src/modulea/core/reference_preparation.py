@@ -90,6 +90,10 @@ def qualification(workflow, sid):
     value = dict(base, supported=True, enabled=True, current_run_id=current,
                  summary=result.get("summary") if result else None)
     blockers = value["blockers"]
+    if manifest.get("trashed"):
+        blockers.append("回收站研究只读")
+    if not workflow.active(manifest, current):
+        blockers.append("准备运行或上游复核已失效")
     if not result or result.get("outcome") != "success":
         blockers.append("新版准备尚未完整成功归档")
         return dict(value, reason_zh="；".join(blockers))
@@ -120,9 +124,34 @@ def qualification(workflow, sid):
     except (ValueError, KeyError, TypeError) as error:
         blockers.append(str(error))
     qualified = not blockers
-    return dict(value, qualified=qualified, can_enter_review=qualified,
-                reason_zh="资料完整，可进入人工A06_PREP整体复核；通过仍受科学阻断规则约束" if qualified
+    return dict(value, qualified=qualified, can_enter_review=False,
+                reason_zh="已核对归档完整性；当前版本仍阻断正式整体复核通过和评分" if qualified
                 else "；".join(blockers))
+
+
+def scoring_readiness(workflow, sid):
+    """只读核对正式评分闸门；任何条件不足都保持不可执行。"""
+    check = qualification(workflow, sid)
+    value = {"supported": check["supported"], "enabled": check["supported"],
+             "scoring_allowed": False, "execution_available": False,
+             "current_run_id": check.get("current_run_id"),
+             "blockers": list(check.get("blockers", [])),
+             "reason_zh": "正式评分仍不可启动"}
+    if not check["supported"]:
+        value["blockers"].append("当前没有可核对的新版绑定准备")
+        return value
+    manifest = workflow.load(sid)
+    current = manifest.get("current", {}).get("A06_PREP")
+    if not workflow.approved(manifest, current):
+        value["blockers"].append("A06_PREP尚未完成人工整体复核通过")
+    summary = check.get("summary") or {}
+    if summary.get("handoff_blocked") is True:
+        value["blockers"].append("当前准备仍处于handoff_blocked阻断状态")
+    if summary.get("scored_pairs") != 0:
+        value["blockers"].append("当前准备已经包含评分组合，不能重复启动")
+    value["blockers"].append("新版评分执行入口尚未接通")
+    value["reason_zh"] = "；".join(value["blockers"])
+    return value
 
 
 def validate(workflow, sid, payload):

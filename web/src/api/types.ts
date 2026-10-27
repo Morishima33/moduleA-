@@ -326,6 +326,7 @@ export interface ReferenceChoice {target_id:string; candidate_key:string; refere
 export interface ReferenceCandidate extends ReferenceChoice {pdb_id:string; component_id:string; name:string; selectable:boolean; reason_zh:string; source_url:string}
 export interface ReferenceReviewInfo {supported:boolean;enabled:boolean;execution_available:false;reason_zh:string;expected_input_id?:string;expected_preparation_run_id?:string;source_preparation_run_id?:string;items:{target_id:string;symbol:string;state:string;options:ReferenceCandidate[]}[];saved_reviews?:{request?:{choices?:ReferenceChoice[]}}[]}
 export interface ReferencePreparationInfo {supported:boolean;enabled:boolean;execution_available:false;reason_zh:string;expected_input_id?:string;expected_preparation_run_id?:string;source_preparation_run_id?:string;state?:'bound';summary?:Record<string,unknown>|null;reviews?:{review_id:string;request?:{choices?:ReferenceChoice[]}}[]}
+export interface ScoringReadinessInfo {supported:boolean;enabled:boolean;scoring_allowed:boolean;execution_available:false;current_run_id?:string;blockers:string[];reason_zh:string}
 export interface AutomaticRequest {expected_binding: string; expected_connection_id: string; expected_a06: string | null; request_id: string; policy_version: string; reviewer: string; note: string; confirmed: boolean; reference_choices?:ReferenceChoice[]}
 export interface AutomaticMatrixView {
   score_range:[number|null,number|null]; annotation?:{legend_zh?:string}; threshold_note_zh:string;
@@ -362,6 +363,7 @@ export interface ModuleView {
   compound_selection?:CompoundSelectionInfo|null;
   docking_preparation?:DockingPreparationInfo|null;
   reference_qualification?:ReferenceQualificationInfo|null;
+  scoring_readiness?:ScoringReadinessInfo|null;
   docking_coverage?:DockingCoverageInfo|null;
   docking_candidates?: DockingCandidatesInfo | null;
   module: { module_id: string; title_zh: string; group_zh: string; purpose_zh: string; sub: boolean; depends_on: string[] };

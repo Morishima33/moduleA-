@@ -66,6 +66,7 @@ class App:
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a06-reference-preparation", self.get_analysis_a06_reference_preparation),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a06-reference-preparation", self.post_analysis_a06_reference_preparation),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a06-reference-qualification", self.get_analysis_a06_reference_qualification),
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a06-scoring-readiness", self.get_analysis_a06_scoring_readiness),
             ("GET", rf"/api/v1/studies/{ID}/trace", self.get_study_trace),
             ("GET", rf"/api/v1/studies/{ID}/trace/export.json", self.export_study_trace_json),
             ("GET", rf"/api/v1/studies/{ID}/trace/export.csv", self.export_study_trace_csv),
@@ -301,6 +302,11 @@ class App:
         """只读复算新版准备的整体复核资料资格。"""
         from .analysis_reference_preparation_view import qualification
         return qualification(self, req, study_id)
+
+    def get_analysis_a06_scoring_readiness(self, req, study_id):
+        """只读复算正式评分是否具备启动条件。"""
+        from .analysis_reference_preparation_view import scoring_readiness
+        return scoring_readiness(self, req, study_id)
 
     def get_study_trace(self, req, study_id):
         """返回当前研究的只读追溯摘要；详细数据通过显式导出下载。"""
