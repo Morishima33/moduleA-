@@ -15,6 +15,14 @@ def info(app, req, sid):
     return value
 
 
+def qualification(app, req, sid):
+    """GET只复算归档指纹和阻断规则，不提交复核或启动任务。"""
+    try:
+        return app.kernel.workflow().analysis_plan_a06_reference_qualification(sid)
+    except ContractError as error:
+        raise from_contract(str(error))
+
+
 def prepare(app, req, sid):
     """提交显式绑定请求；后台只重建准备证据，不运行评分。"""
     body = req.json()

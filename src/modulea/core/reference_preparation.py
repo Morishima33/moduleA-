@@ -74,6 +74,57 @@ def info(workflow, sid):
             else "请先完成共晶参考选择与证据核查"}
 
 
+def qualification(workflow, sid):
+    """只读复算新版准备是否具备进入人工整体复核的资料条件。"""
+    manifest = workflow.load(sid)
+    current = manifest.get("current", {}).get("A06_PREP")
+    base = {"supported": False, "enabled": False, "qualified": False,
+            "can_enter_review": False, "execution_available": False,
+            "scored_pairs": None, "blockers": []}
+    if not current:
+        return dict(base, reason_zh="当前没有新版A06准备")
+    run = workflow.run(manifest, current)
+    if run.get("config", {}).get("version") != VERSION:
+        return dict(base, reason_zh="当前准备尚未绑定共晶参考证据", current_run_id=current)
+    result = workflow.result(manifest, current)
+    value = dict(base, supported=True, enabled=True, current_run_id=current,
+                 summary=result.get("summary") if result else None)
+    blockers = value["blockers"]
+    if not result or result.get("outcome") != "success":
+        blockers.append("新版准备尚未完整成功归档")
+        return dict(value, reason_zh="；".join(blockers))
+    summary = result.get("summary", {})
+    value["scored_pairs"] = summary.get("scored_pairs")
+    if summary.get("handoff_blocked") is not True:
+        blockers.append("准备结果未保持handoff_blocked阻断")
+    if summary.get("scored_pairs") != 0:
+        blockers.append("准备结果已经包含评分组合")
+    try:
+        packet_ref = result["tables"]["preparation_packet"][0]
+        fact = read_json(verified_file(workflow.location(sid), packet_ref))
+        require(fact["schema_version"] == VERSION and fact["study_id"] == sid,
+                "参考准备事实包版本或研究归属不一致")
+        for ref in fact["files"] + [run["inputs"]["base_preparation_result"],
+                                     run["inputs"]["reference_packet"],
+                                     run["inputs"]["reference_review"]]:
+            verified_file(workflow.location(sid), ref)
+        review_packet = read_json(verified_file(workflow.location(sid), run["inputs"]["reference_packet"]))
+        if review_packet.get("summary", {}).get("scored_pairs") != 0:
+            blockers.append("参考核查包包含评分结果")
+        if review_packet.get("summary", {}).get("handoff_blocked") is not True:
+            blockers.append("参考核查包未保持阻断")
+        base_result = read_json(verified_file(workflow.location(sid), run["inputs"]["base_preparation_result"]))
+        if base_result.get("study_id") != sid or base_result.get("outcome") != "success":
+            blockers.append("原准备结果归属或状态不一致")
+        value["checked_files"] = len(fact["files"])
+    except (ValueError, KeyError, TypeError) as error:
+        blockers.append(str(error))
+    qualified = not blockers
+    return dict(value, qualified=qualified, can_enter_review=qualified,
+                reason_zh="资料完整，可进入人工A06_PREP整体复核；通过仍受科学阻断规则约束" if qualified
+                else "；".join(blockers))
+
+
 def validate(workflow, sid, payload):
     """同源预检及重复请求检查，工具复核在后台再次执行。"""
     from science_modules.a06.reference_preparation_contract import validate_request

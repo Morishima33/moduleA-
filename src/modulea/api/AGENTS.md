@@ -12,6 +12,8 @@
 
 `GET /api/v1/studies/{sid}/analysis-plan/a06-reference-preparation`返回参考证据是否已绑定当前新版准备。`POST /api/v1/studies/{sid}/analysis-plan/a06-reference-preparation`严格接受`{expected_input_id,expected_preparation_run_id,expected_review_id:refreview_<32hex>,request_id:refprep_<32hex>,reviewer,note,confirmed:true}`，后台`a06_plan_reference_preparation`追加`A06.plan_reference_preparation.1`准备版本，完整保留原准备、参考核查和文件指纹；新版仍`handoff_blocked:true`、`scored_pairs:0`，不自动批准、不启动成分×受体评分。当前准备或参考核查过期时拒绝，绑定后旧版本只读保留。
 
+`GET /api/v1/studies/{sid}/analysis-plan/a06-reference-qualification`只读复算当前`A06.plan_reference_preparation.1`是否具备进入人工整体复核的资料条件，检查事实包、原准备结果、参考核查包、文件指纹以及`handoff_blocked:true`/`scored_pairs:0`；返回`qualified`和阻塞项。资格通过不等于模块批准，通用复核入口仍按阻断规则拒绝将候选准备批准为正式下游输入；GET不联网、不写入、不启动评分。
+
 清单另返回`current_summary`和当前已完整归档的`saved_decisions`；null口袋键始终回到原第二版状态，修订不能误认为沿用上次已采用口袋。网页独立`#/plan-pockets/{sid}`展示清单、盒参数、残基和两次文件指纹；A06_PREP页顶栏提供入口。保存过的选择可回显，首次不预选采用，提交确认框始终默认未勾选。网页只消费服务端`eligible`和摘要，不计算科学通过与否。
 
 ## 2026-10-27 新方案A06实际准备

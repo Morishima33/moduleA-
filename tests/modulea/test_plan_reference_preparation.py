@@ -3,7 +3,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from contracts import ContractError
-from modulea.core.reference_preparation import info
+from modulea.core.reference_preparation import info, qualification
 from science_modules.a06 import reference_preparation
 from science_modules.a06.reference_preparation_contract import validate_request
 from storage import file_record, write_json
@@ -76,6 +76,10 @@ class ReferencePreparationTests(unittest.TestCase):
         self.assertTrue(result["summary"]["handoff_blocked"])
         self.assertEqual(result["summary"]["scored_pairs"], 0)
         self.assertFalse(workflow.approved(workflow.load(sid), result["run_id"]))
+        check = qualification(workflow, sid)
+        self.assertTrue(check["qualified"], check)
+        self.assertTrue(check["can_enter_review"])
+        self.assertEqual(check["scored_pairs"], 0)
 
 
 if __name__ == "__main__":
