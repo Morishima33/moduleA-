@@ -55,6 +55,7 @@ class App:
             ("POST", r"/api/v1/analysis-plans/validate", self.post_analysis_validate),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan", self.get_analysis_plan),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/drafts", self.post_analysis_draft),
+            ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a04-selection", self.post_analysis_a04_selection),
             ("GET", rf"/api/v1/studies/{ID}/trace", self.get_study_trace),
             ("GET", rf"/api/v1/studies/{ID}/trace/export.json", self.export_study_trace_json),
             ("GET", rf"/api/v1/studies/{ID}/trace/export.csv", self.export_study_trace_csv),
@@ -235,6 +236,11 @@ class App:
         """保存草稿，不触碰活动计算。"""
         from .analysis_plan_view import draft
         return draft(self, req, study_id)
+
+    def post_analysis_a04_selection(self, req, study_id):
+        """提交新方案A04选择归档任务；结果仍待独立复核。"""
+        from .analysis_plan_view import a04_selection
+        return a04_selection(self, req, study_id)
 
     def get_study_trace(self, req, study_id):
         """返回当前研究的只读追溯摘要；详细数据通过显式导出下载。"""

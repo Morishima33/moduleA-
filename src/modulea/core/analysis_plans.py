@@ -6,6 +6,9 @@ from science_modules.analysis_protocol import VERSION, checked_plan, compile_pla
 from .automatic_experience import AutomaticExperienceWorkflow
 
 
+A04_SELECTION_VERSION = "A04.plan_selection.1"
+
+
 class AnalysisPlanConflict(ContractError):
     """方案草稿已更新或提交编号被用于不同内容。"""
 
@@ -56,6 +59,23 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
             records.append(record)
         return records
 
+    def _analysis_plan_selection_records(self, manifest):
+        """逐件核验A04受体选择决定；选择记录不是新的科学运行。"""
+        root = self.location(manifest["study_id"])
+        records = []
+        for reference in manifest.get("analysis_plan_selection_records", []):
+            record = read_json(verified_file(root, reference))
+            require(record.get("study_id") == manifest["study_id"]
+                    and record.get("schema_version") == A04_SELECTION_VERSION,
+                    "A04选择决定归属或版本不一致")
+            safe_id(record.get("selection_id"), "selection")
+            safe_id(record.get("expected_a00"), "run")
+            safe_id(record.get("expected_a04"), "run")
+            safe_id(record.get("plan_id"), "plan")
+            require(isinstance(record.get("selection"), dict), "A04选择决定内容缺失")
+            records.append(record)
+        return records
+
     def analysis_plan_info(self, study_id):
         """只读呈现草稿能力；不初始化文件、不激活方案或调度任务。"""
         manifest = self.load(study_id)
@@ -63,12 +83,88 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
         intake = (self.result(manifest, a00) or {}).get("summary", {}) if a00 else {}
         enabled = intake.get("analysis_plan_profile") == VERSION
         records = self._analysis_plan_records(manifest) if enabled else []
+        selections = self._analysis_plan_selection_records(manifest) if enabled else []
         latest = records[-1] if records else None
         current = latest if latest and latest["expected_a00"] == a00 else None
+        latest_selection = selections[-1] if selections else None
+        if latest_selection and (latest_selection["expected_a00"] != a00
+                                 or latest_selection["expected_a04"] != manifest["current"].get("A04")
+                                 or not self.approved(manifest, latest_selection["expected_a04"])):
+            latest_selection = None
         return {"supported": enabled, "expected_a00": a00,
                 "expected_draft_id": latest["plan_id"] if latest else "", "draft": current,
-                "history_count": len(records), "execution_available": False,
+                "history_count": len(records), "a04_selection_history_count": len(selections),
+                "a04_selection": latest_selection, "execution_available": False,
                 "message_zh": "方案修改仅保存新草稿，不影响正在执行的批次；全流程执行接入尚未完成。" if enabled else "历史固定流程保持；不向旧研究追加新自动方案。"}
+
+    def save_analysis_plan_a04_selection(self, study_id, payload):
+        """从当前已批准A04按绑定方案复算并留存选择；不改变运行或批准。"""
+        fields = {"request_id", "expected_a00", "expected_a04", "expected_plan_id", "author", "note"}
+        require(isinstance(payload, dict) and set(payload) == fields,
+                "A04选择字段不完整或含不支持选项")
+        safe_id(payload["request_id"], "planreq")
+        safe_id(payload["expected_a00"], "run")
+        safe_id(payload["expected_a04"], "run")
+        safe_id(payload["expected_plan_id"], "plan")
+        require(isinstance(payload["author"], str) and 0 < len(payload["author"].strip()) <= 2000,
+                "请填写A04选择登记人")
+        require(isinstance(payload["note"], str) and len(payload["note"]) <= 2000,
+                "A04选择说明过长或格式不合法")
+        request_hash = fingerprint(payload)
+        with write_lock(self.root):
+            manifest = self.load(study_id)
+            require(not manifest.get("trashed"), "回收站研究只读，不能保存A04选择")
+            require(manifest["current"].get("A00") == payload["expected_a00"]
+                    and manifest["current"].get("A04") == payload["expected_a04"],
+                    "A00或A04版本已更新，请刷新")
+            require(self.approved(manifest, payload["expected_a04"]),
+                    "请先通过当前A04，再保存方案受体选择")
+            a04_run = self.run(manifest, payload["expected_a04"])
+            require(a04_run.get("module_id") == "A04"
+                    and a04_run.get("config", {}).get("version") == "A04.plan_network.1",
+                    "当前A04不是新方案网络运行")
+            a04_result = self.result(manifest, payload["expected_a04"])
+            require(a04_result and isinstance(a04_result.get("summary"), dict)
+                    and isinstance(a04_result.get("tables"), dict), "A04结果不完整")
+            plan_record = next((row for row in self._analysis_plan_records(manifest)
+                                if row["plan_id"] == payload["expected_plan_id"]
+                                and row["expected_a00"] == payload["expected_a00"]), None)
+            require(plan_record is not None, "A04方案不属于本研究当前A00")
+            plan = checked_plan(plan_record["plan"])
+            require(a04_run["config"].get("analysis_plan_id") == plan_record["plan_id"]
+                    and a04_run["config"].get("analysis_parameter_hash") == plan["parameter_hash"]
+                    and a04_result["summary"].get("analysis_plan_id") == plan_record["plan_id"]
+                    and a04_result["summary"].get("analysis_parameter_hash") == plan["parameter_hash"],
+                    "当前A04未绑定指定方案")
+            selection = self.select_analysis_plan_a04_receptors(
+                payload["expected_a04"], a04_result["summary"], a04_result["tables"], plan)
+            for old in self._analysis_plan_selection_records(manifest):
+                if old["request_id"] == payload["request_id"]:
+                    if old["request_hash"] != request_hash:
+                        raise AnalysisPlanConflict("A04选择提交编号已用于其他内容，请刷新后重试")
+                    return {"selection": old["selection"], "record": old, "created": False,
+                            "execution_available": False}
+            root = self.location(study_id)
+            plan_ref = next(ref for ref in manifest["analysis_plan_records"]
+                            if read_json(verified_file(root, ref))["plan_id"] == plan_record["plan_id"])
+            record = {"schema_version": A04_SELECTION_VERSION, "study_id": study_id,
+                      "selection_id": new_id("selection"), "expected_a00": payload["expected_a00"],
+                      "expected_a04": payload["expected_a04"], "plan_id": plan_record["plan_id"],
+                      "analysis_parameter_hash": plan["parameter_hash"], "request_id": payload["request_id"],
+                      "request_hash": request_hash, "created_at": now(),
+                      "author": payload["author"].strip(), "note": payload["note"],
+                      "state": "draft", "execution_available": False,
+                      "selection": selection,
+                      "source": {"a04_result": manifest["runs"][payload["expected_a04"]]["result_file"],
+                                 "a04_run": manifest["runs"][payload["expected_a04"]]["run_file"],
+                                 "analysis_plan": plan_ref}}
+            target = within(root, "decisions/analysis_plans/a04_selection/" + record["selection_id"] + ".json")
+            write_json(target, record)
+            manifest.setdefault("analysis_plan_selection_records", []).append(
+                file_record(root, target, "analysis_plan_a04_selection"))
+            self.save(manifest)
+            return {"selection": selection, "record": record, "created": True,
+                    "execution_available": False}
 
     def save_analysis_plan_draft(self, study_id, payload):
         """同编号重试幂等，版本冲突拒绝；不改变current、runs、reviews及活动方案。"""

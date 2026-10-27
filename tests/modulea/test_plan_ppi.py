@@ -25,7 +25,7 @@ class PlanPpiTest(unittest.TestCase):
     def test_threshold_is_applied_and_recorded(self):
         summary, tables = calculate(self.targets, self.mapping, self.network, plan(.70))
         self.assertEqual(summary["合格边数"], 2)
-        self.assertEqual(tables["required_score"], .70)
+        self.assertEqual(summary["required_score"], .70)
         self.assertEqual(tables["discarded_edges"], [])
         summary2, tables2 = calculate(self.targets, self.mapping, self.network, plan(.90))
         self.assertEqual(summary2["合格边数"], 0)
@@ -33,7 +33,7 @@ class PlanPpiTest(unittest.TestCase):
         self.assertEqual(tables2["discarded_edges"][0]["required_score"], .90)
 
     def test_evaluate_requires_request_threshold_and_recalculates(self):
-        bundle = {"schema_version": "A04.plan_source.1", "analysis_plan_id": "plan_x",
+        bundle = {"schema_version": "A04.plan_source.1", "analysis_plan_id": plan(.70)["parameter_hash"],
                   "analysis_parameter_hash": plan(.70)["parameter_hash"],
                   "mapped_string_ids": ["9606.1", "9606.2", "9606.3"],
                   "mapping": {"response_text": json.dumps(self.mapping)},
@@ -45,6 +45,10 @@ class PlanPpiTest(unittest.TestCase):
         self.assertEqual(summary["required_score"], .70)
         self.assertEqual(len(tables["edges"]), 2)
         bundle["network"]["params"]["required_score"] = 900
+        with self.assertRaises(Exception):
+            evaluate(self.targets, bundle, plan(.70))
+        bundle["network"]["params"]["required_score"] = 700
+        bundle["analysis_plan_id"] = plan(.90)["parameter_hash"]
         with self.assertRaises(Exception):
             evaluate(self.targets, bundle, plan(.70))
 

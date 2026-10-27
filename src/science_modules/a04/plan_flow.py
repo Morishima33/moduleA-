@@ -109,8 +109,7 @@ def calculate(targets, mapping, network, plan):
               "isolates": [dict(lookup[sid], string_id=sid, reason="已识别，无达到方案置信度的合格边")
                            for sid in lookup if lookup[sid]["target_id"] in isolated],
               "edges": list(edges.values()), "discarded_edges": discarded, "metrics": rows,
-              "round1": core, "round2": [x for x in core if x["round2"]], "thresholds": thresholds,
-              "required_score": threshold}
+              "round1": core, "round2": [x for x in core if x["round2"]], "thresholds": thresholds}
     summary = {"交集输入数": len(targets), "已识别数": len(mapped), "身份待核验数": len(issues),
                "孤立节点数": len(isolated), "参与节点数": len(active), "合格边数": len(edges),
                "有边分量数": len(components), "第一轮主候选数": len(core),
@@ -124,6 +123,9 @@ def evaluate(targets, bundle, plan):
     plan = checked_plan(plan)
     threshold = _threshold(plan)
     require(bundle.get("schema_version") == "A04.plan_source.1", "A04新方案来源包版本不一致")
+    require(bundle.get("analysis_plan_id") == plan["parameter_hash"]
+            and bundle.get("analysis_parameter_hash") == plan["parameter_hash"],
+            "A04来源包与分析方案指纹不一致")
     mapping, network = bundle["mapping"], bundle["network"]
     ids = bundle.get("mapped_string_ids", [])
     expected_network = {"identifiers": "\r".join(ids), "species": 9606,
@@ -221,11 +223,19 @@ def validator(root, fallback):
         require(run["inputs"]["study_id"] == run["study_id"], "A04输入研究绑定不一致")
         source = read_json(verified_file(home, run["inputs"]["source_file"]))
         parent = read_json(verified_file(home, run["inputs"]["parent_result"]))
-        plan = read_json(verified_file(home, run["inputs"]["analysis_plan_file"]))["plan"]
-        plan = checked_plan(plan)
+        plan_record = read_json(verified_file(home, run["inputs"]["analysis_plan_file"]))
+        require(plan_record["study_id"] == run["study_id"]
+                and plan_record["plan_id"] == run["inputs"]["analysis_plan_id"]
+                and plan_record["expected_a00"] == run["inputs"]["bound_a00"],
+                "A04方案记录与研究或登记绑定不一致")
+        plan = checked_plan(plan_record["plan"])
         require(plan["parameter_hash"] == run["inputs"]["analysis_parameter_hash"], "A04方案指纹不一致")
+        require(run["config"]["analysis_plan_id"] == plan_record["plan_id"]
+                and run["config"]["analysis_parameter_hash"] == plan["parameter_hash"],
+                "A04运行配置与方案绑定不一致")
         require(run["config"]["required_score"] == int(round(_threshold(plan) * 1000)), "A04阈值配置被改变")
         expected, expected_tables = evaluate(parent["tables"]["intersection_targets"], source, plan)
+        expected["analysis_plan_id"] = run["inputs"]["analysis_plan_id"]
         require((summary, tables) == (expected, expected_tables), "A04结果与绑定来源复算不一致")
         require(outcome == ("success" if summary["参与节点数"] else "empty"), "A04状态与结果不一致")
     return check

@@ -1,5 +1,9 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-10-27 A04新方案受体选择归档
+
+新增`POST /api/v1/studies/{sid}/analysis-plan/a04-selection`，仅接受`{request_id:planreq_<32hex>,expected_a00,expected_a04,expected_plan_id,author,note}`。通过`a04_plan_selection`后台任务，从本研究当前已批准的新方案A04完整指标表按该A04绑定的方案复算受体名单，并在研究包内追加指纹索引。重复request_id及同内容幂等，改内容冲突；旧A04、过期版本、回收站和未批准A04拒绝。`GET /api/v1/studies/{sid}/analysis-plan`新增`a04_selection_history_count`及当前A00/A04匹配的`a04_selection`，旧研究返回0/null。选择仅为待独立复核的决定草稿，`execution_available:false`；不更改current/runs/reviews，不批准、不启动A06准备或Vina。写请求仍要求原令牌、Origin、Host及同研究任务互斥保护。
+
 ## 2026-10-26 双版本方案第一阶段
 
 新增只读`GET /api/v1/analysis-plans/parameters`，返回统一参数定义、固定保护规则、阶段依赖及`execution_ready:false`。`POST /api/v1/analysis-plans/validate`接受`{specification,previous?}`；specification为`{schema_version?,mode:standard|personalized,parameters?}`，parameters只接受目录中的点分键。返回`{plan,impact|null,execution_available:false}`；previous若提供须为原样已编译方案。该接口仅校验和计算失效范围，不写研究、不联网、不批准、不执行科研。POST仍要求令牌、Origin和Host校验。

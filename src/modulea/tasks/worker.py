@@ -274,6 +274,14 @@ def run_a03_selection(settings,task,manager):
     result=full_workflow(settings.data_root).save_selection(task["study_id"],payload)
     return "对接成分选择已保存；请在复核栏独立确认，不会自动运行对接。"
 
+def run_a04_plan_selection(settings, task, manager):
+    """从已批准A04归档复算受体名单，停在独立核查关口。"""
+    payload = json.loads(task.get("payload") or "{}")
+    manager.update(task["task_id"], progress={"step_zh": "核验A04方案与完整指标表", "done": 0, "total": 1})
+    result = full_workflow(settings.data_root).save_analysis_plan_a04_selection(task["study_id"], payload)
+    manager.update(task["task_id"], progress={"step_zh": "受体选择已归档，等待独立核查", "done": 1, "total": 1})
+    return "A04方案受体选择已归档：" + result["record"]["selection_id"] + "；未批准或启动A06。"
+
 def run_a06_plan(settings,task,manager):
     payload=json.loads(task.get("payload") or "{}")
     data=full_workflow(settings.data_root).save_two_pass(task["study_id"],payload)
@@ -354,6 +362,7 @@ def run_a06_trial(settings, task, manager):
 
 
 HANDLERS = {"a02_scope_review": run_a02_scope_review, "a02_sources_retry": run_a02_sources_retry, "a06_trial":run_a06_trial,"a06_coverage_confirm":run_a06_coverage_confirm,"a06_coverage":run_a06_quality,"a06_quality":run_a06_quality,"a03_selection":run_a03_selection,"a06_plan":run_a06_plan,"a06_candidates": run_a06_candidates, "a05_display": run_a05_display, "a04_identity": run_a04_identity, "a04_ppi": run_a04_ppi, "continue": run_continue, "source_upload": run_source_upload, "a01_sources": run_a01_sources}
+HANDLERS["a04_plan_selection"] = run_a04_plan_selection
 
 
 from .drawing import run_figure, run_packages, run_bundle
