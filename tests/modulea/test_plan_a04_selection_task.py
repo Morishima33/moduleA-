@@ -6,7 +6,7 @@ from pathlib import Path
 import re
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 from uuid import uuid4
 
 from contracts import ContractError
@@ -316,6 +316,38 @@ class PlanA04SelectionTaskTests(unittest.TestCase):
         with self.assertRaises(ContractError):
             plan_preparation.run(workflow, self.sid, dict(request, note="不同请求内容"),
                                  Path(self.temp.name), lambda _: None)
+
+    def test_a06_preparation_v2_archives_bound_config_and_delegates_v1(self):
+        from modulea.core.kernel import full_workflow
+        from science_modules.a06 import plan_preparation_v2
+        selection = self.workflow.save_analysis_plan_a04_selection(self.sid, self.payload())["record"]
+        review = self.workflow.review_analysis_plan_a04_selection(
+            self.sid, self.review_payload(selection["selection_id"]))["review"]
+        source_input = self.workflow.save_analysis_plan_a06_preparation_input(
+            self.sid, self.a06_payload(selection, review))["record"]
+        packet = source_input['packet']
+        source = {'id':'isolated', 'files':[],
+                  'compounds':[{**r,'state':'NA','reason_zh':'缺少来源'} for r in packet['compounds']],
+                  'receptors':[{**r,'state':'NA','reason_zh':'缺少结构','candidates':[]} for r in packet['receptors']]}
+        ligands = [{'compound_id': r['compound_id'],'state':'NA','reason_zh':'缺少来源'} for r in packet['compounds']]
+        receptors = [{'target_id':r['target_id'],'symbol':r['symbol'],'state':'NA',
+                      'reason_zh':'缺少结构','quality':'待核查','attempts':[]} for r in packet['receptors']]
+        binary = Path(self.temp.name)/'vina.exe'; binary.write_bytes(b'fixture')
+        request = {'expected_input_id':source_input['input_id'], 'request_id':'planprep_'+uuid4().hex,
+                   'author':'隔离测试', 'note':'版本验证', 'confirmed':True}
+        workflow = full_workflow(self.settings.data_root)
+        with patch.object(plan_preparation_v2, '_version', return_value=binary), \
+             patch.object(plan_preparation_v2, 'connect', return_value=source), \
+             patch.object(plan_preparation_v2, 'prepare', return_value=(ligands, receptors)):
+            result = plan_preparation_v2.run(workflow, self.sid, request, Path(self.temp.name), lambda _:None)
+        run = workflow.run(workflow.load(self.sid), result['run_id'])
+        self.assertEqual(run['config']['version'], 'A06.plan_preparation.2')
+        self.assertEqual(run['config']['vina_parameters']['exhaustiveness'], 8)
+        self.assertEqual(result['summary']['na_pairs'], 4)
+        legacy = Mock()
+        plan_preparation_v2.validator(self.settings.data_root, legacy)(
+            {'config': {'version': 'A06.plan_preparation.1'}}, {}, {}, [], 'success')
+        legacy.assert_called_once()
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@
 
 ## 2026-10-27 新方案A06实际准备
 
-新增`POST /api/v1/studies/{sid}/analysis-plan/a06-preparation`，严格接受`{expected_input_id,request_id:planprep_<32hex>,author,note,confirmed:true}`。仅当前已归档且上游复核仍有效的新版A06输入可提交`a06_plan_preparation`后台任务。科学工具根目录只从服务器本机配置读取，请求不能提供路径、名单、质控状态或Vina参数。任务逐项连接官方来源并执行结构/配体准备，失败保留NA，结果归档为`A06.plan_preparation.1`的A06_PREP运行；`execution_available:false`、`scored_pairs:0`、`handoff_blocked:true`。当前没有新方案评分、网页按钮或自动结果批准；旧A06入口与历史版本不变。个性化重对接参数未接入时任务前置阻断，不能以默认值替代。
+新增`POST /api/v1/studies/{sid}/analysis-plan/a06-preparation`，严格接受`{expected_input_id,request_id:planprep_<32hex>,author,note,confirmed:true}`。仅当前已归档且上游复核仍有效的新版A06输入可提交`a06_plan_preparation`后台任务。科学工具根目录只从服务器本机配置读取，请求不能提供路径、名单、质控状态或Vina参数。第二版`A06.plan_preparation.2`从绑定方案读取Vina参数及搜索盒外扩；严格RMSD须同时符合默认2 Å及更严格的方案上限。结果保持`execution_available:false`、`scored_pairs:0`、`handoff_blocked:true`。当前自动检索仅生成预测口袋候选，因尚无新版口袋确认入口，预测口袋保持NA；共晶参考输入接入和真实来源成功验收仍待完成。无新方案评分、网页按钮或自动结果批准；第一版和历史规则由原校验器处理。
 
 ## 2026-10-27 新方案A04选择复核与A06准备输入
 

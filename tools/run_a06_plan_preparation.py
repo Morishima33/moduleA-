@@ -22,7 +22,7 @@ def main():
     runtime = activate(args.tools_root)
     sys.path.append(str(Path(sys.executable).parents[1] / "Lib/site-packages"))
     from modulea.core.kernel import full_workflow
-    from science_modules.a06.plan_preparation import run
+    from science_modules.a06.plan_preparation_v2 import run
     result = run(full_workflow(args.data_root), args.study,
                  json.loads(args.request_file.read_text(encoding="utf-8")),
                  args.tools_root, lambda message: print("PROGRESS " + message, flush=True))
