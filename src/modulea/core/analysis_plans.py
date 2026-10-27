@@ -18,6 +18,21 @@ class AnalysisPlanConflict(ContractError):
 class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
     """旧研究继承原行为；只有显式新方案登记支持草稿写入。"""
 
+    def analysis_plan_a06_pocket_info(self, study_id):
+        """只读本研究当前准备的原始预测口袋证据。"""
+        from .plan_pockets import info
+        return info(self, study_id)
+
+    def publish_analysis_plan_a06_pocket_review(self, study_id, payload):
+        """科学后台核验预测口袋决定，追加待复核准备修订。"""
+        from science_modules.a06.plan_pocket_review import publish
+        return publish(self, study_id, payload)
+
+    def validate_analysis_plan_a06_pocket_request(self, study_id, payload):
+        """口袋接口只读预检及同编号重复提交核对。"""
+        from .plan_pockets import validate
+        return validate(self, study_id, payload)
+
     def publish_analysis_plan_a01(self, study_id, payload):
         """科学子进程显式发布绑定方案的A01；不自动批准或开始下游。"""
         from science_modules.a01.plan_flow import publish

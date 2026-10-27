@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 
 /** 当前路由 */
 export interface Route {
-  page: 'home' | 'study' | 'parameters-preview'; // 首页、研究页或独立参数预览
+  page: 'home' | 'study' | 'parameters-preview' | 'plan-pockets'; // 首页、研究页或独立证据页面
   studyId?: string; // 研究编号
   moduleId?: string; // 模块编号
   runId?: string; // 历史版本运行编号
@@ -16,6 +16,7 @@ export function parseHash(hash: string): Route {
   const parts = path.split('/').filter(Boolean); // 路径分段
   const params = new URLSearchParams(query); // 查询参数
   if (parts[0] === 'parameters-preview') return { page: 'parameters-preview' };
+  if (parts[0] === 'plan-pockets' && parts[1]) return {page: 'plan-pockets', studyId: parts[1]};
   if (parts[0] === 'studies' && parts[1]) {
     // 研究页
     return { page: 'study', studyId: parts[1], moduleId: parts[2], runId: params.get('run_id') || undefined };
@@ -26,6 +27,7 @@ export function parseHash(hash: string): Route {
 /** 生成哈希地址 */
 export function hrefFor(r: Route): string {
   if (r.page === 'parameters-preview') return '#/parameters-preview';
+  if (r.page === 'plan-pockets' && r.studyId) return `#/plan-pockets/${r.studyId}`;
   if (r.page === 'home' || !r.studyId) return '#/'; // 首页
   let h = `#/studies/${r.studyId}`; // 研究页
   if (r.moduleId) h += `/${r.moduleId}`; // 附带模块

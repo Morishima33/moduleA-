@@ -12,6 +12,7 @@ import TaskDrawer from './components/TaskDrawer';
 import InboxDrawer from './components/InboxDrawer';
 import NewStudyModal from './components/NewStudyModal';
 import AnalysisPlanPreviewPage from './pages/AnalysisPlanPreviewPage';
+import PlanPocketPage from './pages/PlanPocketPage';
 
 // 任务仍在进行的状态
 const ACTIVE = new Set(['queued', 'running']);
@@ -125,7 +126,7 @@ export default function App() {
       openNewStudy: () => setNewStudyOpen(true),
       trackTasks,
       setCrumb,
-      currentStudyId: route.page === 'study' ? route.studyId || null : null,
+      currentStudyId: route.page === 'study' || route.page === 'plan-pockets' ? route.studyId || null : null,
     }),
     [session, refreshTick, bumpRefresh, openTasks, trackTasks, route.page, route.studyId],
   );
@@ -173,6 +174,7 @@ export default function App() {
               <Badge count={inbox.length} showZero color="#C76E00" style={{ marginLeft: 6 }} />
             </Button>
             {route.page === 'study' && <Button disabled={!session?.capabilities.create_study} onClick={() => setNewStudyOpen(true)}>新建研究</Button>}
+            {route.page === 'study' && route.moduleId === 'A06_PREP' && <Button href={hrefFor({page: 'plan-pockets', studyId: route.studyId})}>新版口袋核查</Button>}
             {/* 后台任务入口；有活动任务时显示数量 */}
             <Button icon={<UnorderedListOutlined />} onClick={() => openTasks()}>
               后台任务
@@ -187,6 +189,8 @@ export default function App() {
         <div style={{ padding: 80, textAlign: 'center' }}><Spin tip="正在连接本机服务…"><div style={{ height: 40 }} /></Spin></div>
       ) : route.page === 'parameters-preview' ? (
         <AnalysisPlanPreviewPage />
+      ) : route.page === 'plan-pockets' && route.studyId ? (
+        <PlanPocketPage key={route.studyId} studyId={route.studyId} />
       ) : route.page === 'study' && route.studyId ? (
         <StudyPage key={route.studyId} studyId={route.studyId} moduleId={route.moduleId} runId={route.runId} />
       ) : (

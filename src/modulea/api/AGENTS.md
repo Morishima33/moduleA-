@@ -1,8 +1,16 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 新方案A06口袋证据核查
+
+`GET /api/v1/studies/{sid}/analysis-plan/a06-pockets`只读当前第二版准备或其第三版确认修订的预测口袋清单。返回` supported,enabled,reason_zh,expected_input_id,expected_preparation_run_id,source_preparation_run_id,items`；每个受体的`options`逐项提供口袋键、PDB、链、搜索盒、原始预测文件指纹及`eligible/reason_zh`。GET不联网、不准备、不保存决定。
+
+`POST /api/v1/studies/{sid}/analysis-plan/a06-pockets/reviews`严格接受`{request_id:pocketreq_<32hex>,expected_input_id,expected_preparation_run_id,reviewer,note,confirmed:true,decisions:[{target_id,pocket_key:null|64hex}]}`。decisions按原固定受体顺序完整提供；null保留原状态，只能选择该受体已归档且身份、结构、环境及两次预测一致的口袋。后台`a06_plan_pocket_review`在隔离科学环境重新核验第二版来源和决定，追加独立决定及`A06.plan_preparation.3`准备运行；已有请求同内容幂等，改内容或过期输入拒绝。确认只代表采用预测位点作探索，第三版仍`handoff_blocked:true`、`scored_pairs:0`，不代签模块复核或执行评分。修订决定必须绑定当前第三版，来源第二版和历史决定保持。请求不接受结构路径、坐标、评分、质控状态或伪造确认人签名。
+
+清单另返回`current_summary`和当前已完整归档的`saved_decisions`；null口袋键始终回到原第二版状态，修订不能误认为沿用上次已采用口袋。网页独立`#/plan-pockets/{sid}`展示清单、盒参数、残基和两次文件指纹；A06_PREP页顶栏提供入口。保存过的选择可回显，首次不预选采用，提交确认框始终默认未勾选。网页只消费服务端`eligible`和摘要，不计算科学通过与否。
+
 ## 2026-10-27 新方案A06实际准备
 
-新增`POST /api/v1/studies/{sid}/analysis-plan/a06-preparation`，严格接受`{expected_input_id,request_id:planprep_<32hex>,author,note,confirmed:true}`。仅当前已归档且上游复核仍有效的新版A06输入可提交`a06_plan_preparation`后台任务。科学工具根目录只从服务器本机配置读取，请求不能提供路径、名单、质控状态或Vina参数。第二版`A06.plan_preparation.2`从绑定方案读取Vina参数及搜索盒外扩；严格RMSD须同时符合默认2 Å及更严格的方案上限。结果保持`execution_available:false`、`scored_pairs:0`、`handoff_blocked:true`。当前自动检索仅生成预测口袋候选，因尚无新版口袋确认入口，预测口袋保持NA；共晶参考输入接入和真实来源成功验收仍待完成。无新方案评分、网页按钮或自动结果批准；第一版和历史规则由原校验器处理。
+新增`POST /api/v1/studies/{sid}/analysis-plan/a06-preparation`，严格接受`{expected_input_id,request_id:planprep_<32hex>,author,note,confirmed:true}`。仅当前已归档且上游复核仍有效的新版A06输入可提交`a06_plan_preparation`后台任务。科学工具根目录只从服务器本机配置读取，请求不能提供路径、名单、质控状态或Vina参数。第二版`A06.plan_preparation.2`从绑定方案读取Vina参数及搜索盒外扩；严格RMSD须同时符合默认2 Å及更严格的方案上限。第二版本身保持`execution_available:false`、`scored_pairs:0`、`handoff_blocked:true`；其自动检索只生成未确认预测口袋，采用入口和第三版见本文件前节。共晶参考输入接入和真实来源成功验收仍待完成。第一版和历史规则由原校验器处理。
 
 ## 2026-10-27 新方案A04选择复核与A06准备输入
 

@@ -6,7 +6,7 @@ import re
 import shutil
 import subprocess
 
-from contracts import require
+from contracts import fingerprint, require
 from storage import file_record, read_json, verified_file, write_json, write_lock
 from science_modules.analysis_protocol import checked_plan
 from .automatic_sources import Fetcher, compound_source, receptor_sources
@@ -220,8 +220,9 @@ def validator(root, previous):
                                         source["cid"], source["audit"]["inchi_key"],
                                         _meeko_settings())
                 prepared = next(r for r in row["files"] if r["role"] == "prepared_ligand")
+                # JSON将Meeko默认元组保存为数组；比较序列化内容，PDBQT仍逐字节复核。
                 require(verified_file(home, prepared).read_text("ascii") ==
-                        actual.pop("pdbqt_text") and row["preparation"] == actual,
+                        actual.pop("pdbqt_text") and fingerprint(row["preparation"]) == fingerprint(actual),
                         "配体准备文件与来源三维复算不一致")
             else:
                 require(row["state"] == "NA" and row["reason_zh"], "失败配体须保留NA和原因")

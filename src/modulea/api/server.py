@@ -59,6 +59,8 @@ class App:
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a04-selection/{ID}/reviews", self.post_analysis_a04_selection_review),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a06-preparation-input", self.post_analysis_a06_preparation_input),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a06-preparation", self.post_analysis_a06_preparation),
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a06-pockets", self.get_analysis_a06_pockets),
+            ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a06-pockets/reviews", self.post_analysis_a06_pockets),
             ("GET", rf"/api/v1/studies/{ID}/trace", self.get_study_trace),
             ("GET", rf"/api/v1/studies/{ID}/trace/export.json", self.export_study_trace_json),
             ("GET", rf"/api/v1/studies/{ID}/trace/export.csv", self.export_study_trace_csv),
@@ -259,6 +261,16 @@ class App:
         """提交真实来源连接及结构/配体准备任务，组合评分仍关闭。"""
         from .analysis_plan_view import a06_preparation
         return a06_preparation(self, req, study_id)
+
+    def get_analysis_a06_pockets(self, req, study_id):
+        """只读预测口袋证据清单。"""
+        from .analysis_pocket_view import info
+        return info(self, req, study_id)
+
+    def post_analysis_a06_pockets(self, req, study_id):
+        """提交明确口袋采用决定，结果仍待独立核查。"""
+        from .analysis_pocket_view import review
+        return review(self, req, study_id)
 
     def get_study_trace(self, req, study_id):
         """返回当前研究的只读追溯摘要；详细数据通过显式导出下载。"""

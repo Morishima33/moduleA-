@@ -390,6 +390,28 @@ export interface ModuleView {
   enrichment_display?: EnrichmentDisplayInfo | null;
 }
 
+/** 新方案预测位点的只读资格与完整决定范围。 */
+export interface PlanPocketInfo {
+  supported: boolean; enabled: boolean; reason_zh: string; execution_available: false;
+  testing?: boolean; study_label_zh?: string; purpose_zh?: string;
+  expected_input_id?: string; expected_preparation_run_id?: string; source_preparation_run_id?: string;
+  saved_decisions?: {target_id: string; pocket_key: string | null}[] | null;
+  current_summary?: {ready_pairs: number; na_pairs: number; pair_count: number; scored_pairs: number; message_zh: string} | null;
+  items: {target_id: string; symbol: string; state: string; reason_zh: string; options: {
+    pocket_key: string | null; pdb_id: string; eligible: boolean; reason_zh: string;
+    uniprot?: string; chains?: string[]; mapped_residues?: string[];
+    prediction?: Record<string, string>; box?: {center: number[]; size: number[]};
+    prediction_files?: {path: string; bytes: number; sha256: string}[];
+  }[]}[];
+}
+
+/** 用户提交完整受体顺序的预测口袋采用决定。 */
+export interface PlanPocketRequest {
+  request_id: string; expected_input_id: string; expected_preparation_run_id: string;
+  reviewer: string; note: string; confirmed: true;
+  decisions: {target_id: string; pocket_key: string | null}[];
+}
+
 /** 后台生成的标准化预览，页面不计算基因身份与交接状态。 */
 export interface NormalizationInfo {
   enabled: boolean; disabled_reason_zh: string; scope_note_zh: string;

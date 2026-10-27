@@ -301,8 +301,10 @@ def run_a06_plan_preparation(settings, task, manager):
     folder.mkdir(parents=True, exist_ok=False)
     request, output = folder / "request.json", folder / "result.json"
     request.write_text(task.get("payload") or "{}", encoding="utf-8")
+    script = ("tools/run_a06_plan_pocket_review.py" if task["kind"] == "a06_plan_pocket_review"
+              else "tools/run_a06_plan_preparation.py")
     command = [settings.science_python, "-I", "-S", "-B",
-               str(settings.project_root / "tools/run_a06_plan_preparation.py"),
+               str(settings.project_root / script),
                "--request-file", str(request), "--result-file", str(output),
                "--tools-root", str(settings.science_tools_root),
                "--data-root", str(settings.data_root), "--study", task["study_id"]]
@@ -407,6 +409,7 @@ HANDLERS = {"a02_scope_review": run_a02_scope_review, "a02_sources_retry": run_a
 HANDLERS["a04_plan_selection"] = run_a04_plan_selection
 HANDLERS["a06_plan_input"] = run_a06_plan_input
 HANDLERS["a06_plan_preparation"] = run_a06_plan_preparation
+HANDLERS["a06_plan_pocket_review"] = run_a06_plan_preparation
 
 
 from .drawing import run_figure, run_packages, run_bundle
