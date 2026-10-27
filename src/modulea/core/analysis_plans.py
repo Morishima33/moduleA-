@@ -33,6 +33,11 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
         from science_modules.a04.plan_flow import evaluate
         return evaluate(targets, bundle, plan)
 
+    def publish_analysis_plan_a04_network(self, study_id, payload):
+        """绑定A03、方案和STRING来源，追加A04运行；不自动批准。"""
+        from science_modules.a04.plan_flow import publish
+        return publish(self, study_id, payload)
+
     def _analysis_plan_records(self, manifest):
         """逐件核验本研究索引，不从任意目录猜测最新草稿。"""
         root = self.location(manifest["study_id"])

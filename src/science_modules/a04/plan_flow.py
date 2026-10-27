@@ -11,7 +11,8 @@ from time import sleep
 
 import networkx as nx
 
-from contracts import require, fingerprint
+from contracts import require, fingerprint, safe_id
+from storage import read_json, verified_file, write_json, write_lock, file_record, new_id
 from science_modules.analysis_protocol import checked_plan
 
 BASE = "https://version-12-0.string-db.org/api/json/"
@@ -159,4 +160,73 @@ def fetch(targets, plan, opener=None):
     return {"schema_version": "A04.plan_source.1", "string_version": "12.0",
             "analysis_plan_id": plan["parameter_hash"], "analysis_parameter_hash": plan["parameter_hash"],
             "mapped_string_ids": ids, "mapping": mapping, "network": network}
+
+
+def _plan_record(workflow, manifest, plan_id, expected_a00):
+    records = workflow._analysis_plan_records(manifest)
+    rows = [row for row in records if row["plan_id"] == plan_id]
+    require(len(rows) == 1 and rows[0]["expected_a00"] == expected_a00, "A04方案不属于本研究登记")
+    return rows[0]
+
+
+def publish(workflow, study_id, payload):
+    """绑定当前A03与方案、复算来源包并追加A04运行；不批准下游。"""
+    fields = {"expected_a00", "expected_a03", "expected_plan_id", "source_file", "reason"}
+    require(isinstance(payload, dict) and set(payload) == fields, "A04发布字段不完整或含未支持选项")
+    safe_id(payload["expected_a00"], "run"); safe_id(payload["expected_a03"], "run")
+    safe_id(payload["expected_plan_id"], "plan")
+    require(isinstance(payload["reason"], str) and payload["reason"].strip(), "请填写A04发布依据")
+    with write_lock(workflow.root):
+        manifest = workflow.load(study_id)
+        require(manifest["current"].get("A00") == payload["expected_a00"]
+                and manifest["current"].get("A03") == payload["expected_a03"], "上游版本已改变，请刷新")
+        require(workflow.approved(manifest, payload["expected_a03"]), "请先通过当前A03")
+        record = _plan_record(workflow, manifest, payload["expected_plan_id"], payload["expected_a00"])
+        plan = checked_plan(record["plan"])
+        home = workflow.location(study_id)
+        source_ref = payload["source_file"]
+        source = read_json(verified_file(home, source_ref))
+        parent = workflow.result(manifest, payload["expected_a03"])
+        targets = parent["tables"]["intersection_targets"]
+        summary, tables = evaluate(targets, source, plan)
+        summary["analysis_plan_id"] = record["plan_id"]
+        summary["analysis_parameter_hash"] = plan["parameter_hash"]
+        plan_ref = next(ref for ref in manifest["analysis_plan_records"]
+                        if read_json(verified_file(home, ref))["plan_id"] == record["plan_id"])
+        inputs = {"study_id": study_id, "bound_a00": payload["expected_a00"],
+                  "parent_result": manifest["runs"][payload["expected_a03"]]["result_file"],
+                  "source_file": source_ref, "analysis_plan_id": record["plan_id"],
+                  "analysis_plan_file": plan_ref,
+                  "analysis_parameter_hash": plan["parameter_hash"]}
+        run = workflow._begin(manifest, "A04", inputs,
+                              {"version": "A04.plan_network.1", "string_version": "12.0",
+                               "required_score": int(round(_threshold(plan) * 1000)),
+                               "network_type": "functional", "add_nodes": 0,
+                               "analysis_plan_id": record["plan_id"],
+                               "analysis_parameter_hash": plan["parameter_hash"]}, payload["reason"])
+        result = workflow._finish(manifest, run["run_id"], summary, tables,
+                                  ["新方案A04来源、方案和A03已绑定；仍需独立复核。"],
+                                  "success" if summary["参与节点数"] else "empty",
+                                  sources=[source_ref, inputs["parent_result"]])
+        workflow.save(manifest)
+        return result
+
+
+def validator(root, fallback):
+    """新方案运行按绑定来源复算；旧A04运行继续使用冻结校验器。"""
+    def check(run, summary, tables, anomalies, outcome):
+        if run["config"].get("version") != "A04.plan_network.1":
+            return fallback(run, summary, tables, anomalies, outcome)
+        home = Path(root) / "studies" / run["study_id"]
+        require(run["inputs"]["study_id"] == run["study_id"], "A04输入研究绑定不一致")
+        source = read_json(verified_file(home, run["inputs"]["source_file"]))
+        parent = read_json(verified_file(home, run["inputs"]["parent_result"]))
+        plan = read_json(verified_file(home, run["inputs"]["analysis_plan_file"]))["plan"]
+        plan = checked_plan(plan)
+        require(plan["parameter_hash"] == run["inputs"]["analysis_parameter_hash"], "A04方案指纹不一致")
+        require(run["config"]["required_score"] == int(round(_threshold(plan) * 1000)), "A04阈值配置被改变")
+        expected, expected_tables = evaluate(parent["tables"]["intersection_targets"], source, plan)
+        require((summary, tables) == (expected, expected_tables), "A04结果与绑定来源复算不一致")
+        require(outcome == ("success" if summary["参与节点数"] else "empty"), "A04状态与结果不一致")
+    return check
 
