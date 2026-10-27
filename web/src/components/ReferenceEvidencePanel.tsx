@@ -33,7 +33,9 @@ export default function ReferenceEvidencePanel({ studyId }: { studyId: string })
   }, [studyId, app.refreshTick]);
 
   function choose(targetId: string, value?: ReferenceChoice) {
-    setChoices(old => [...old.filter(row => row.target_id !== targetId), ...(value ? [value] : [])]);
+    const selected = value ? [{ target_id: value.target_id, candidate_key: value.candidate_key,
+      reference_key: value.reference_key }] : [];
+    setChoices(old => [...old.filter(row => row.target_id !== targetId), ...selected]);
     setConfirmed(false);
   }
 

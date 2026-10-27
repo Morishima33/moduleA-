@@ -151,6 +151,53 @@ class ReferencePreparationTests(unittest.TestCase):
         self.assertTrue(result["summary"]["handoff_blocked"])
         self.assertEqual(result["summary"]["scored_pairs"], 0)
 
+    def test_real_worker_nonempty_candidate_preserves_failed_reference_as_na(self):
+        from tests.modulea.test_plan_pockets import PocketReviewTests
+        from tests.modulea.test_reference_docking import fixture
+        from science_modules.a06.reference_candidates import discover
+        from modulea.tasks.worker import run_a06_plan_reference_review
+        from modulea.config import PROJECT_ROOT
+        from storage import read_json, verified_file
+
+        tools = PROJECT_ROOT.parent / "environment" / "a06_runtime_v1"
+        if not tools.is_dir():
+            self.skipTest("固定科学工具未安装")
+
+        class CandidateFixture(PocketReviewTests):
+            def connect(self, home, packet, folder, progress):
+                source = super().connect(home, packet, folder, progress)
+                cif = folder / "candidate.cif"
+                cif.write_text(fixture(), encoding="utf-8")
+                candidate = source["receptors"][0]["candidates"][0]
+                candidate["cif"] = file_record(home, cif, "synthetic_structure")
+                candidate["spec"]["pdb_id"] = "TEST"
+                source["files"].append(candidate["cif"])
+                return source
+
+        base = CandidateFixture("test_confirmation_revision_preserves_sources_and_na_without_scoring")
+        base.setUp()
+        self.addCleanup(base.doCleanups)
+        settings = base.base.settings
+        settings.science_python = sys.executable
+        settings.science_tools_root = tools
+        choices = discover(base.home, base.source["connection"])
+        self.assertTrue(choices[0]["selectable"])
+        choice = {key: choices[0][key] for key in ("target_id", "candidate_key", "reference_key")}
+        request = {"expected_input_id": base.input_record["input_id"],
+                   "expected_preparation_run_id": base.source_run_id,
+                   "request_id": "refreq_" + uuid4().hex, "reviewer": "测试",
+                   "note": "隔离测试非空选择的失败保留", "confirmed": True, "choices": [choice]}
+        task = {"task_id": "task_" + uuid4().hex, "study_id": base.sid, "payload": json.dumps(request)}
+        run_a06_plan_reference_review(settings, task, Mock())
+        manifest = base.workflow.load(base.sid)
+        review = read_json(verified_file(base.home, manifest["analysis_plan_a06_reference_records"][-1]["decision"]))
+        packet = read_json(verified_file(base.home, review["packet"]))
+        self.assertEqual(packet["summary"]["choice_count"], 1)
+        self.assertEqual(packet["summary"]["na_count"], 1)
+        self.assertEqual(packet["results"][0]["state"], "NA")
+        self.assertTrue(packet["results"][0]["reason_zh"])
+        self.assertTrue(packet["summary"]["handoff_blocked"])
+
 
 if __name__ == "__main__":
     unittest.main()
