@@ -29,9 +29,11 @@ def scoring_readiness(app, req, sid):
         value = app.kernel.workflow().analysis_plan_a06_scoring_readiness(sid)
     except ContractError as error:
         raise from_contract(str(error))
-    if value['scoring_allowed'] and (app.tasks.active_for(sid) or app.settings.science_tools_root is None):
-        reason = '请等待当前研究后台任务结束' if app.tasks.active_for(sid) else '本机未配置固定科学工具目录'
-        value.update(scoring_allowed=False, execution_available=False, blockers=[reason], reason_zh=reason)
+    if value['scoring_allowed']:
+        from .plan_scoring_view import execution_blocker
+        reason = execution_blocker(app.settings, app.tasks.active_for(sid))
+        if reason:
+            value.update(scoring_allowed=False, execution_available=False, blockers=[reason], reason_zh=reason)
     return value
 
 

@@ -10,6 +10,14 @@ from .plan_scoring_inputs import derive, ligand_record, receptor_evidence
 from .plan_score_pair import validate as validate_pair
 
 
+def same_json(left, right):
+    """JSON内容和类型一并比较，防止True与计数1被Python当作同一值。"""
+    try:
+        return fingerprint(left) == fingerprint(right)
+    except (ValueError, TypeError):
+        return False
+
+
 def rows_from_evidence(home, run, data, rows, executable):
     """固定笛卡尔顺序逐格回算；准备NA不执行，失败不能填零或借分。"""
     require(len(rows) == len(data['planned_pairs']), '评分组合数与固定准备不一致')
@@ -31,7 +39,7 @@ def rows_from_evidence(home, run, data, rows, executable):
         else:
             require(planned['state'] == 'NA' and planned['score'] is None and planned['reason_zh'], '准备NA缺少明确原因')
         expected_rows.append(row)
-    require(expected_rows == rows, '评分表与固定准备和实际构型回算不一致')
+    require(same_json(expected_rows, rows), '评分表与固定准备和实际构型回算不一致')
     return expected_rows
 
 
@@ -78,7 +86,7 @@ def validator(root, previous):
         sid = run['study_id']
         home = Path(root) / 'studies' / sid
         data = derive(root, sid, run['inputs'])
-        require(run['config'] == data['configuration'] and run['parent_runs'] == {'A06_PREP': data['preparation']['run_id']} and
+        require(same_json(run['config'], data['configuration']) and run['parent_runs'] == {'A06_PREP': data['preparation']['run_id']} and
                 run['parent_review_ids'] == {'A06_PREP': data['review']['review_id']} and
                 run['parent_artifact_ids'] == [data['preparation']['artifact_id']] and
                 run['config_hash'] == fingerprint(run['config']) and
@@ -88,7 +96,7 @@ def validator(root, previous):
         require(len(refs) == 1 and refs[0]['path'] == f"runs/A06/{run['run_id']}/plan_scoring/packet.json", '评分事实包不属于当前运行')
         packet = read_json(verified_file(home, refs[0]))
         require(packet['schema_version'] == VERSION and packet['study_id'] == sid and packet['run_id'] == run['run_id'] and
-                packet['inputs'] == run['inputs'] and packet['configuration'] == run['config'], '评分事实包归属或参数不一致')
+                same_json(packet['inputs'], run['inputs']) and same_json(packet['configuration'], run['config']), '评分事实包归属或参数不一致')
         software = read_json(verified_file(home, packet['software']))
         binary = verified_file(home, software['binary'])
         require(software['name'] == 'AutoDock Vina' and software['version'] == '1.2.7' and
@@ -97,8 +105,8 @@ def validator(root, previous):
                 software['binary']['path'] == f"runs/A06/{run['run_id']}/plan_scoring/software/vina.exe", '评分工具快照或版本不一致')
         rows = rows_from_evidence(home, run, data, packet['pairs'], binary)
         expected = summary(data, rows)
-        require(supplied_summary == expected == packet['summary'] and tables == {
-            'scoring_packet': refs, 'plan_scoring_pairs': table_rows(rows)} and anomalies == [] and
+        require(same_json(supplied_summary, expected) and same_json(expected, packet['summary']) and same_json(tables, {
+            'scoring_packet': refs, 'plan_scoring_pairs': table_rows(rows)}) and anomalies == [] and
             outcome == ('success' if expected['scored_pairs'] > 0 else 'failed'), '评分摘要、表格或归档状态不一致')
         require(packet['matrix_csv']['path'] == f"runs/A06/{run['run_id']}/plan_scoring/matrix.csv" and
                 verified_file(home, packet['matrix_csv']).read_text('utf-8-sig') == matrix_csv(rows), '完整评分CSV与本批结果不一致')

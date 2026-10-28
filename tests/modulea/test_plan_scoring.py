@@ -258,3 +258,26 @@ print('standard_library_only_passed')"""
         self.w.review(self.sid, result['run_id'], 'approved', '合成测试', '仅批准测试评分')
         with self.assertRaises(ContractError):
             self.w.begin(self.sid, 'A07', {}, {}, '尚未接通的新报告')
+
+    def test_independent_validator_rejects_boolean_summary_count(self):
+        """True不能冒充成功数1；真实构型和其他字段保持，专门核对汇总数据类型。"""
+        result = self.run_scoring()
+        run = self.w.run(self.w.load(self.sid), result['run_id'])
+        malformed = deepcopy(result['summary'])
+        malformed['scored_pairs'] = True
+        with self.assertRaises(ContractError):
+            self.w.validators['A06'](run, malformed, result['tables'], [], 'success')
+
+    def test_missing_vina_gates_module_and_post_without_creating_task(self):
+        """使用真实有效准备检查模块页、资格接口与POST共同阻断，不只测试一个入口。"""
+        with patch.object(self.settings, 'science_tools_root', self.home / 'missing_vina'):
+            app = App(self.settings)
+            view = app.views.module(self.sid, 'A06_PREP')
+            self.assertFalse(view['plan_scoring']['enabled'])
+            self.assertFalse(view['scoring_readiness']['scoring_allowed'])
+            self.assertIn('工具文件不存在', view['plan_scoring']['reason_zh'])
+            with patch.object(app.tasks, 'submit', side_effect=AssertionError('不得提交缺工具任务')) as submit:
+                with self.assertRaises(ApiError) as error:
+                    app.post_analysis_a06_scoring(SimpleNamespace(json=lambda: self.body), self.sid)
+                self.assertEqual(error.exception.code, 'GATE_BLOCKED')
+                submit.assert_not_called()

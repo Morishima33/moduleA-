@@ -89,10 +89,20 @@ def validate(home, execution_ref, executable, ligand_ref, receptor_ref, box, con
     """独立从命令、实际输出和绑定原件回算成功或失败，不信任归档分值。"""
     from storage import read_json
     value = read_json(verified_file(home, execution_ref))
+    require(isinstance(value, dict) and {'state', 'score', 'returncode', 'mode_count', 'top_mode',
+            'failure_kind', 'reason_zh', 'files'} <= value.keys(), '组合执行记录字段不完整')
+    require((value['returncode'] is None or type(value['returncode']) is int) and
+            type(value['mode_count']) is int and value['mode_count'] >= 0 and
+            (value['top_mode'] is None or type(value['top_mode']) is int) and
+            (value['score'] is None or (type(value['score']) in (int, float) and math.isfinite(value['score']))),
+            '组合评分、计数、模式号或返回码类型不合法，不能用布尔值代替数字')
+    require(isinstance(value['files'], list) and all(isinstance(ref, dict) and
+            isinstance(ref.get('path'), str) for ref in value['files']), '组合文件索引格式不合法')
     folder = Path(home) / execution_ref['path']
     folder = folder.parent
-    command = read_json(verified_file(home, next(ref for ref in value['files'] if ref['path'] ==
-                                               (folder / 'command.json').relative_to(home).as_posix())))
+    commands = [ref for ref in value['files'] if ref['path'] == (folder / 'command.json').relative_to(home).as_posix()]
+    require(len(commands) == 1, '组合命令索引缺失或重复')
+    command = read_json(verified_file(home, commands[0]))
     expected_files = {(folder / name).relative_to(home).as_posix() for name in ('command.json', 'stdout.txt', 'stderr.txt')}
     if (folder / 'poses.pdbqt').is_file():
         expected_files.add((folder / 'poses.pdbqt').relative_to(home).as_posix())

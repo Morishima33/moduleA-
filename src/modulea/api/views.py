@@ -477,8 +477,9 @@ class Views:
                 response[key] = None
         response["automatic_docking"] = None
         if response.get('plan_scoring') and response['plan_scoring']['enabled']:
-            if self.tasks.active_for(study_id) or self.kernel.settings.science_tools_root is None:
-                reason = '请等待当前研究后台任务结束' if self.tasks.active_for(study_id) else '本机未配置固定科学工具目录'
+            from .plan_scoring_view import execution_blocker
+            reason = execution_blocker(self.kernel.settings, self.tasks.active_for(study_id))
+            if reason:
                 response['plan_scoring'].update(enabled=False, execution_available=False, blockers=[reason], reason_zh=reason)
                 if response.get('scoring_readiness'):
                     response['scoring_readiness'].update(scoring_allowed=False, execution_available=False, blockers=[reason], reason_zh=reason)

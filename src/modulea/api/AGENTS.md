@@ -523,3 +523,7 @@ GET `/studies/{sid}/analysis-plan/a06-scoring` 只读返回 `supported,enabled,e
 POST 同地址严格接受 `{request_id,expected_preparation_run_id,expected_preparation_review_id,expected_input_id,expected_a06_run_id,operator,note,confirmed:true}`；request_id 前缀 scoreq，expected_a06_run_id 为当前运行或null。无参数/评分/路径覆盖。新请求返回202后台 `a06_plan_scoring`；同编号同内容且当前成功归档返回200原run；改内容、过期版本、回收站、未批准、失败/中断原请求拒绝。失败或中断的已落盘资料保留，明确重试使用新请求和当前A06编号，不自动恢复。
 后台运行 `A06.plan_scoring.1`，固定Vina1.2.7、原方案参数、已准备配体/受体/搜索盒，一CPU顺序计算，单对1800秒超时。完整固定组合保存NA/failed/completed；仅原文Top-1评分有效，NA/失败评分为null，不补位、不用历史分数。全部可用组合失败时结果outcome=failed、任务失败且原诊断保留。成功结果仍需原人工A06复核，不代签，不接旧报告协议。
 GET `/studies/{sid}/analysis-plan/a06-scoring/export.csv` 下载当前A06评分事实包绑定的完整CSV，下载前核验原结果及文件指纹，无客户端路径；历史仍从原运行附件查看。ModuleView 的可选 `plan_scoring` 使用上述GET字段；A06新增表 `plan_scoring_pairs`，列compound_id/target_id/state/score/quality/reason_zh/input_key/execution_path/state_zh，科学数值仅后端生成。接口统一沿用原令牌、状态码和任务并发规则。只读预检仍始终allowed=false，不因正式入口接通而执行。
+## 2026-10-28 第二轮代码复查补充
+
+新版评分GET资格、评分闸门、模块页面和POST执行共用同一工具预检：配置目录及固定Vina1.2.7文件须实际存在。HTTP仅检查文件存在，不启动工具；版本仍由科学子进程验证。缺少工具或后台忙碌时enabled/scoring_allowed/execution_available关闭，POST返回409 GATE_BLOCKED且不创建任务。每次评分执行预检只使用一次任务状态快照，避免任务刚结束时误报未配置工具。
+可选A06复核材料包核查失败时，追溯摘要仍可返回，a06_review_packet_available=false；原始必要文件指纹失败继续按原规则拒绝，不把资料缺损当成有效结果。独立评分校验明确拒绝以布尔值冒充评分、计数、模式号或返回码，缺命令索引按契约错误拒绝。
