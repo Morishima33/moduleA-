@@ -11,6 +11,7 @@ from uuid import uuid4
 from contracts import ContractError
 from science_modules.a06 import reference_review
 from science_modules.a06.plan_reference_publication_v2 import validator
+from modulea.core.reference_preparation import qualification, scoring_readiness
 from tests.modulea.test_plan_pockets import PocketReviewTests
 
 
@@ -82,6 +83,13 @@ class ReferencePublicationV2Tests(unittest.TestCase):
         self.assertTrue(result['summary']['handoff_blocked'])
         self.assertEqual(result['summary']['scored_pairs'], 0)
         self.assertFalse(workflow.approved(manifest, result['run_id']))
+        check = qualification(workflow, sid)
+        self.assertTrue(check['supported'])
+        self.assertTrue(check['qualified'], check)
+        self.assertFalse(check['can_enter_review'])
+        gate = scoring_readiness(workflow, sid)
+        self.assertTrue(gate['supported'])
+        self.assertFalse(gate['scoring_allowed'])
         self.assertEqual(workflow.publish_analysis_plan_a06_reference_qualification_v2(sid, payload)['run_id'], result['run_id'])
         with self.assertRaises(ContractError):
             workflow.publish_analysis_plan_a06_reference_qualification_v2(sid, dict(payload, note='改动'))

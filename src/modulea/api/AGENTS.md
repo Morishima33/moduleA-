@@ -18,6 +18,8 @@
 
 `GET /api/v1/studies/{sid}/analysis-plan/a06-scoring-readiness`只读返回正式评分的阻塞项；新版评分执行入口尚未接通，`scoring_allowed`固定为false。该接口不提交评分任务、不改变复核或运行状态。资格核查仅说明已检查归档完整性，当前`can_enter_review:false`，不表示已开放批准。
 
+上述资格核查与评分闸门同时识别`A06.plan_reference_preparation.2`：核对同研究固定输入、事实包、参考包、逐件指纹和空评分矩阵，返回归档完整性状态。此GET不执行科学准备，不将归档完整性显示为正式审批；第二版的`can_enter_review`与`scoring_allowed`仍为false。
+
 清单另返回`current_summary`和当前已完整归档的`saved_decisions`；null口袋键始终回到原第二版状态，修订不能误认为沿用上次已采用口袋。网页独立`#/plan-pockets/{sid}`展示清单、盒参数、残基和两次文件指纹；A06_PREP页顶栏提供入口。保存过的选择可回显，首次不预选采用，提交确认框始终默认未勾选。网页只消费服务端`eligible`和摘要，不计算科学通过与否。
 
 ## 2026-10-27 新方案A06实际准备

@@ -84,6 +84,8 @@ def qualification(workflow, sid):
     if not current:
         return dict(base, reason_zh="当前没有新版A06准备")
     run = workflow.run(manifest, current)
+    if run.get('config', {}).get('version') == 'A06.plan_reference_preparation.2':
+        return qualification_v2(workflow, sid, manifest, run, base)
     if run.get("config", {}).get("version") != VERSION:
         return dict(base, reason_zh="当前准备尚未绑定共晶参考证据", current_run_id=current)
     result = workflow.result(manifest, current)
@@ -127,6 +129,45 @@ def qualification(workflow, sid):
     return dict(value, qualified=qualified, can_enter_review=False,
                 reason_zh="已核对归档完整性；当前版本仍阻断正式整体复核通过和评分" if qualified
                 else "；".join(blockers))
+
+
+def qualification_v2(workflow, sid, manifest, run, base):
+    """只读核验第二版归档完整性；科学结论仍以发布时独立校验为准。"""
+    current = run['run_id']
+    result = workflow.result(manifest, current)
+    value = dict(base, supported=True, enabled=True, current_run_id=current,
+                 summary=result.get('summary') if result else None, blockers=[])
+    blockers = value['blockers']
+    if manifest.get('trashed'):
+        blockers.append('回收站研究只读')
+    if not workflow.active(manifest, current):
+        blockers.append('准备运行或上游复核已失效')
+    if not result or result.get('outcome') != 'success':
+        blockers.append('新版准备尚未完整成功归档')
+        return dict(value, reason_zh='；'.join(blockers))
+    summary = result['summary']
+    value['scored_pairs'] = summary.get('scored_pairs')
+    try:
+        require(summary.get('handoff_blocked') is True and summary.get('scored_pairs') == 0 and
+                summary.get('execution_available') is False, '准备结果未保持评分阻断')
+        study_dir = workflow.location(sid)
+        records = result['tables']['preparation_packet']
+        require(len(records) == 1 and records[0]['path'] ==
+                f'runs/A06_PREP/{current}/reference_qualification/packet.json', '参考准备事实包路径不一致')
+        fact = read_json(verified_file(study_dir, records[0]))
+        require(fact['schema_version'] == 'A06.plan_reference_preparation.2' and
+                fact['study_id'] == sid and fact['inputs'] == run['inputs'], '参考准备归属或输入不一致')
+        for ref in fact['files'] + list(run['inputs'].values()):
+            verified_file(study_dir, ref)
+        reference = read_json(verified_file(study_dir, run['inputs']['reference_packet']))
+        require(reference['study_id'] == sid and reference['summary']['scored_pairs'] == 0 and
+                reference['summary']['handoff_blocked'] is True, '参考核查包归属或阻断状态不一致')
+        require(all(row.get('score') is None for row in result['tables']['planned_pairs']), '准备矩阵包含评分')
+        value['checked_files'] = len(fact['files'])
+    except (ValueError, KeyError, TypeError) as error:
+        blockers.append(str(error))
+    return dict(value, qualified=not blockers, can_enter_review=False,
+                reason_zh='已核对第二版准备归档完整性；正式整体复核通过及评分仍未开放' if not blockers else '；'.join(blockers))
 
 
 def scoring_readiness(workflow, sid):
