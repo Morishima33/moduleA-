@@ -12,6 +12,7 @@ import TaskDrawer from './components/TaskDrawer';
 import InboxDrawer from './components/InboxDrawer';
 import NewStudyModal from './components/NewStudyModal';
 import AnalysisPlanPreviewPage from './pages/AnalysisPlanPreviewPage';
+import PlanStudyCreationPage from './pages/PlanStudyCreationPage';
 import PlanPocketPage from './pages/PlanPocketPage';
 
 // 任务仍在进行的状态
@@ -189,6 +190,8 @@ export default function App() {
         <div style={{ padding: 80, textAlign: 'center' }}><Spin tip="正在连接本机服务…"><div style={{ height: 40 }} /></Spin></div>
       ) : route.page === 'parameters-preview' ? (
         <AnalysisPlanPreviewPage />
+      ) : route.page === 'new-plan-study' ? (
+        <PlanStudyCreationPage />
       ) : route.page === 'plan-pockets' && route.studyId ? (
         <PlanPocketPage key={route.studyId} studyId={route.studyId} />
       ) : route.page === 'study' && route.studyId ? (

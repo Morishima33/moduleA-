@@ -18,6 +18,21 @@ class AnalysisPlanConflict(ContractError):
 class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
     """旧研究继承原行为；只有显式新方案登记支持草稿写入。"""
 
+    def create_analysis_plan_study(self, content, proof, evidence, request_id):
+        """创建新模式研究及同一原子发布内的初始方案，不提交批准或任务。"""
+        from .plan_creation import create_study
+        return create_study(self, content, proof, evidence, request_id)
+
+    def _finish(self, manifest, run_id, summary, tables, anomalies, outcome, sources=None, figures=None, attachments=None):
+        """仅新建A00首次发布时附加初始方案；其他版本沿用原结果校验。"""
+        from .plan_creation import VERSION as CREATION_VERSION, record_for_a00
+        refs = list(attachments or [])
+        run = self.run(manifest, run_id)
+        if run['module_id'] == 'A00' and summary.get('creation_protocol') == CREATION_VERSION and not manifest.get('initial_analysis_plan'):
+            require(outcome == 'success', '新建登记必须完整成功后才能绑定初始方案')
+            refs.append(record_for_a00(self, manifest, run, summary))
+        return super()._finish(manifest, run_id, summary, tables, anomalies, outcome, sources, figures, refs)
+
     def _active(self, manifest, run_id):
         """仅新可复核准备额外绑定独立选择复核；撤回后普通复核同样失效。"""
         if not super()._active(manifest, run_id):
@@ -34,6 +49,12 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
 
     def _begin(self, manifest, module, inputs, config, reason):
         """仅为绑定新准备的新评分协议放行；报告仍等独立适配。"""
+        from .plan_creation import is_plan_created
+        if module != 'A00' and is_plan_created(self, manifest):
+            if module in ('A01', 'A04'):
+                require(config.get('version') == {'A01': 'A01.plan_publication.1', 'A04': 'A04.plan_network.1'}[module],
+                        '新版研究必须使用绑定方案的科学协议，不能调用旧固定参数流程')
+            require(module != 'A05', '新版富集方案执行适配尚未完成，不能使用旧固定参数替代')
         prep = manifest.get('current', {}).get('A06_PREP')
         if module == 'A06' and (config.get('version') == 'A06.plan_scoring.1' or
                 (prep and self.run(manifest, prep)['config'].get('version') == 'A06.plan_reviewable_preparation.1')):

@@ -91,11 +91,19 @@ def context(workflow, manifest, module_id, result, historical=False, active=Fals
                         "coverage": (result or {}).get("tables", {}).get("source_coverage", []),
                         "issues_count": (result or {}).get("summary", {}).get("未决身份组数", 0)}
     mapping_preview = {"enabled": enabled, "latest": latest(workflow, manifest, "mapping")} if module_id == "A02" else None
+    from .plan_creation import is_plan_created
+    plan_created = module_id == 'A01' and is_plan_created(workflow, manifest)
+    if plan_created:
+        # 原件上传仍可使用；按旧OB/DL获取或整理的按钮不能接管新方案。
+        acquisition['enabled'] = False
+        can_process = False
+        if verification:
+            verification['enabled'] = False
     return {"enabled": enabled, "disabled_reason_zh": reason, "expected_a00": a00,
             "acquisition": acquisition, "verification": verification, "mapping_preview": mapping_preview,
             "expected_run": manifest["current"].get(module_id, ""), "expected_staging": (manifest.get("current_component_uploads") or {}).get("sha256", "") if module_id == "A01" else "",
-            "note_zh": "三库按库上传留存；完整来源与共同HGNC依据齐备后，点击整理生成新的待复核结果。上传本身不改变当前A01。" if module_id == "A01" else "每次上传只替换所选库，生成新的A02候选；范围、身份与总体复核仍按原流程确认。",
-            "can_process": can_process, "process_reason_zh": "" if can_process else ("本批资料已整理，可核查当前结果；补充或替换后再整理" if processed else ("请先上传完整三库资料" if not complete else "尚无共同HGNC依据，请先准备身份快照或完成A02标准化")),
+            "note_zh": ('本研究已绑定新方案，可先上传原件；新方案获取与整理任务待接入，旧固定参数操作已禁用。' if plan_created else "三库按库上传留存；完整来源与共同HGNC依据齐备后，点击整理生成新的待复核结果。上传本身不改变当前A01。") if module_id == "A01" else "每次上传只替换所选库，生成新的A02候选；范围、身份与总体复核仍按原流程确认。",
+            "can_process": can_process, "process_reason_zh": '新方案获取/发布任务待接入，不使用旧固定OB/DL整理' if plan_created else ("" if can_process else ("本批资料已整理，可核查当前结果；补充或替换后再整理" if processed else ("请先上传完整三库资料" if not complete else "尚无共同HGNC依据，请先准备身份快照或完成A02标准化"))),
             "query_zh": ((workflow.result(manifest, a00) or {}).get("summary", {}).get("herbs", "") if module_id == "A01" else (workflow.result(manifest, a00) or {}).get("summary", {}).get("mesh_verification", {}).get("preferred_term", "")) if a00 else "",
             "sources": sources}
 

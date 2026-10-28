@@ -28,6 +28,10 @@ def run_continue(settings: Settings, task: dict, manager: TaskManager) -> str:
     workflow = full_workflow(settings.data_root)
     # 新双分支的对接来源未确认时停下，不启动旧候选准备和计算。
     manifest = workflow.load(task["study_id"])
+    from ..core.plan_creation import is_plan_created
+    if is_plan_created(workflow, manifest):
+        manager.update(task['task_id'], progress={'step_zh':'已停在新方案资料核对关口，不调用旧固定编排','done':1,'total':1})
+        return '新方案已建档；请核对本研究资料。自动编排尚未接通，未启动旧参数计算或代签。'
     prep_id = manifest.get('current', {}).get('A06_PREP')
     if prep_id and workflow.run(manifest, prep_id)['config'].get('version') == 'A06.plan_reviewable_preparation.1':
         manager.update(task['task_id'], progress={'step_zh':'新版评分需独立明确确认，不调用旧协议','done':1,'total':1})
@@ -170,8 +174,12 @@ def run_source_upload(settings: Settings, task: dict, manager: TaskManager) -> s
 def run_a01_sources(settings: Settings, task: dict, manager: TaskManager) -> str:
     from science_modules.a01.collection_flow import process
     payload = json.loads(task.get("payload") or "{}")
+    workflow = full_workflow(settings.data_root)
+    from ..core.plan_creation import is_plan_created
+    if is_plan_created(workflow, workflow.load(task['study_id'])):
+        raise ValueError('新方案发布任务尚未接入，不能按旧固定OB/DL整理')
     manager.update(task["task_id"], progress={"step_zh": "按现有规则整理三库与统一身份", "done": 0, "total": 1})
-    result = process(full_workflow(settings.data_root), task["study_id"], payload["expected_a00"], payload["expected_run"], payload["expected_staging"], payload["reason"])
+    result = process(workflow, task["study_id"], payload["expected_a00"], payload["expected_run"], payload["expected_staging"], payload["reason"])
     manager.update(task["task_id"], progress={"step_zh": "新A01结果待独立复核", "done": 1, "total": 1})
     return "已生成新的三库A01：" + result["run_id"] + "；身份问题保留，未自动批准或运行下游。"
 
@@ -180,10 +188,14 @@ def run_a01_acquire(settings, task, manager):
     """只获取并暂存原件；完整整理和批准是后续明确动作。"""
     from science_modules.a01.collection_flow import acquire_sources
     payload = json.loads(task["payload"])
+    workflow = full_workflow(settings.data_root)
+    from ..core.plan_creation import is_plan_created
+    if is_plan_created(workflow, workflow.load(task['study_id'])):
+        raise ValueError('新方案来源获取任务尚未接入，不能按旧固定OB/DL获取')
     def progress(text):
         manager.update(task["task_id"], progress={"step_zh": text, "done": 0, "total": 1})
         print(text, flush=True)
-    results = acquire_sources(full_workflow(settings.data_root), task["study_id"], payload["expected_a00"], payload["expected_run"],
+    results = acquire_sources(workflow, task["study_id"], payload["expected_a00"], payload["expected_run"],
                               payload["expected_staging"], settings.data_root / "studies" / task["study_id"] / "raw/A01_acquisition" / payload.get("acquisition_id", task["task_id"]),
                               payload["databases"], progress)
     failed = [r for r in results if r["status"] != "success"]
@@ -196,7 +208,11 @@ def run_a01_resolve(settings, task, manager):
     """只保存明确处理决定并追加待复核运行，不签署整体批准。"""
     from science_modules.a01.collection_flow import process
     p = json.loads(task["payload"])
-    result = process(full_workflow(settings.data_root), task["study_id"], p["expected_a00"], p["expected_run"], p["expected_staging"], p["note"], p)
+    workflow = full_workflow(settings.data_root)
+    from ..core.plan_creation import is_plan_created
+    if is_plan_created(workflow, workflow.load(task['study_id'])):
+        raise ValueError('新方案发布任务尚未接入，不能按旧固定OB/DL处理')
+    result = process(workflow, task["study_id"], p["expected_a00"], p["expected_run"], p["expected_staging"], p["note"], p)
     return "A01核验处理已另存：" + result["run_id"] + "，请独立整体复核。A02未改变。"
 
 

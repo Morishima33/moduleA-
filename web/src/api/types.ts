@@ -49,6 +49,24 @@ export interface AnalysisParameterCatalog {
 }
 export interface AnalysisPlanValidation { plan: CompiledAnalysisPlan; impact: unknown; execution_available: false }
 
+/** 新模式建档只固定初始方案和资料预检，不授权自动执行。 */
+export interface CreationMaterials {
+  references:{id:string;label_zh:string;status:string;filename:string;sha256:string|null;bytes:number|null;detail_zh:string}[];
+  references_verified:boolean;research_sources:{database:string;status:string;reason_zh:string}[];
+  execution_available:false;reason_zh:string;
+}
+export interface PlanCreationPreflight {
+  schema_version:string;preflight_id:string;input_hash:string;plan:CompiledAnalysisPlan;
+  mesh_verification:{preferred_term:string;mesh_id:string;status:string};materials:CreationMaterials;
+  expires_at:string;can_create:boolean;execution_available:false;message_zh:string;
+}
+export interface CreatedPlanStudy extends CreatedStudy {plan_id:string;mode:'standard'|'personalized';parameter_hash:string;execution_available:false}
+export interface CreationPlanInfo {
+  schema_version:string;initial_plan_id:string;initial_a00_run_id:string;initial_plan:CompiledAnalysisPlan;
+  current_plan_id:string|null;current_plan:CompiledAnalysisPlan|null;materials_at_creation:CreationMaterials;
+  preflight_id:string;execution_available:false;reason_zh:string;
+}
+
 /** 研究级只读追溯摘要；完整结果通过页面上的显式导出下载。 */
 export interface TraceModuleSummary {
   module_id: string;
@@ -367,6 +385,7 @@ export interface ModuleView {
   review_gate?:ReferenceReviewGate|null;
   reviewable_preparation?:ReviewablePreparationInfo|null;
   plan_scoring?:PlanScoringInfo|null;
+  creation_plan?:CreationPlanInfo|null;
   scoring_readiness?:ScoringReadinessInfo|null;
   docking_coverage?:DockingCoverageInfo|null;
   docking_candidates?: DockingCandidatesInfo | null;

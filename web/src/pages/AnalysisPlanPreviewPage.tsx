@@ -104,6 +104,7 @@ export default function AnalysisPlanPreviewPage() {
       <div><Tag color="gold">第一部分 · 独立预览</Tag><h1>新建研究 · 分析方案与参数</h1>
         <p className="muted">先选择分析方式，再查看或调整参数。每项研究将使用自己独立的方案与资料。</p></div>
       <Button href={hrefFor({page: 'home'})}>返回研究列表</Button>
+      <Button type="primary" href={hrefFor({page:'new-plan-study'})}>进入标准／个性化建档</Button>
     </div>
     <Alert type="info" showIcon message={catalog.preview.message_zh} />
 

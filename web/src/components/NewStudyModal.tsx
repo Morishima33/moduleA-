@@ -52,7 +52,7 @@ export default function NewStudyModal({ open, onClose, onCreated }: { open: bool
     <Modal title="新建研究" open={open} width={720} onCancel={onClose} onOk={submit}
       okText={saving ? '正在核对MeSH并创建…' : '核对MeSH并创建'} cancelText="取消"
       footer={(_, {OkBtn, CancelBtn}) => <div style={{display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 10}}>
-        <Button href={hrefFor({page: 'parameters-preview'})} target="_blank" rel="noreferrer" disabled={saving}>详细参数预览</Button>
+        <Button href={hrefFor({page: 'new-plan-study'})} onClick={onClose} disabled={saving}>标准／个性化新建</Button>
         <div style={{display: 'flex', gap: 8}}><CancelBtn /><OkBtn /></div>
       </div>}
       confirmLoading={saving} cancelButtonProps={{ disabled: saving }} closable={!saving} maskClosable={!saving} keyboard={!saving}>

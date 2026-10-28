@@ -476,6 +476,10 @@ class Views:
             for key in ("docking_trial", "docking_coverage", "docking_preparation", "docking_candidates", "docking_review", "trial_handoff"):
                 response[key] = None
         response["automatic_docking"] = None
+        from ..core.plan_creation import is_plan_created, context as creation_context
+        if not historical and is_plan_created(workflow, real):
+            response['review']['continue'].update(available=False, note_zh='新方案自动接续尚未开放；请先核对研究资料，不调用旧固定参数流程。')
+        response['creation_plan'] = creation_context(workflow, study_id) if module_id == 'A00' and not historical else None
         if response.get('plan_scoring') and response['plan_scoring']['enabled']:
             from .plan_scoring_view import execution_blocker
             reason = execution_blocker(self.kernel.settings, self.tasks.active_for(study_id))

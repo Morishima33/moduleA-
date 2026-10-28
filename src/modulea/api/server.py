@@ -26,6 +26,7 @@ from .. import __version__
 from ..config import Settings
 from ..core.kernel import ContractError, Kernel, read_json, verified_file
 from ..core.study_creation import CreationConflict, StudyCreation
+from ..core.plan_creation import PlanCreation, is_plan_created
 from ..tasks.manager import TaskManager
 from .errors import ApiError, from_contract, not_found
 from .views import PREUPLOAD_PROFILES, Views
@@ -49,6 +50,7 @@ class App:
         self.tasks = TaskManager(settings)
         self.views = Views(self.kernel, self.tasks)
         self.creation = StudyCreation(self.kernel)
+        self.plan_creation = PlanCreation(self.kernel)
         self.token = secrets.token_urlsafe(32)
         self.routes = [
             ("GET", r"/api/v1/analysis-plans/parameters", self.get_analysis_parameters),
@@ -99,6 +101,10 @@ class App:
             ("POST", rf"/api/v1/studies/{ID}/modules/A02/actions/mapping_preview", self.post_mapping_preview),
             ("GET", r"/api/v1/studies", self.list_studies),
             ("POST", r"/api/v1/studies", self.post_create_study),
+            ("POST", r"/api/v1/analysis-plans/creation/preflight", self.post_plan_creation_preflight),
+            ("POST", r"/api/v1/analysis-plans/creation", self.post_plan_creation),
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/creation", self.get_plan_creation),
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/creation/export.json", self.export_plan_creation),
             ("GET", rf"/api/v1/studies/{ID}", self.get_study),
             ("GET", rf"/api/v1/studies/{ID}/modules/{ID}", self.get_module),
             ("GET", rf"/api/v1/studies/{ID}/modules/{ID}/runs", self.get_runs),
@@ -177,6 +183,8 @@ class App:
         """公共版本和范围校验后排队，后台再次核验，不自动批准。"""
         body = req.json()
         info = self._source_versions(req, study_id, module_id, body)
+        if kind == 'a01_acquire' and not (info.get('acquisition') or {}).get('enabled'):
+            raise ApiError(409, 'GATE_BLOCKED', '新方案来源获取任务尚未接入，不能使用旧固定OB/DL获取')
         databases = body.get("databases")
         if not isinstance(databases, list) or not databases or not all(isinstance(v, str) for v in databases) or len(set(databases)) != len(databases) or not set(databases) <= set(allowed):
             raise ApiError(422, "VALIDATION_FAILED", "请选择本入口支持的非重复数据库")
@@ -476,6 +484,26 @@ class App:
             raise from_contract(str(error)) from error
         return result, 201 if result["created"] else 200
 
+    def post_plan_creation_preflight(self, req):
+        """校验登记、方案及真实材料状态，不创建研究或任务。"""
+        from .plan_creation_view import preflight
+        return preflight(self, req)
+
+    def post_plan_creation(self, req):
+        """明确确认后独立建档并共同留存初始方案。"""
+        from .plan_creation_view import create
+        return create(self, req)
+
+    def get_plan_creation(self, req, study_id):
+        """只读研究绑定的初始方案与预检。"""
+        from .plan_creation_view import info
+        return info(self, req, study_id)
+
+    def export_plan_creation(self, req, study_id):
+        """下载本研究初始及当前方案，不修改研究状态。"""
+        from .plan_creation_view import export
+        return export(self, req, study_id)
+
     def list_studies(self, req):
         return {"items": self.views.study_cards(trashed=False)}
 
@@ -542,7 +570,7 @@ class App:
         if decision == "approved" and (after == "continue" or automatic_a00):
             prep_id = manifest.get('current', {}).get('A06_PREP')
             reviewable = bool(prep_id and workflow.run(manifest, prep_id)['config'].get('version') == 'A06.plan_reviewable_preparation.1')
-            if not reviewable:
+            if not reviewable and not is_plan_created(workflow, manifest):
                 task, _ = self.tasks.submit(study_id, "continue", "保存并继续")
         return {"review": review, "task": task,
                 "message_zh": "复核决定已保存。" + self._task_message(task)}, 201
@@ -563,7 +591,7 @@ class App:
         task = None
         study = self.views.study(study_id)
         codes = {m["module_id"]: m["code"] for group in study["nav"] for m in group["modules"]}
-        if codes.get("A01") == "approved" and codes.get("A02") == "approved":
+        if codes.get("A01") == "approved" and codes.get("A02") == "approved" and not is_plan_created(workflow, workflow.load(study_id)):
             task, _ = self.tasks.submit(study_id, "continue", "A01与A02均通过")
         return {"reviews": reviews, "task": task, "message_zh": "两项复核决定已保存。" + self._task_message(task)}, 201
 
@@ -580,6 +608,8 @@ class App:
         manifest = self.views._manifest(study_id)
         if manifest.get("trashed"):
             raise ApiError(423, "TRASHED_READONLY", "研究在回收站中，不能继续；请先恢复")
+        if is_plan_created(self.kernel.workflow(), manifest):
+            raise ApiError(409, 'GATE_BLOCKED', '新方案自动编排尚未接通，不能使用旧固定参数接续')
         prep_id = manifest.get('current', {}).get('A06_PREP')
         if prep_id and self.kernel.workflow().run(manifest, prep_id)['config'].get('version') == 'A06.plan_reviewable_preparation.1':
             raise ApiError(409, 'GATE_BLOCKED', '新版准备不能接续旧协议；请到新版评分区独立明确确认，报告仍待新协议接入')

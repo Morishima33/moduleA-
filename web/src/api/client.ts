@@ -140,6 +140,11 @@ export const api = {
   automaticStart: (sid: string, body: Omit<import('./types').AutomaticRequest, 'expected_connection_id'> & {expected_connection_id: string | null}) => request<{task: Task; message_zh: string}>('POST', `/studies/${sid}/modules/A06_PREP/actions/automatic_start`, {...body, continuation_version:'A06.connect_run.1'}),
   /** 核对MeSH后建立独立研究，仅保存登记。 */
   createStudy: (body: import('./types').NewStudyInput) => request<import('./types').CreatedStudy>('POST', '/studies', body),
+  preflightPlanStudy: (intake: Omit<import('./types').NewStudyInput,'request_id'>, specification:{mode:'standard'|'personalized';parameters?:Record<string,import('./types').PlanValue>}) =>
+    request<import('./types').PlanCreationPreflight>('POST','/analysis-plans/creation/preflight',{intake,specification}),
+  createPlanStudy: (body:{request_id:string;preflight_id:string;expected_input_hash:string;confirmed:true}) =>
+    request<import('./types').CreatedPlanStudy>('POST','/analysis-plans/creation',body),
+  creationPlanExport: (sid:string) => `/api/v1/studies/${sid}/analysis-plan/creation/export.json`,
   /** 明确点击后制作当前确认范围两个首位通路命中图。 */
   rankedPathwayMaps: (sid: string, expected_a05: string) =>
     request<{task: Task; message_zh: string}>('POST', `/studies/${sid}/modules/A05/actions/ranked_pathway_maps`, {expected_a05}),

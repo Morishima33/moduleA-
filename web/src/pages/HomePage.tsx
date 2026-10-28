@@ -58,6 +58,7 @@ export default function HomePage() {
         </div>
         <div style={{display: 'flex', flexWrap: 'wrap', gap: 10}}>
           <Button size="large" href={hrefFor({page: 'parameters-preview'})}>个性化参数预览</Button>
+          <Button size="large" type="primary" href={hrefFor({page:'new-plan-study'})}>标准／个性化新建</Button>
           <Button type="primary" size="large" disabled={!app.session?.capabilities.create_study} onClick={app.openNewStudy}>新建研究</Button>
         </div>
       </div>

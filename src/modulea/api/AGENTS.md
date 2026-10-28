@@ -527,3 +527,8 @@ GET `/studies/{sid}/analysis-plan/a06-scoring/export.csv` 下载当前A06评分�
 
 新版评分GET资格、评分闸门、模块页面和POST执行共用同一工具预检：配置目录及固定Vina1.2.7文件须实际存在。HTTP仅检查文件存在，不启动工具；版本仍由科学子进程验证。缺少工具或后台忙碌时enabled/scoring_allowed/execution_available关闭，POST返回409 GATE_BLOCKED且不创建任务。每次评分执行预检只使用一次任务状态快照，避免任务刚结束时误报未配置工具。
 可选A06复核材料包核查失败时，追溯摘要仍可返回，a06_review_packet_available=false；原始必要文件指纹失败继续按原规则拒绝，不把资料缺损当成有效结果。独立评分校验明确拒绝以布尔值冒充评分、计数、模式号或返回码，缺命令索引按契约错误拒绝。
+## 2026-10-28 标准及个性化新建研究
+
+POST `/api/v1/analysis-plans/creation/preflight` 严格接受 `{intake,specification}`。intake仅含formula/herbs/disease/mesh_term/mesh_id/operator/analysis_purpose；specification沿用统一方案编译契约。先验证字段再向NLM官方核对身份，核验本机共享资料原件/清单，明确研究专属来源尚未提供。不创建研究或任务；运行目录保存30分钟预检凭证。返回schema_version=ModuleA.plan_creation.1、preflight_id/input_hash/plan/mesh_verification/materials/expires_at/can_create:true/execution_available:false/message_zh。共享资料缺失允许建档，但不能作为执行就绪；客户端不能上传“已通过”状态或覆盖目录/物种/保护规则。
+POST `/api/v1/analysis-plans/creation` 严格接受 `{request_id,preflight_id,expected_input_hash,confirmed:true}`；request_id前缀plancreate，preflight_id前缀creationcheck。重新核对凭证时效、内容指纹和资料变化。通过后由Workflow同一写锁发布A00及初始方案、登记实际预检记录；无reviews、无后台任务。返回201 `{study_id,run_id,plan_id,created:true,mode,parameter_hash,directory,execution_available:false,message_zh}`，相同请求已建档返回200原研究/初始方案；换凭证或输入返回409 CREATE_CONFLICT。重启、运行目录丢失或研究后续方案变更均不重复建档或覆盖旧版本。
+GET `/api/v1/studies/{sid}/analysis-plan/creation` 返回本协议建档的初始/当前方案及创建时资料预检；旧研究返回null。GET同地址`/export.json`返回下载JSON（只读原研究索引及指纹）。ModuleView可选creation_plan仅在当前A00提供。旧POST /studies及参数预览保持原行为。新研究A00复核、手动continue、批量复核接续和后台continue均不自动调用旧固定参数编排；A01/A04必须采用新方案协议，A05新适配未完成时拒绝旧协议。新研究A01上传原件仍可用，旧获取/整理控件禁用，相关API及后台拒绝旧固定OB/DL操作。页面明确只建档，自动全流程另行实施。
