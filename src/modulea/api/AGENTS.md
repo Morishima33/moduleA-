@@ -512,3 +512,8 @@ GET 同批 `/matrix` 返回标准库生成的中英重点图SVG与完整矩阵�
 ## 2026-10-21 扩展范围接续
 
 A03_SELECT.compound_selection新增current_manual_supplements（回读同运行已保存的逐项理由）及extended_scope，只读同研究A03、当前名单及身份待补信息，返回前十五（含边界并列）草稿和逐项补充理由。加载不调用POST，保存仍使用原selection接口。automatic_docking新增scope；未复核完整范围时新第三版连接/执行禁用，API及后台重复检查；既有批次结果照常追溯。换名单后的continue不能等待失效旧A06复核，改为提示前往A06_PREP连接并一次确认。旧科学规则及历史授权不改变。
+## 2026-10-28 A06 可人工整体复核的准备版本
+
+GET `/studies/{sid}/analysis-plan/a06-reviewable-preparation` 只读返回 supported/enabled/execution_available:false/current_run_id/expected_input_id/state/reason_zh。只在第二版参考准备归档完整、上游和固定输入当前有效且 ready_pairs>0 时 enabled；全 NA 不放行。
+POST 同地址严格接受 `{expected_preparation_run_id,expected_input_id,request_id,reviewer,note,confirmed:true}`；request_id 前缀 reviewprep。同编号同内容且原版本仍有效时返回 200 原运行；新请求返回 202 后台 `a06_plan_reviewable_preparation`。后台独立复算原准备科学证据并发布 `A06.plan_reviewable_preparation.1`，保留所有固定组合、NA及原件；summary.reviewable=true、handoff_blocked=false、scored_pairs=0、execution_available=false。该变化只开放原有人工模块复核表单，不提交批准。
+新准备沿用原人工 review 接口和 expected_review_id 并发规则；qualified/can_enter_review 仅表示可人工决定。评分保持关闭，旧自动计算区隐藏，保存并继续/手动继续/后台 continue 均不得进入旧评分协议。历史准备、结果与 reviews 不回写。新版本网页字段 reviewable_preparation 为上述 GET 响应；ReviewPacket.can_enter_review 改为 boolean。

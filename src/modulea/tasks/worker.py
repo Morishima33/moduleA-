@@ -28,6 +28,10 @@ def run_continue(settings: Settings, task: dict, manager: TaskManager) -> str:
     workflow = full_workflow(settings.data_root)
     # 新双分支的对接来源未确认时停下，不启动旧候选准备和计算。
     manifest = workflow.load(task["study_id"])
+    prep_id = manifest.get('current', {}).get('A06_PREP')
+    if prep_id and workflow.run(manifest, prep_id)['config'].get('version') == 'A06.plan_reviewable_preparation.1':
+        manager.update(task['task_id'], progress={'step_zh':'新版评分执行入口未接通，不调用旧协议','done':1,'total':1})
+        return '可复核准备保留；请独立复核。新版评分未开放，没有调用旧计算或报告。'
     a06 = manifest.get("current", {}).get("A06")
     automatic = bool(a06 and workflow.run(manifest, a06).get("config", {}).get("schema_version") in ("A06.automatic.1", "A06.automatic.2", "A06.automatic.3"))
     # 换成完整扩展名单后，旧批次依然归档，接续不能卡在旧批次的不可用复核栏。
@@ -365,13 +369,14 @@ def run_a06_plan_reference_preparation(settings, task, manager):
     if settings.science_tools_root is None:
         raise ValueError("本机未配置science_tools_root，不能绑定参考证据准备")
     newer = task.get('kind') == 'a06_plan_reference_qualification_v2'
-    folder = settings.runtime_dir / ('a06_plan_reference_qualification_v2_requests' if newer else 'a06_plan_reference_preparation_requests') / task["task_id"]
+    reviewable = task.get('kind') == 'a06_plan_reviewable_preparation'
+    folder = settings.runtime_dir / ('a06_plan_reviewable_preparation_requests' if reviewable else 'a06_plan_reference_qualification_v2_requests' if newer else 'a06_plan_reference_preparation_requests') / task["task_id"]
     folder.mkdir(parents=True, exist_ok=False)
     request, output = folder / "request.json", folder / "result.json"
     payload = json.loads(task.get("payload") or "{}")
     request.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
     command = [settings.science_python, "-I", "-S", "-B",
-               str(settings.project_root / ('tools/run_a06_reference_qualification_v2.py' if newer else 'tools/run_a06_reference_preparation.py')),
+               str(settings.project_root / ('tools/run_a06_reviewable_preparation.py' if reviewable else 'tools/run_a06_reference_qualification_v2.py' if newer else 'tools/run_a06_reference_preparation.py')),
                "--request-file", str(request), "--result-file", str(output),
                "--tools-root", str(settings.science_tools_root),
                "--data-root", str(settings.data_root), "--study", task["study_id"]]
@@ -387,9 +392,9 @@ def run_a06_plan_reference_preparation(settings, task, manager):
     if process.wait() != 0 or not output.is_file():
         raise ValueError("参考证据准备绑定未完整归档；原准备和参考证据均已保留")
     result = json.loads(output.read_text(encoding="utf-8"))
-    manager.update(task["task_id"], progress={"step_zh": "参考证据已绑定新版准备，仍待整体复核",
+    manager.update(task["task_id"], progress={"step_zh": "同批资料已复验，请独立提交人工决定" if reviewable else "参考证据已绑定新版准备，仍待整体复核",
                    "done": 1, "total": 1})
-    return "参考证据已绑定新版准备：" + result["run_id"] + "；未批准A06或启动批量评分。"
+    return ("可复核准备已归档：" if reviewable else "参考证据已绑定新版准备：") + result["run_id"] + "；未批准A06或启动批量评分。"
 
 def run_a06_plan(settings,task,manager):
     payload=json.loads(task.get("payload") or "{}")
@@ -478,6 +483,7 @@ HANDLERS["a06_plan_pocket_review"] = run_a06_plan_preparation
 HANDLERS["a06_plan_reference_review"] = run_a06_plan_reference_review
 HANDLERS["a06_plan_reference_preparation"] = run_a06_plan_reference_preparation
 HANDLERS["a06_plan_reference_qualification_v2"] = run_a06_plan_reference_preparation
+HANDLERS["a06_plan_reviewable_preparation"] = run_a06_plan_reference_preparation
 
 
 from .drawing import run_figure, run_packages, run_bundle

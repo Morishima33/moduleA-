@@ -9,6 +9,11 @@ PREPARATION_VERSION = 'A06.plan_reference_preparation.2'
 def _source(workflow, sid, manifest, run):
     """从新版准备固定输入找回真实执行参数，不能读取绑定层空配置。"""
     study_dir = workflow.location(sid)
+    if run['config'].get('version') == 'A06.plan_reviewable_preparation.1':
+        ref = run['inputs']['reference_preparation_run']
+        run = read_json(verified_file(study_dir, ref))
+        require(run['study_id'] == sid and run['config'].get('version') == PREPARATION_VERSION and
+                manifest['runs'][run['run_id']]['run_file'] == ref, '可复核准备来源不一致')
     inputs = run['inputs']
     source = read_json(verified_file(study_dir, inputs['source_run']))
     source_id = source['run_id']
@@ -55,7 +60,8 @@ def validate(workflow, sid, payload):
     require(current == payload['expected_preparation_run_id'], '准备版本已更新，请刷新')
     run = workflow.run(manifest, current)
     require(run.get('study_id') == sid and run.get('module_id') == 'A06_PREP' and
-            run.get('config', {}).get('version') == PREPARATION_VERSION, '当前准备版本不支持新版评分预检')
+            run.get('config', {}).get('version') in (PREPARATION_VERSION, 'A06.plan_reviewable_preparation.1'),
+            '当前准备版本不支持新版评分预检')
     result = workflow.result(manifest, current)
     require(result and result.get('outcome') == 'success', '当前准备尚未完整归档')
     source, input_record, packet, parameters = _source(workflow, sid, manifest, run)

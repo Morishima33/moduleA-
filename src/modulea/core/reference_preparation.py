@@ -86,6 +86,9 @@ def qualification(workflow, sid):
     run = workflow.run(manifest, current)
     if run.get('config', {}).get('version') == 'A06.plan_reference_preparation.2':
         return qualification_v2(workflow, sid, manifest, run, base)
+    if run.get('config', {}).get('version') == 'A06.plan_reviewable_preparation.1':
+        from .reviewable_preparation import qualification as reviewable_qualification
+        return reviewable_qualification(workflow, sid, manifest, run, base)
     if run.get("config", {}).get("version") != VERSION:
         return dict(base, reason_zh="当前准备尚未绑定共晶参考证据", current_run_id=current)
     result = workflow.result(manifest, current)
@@ -185,7 +188,7 @@ def scoring_readiness(workflow, sid):
     manifest = workflow.load(sid)
     current = manifest.get("current", {}).get("A06_PREP")
     value['preflight_available'] = not manifest.get('trashed') and workflow.run(manifest, current).get(
-        'config', {}).get('version') == 'A06.plan_reference_preparation.2'
+        'config', {}).get('version') in ('A06.plan_reference_preparation.2', 'A06.plan_reviewable_preparation.1')
     if not workflow.approved(manifest, current):
         value["blockers"].append("A06_PREP尚未完成人工整体复核通过")
     summary = check.get("summary") or {}
@@ -209,7 +212,7 @@ def review_packet(workflow, sid):
         return dict(base, reason_zh="当前没有A06准备版本")
     run = workflow.run(manifest, current)
     version = run.get("config", {}).get("version")
-    if version not in (VERSION, "A06.plan_reference_preparation.2"):
+    if version not in (VERSION, "A06.plan_reference_preparation.2", "A06.plan_reviewable_preparation.1"):
         return dict(base, reason_zh="当前准备版本尚未生成整体复核材料包", current_run_id=current)
     qualification = globals()["qualification"](workflow, sid)
     scoring = scoring_readiness(workflow, sid)
@@ -223,7 +226,8 @@ def review_packet(workflow, sid):
                 summary=result.get("summary") if result else None,
                 qualification=qualification, scoring=scoring,
                 checked_files=qualification.get("checked_files", 0), blockers=unique,
-                review_available=False, can_enter_review=False,
+                review_available=qualification.get('can_enter_review', False),
+                can_enter_review=qualification.get('can_enter_review', False),
                 reason_zh="复核材料已整理；正式整体复核仍需独立人工决定")
 
 
@@ -233,6 +237,10 @@ def review_gate(workflow, sid):
     if not packet.get("supported"):
         return {"supported": False, "can_submit": False, "allowed_decisions": [],
                 "blockers": packet.get("blockers", []), "reason_zh": packet.get("reason_zh", "当前无复核材料")}
+    if packet.get('can_enter_review'):
+        return {'supported': True, 'can_submit': True, 'allowed_decisions': ['approved', 'rejected', 'pending'],
+                'current_run_id': packet['current_run_id'], 'checked_files': packet['checked_files'],
+                'blockers': [], 'reason_zh': '可在本页人工复核表单提交决定；不自动通过或启动评分'}
     blockers = list(packet.get("blockers", []))
     if not packet.get("qualification", {}).get("qualified"):
         blockers.append("复核材料资格尚未通过")

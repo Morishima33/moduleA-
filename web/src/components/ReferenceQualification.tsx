@@ -23,8 +23,8 @@ export default function ReferenceQualification({ studyId, info, packet, gate }: 
         复核材料包：第 {packet.version || '—'}；已核对 {packet.checked_files} 件文件；参考复核仍需人工决定。
         <div style={{ marginTop: 8 }}><Button size="small" href={api.a06ReviewPacketExport(studyId)}>下载整体复核材料包 JSON</Button></div>
       </div>}
-      {gate?.supported && <Alert style={{ marginTop: 10 }} type="warning" showIcon message={gate.reason_zh}
-        description={`当前允许的复核决定：${gate.allowed_decisions.length ? gate.allowed_decisions.join('、') : '无'}；阻断项 ${gate.blockers.length} 条。`} />}
+      {gate?.supported && <Alert style={{ marginTop: 10 }} type={gate.can_submit ? 'info' : 'warning'} showIcon message={gate.reason_zh}
+        description={`当前允许的复核决定：${gate.allowed_decisions.length ? gate.allowed_decisions.map(d => ({approved:'通过',rejected:'退回',pending:'暂存'}[d] || d)).join('、') : '无'}；阻断项 ${gate.blockers.length} 条。`} />}
       {!!info.blockers.length && (
         <ul style={{ margin: '10px 0 0', paddingLeft: 22 }}>
           {info.blockers.map((item) => <li key={item}>{item}</li>)}

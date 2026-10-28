@@ -42,6 +42,7 @@ KINDS["a06_plan_pocket_review"] = "复验预测口袋决定并归档新准备版
 KINDS["a06_plan_reference_review"] = "复核明确共晶参考并追加证据（不评分）"
 KINDS["a06_plan_reference_preparation"] = "将共晶参考证据绑定新版准备（不评分）"
 KINDS["a06_plan_reference_qualification_v2"] = "复算共晶参考并生成新版准备（不评分）"
+KINDS["a06_plan_reviewable_preparation"] = "复验同批资料并生成可人工整体复核准备（不评分）"
 
 
 def _now() -> str:

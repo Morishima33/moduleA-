@@ -106,6 +106,7 @@ def full_workflow(data_root: Path) -> Workflow:
     from science_modules.a06.plan_pocket_review import validator as plan_pocket_validator
     from science_modules.a06.reference_preparation import validator as reference_preparation_validator
     from science_modules.a06.plan_reference_publication_v2 import validator as reference_qualification_v2_validator
+    from science_modules.a06.plan_reviewable_preparation import validator as reviewable_preparation_validator
     from science_modules.a06.coverage_flow import validator as coverage_validator
     from science_modules.a06.trial_handoff import validator as trial_handoff_validator
     from science_modules.a06.automatic_engine import validator as automatic_validator
@@ -121,7 +122,7 @@ def full_workflow(data_root: Path) -> Workflow:
         "A03_SELECT": validate_selection,
         "A04": plan_ppi_validator(root, ppi_validator(root)),
         "A05": enrichment_validator(root),
-        "A06_PREP": reference_qualification_v2_validator(root, reference_preparation_validator(root, plan_pocket_validator(root, plan_preparation_v2_validator(root, plan_preparation_validator(root, coverage_validator(root, quality_validator(root, docking_validator(root, prep_validator(root))))))))),
+        "A06_PREP": reviewable_preparation_validator(root, reference_qualification_v2_validator(root, reference_preparation_validator(root, plan_pocket_validator(root, plan_preparation_v2_validator(root, plan_preparation_validator(root, coverage_validator(root, quality_validator(root, docking_validator(root, prep_validator(root)))))))))),
         "A06": reference_validator(root, rescue_validator(root, automatic_validator(root, trial_handoff_validator(root, formal_validator(root))))),
         "A07": report_validator(root),
     })

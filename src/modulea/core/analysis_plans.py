@@ -18,6 +18,43 @@ class AnalysisPlanConflict(ContractError):
 class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
     """旧研究继承原行为；只有显式新方案登记支持草稿写入。"""
 
+    def _active(self, manifest, run_id):
+        """仅新可复核准备额外绑定独立选择复核；撤回后普通复核同样失效。"""
+        if not super()._active(manifest, run_id):
+            return False
+        run = self.run(manifest, run_id)
+        if run['config'].get('version') != 'A06.plan_reviewable_preparation.1':
+            return True
+        home = self.location(manifest['study_id'])
+        source = read_json(verified_file(home, run['inputs']['reference_preparation_run']))
+        ref = source['inputs']['a06_plan_input']
+        current = self.analysis_plan_info(manifest['study_id']).get('a06_preparation_input')
+        return bool(current and ref in manifest.get('analysis_plan_a06_input_records', []) and
+                    current == read_json(verified_file(home, ref)))
+
+    def _begin(self, manifest, module, inputs, config, reason):
+        """新准备批准也不能交给旧A06执行器；正式新版评分接入前统一阻断。"""
+        prep = manifest.get('current', {}).get('A06_PREP')
+        if module == 'A06' and prep:
+            require(self.run(manifest, prep)['config'].get('version') != 'A06.plan_reviewable_preparation.1',
+                    '新版评分执行入口尚未接通，不能调用旧评分协议')
+        return super()._begin(manifest, module, inputs, config, reason)
+
+    def analysis_plan_a06_reviewable_info(self, study_id):
+        """只读可复核准备资格，不提交人工决定。"""
+        from .reviewable_preparation import info
+        return info(self, study_id)
+
+    def validate_analysis_plan_a06_reviewable(self, study_id, payload):
+        """只读检查显式可复核准备请求和重复提交。"""
+        from .reviewable_preparation import check
+        return check(self, study_id, payload)
+
+    def publish_analysis_plan_a06_reviewable(self, study_id, payload):
+        """科学后台复验同批资料，追加待人工复核准备。"""
+        from science_modules.a06.plan_reviewable_preparation import publish
+        return publish(self, study_id, payload)
+
     def analysis_plan_a06_pocket_info(self, study_id):
         """只读本研究当前准备的原始预测口袋证据。"""
         from .plan_pockets import info

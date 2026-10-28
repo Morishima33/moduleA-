@@ -73,6 +73,8 @@ class App:
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a06-review-packet/export.json", self.export_analysis_a06_review_packet),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a06-review-gate", self.get_analysis_a06_review_gate),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a06-scoring/validate", self.post_analysis_a06_scoring_validate),
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a06-reviewable-preparation", self.get_analysis_a06_reviewable),
+            ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a06-reviewable-preparation", self.post_analysis_a06_reviewable),
             ("GET", rf"/api/v1/studies/{ID}/trace", self.get_study_trace),
             ("GET", rf"/api/v1/studies/{ID}/trace/export.json", self.export_study_trace_json),
             ("GET", rf"/api/v1/studies/{ID}/trace/export.csv", self.export_study_trace_csv),
@@ -344,6 +346,16 @@ class App:
         from .analysis_reference_preparation_view import validate_scoring
         return validate_scoring(self, req, study_id)
 
+    def get_analysis_a06_reviewable(self, req, study_id):
+        """只读当前准备的人工整体复核接入资格。"""
+        from .reviewable_preparation_view import info
+        return info(self, req, study_id)
+
+    def post_analysis_a06_reviewable(self, req, study_id):
+        """显式提交资料复验；不会代签复核决定。"""
+        from .reviewable_preparation_view import publish
+        return publish(self, req, study_id)
+
     def get_study_trace(self, req, study_id):
         """返回当前研究的只读追溯摘要；详细数据通过显式导出下载。"""
         from .trace_actions import trace_summary
@@ -510,7 +522,10 @@ class App:
         task = None
         automatic_a00 = module_id == "A00" and manifest.get("workflow_profile") in PREUPLOAD_PROFILES
         if decision == "approved" and (after == "continue" or automatic_a00):
-            task, _ = self.tasks.submit(study_id, "continue", "保存并继续")
+            prep_id = manifest.get('current', {}).get('A06_PREP')
+            reviewable = bool(prep_id and workflow.run(manifest, prep_id)['config'].get('version') == 'A06.plan_reviewable_preparation.1')
+            if not reviewable:
+                task, _ = self.tasks.submit(study_id, "continue", "保存并继续")
         return {"review": review, "task": task,
                 "message_zh": "复核决定已保存。" + self._task_message(task)}, 201
 
@@ -547,6 +562,9 @@ class App:
         manifest = self.views._manifest(study_id)
         if manifest.get("trashed"):
             raise ApiError(423, "TRASHED_READONLY", "研究在回收站中，不能继续；请先恢复")
+        prep_id = manifest.get('current', {}).get('A06_PREP')
+        if prep_id and self.kernel.workflow().run(manifest, prep_id)['config'].get('version') == 'A06.plan_reviewable_preparation.1':
+            raise ApiError(409, 'GATE_BLOCKED', '新版准备不能接续旧评分协议；正式评分入口尚未接通')
         task, created = self.tasks.submit(study_id, "continue", "手动继续")
         return {"task": task, "created": created}, 202
 

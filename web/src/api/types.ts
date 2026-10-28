@@ -365,6 +365,7 @@ export interface ModuleView {
   reference_qualification?:ReferenceQualificationInfo|null;
   review_packet?:ReferenceReviewPacket|null;
   review_gate?:ReferenceReviewGate|null;
+  reviewable_preparation?:ReviewablePreparationInfo|null;
   scoring_readiness?:ScoringReadinessInfo|null;
   docking_coverage?:DockingCoverageInfo|null;
   docking_candidates?: DockingCandidatesInfo | null;
@@ -501,7 +502,9 @@ source_review?:SourceInspectionReview|null;expected_source_review_id?:string|nul
 export interface ReferenceQualificationInfo {supported:boolean;enabled:boolean;qualified:boolean;can_enter_review:boolean;execution_available:false;current_run_id?:string;scored_pairs:number|null;checked_files?:number;summary?:Record<string,unknown>|null;blockers:string[];reason_zh:string}
 
 // A06整体复核材料包；只读汇总版本和阻断条件，不提交人工决定。
-export interface ReferenceReviewPacket {supported:boolean;review_available:boolean;execution_available:false;scoring_allowed:false;can_enter_review:false;current_run_id?:string;version?:string;summary?:Record<string,unknown>|null;qualification?:ReferenceQualificationInfo;scoring?:ScoringReadinessInfo;checked_files:number;blockers:string[];reason_zh:string}
+export interface ReferenceReviewPacket {supported:boolean;review_available:boolean;execution_available:false;scoring_allowed:false;can_enter_review:boolean;current_run_id?:string;version?:string;summary?:Record<string,unknown>|null;qualification?:ReferenceQualificationInfo;scoring?:ScoringReadinessInfo;checked_files:number;blockers:string[];reason_zh:string}
+
+export interface ReviewablePreparationInfo {supported:boolean;enabled:boolean;execution_available:false;current_run_id?:string;expected_input_id?:string|null;state?:string;reason_zh:string}
 
 // A06人工整体复核闸门；当前只读，未满足条件时不提供提交决定。
 export interface ReferenceReviewGate {supported:boolean;can_submit:boolean;allowed_decisions:string[];current_run_id?:string;checked_files?:number;blockers:string[];reason_zh:string}
