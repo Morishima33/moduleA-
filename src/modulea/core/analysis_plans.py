@@ -73,6 +73,11 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
         from .reference_preparation import publish
         return publish(self, study_id, payload)
 
+    def publish_analysis_plan_a06_reference_qualification_v2(self, study_id, payload):
+        """明确请求后复算参考证据并追加准备版本；不批准、不评分。"""
+        from science_modules.a06.plan_reference_publication_v2 import publish
+        return publish(self, study_id, payload)
+
     def publish_analysis_plan_a01(self, study_id, payload):
         """科学子进程显式发布绑定方案的A01；不自动批准或开始下游。"""
         from science_modules.a01.plan_flow import publish

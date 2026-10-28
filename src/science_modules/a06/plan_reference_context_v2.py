@@ -8,15 +8,23 @@ from .plan_reference_qualification_v2 import derive
 def derive_current(workflow, sid, review_id):
     """只读校验当前准备与参考证据；不写入运行、不批准、不评分。"""
     from modulea.core.reference_preparation import _base, _review
-    from .plan_preparation_v2 import current_input, validator as original_validator
-    from .plan_pocket_review import validator as pocket_validator
-    from .reference_review_contract import validate_request
+    from .plan_preparation_v2 import current_input
 
     data = _base(workflow, sid)
     home = workflow.location(sid)
     record, packet, _ = _review(workflow, sid, data, review_id)
     input_record = data['input_record']
     current_input(workflow, sid, input_record['input_id'])
+    return derive_checked(workflow.root, home, sid, data, record, packet, review_id)
+
+
+def derive_checked(root, home, sid, data, record, packet, review_id):
+    """复验已经按本研究指纹读取的材料；调用方负责绑定每份归档路径。"""
+    from .plan_preparation_v2 import validator as original_validator
+    from .plan_pocket_review import validator as pocket_validator
+    from .reference_review_contract import validate_request
+
+    input_record = data['input_record']
     run, result = data['current_run'], data['current_result']
     require(result is not None and result.get('study_id') == sid and
             result.get('run_id') == run['run_id'] and result.get('artifact_id') == run['artifact_id'],
@@ -25,7 +33,7 @@ def derive_current(workflow, sid, review_id):
         verified_file(home, ref)
     def unsupported(*args):
         raise ValueError('准备版本不支持参考资格复算')
-    verify = pocket_validator(workflow.root, original_validator(workflow.root, unsupported))
+    verify = pocket_validator(root, original_validator(root, unsupported))
     verify(run, result['summary'], result['tables'], result['anomalies'], result['outcome'])
     request = record['request']
     validate_request(request)
