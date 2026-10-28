@@ -477,10 +477,22 @@ class Views:
                 response[key] = None
         response["automatic_docking"] = None
         from ..core.plan_creation import is_plan_created, context as creation_context
-        if not historical and is_plan_created(workflow, real):
+        from ..core.plan_a05 import is_current as has_new_a05
+        if not historical and (is_plan_created(workflow, real) or has_new_a05(workflow,real)):
             response['review']['continue'].update(available=False, note_zh='新方案自动接续尚未开放；请先核对研究资料，不调用旧固定参数流程。')
         response['creation_plan'] = creation_context(workflow, study_id) if module_id == 'A00' and not historical else None
         response['plan_a01'] = None
+        response['plan_a05'] = None
+        if module_id == 'A05' and not historical:
+            from ..core.plan_a05 import info as a05_info
+            from .plan_a05_view import execution_blocker as a05_blocker
+            value = a05_info(workflow, study_id)
+            if value['supported']:
+                reason = a05_blocker(self.kernel.settings, self.tasks.active_for(study_id))
+                if reason:
+                    value['enabled'] = False
+                    value['blockers'].append(reason)
+                response['plan_a05'] = value
         if module_id == 'A01' and not historical:
             from ..core.plan_a01 import info as a01_info
             value = a01_info(workflow, study_id)

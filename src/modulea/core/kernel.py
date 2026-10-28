@@ -98,6 +98,7 @@ def full_workflow(data_root: Path) -> Workflow:
     from ppi_dispatch import validator as ppi_validator, docking_validator
     from science_modules.a04.plan_flow import validator as plan_ppi_validator
     from science_modules.a05.compact_flow import validator as enrichment_validator
+    from science_modules.a05.plan_flow import validator as plan_enrichment_validator
     from docking_formal import prep_validator, formal_validator
     from report_dispatch import validator as report_validator
     from science_modules.a06.quality_flow import validator as quality_validator
@@ -122,7 +123,7 @@ def full_workflow(data_root: Path) -> Workflow:
         "A03": validate_intersection,
         "A03_SELECT": validate_selection,
         "A04": plan_ppi_validator(root, ppi_validator(root)),
-        "A05": enrichment_validator(root),
+        "A05": plan_enrichment_validator(root, enrichment_validator(root)),
         "A06_PREP": reviewable_preparation_validator(root, reference_qualification_v2_validator(root, reference_preparation_validator(root, plan_pocket_validator(root, plan_preparation_v2_validator(root, plan_preparation_validator(root, coverage_validator(root, quality_validator(root, docking_validator(root, prep_validator(root)))))))))),
         "A06": plan_scoring_validator(root, reference_validator(root, rescue_validator(root, automatic_validator(root, trial_handoff_validator(root, formal_validator(root)))))),
         "A07": report_validator(root),

@@ -27,6 +27,7 @@ from ..config import Settings
 from ..core.kernel import ContractError, Kernel, read_json, verified_file
 from ..core.study_creation import CreationConflict, StudyCreation
 from ..core.plan_creation import PlanCreation, is_plan_created
+from ..core.plan_a05 import is_current as has_new_a05
 from ..tasks.manager import TaskManager
 from .errors import ApiError, from_contract, not_found
 from .views import PREUPLOAD_PROFILES, Views
@@ -53,6 +54,8 @@ class App:
         self.plan_creation = PlanCreation(self.kernel)
         self.token = secrets.token_urlsafe(32)
         self.routes = [
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a05", self.get_plan_a05),
+            ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a05", self.post_plan_a05),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a01", self.get_plan_a01),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a01/acquire", self.post_plan_a01_acquire),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a01/publish", self.post_plan_a01_publish),
@@ -492,6 +495,16 @@ class App:
         from .plan_a01_view import info
         return info(self, req, study_id)
 
+    def get_plan_a05(self, req, study_id):
+        """读取新版富集资格，不执行统计。"""
+        from .plan_a05_view import info
+        return info(self, req, study_id)
+
+    def post_plan_a05(self, req, study_id):
+        """提交按当前方案执行的独立富集任务。"""
+        from .plan_a05_view import submit
+        return submit(self, req, study_id)
+
     def post_plan_a01_acquire(self, req, study_id):
         """明确提交按本方案门槛获取所选库。"""
         from .plan_a01_view import submit
@@ -588,7 +601,7 @@ class App:
         if decision == "approved" and (after == "continue" or automatic_a00):
             prep_id = manifest.get('current', {}).get('A06_PREP')
             reviewable = bool(prep_id and workflow.run(manifest, prep_id)['config'].get('version') == 'A06.plan_reviewable_preparation.1')
-            if not reviewable and not is_plan_created(workflow, manifest):
+            if not reviewable and not is_plan_created(workflow, manifest) and not has_new_a05(workflow,manifest):
                 task, _ = self.tasks.submit(study_id, "continue", "保存并继续")
         return {"review": review, "task": task,
                 "message_zh": "复核决定已保存。" + self._task_message(task)}, 201
@@ -609,7 +622,7 @@ class App:
         task = None
         study = self.views.study(study_id)
         codes = {m["module_id"]: m["code"] for group in study["nav"] for m in group["modules"]}
-        if codes.get("A01") == "approved" and codes.get("A02") == "approved" and not is_plan_created(workflow, workflow.load(study_id)):
+        if codes.get("A01") == "approved" and codes.get("A02") == "approved" and not is_plan_created(workflow, workflow.load(study_id)) and not has_new_a05(workflow,workflow.load(study_id)):
             task, _ = self.tasks.submit(study_id, "continue", "A01与A02均通过")
         return {"reviews": reviews, "task": task, "message_zh": "两项复核决定已保存。" + self._task_message(task)}, 201
 
@@ -626,7 +639,7 @@ class App:
         manifest = self.views._manifest(study_id)
         if manifest.get("trashed"):
             raise ApiError(423, "TRASHED_READONLY", "研究在回收站中，不能继续；请先恢复")
-        if is_plan_created(self.kernel.workflow(), manifest):
+        if is_plan_created(self.kernel.workflow(), manifest) or has_new_a05(self.kernel.workflow(),manifest):
             raise ApiError(409, 'GATE_BLOCKED', '新方案自动编排尚未接通，不能使用旧固定参数接续')
         prep_id = manifest.get('current', {}).get('A06_PREP')
         if prep_id and self.kernel.workflow().run(manifest, prep_id)['config'].get('version') == 'A06.plan_reviewable_preparation.1':

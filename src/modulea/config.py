@@ -34,6 +34,7 @@ class Settings:
     science_repair_packages: Path | None = None  # 固定侧链修补依赖，由服务器配置
     allowed_origins: list[str] = field(default_factory=list)  # 允许跨源访问的前端开发地址
     static_dir: Path | None = None  # 预构建前端所在目录；为空时不提供静态页面
+    science_rscript: Path | None = None  # 新字段追加末尾，保留旧位置参数构造兼容
 
     @property
     def studies_dir(self) -> Path:
@@ -61,6 +62,8 @@ def load_settings(**overrides) -> Settings:
         settings.data_root = Path(paths["data_root"]).expanduser()
     if paths.get("science_python"):
         settings.science_python = paths["science_python"]
+    if paths.get("science_rscript"):
+        settings.science_rscript = Path(paths["science_rscript"]).expanduser()
     if paths.get("science_tools_root"):
         settings.science_tools_root = Path(paths["science_tools_root"]).expanduser()
     if paths.get("science_repair_packages"):
@@ -74,6 +77,8 @@ def load_settings(**overrides) -> Settings:
         settings.data_root = Path(os.environ["MODULEA_DATA_ROOT"]).expanduser()
     if os.environ.get("MODULEA_SCIENCE_PYTHON"):
         settings.science_python = os.environ["MODULEA_SCIENCE_PYTHON"]
+    if os.environ.get("MODULEA_RSCRIPT"):
+        settings.science_rscript = Path(os.environ["MODULEA_RSCRIPT"]).expanduser()
     if os.environ.get("MODULEA_SCIENCE_TOOLS_ROOT"):
         settings.science_tools_root = Path(os.environ["MODULEA_SCIENCE_TOOLS_ROOT"]).expanduser()
     if os.environ.get("MODULEA_SCIENCE_REPAIR_PACKAGES"):
@@ -85,7 +90,7 @@ def load_settings(**overrides) -> Settings:
     for key, value in overrides.items():
         if value is None:
             continue
-        if key in ("data_root", "static_dir", "runtime_dir", "science_tools_root", "science_repair_packages"):
+        if key in ("data_root", "static_dir", "runtime_dir", "science_tools_root", "science_repair_packages", "science_rscript"):
             value = Path(value).expanduser()
         if key == "allowed_origins" and isinstance(value, str):
             value = [o.strip() for o in value.split(",") if o.strip()]

@@ -15,7 +15,7 @@ GROUPS = [
      "fields": ["a04.required_score", "a04.mode"],
      "advanced_fields": ["a04.degree_main_window", "a04.bc_cc_window", "a04.degree_pool_window"]},
     {"key": "a05", "title_zh": "GO与KEGG富集", "stage_zh": "A05",
-     "status": "pending", "status_zh": "参数可预览，执行适配待接通",
+     "status": "backend_ready", "status_zh": "新方案R执行及网页入口已接通，自动接续待开放",
      "description_zh": "选择分析内容、显著性和图表范围；原始统计与展示范围分别留存。",
      "fields": ["a05.include_go", "a05.include_kegg", "a05.adjusted_p_max", "a05.go_plot_top",
                 "a05.go_table_top", "a05.kegg_plot_top", "a05.kegg_table_top"],

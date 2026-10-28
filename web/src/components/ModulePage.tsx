@@ -42,6 +42,7 @@ import ReviewablePreparation from './ReviewablePreparation';
 import PlanScoring from './PlanScoring';
 import CreationPlan from './CreationPlan';
 import PlanA01 from './PlanA01';
+import PlanA05, { PlanA05Results } from './PlanA05';
 import ReferenceEvidencePanel from './ReferenceEvidencePanel';
 import ReferencePreparationBinding from './ReferencePreparationBinding';
 import ScoringReadiness from './ScoringReadiness';
@@ -107,6 +108,8 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       {view.operation_guide && <ModuleOperationGuide studyId={studyId} moduleId={m.module_id} info={view.operation_guide} pending={m.module_id === 'A05' && keggPending}
         onLocate={target => {if (target === 'module-enrichment-confirmation') setEnrichmentNavigation(n => n + 1);}}/>}
       {view.creation_plan&&<CreationPlan studyId={studyId} info={view.creation_plan}/>}
+      {view.plan_a05&&<PlanA05 key={[view.plan_a05.expected_a00,view.plan_a05.expected_a03,view.plan_a05.expected_a05,view.plan_a05.expected_plan_id].join(':')} studyId={studyId} info={view.plan_a05}/>}
+      {sp.plan_enrichment&&<PlanA05Results studyId={studyId} files={view.files} data={sp.plan_enrichment}/>}
       {view.plan_a01&&<PlanA01 key={[view.plan_a01.expected_a00,view.plan_a01.expected_a01,view.plan_a01.expected_plan_id,view.plan_a01.expected_staging].join(':')} studyId={studyId} info={view.plan_a01}/>}
       {m.module_id === 'A06_PREP' && view.reference_qualification && <ReferenceQualification studyId={studyId} info={view.reference_qualification} packet={view.review_packet} gate={view.review_gate} />}
       {m.module_id === 'A06_PREP' && view.reviewable_preparation && <ReviewablePreparation key={view.reviewable_preparation.current_run_id} studyId={studyId} info={view.reviewable_preparation} />}

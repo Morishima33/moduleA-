@@ -2,6 +2,8 @@
 # 所有路径都可以省略，省略时使用默认值。
 
 [paths]
+# 新方案A05固定R工具（R包版本由科学进程核验）；不从浏览器接收路径
+# science_rscript = "D:/R/R-4.4.1/bin/x64/Rscript.exe"
 # 固定对接依赖所在只读目录，内含 environments/A06_python_runtime.json、Vina及P2Rank
 # science_tools_root = "D:/科学工具目录"
 # science_repair_packages = "D:/固定侧链修补依赖/packages"

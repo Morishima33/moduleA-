@@ -54,13 +54,17 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
             if module in ('A01', 'A04'):
                 require(config.get('version') == {'A01': 'A01.plan_publication.1', 'A04': 'A04.plan_network.1'}[module],
                         '新版研究必须使用绑定方案的科学协议，不能调用旧固定参数流程')
-            require(module != 'A05', '新版富集方案执行适配尚未完成，不能使用旧固定参数替代')
+            if module == 'A05':
+                require(config.get('version') == 'A05.plan_enrichment.1', '新版富集须使用本方案协议，不能使用旧固定参数替代')
         prep = manifest.get('current', {}).get('A06_PREP')
         if module == 'A06' and (config.get('version') == 'A06.plan_scoring.1' or
                 (prep and self.run(manifest, prep)['config'].get('version') == 'A06.plan_reviewable_preparation.1')):
             from .plan_scoring import guard_begin
             guard_begin(self, manifest, inputs, config)
         a06 = manifest.get('current', {}).get('A06')
+        if module == 'A07':
+            from .plan_a05 import is_current
+            require(not is_current(self, manifest), '新方案富集尚未接入报告协议，不能调用旧报告')
         if module == 'A07' and a06:
             require(self.run(manifest, a06)['config'].get('version') != 'A06.plan_scoring.1',
                     '新方案评分尚未接入报告协议，不能调用旧报告')
@@ -190,6 +194,11 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
         """科学子进程显式发布绑定方案的A01；不自动批准或开始下游。"""
         from science_modules.a01.plan_flow import publish
         return publish(self, study_id, payload)
+
+    def publish_analysis_plan_a05(self, study_id, payload, *, progress=None):
+        """科学后台按绑定方案执行富集，结果仍独立复核。"""
+        from science_modules.a05.plan_flow import publish
+        return publish(self, study_id, payload, progress=progress)
 
     def acquire_analysis_plan_a01_sources(self, study_id, payload, *, progress=None):
         """科学子进程显式采集方案来源，只暂存原件，不批准或启动下游。"""

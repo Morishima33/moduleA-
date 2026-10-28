@@ -61,6 +61,12 @@ export interface PlanA01Info {
   expected_plan_id:string;expected_staging:string;parameter_hash:string;
   parameters:{ob_min:number|null;dl_min:number|null};missing_databases:string[];processed:boolean;message_zh:string;
 }
+export interface PlanA05Info {
+  supported:boolean;enabled:boolean;blockers:string[];protocol_version:string;completed:boolean;applicable:boolean;
+  expected_a00:string;expected_a03:string;expected_a05:string;expected_plan_id:string;parameter_hash:string;message_zh:string;
+  parameters:{include_go?:boolean;include_kegg?:boolean;adjusted_p_max?:number;min_term_size?:number;max_term_size?:number;
+    go_plot_top?:number;go_table_top?:number;kegg_plot_top?:number;kegg_table_top?:number};
+}
 export interface PlanCreationPreflight {
   schema_version:string;preflight_id:string;input_hash:string;plan:CompiledAnalysisPlan;
   mesh_verification:{preferred_term:string;mesh_id:string;status:string};materials:CreationMaterials;
@@ -327,6 +333,7 @@ export interface Special {
   ppi_identity?: PpiIdentity;
 
   enrichment_top?: Record<string, EnrichItem[]>;
+  plan_enrichment?:{groups:{group:string;included:boolean;state_zh:string}[];tables:Record<string,Record<string,unknown>[]>;threshold_zh:string;note_zh:string};
   enrichment_display_tables?: Record<string, EnrichmentCatalogRow[]>;
   enrichment_graphs?: Partial<Record<'go' | 'kegg', { url: string; caption_zh: string }>>;
   heatmap?: Heatmap;
@@ -394,6 +401,7 @@ export interface ModuleView {
   plan_scoring?:PlanScoringInfo|null;
   creation_plan?:CreationPlanInfo|null;
   plan_a01?:PlanA01Info|null;
+  plan_a05?:PlanA05Info|null;
   scoring_readiness?:ScoringReadinessInfo|null;
   docking_coverage?:DockingCoverageInfo|null;
   docking_candidates?: DockingCandidatesInfo | null;

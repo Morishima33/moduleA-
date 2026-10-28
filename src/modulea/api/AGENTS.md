@@ -527,6 +527,12 @@ GET `/studies/{sid}/analysis-plan/a06-scoring/export.csv` 下载当前A06评分�
 
 新版评分GET资格、评分闸门、模块页面和POST执行共用同一工具预检：配置目录及固定Vina1.2.7文件须实际存在。HTTP仅检查文件存在，不启动工具；版本仍由科学子进程验证。缺少工具或后台忙碌时enabled/scoring_allowed/execution_available关闭，POST返回409 GATE_BLOCKED且不创建任务。每次评分执行预检只使用一次任务状态快照，避免任务刚结束时误报未配置工具。
 可选A06复核材料包核查失败时，追溯摘要仍可返回，a06_review_packet_available=false；原始必要文件指纹失败继续按原规则拒绝，不把资料缺损当成有效结果。独立评分校验明确拒绝以布尔值冒充评分、计数、模式号或返回码，缺命令索引按契约错误拒绝。
+## 2026-10-28 新方案A05实际富集
+
+GET `/studies/{sid}/analysis-plan/a05` 仅读取supported/enabled/blockers、expected_a00/expected_a03/expected_a05/expected_plan_id、parameter_hash、实际A05参数、completed/message_zh。须当前A03批准、当前登记方案及有效固定science_rscript；未选择GO或KEGG明确不纳入，不冒充零显著。POST同地址严格接受`{expected_a00,expected_a03,expected_a05,expected_plan_id,reason}`，无路径/参数/统计结果/批准覆盖。202提交a05_plan_enrichment，过期409、回收站423、字段422、缺工具/忙碌409且不建任务。后台实际使用A05.plan_enrichment.1与固定R包执行方案GO/KEGG、min/max条目、BH严格阈值、图/表各自前列数；各族独立校正、原背景和完整统计保留。结果须独立复核，不运行旧continue/A07，旧A05保持。运行开始固定方案，后加草稿不改变本批；A00/A03/A05或上游批准变化拒绝发布。ModuleView可选plan_a05仅当前A05提供，参数与表/图由后端归档生成。
+
+补充：A05资格返回applicable。合法方案同时不纳入GO/KEGG时applicable=false、enabled=false，blockers明确富集不适用，不启动R、不生成虚假的空结果；后续报告须说明。R非零退出或超时的完整输入/输出/日志另存本数据根environments/A05_plan_failures/独立attempt目录，旧结果保持。新A05即使来自早期显式方案研究，也不能由原continue/A07接管；历史人工展示、分类/译名决定及报告仍按原协议，新自动报告整合另行实现。
+
 ## 2026-10-28 新方案A01正式任务入口
 
 GET `/studies/{sid}/analysis-plan/a01` 返回 `A01.plan_tasks.1` 资格：supported/acquire_enabled/publish_enabled、分别的blockers、expected_a00/expected_a01/expected_plan_id/expected_staging、parameter_hash、parameters(ob_min/dl_min)、missing_databases/processed/message_zh。只读取和核验当前方案及原件；不联网、不发布。历史固定研究不启用。

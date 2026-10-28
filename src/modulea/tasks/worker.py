@@ -29,7 +29,8 @@ def run_continue(settings: Settings, task: dict, manager: TaskManager) -> str:
     # 新双分支的对接来源未确认时停下，不启动旧候选准备和计算。
     manifest = workflow.load(task["study_id"])
     from ..core.plan_creation import is_plan_created
-    if is_plan_created(workflow, manifest):
+    from ..core.plan_a05 import is_current as has_new_a05
+    if is_plan_created(workflow, manifest) or has_new_a05(workflow,manifest):
         manager.update(task['task_id'], progress={'step_zh':'已停在新方案资料核对关口，不调用旧固定编排','done':1,'total':1})
         return '新方案已建档；请核对本研究资料。自动编排尚未接通，未启动旧参数计算或代签。'
     prep_id = manifest.get('current', {}).get('A06_PREP')
@@ -171,6 +172,17 @@ def run_source_upload(settings: Settings, task: dict, manager: TaskManager) -> s
     return text
 
 # 完整来源整理也走已有后台任务与Workflow，不自动推进到A03。
+def run_a05_plan(settings, task, manager):
+    """独立新方案富集任务，不借用旧continue或自动科研复核。"""
+    workflow = full_workflow(settings.data_root)
+    def progress(text):
+        manager.update(task["task_id"], progress={"step_zh": text, "done": 0, "total": 1})
+        print(text, flush=True)
+    result = workflow.publish_analysis_plan_a05(task["study_id"], json.loads(task["payload"]), progress=progress)
+    manager.update(task["task_id"], progress={"step_zh": "A05已归档，等待独立复核", "done": 1, "total": 1})
+    return "新方案A05已归档：" + result["run_id"] + "；未自动批准或启动报告。"
+
+
 def run_a01_plan(settings, task, manager):
     """新协议任务只经公开Workflow调用；与旧固定参数任务保持隔离。"""
     from ..core.plan_a01 import validate
@@ -520,6 +532,7 @@ HANDLERS = {"a02_scope_review": run_a02_scope_review, "a02_sources_retry": run_a
 HANDLERS["a04_plan_selection"] = run_a04_plan_selection
 HANDLERS["a01_plan_acquire"] = run_a01_plan
 HANDLERS["a01_plan_publish"] = run_a01_plan
+HANDLERS["a05_plan_enrichment"] = run_a05_plan
 HANDLERS["a06_plan_input"] = run_a06_plan_input
 HANDLERS["a06_plan_preparation"] = run_a06_plan_preparation
 HANDLERS["a06_plan_pocket_review"] = run_a06_plan_preparation

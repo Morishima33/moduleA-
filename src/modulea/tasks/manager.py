@@ -46,6 +46,7 @@ KINDS["a06_plan_reviewable_preparation"] = "复验同批资料并生成可人工
 KINDS["a06_plan_scoring"] = "按已批准新方案准备执行Vina评分，结果待独立复核"
 KINDS["a01_plan_acquire"] = "按本方案OB/DL获取A01三库原件（不发布）"
 KINDS["a01_plan_publish"] = "按本方案整理三库及HGNC，结果待独立复核"
+KINDS["a05_plan_enrichment"] = "按本方案执行GO/KEGG富集，结果待独立复核"
 
 
 def _now() -> str:
@@ -236,6 +237,8 @@ class TaskManager:
         env = dict(os.environ)
         env["PYTHONPATH"] = str(LEGACY_SRC) + os.pathsep + env.get("PYTHONPATH", "")
         env["MODULEA_DATA_ROOT"] = str(self.settings.data_root)
+        if self.settings.science_rscript:
+            env["MODULEA_RSCRIPT"] = str(self.settings.science_rscript)
         if self.settings.science_tools_root:
             env["MODULEA_SCIENCE_TOOLS_ROOT"] = str(self.settings.science_tools_root)
         if self.settings.science_repair_packages:
