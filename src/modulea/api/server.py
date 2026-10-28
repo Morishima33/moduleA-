@@ -53,6 +53,9 @@ class App:
         self.plan_creation = PlanCreation(self.kernel)
         self.token = secrets.token_urlsafe(32)
         self.routes = [
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a01", self.get_plan_a01),
+            ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a01/acquire", self.post_plan_a01_acquire),
+            ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a01/publish", self.post_plan_a01_publish),
             ("GET", r"/api/v1/analysis-plans/parameters", self.get_analysis_parameters),
             ("POST", r"/api/v1/analysis-plans/validate", self.post_analysis_validate),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan", self.get_analysis_plan),
@@ -184,7 +187,7 @@ class App:
         body = req.json()
         info = self._source_versions(req, study_id, module_id, body)
         if kind == 'a01_acquire' and not (info.get('acquisition') or {}).get('enabled'):
-            raise ApiError(409, 'GATE_BLOCKED', '新方案来源获取任务尚未接入，不能使用旧固定OB/DL获取')
+            raise ApiError(409, 'GATE_BLOCKED', '请使用新方案获取入口，不能使用旧固定OB/DL获取')
         databases = body.get("databases")
         if not isinstance(databases, list) or not databases or not all(isinstance(v, str) for v in databases) or len(set(databases)) != len(databases) or not set(databases) <= set(allowed):
             raise ApiError(422, "VALIDATION_FAILED", "请选择本入口支持的非重复数据库")
@@ -483,6 +486,21 @@ class App:
                 raise ApiError(503, "MESH_UNAVAILABLE", str(error), retryable=True) from error
             raise from_contract(str(error)) from error
         return result, 201 if result["created"] else 200
+
+    def get_plan_a01(self, req, study_id):
+        """读取新方案A01实际就绪条件。"""
+        from .plan_a01_view import info
+        return info(self, req, study_id)
+
+    def post_plan_a01_acquire(self, req, study_id):
+        """明确提交按本方案门槛获取所选库。"""
+        from .plan_a01_view import submit
+        return submit(self, req, study_id, "acquire")
+
+    def post_plan_a01_publish(self, req, study_id):
+        """明确提交三库标准化，仍停在独立复核。"""
+        from .plan_a01_view import submit
+        return submit(self, req, study_id, "publish")
 
     def post_plan_creation_preflight(self, req):
         """校验登记、方案及真实材料状态，不创建研究或任务。"""

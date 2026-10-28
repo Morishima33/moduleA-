@@ -171,13 +171,38 @@ def run_source_upload(settings: Settings, task: dict, manager: TaskManager) -> s
     return text
 
 # 完整来源整理也走已有后台任务与Workflow，不自动推进到A03。
+def run_a01_plan(settings, task, manager):
+    """新协议任务只经公开Workflow调用；与旧固定参数任务保持隔离。"""
+    from ..core.plan_a01 import validate
+    workflow = full_workflow(settings.data_root)
+    payload = json.loads(task["payload"])
+    action = "acquire" if task["kind"] == "a01_plan_acquire" else "publish"
+    validate(workflow, task["study_id"], payload, action)
+    def progress(text):
+        manager.update(task["task_id"], progress={"step_zh": text, "done": 0, "total": 1})
+        print(text, flush=True)
+    if action == "acquire":
+        results = workflow.acquire_analysis_plan_a01_sources(task["study_id"], payload, progress=progress)
+        failed = [row for row in results if row["status"] != "success"]
+        if failed:
+            raise ValueError("；".join(row["database"] + "：" + row["message_zh"] for row in failed)
+                             + "；成功库原件已保留，请刷新后按当前方案补齐，未发布或批准。")
+        message = "所选库已按本方案获取；请明确整理三库，A02保持。"
+    else:
+        progress("按本方案门槛整理三库并核验HGNC身份")
+        result = workflow.publish_analysis_plan_a01(task["study_id"], payload)
+        message = "已发布新方案A01：" + result["run_id"] + "；请独立复核，A02及下游未改变。"
+    manager.update(task["task_id"], progress={"step_zh": message, "done": 1, "total": 1})
+    return message
+
+
 def run_a01_sources(settings: Settings, task: dict, manager: TaskManager) -> str:
     from science_modules.a01.collection_flow import process
     payload = json.loads(task.get("payload") or "{}")
     workflow = full_workflow(settings.data_root)
     from ..core.plan_creation import is_plan_created
     if is_plan_created(workflow, workflow.load(task['study_id'])):
-        raise ValueError('新方案发布任务尚未接入，不能按旧固定OB/DL整理')
+        raise ValueError('请使用新方案发布任务，不能按旧固定OB/DL整理')
     manager.update(task["task_id"], progress={"step_zh": "按现有规则整理三库与统一身份", "done": 0, "total": 1})
     result = process(workflow, task["study_id"], payload["expected_a00"], payload["expected_run"], payload["expected_staging"], payload["reason"])
     manager.update(task["task_id"], progress={"step_zh": "新A01结果待独立复核", "done": 1, "total": 1})
@@ -191,7 +216,7 @@ def run_a01_acquire(settings, task, manager):
     workflow = full_workflow(settings.data_root)
     from ..core.plan_creation import is_plan_created
     if is_plan_created(workflow, workflow.load(task['study_id'])):
-        raise ValueError('新方案来源获取任务尚未接入，不能按旧固定OB/DL获取')
+        raise ValueError('请使用新方案来源获取任务，不能按旧固定OB/DL获取')
     def progress(text):
         manager.update(task["task_id"], progress={"step_zh": text, "done": 0, "total": 1})
         print(text, flush=True)
@@ -493,6 +518,8 @@ def run_a06_trial(settings, task, manager):
 
 HANDLERS = {"a02_scope_review": run_a02_scope_review, "a02_sources_retry": run_a02_sources_retry, "a06_trial":run_a06_trial,"a06_coverage_confirm":run_a06_coverage_confirm,"a06_coverage":run_a06_quality,"a06_quality":run_a06_quality,"a03_selection":run_a03_selection,"a06_plan":run_a06_plan,"a06_candidates": run_a06_candidates, "a05_display": run_a05_display, "a04_identity": run_a04_identity, "a04_ppi": run_a04_ppi, "continue": run_continue, "source_upload": run_source_upload, "a01_sources": run_a01_sources}
 HANDLERS["a04_plan_selection"] = run_a04_plan_selection
+HANDLERS["a01_plan_acquire"] = run_a01_plan
+HANDLERS["a01_plan_publish"] = run_a01_plan
 HANDLERS["a06_plan_input"] = run_a06_plan_input
 HANDLERS["a06_plan_preparation"] = run_a06_plan_preparation
 HANDLERS["a06_plan_pocket_review"] = run_a06_plan_preparation

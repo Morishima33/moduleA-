@@ -480,6 +480,16 @@ class Views:
         if not historical and is_plan_created(workflow, real):
             response['review']['continue'].update(available=False, note_zh='新方案自动接续尚未开放；请先核对研究资料，不调用旧固定参数流程。')
         response['creation_plan'] = creation_context(workflow, study_id) if module_id == 'A00' and not historical else None
+        response['plan_a01'] = None
+        if module_id == 'A01' and not historical:
+            from ..core.plan_a01 import info as a01_info
+            value = a01_info(workflow, study_id)
+            if value['supported']:
+                if self.tasks.active_for(study_id):
+                    for action in ('acquire', 'publish'):
+                        value[action + '_enabled'] = False
+                        value[action + '_blockers'].append('请等待当前研究后台任务结束')
+                response['plan_a01'] = value
         if response.get('plan_scoring') and response['plan_scoring']['enabled']:
             from .plan_scoring_view import execution_blocker
             reason = execution_blocker(self.kernel.settings, self.tasks.active_for(study_id))

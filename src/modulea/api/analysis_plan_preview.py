@@ -6,7 +6,7 @@ PREVIEW_VERSION = "ModuleA.analysis_plan_preview.1"
 
 GROUPS = [
     {"key": "a01", "title_zh": "成分与来源", "stage_zh": "A01",
-     "status": "backend_ready", "status_zh": "后台已接通，执行入口待开放",
+     "status": "backend_ready", "status_zh": "新方案获取与整理入口已接通，自动接续待开放",
      "description_zh": "三库共同整理成分与已有靶点关系，只有TCMSP采用OB/DL筛选。",
      "fields": ["a01.ob_min", "a01.dl_min"], "advanced_fields": []},
     {"key": "a04", "title_zh": "网络与受体筛选", "stage_zh": "A04",

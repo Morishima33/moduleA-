@@ -44,6 +44,8 @@ KINDS["a06_plan_reference_preparation"] = "将共晶参考证据绑定新版准�
 KINDS["a06_plan_reference_qualification_v2"] = "复算共晶参考并生成新版准备（不评分）"
 KINDS["a06_plan_reviewable_preparation"] = "复验同批资料并生成可人工整体复核准备（不评分）"
 KINDS["a06_plan_scoring"] = "按已批准新方案准备执行Vina评分，结果待独立复核"
+KINDS["a01_plan_acquire"] = "按本方案OB/DL获取A01三库原件（不发布）"
+KINDS["a01_plan_publish"] = "按本方案整理三库及HGNC，结果待独立复核"
 
 
 def _now() -> str:

@@ -31,7 +31,8 @@ class AutomationApiTests(unittest.TestCase):
         r=con.getresponse();raw=r.read();con.close();return r.status,json.loads(raw)
 
     def test_acquisition_and_mapping_require_token_origin_versions_and_valid_scope(self):
-        info={'enabled':True,'expected_a00':'run_a00','expected_run':'run_a01','expected_staging':'abc','verification':{'enabled':True}}
+        info={'enabled':True,'expected_a00':'run_a00','expected_run':'run_a01','expected_staging':'abc',
+              'verification':{'enabled':True},'acquisition':{'enabled':True}}
         versions={k:info[k] for k in ('expected_a00','expected_run','expected_staging')}
         with patch.object(self.app,'get_sources',return_value=info),patch.object(self.app.tasks,'_spawn'):
             for module,action,databases in [('A01','acquire_sources',['HERB']),('A02','mapping_preview',['TTD'])]:
@@ -47,6 +48,16 @@ class AutomationApiTests(unittest.TestCase):
                 self.assertNotIn('payload',value['task'])
                 self.app.tasks.update(value['task']['task_id'],state='succeeded')
             self.assertEqual(len(self.app.tasks.list(self.sid)),2)
+
+    def test_missing_acquisition_qualification_cannot_use_legacy_getter(self):
+        """缺专门采集资格时保持拒绝，不能仅凭通用上传enabled放行。"""
+        info={'enabled':True,'expected_a00':'run_a00','expected_run':'run_a01','expected_staging':'abc'}
+        body=dict(info,databases=['HERB'],reason='隔离测试')
+        body.pop('enabled')
+        url=f'/api/v1/studies/{self.sid}/modules/A01/actions/acquire_sources'
+        with patch.object(self.app,'get_sources',return_value=info),patch.object(self.app.tasks,'submit') as submit:
+            self.assertEqual(self.call('POST',url,body)[0],409)
+            submit.assert_not_called()
 
     def test_resolution_requires_explicit_confirmation_and_current_result(self):
         info={'enabled':True,'expected_a00':'a00','expected_run':'a01','expected_staging':'abc','verification':{'enabled':False}}

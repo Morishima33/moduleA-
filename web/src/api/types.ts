@@ -55,6 +55,12 @@ export interface CreationMaterials {
   references_verified:boolean;research_sources:{database:string;status:string;reason_zh:string}[];
   execution_available:false;reason_zh:string;
 }
+export interface PlanA01Info {
+  supported:boolean;protocol_version:string;acquire_enabled:boolean;publish_enabled:boolean;
+  acquire_blockers:string[];publish_blockers:string[];expected_a00:string;expected_a01:string;
+  expected_plan_id:string;expected_staging:string;parameter_hash:string;
+  parameters:{ob_min:number|null;dl_min:number|null};missing_databases:string[];processed:boolean;message_zh:string;
+}
 export interface PlanCreationPreflight {
   schema_version:string;preflight_id:string;input_hash:string;plan:CompiledAnalysisPlan;
   mesh_verification:{preferred_term:string;mesh_id:string;status:string};materials:CreationMaterials;
@@ -292,6 +298,7 @@ export interface PathwayItem { id: string; name_zh: string; status_zh: string; h
 
 /** 分库资料入口；格式与当前版本由后端确定。 */
 export interface SourceUploadInfo {
+  plan_managed?:boolean;
   enabled: boolean; disabled_reason_zh: string;
   expected_a00: string; expected_run: string; expected_staging: string;
   note_zh: string; can_process: boolean; process_reason_zh: string; query_zh: string;
@@ -386,6 +393,7 @@ export interface ModuleView {
   reviewable_preparation?:ReviewablePreparationInfo|null;
   plan_scoring?:PlanScoringInfo|null;
   creation_plan?:CreationPlanInfo|null;
+  plan_a01?:PlanA01Info|null;
   scoring_readiness?:ScoringReadinessInfo|null;
   docking_coverage?:DockingCoverageInfo|null;
   docking_candidates?: DockingCandidatesInfo | null;

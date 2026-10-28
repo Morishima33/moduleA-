@@ -85,11 +85,11 @@ export default function SourceUploads({ studyId, moduleId, info }: { studyId: st
     <SectionHead title={moduleId === 'A02' ? '第1步：检查五库资料' : '数据库资料上传与更新'} />
     <p className="small muted">{info.note_zh}</p>
     {!info.enabled && <Alert type="info" showIcon message={info.disabled_reason_zh} style={{ marginBottom: 12 }} />}
-    <SourceAutomation studyId={studyId} moduleId={moduleId} info={info}/>
+    {!info.plan_managed && <SourceAutomation studyId={studyId} moduleId={moduleId} info={info}/>}
     {info.sources.some(s => s.can_retry) && <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>{info.sources.filter(s => s.can_retry).map(s => <Button key={s.database} disabled={busy || !info.enabled} loading={busy} onClick={() => retry(s.database)}>重试 {s.label_zh} 获取</Button>)}</div>}
     {moduleId === 'A02' && notice && <Alert showIcon message={notice} style={{ marginBottom: 12 }} />}
     <Collapse items={info.sources.map(source => ({ key: source.database, label: <span><strong>{source.label_zh}</strong> · {source.status_zh}</span>, children: <UploadForm studyId={studyId} moduleId={moduleId} info={info} source={source} /> }))} />
-    {moduleId === 'A01' && <div style={{ marginTop: 16 }}>
+    {moduleId === 'A01' && !info.plan_managed && <div style={{ marginTop: 16 }}>
       <p className="small muted">{info.process_reason_zh || '完整三库资料和共同身份依据齐备，可整理为新版本。'}</p>
       <Input aria-label="三库整理原因" value={reason} onChange={e => setReason(e.target.value)} disabled={!info.can_process || busy} style={{ marginBottom: 8 }} />
       <Button type="primary" onClick={process} disabled={!info.can_process || !reason.trim()} loading={busy}>整理已上传三库资料</Button>

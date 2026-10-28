@@ -527,6 +527,11 @@ GET `/studies/{sid}/analysis-plan/a06-scoring/export.csv` 下载当前A06评分�
 
 新版评分GET资格、评分闸门、模块页面和POST执行共用同一工具预检：配置目录及固定Vina1.2.7文件须实际存在。HTTP仅检查文件存在，不启动工具；版本仍由科学子进程验证。缺少工具或后台忙碌时enabled/scoring_allowed/execution_available关闭，POST返回409 GATE_BLOCKED且不创建任务。每次评分执行预检只使用一次任务状态快照，避免任务刚结束时误报未配置工具。
 可选A06复核材料包核查失败时，追溯摘要仍可返回，a06_review_packet_available=false；原始必要文件指纹失败继续按原规则拒绝，不把资料缺损当成有效结果。独立评分校验明确拒绝以布尔值冒充评分、计数、模式号或返回码，缺命令索引按契约错误拒绝。
+## 2026-10-28 新方案A01正式任务入口
+
+GET `/studies/{sid}/analysis-plan/a01` 返回 `A01.plan_tasks.1` 资格：supported/acquire_enabled/publish_enabled、分别的blockers、expected_a00/expected_a01/expected_plan_id/expected_staging、parameter_hash、parameters(ob_min/dl_min)、missing_databases/processed/message_zh。只读取和核验当前方案及原件；不联网、不发布。历史固定研究不启用。
+POST同路径`/acquire`严格接受 `{expected_a00,expected_a01,expected_plan_id,expected_staging,databases,reason}`；`/publish`接受去掉databases的同字段。无路径、参数、分数或批准覆盖。当前A00须批准，草稿与来源须当前；发布还须三库和共同HGNC依据。返回202后台`a01_plan_acquire`或`a01_plan_publish`，活动任务409、旧绑定409、回收站423、无效字段422。后台再次核验，采集只暂存，发布走A01.plan_publication.1完整科学校验器；不批准、不触发A02/A03或旧continue。部分采集失败任务失败，成功库与失败轨迹保留；来源已变化时刷新后按当前绑定重新提交所需库。运行中追加草稿不更换已开始采集的门槛，尚未开始的过期任务和重试拒绝。ModuleView可选plan_a01仅当前A01提供，忙碌时两操作关闭。
+
 ## 2026-10-28 标准及个性化新建研究
 
 POST `/api/v1/analysis-plans/creation/preflight` 严格接受 `{intake,specification}`。intake仅含formula/herbs/disease/mesh_term/mesh_id/operator/analysis_purpose；specification沿用统一方案编译契约。先验证字段再向NLM官方核对身份，核验本机共享资料原件/清单，明确研究专属来源尚未提供。不创建研究或任务；运行目录保存30分钟预检凭证。返回schema_version=ModuleA.plan_creation.1、preflight_id/input_hash/plan/mesh_verification/materials/expires_at/can_create:true/execution_available:false/message_zh。共享资料缺失允许建档，但不能作为执行就绪；客户端不能上传“已通过”状态或覆盖目录/物种/保护规则。

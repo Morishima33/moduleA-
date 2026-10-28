@@ -103,6 +103,9 @@ function qs(params: Record<string, string | number | undefined | null>): string 
 
 // 各端点的薄封装；路径与契约第 3 节一致
 export const api = {
+  /** 新方案任务独立于旧固定参数获取/整理入口。 */
+  acquirePlanA01: (sid:string,body:Record<string,unknown>) => request<{task:Task;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/a01/acquire`,body),
+  publishPlanA01: (sid:string,body:Record<string,unknown>) => request<{task:Task;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/a01/publish`,body),
   /** 口袋GET不执行准备；POST仅留存明确选择并后台复验。 */
   planPockets: (sid: string) => request<import('./types').PlanPocketInfo>('GET', `/studies/${sid}/analysis-plan/a06-pockets`),
   reviewPlanPockets: (sid: string, body: import('./types').PlanPocketRequest) =>
