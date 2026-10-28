@@ -364,13 +364,14 @@ def run_a06_plan_reference_preparation(settings, task, manager):
     import subprocess
     if settings.science_tools_root is None:
         raise ValueError("本机未配置science_tools_root，不能绑定参考证据准备")
-    folder = settings.runtime_dir / "a06_plan_reference_preparation_requests" / task["task_id"]
+    newer = task.get('kind') == 'a06_plan_reference_qualification_v2'
+    folder = settings.runtime_dir / ('a06_plan_reference_qualification_v2_requests' if newer else 'a06_plan_reference_preparation_requests') / task["task_id"]
     folder.mkdir(parents=True, exist_ok=False)
     request, output = folder / "request.json", folder / "result.json"
     payload = json.loads(task.get("payload") or "{}")
     request.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
     command = [settings.science_python, "-I", "-S", "-B",
-               str(settings.project_root / "tools/run_a06_reference_preparation.py"),
+               str(settings.project_root / ('tools/run_a06_reference_qualification_v2.py' if newer else 'tools/run_a06_reference_preparation.py')),
                "--request-file", str(request), "--result-file", str(output),
                "--tools-root", str(settings.science_tools_root),
                "--data-root", str(settings.data_root), "--study", task["study_id"]]
@@ -476,6 +477,7 @@ HANDLERS["a06_plan_preparation"] = run_a06_plan_preparation
 HANDLERS["a06_plan_pocket_review"] = run_a06_plan_preparation
 HANDLERS["a06_plan_reference_review"] = run_a06_plan_reference_review
 HANDLERS["a06_plan_reference_preparation"] = run_a06_plan_reference_preparation
+HANDLERS["a06_plan_reference_qualification_v2"] = run_a06_plan_reference_preparation
 
 
 from .drawing import run_figure, run_packages, run_bundle

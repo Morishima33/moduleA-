@@ -1,8 +1,11 @@
 """参考资格新准备版本：隔离归档、独立复算和重复请求。"""
 from copy import deepcopy
+import json
 from pathlib import Path
+import sys
+from types import SimpleNamespace
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 from uuid import uuid4
 
 from contracts import ContractError
@@ -12,6 +15,49 @@ from tests.modulea.test_plan_pockets import PocketReviewTests
 
 
 class ReferencePublicationV2Tests(unittest.TestCase):
+    def test_v2_api_and_actual_worker_empty_reference(self):
+        from modulea.api.analysis_reference_preparation_view import info_v2, prepare_v2
+        from modulea.tasks.worker import run_a06_plan_reference_preparation
+        tools = Path(r'D:\codex-重大专项\moduleA\environment\a06_runtime_v1')
+        if not tools.is_dir():
+            self.skipTest('只读参考科学环境不存在')
+        base = PocketReviewTests('test_confirmation_revision_preserves_sources_and_na_without_scoring')
+        base.setUp()
+        self.addCleanup(base.doCleanups)
+        workflow, sid = base.workflow, base.sid
+        review_request = {'expected_input_id': base.input_record['input_id'],
+                          'expected_preparation_run_id': base.source_run_id,
+                          'request_id': 'refreq_' + uuid4().hex, 'reviewer': '隔离测试',
+                          'note': '空参考选择', 'confirmed': True, 'choices': []}
+        review = reference_review.run(workflow, sid, review_request, Path(base.base.temp.name), lambda _: None)['review']
+        payload = {'expected_input_id': base.input_record['input_id'],
+                   'expected_preparation_run_id': base.source_run_id, 'expected_review_id': review['review_id'],
+                   'request_id': 'refprep_' + uuid4().hex, 'reviewer': '隔离测试',
+                   'note': '发布隔离复算', 'confirmed': True}
+        settings = base.base.settings
+        settings.science_python, settings.science_tools_root = sys.executable, tools
+        tasks = Mock()
+        tasks.active_for.return_value = False
+        tasks.submit.return_value = ({'task_id': 'task_' + uuid4().hex}, True)
+        app = SimpleNamespace(kernel=SimpleNamespace(workflow=lambda: workflow), settings=settings, tasks=tasks)
+        req = SimpleNamespace(json=lambda: payload)
+        before = deepcopy(workflow.load(sid))
+        self.assertTrue(info_v2(app, None, sid)['enabled'])
+        self.assertEqual(workflow.load(sid), before)
+        response, status = prepare_v2(app, req, sid)
+        self.assertEqual(status, 202)
+        self.assertEqual(tasks.submit.call_args.args[1], 'a06_plan_reference_qualification_v2')
+        task = {'task_id': response['task']['task_id'], 'study_id': sid,
+                'kind': 'a06_plan_reference_qualification_v2', 'payload': json.dumps(payload)}
+        run_a06_plan_reference_preparation(settings, task, Mock())
+        current = workflow.load(sid)['current']['A06_PREP']
+        self.assertEqual(workflow.run(workflow.load(sid), current)['config']['version'], 'A06.plan_reference_preparation.2')
+        state = info_v2(app, None, sid)
+        self.assertEqual(state['state'], 'bound')
+        self.assertFalse(state['execution_available'])
+        response, status = prepare_v2(app, req, sid)
+        self.assertEqual((status, response['run_id']), (200, current))
+
     def test_publish_recomputes_archives_and_remains_blocked(self):
         base = PocketReviewTests('test_confirmation_revision_preserves_sources_and_na_without_scoring')
         base.setUp()

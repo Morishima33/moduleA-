@@ -8,6 +8,8 @@
 
 ## 新方案A06共晶参考证据
 
+`GET /api/v1/studies/{sid}/analysis-plan/a06-reference-preparation-v2`只读返回新版参考资格准备状态；完成后显示`state:bound`，不在GET运行科学复算。`POST`同路径接受与第一版绑定相同的严格请求字段，后台任务`a06_plan_reference_qualification_v2`通过隔离科学解释器复验归档并追加`A06.plan_reference_preparation.2`；旧第一版接口及运行保持。重复请求同内容且仍有效时返回已有运行；过期、改内容或无科学工具时拒绝。新版本保留`handoff_blocked:true`和`scored_pairs:0`，不批准或评分。
+
 `GET /api/v1/studies/{sid}/analysis-plan/a06-references`只读取当前新版准备事实包中的共晶候选，返回目标、候选稳定键、PDB、组件、链、邻域距离和可选原因；不联网、不准备、不改变研究。`POST /api/v1/studies/{sid}/analysis-plan/a06-references/reviews`严格接受`{expected_input_id,expected_preparation_run_id,request_id:refreq_<32hex>,reviewer,note,confirmed:true,choices:[{target_id,candidate_key,reference_key}]}`，可提交空清单表示明确不采用参考。后台`a06_plan_reference_review`在隔离科学环境重新核对同批mmCIF、CCD、序列、Meeko、搜索盒及实际参考重对接，追加`A06.plan_reference_review.1`证据决定；不切换`current`、不写模块reviews、不计算成分×受体组合。请求不接受路径、坐标、PDB参数或客户端质控结论，候选失效、输入过期或研究任务忙碌时拒绝。
 
 `GET /api/v1/studies/{sid}/analysis-plan/a06-reference-preparation`返回参考证据是否已绑定当前新版准备。`POST /api/v1/studies/{sid}/analysis-plan/a06-reference-preparation`严格接受`{expected_input_id,expected_preparation_run_id,expected_review_id:refreview_<32hex>,request_id:refprep_<32hex>,reviewer,note,confirmed:true}`，后台`a06_plan_reference_preparation`追加`A06.plan_reference_preparation.1`准备版本，完整保留原准备、参考核查和文件指纹；新版仍`handoff_blocked:true`、`scored_pairs:0`，不自动批准、不启动成分×受体评分。当前准备或参考核查过期时拒绝，绑定后旧版本只读保留。

@@ -112,9 +112,9 @@ export const api = {
   reviewA06References: (sid: string, body: unknown) =>
     request<{task?: Task; review_id?: string; created: boolean; message_zh: string}>('POST', `/studies/${sid}/analysis-plan/a06-references/reviews`, body),
   /** 已完成参考复核后，明确绑定新版准备版本。 */
-  a06ReferencePreparation: (sid: string) => request<import('./types').ReferencePreparationInfo>('GET', `/studies/${sid}/analysis-plan/a06-reference-preparation`),
+  a06ReferencePreparation: (sid: string) => request<import('./types').ReferencePreparationInfo>('GET', `/studies/${sid}/analysis-plan/a06-reference-preparation-v2`),
   bindA06ReferencePreparation: (sid: string, body: unknown) =>
-    request<{task?: Task; run_id?: string; created: boolean; message_zh: string}>('POST', `/studies/${sid}/analysis-plan/a06-reference-preparation`, body),
+    request<{task?: Task; run_id?: string; created: boolean; message_zh: string}>('POST', `/studies/${sid}/analysis-plan/a06-reference-preparation-v2`, body),
   /** 正式评分只读闸门；不提交评分任务。 */
   a06ScoringReadiness: (sid: string) => request<import('./types').ScoringReadinessInfo>('GET', `/studies/${sid}/analysis-plan/a06-scoring-readiness`),
   /** 目录和校验均不创建研究、不提交任务。 */

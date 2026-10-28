@@ -49,8 +49,8 @@ export default function ReferencePreparationBinding({ studyId }: { studyId: stri
   if (info.state === 'bound') return <section className="card" id="a06-reference-preparation-binding"><Alert type="success" showIcon message="参考证据已绑定新版准备" description={info.reason_zh} /><Tag color="blue">评分仍关闭</Tag></section>;
   if (!info.enabled) return <section className="card" id="a06-reference-preparation-binding"><Alert type="info" showIcon message={info.reason_zh} description="完成共晶参考复核后，才能绑定新版准备版本。" /></section>;
   return <section className="card stack" id="a06-reference-preparation-binding">
-    <h2 style={{ margin: 0, fontSize: 17 }}>绑定共晶参考到新版准备</h2>
-    <Alert type="warning" showIcon message="需要再次明确确认" description="绑定会生成新的A06_PREP准备版本并保留历史；仍不会批准模块或启动成分×受体评分。" />
+    <h2 style={{ margin: 0, fontSize: 17 }}>复算共晶参考并生成新版准备</h2>
+    <Alert type="warning" showIcon message="需要再次明确确认" description="系统将复核参考证据、更新准备矩阵并保留历史；仍不会批准模块或启动成分×受体评分。" />
     {error && <Alert type="error" showIcon message={error} />}
     <Input aria-label="参考准备绑定人" placeholder="实际绑定核查人" value={reviewer} onChange={e => { setReviewer(e.target.value); setConfirmed(false); }} disabled={busy} />
     <Input.TextArea aria-label="参考准备绑定依据" placeholder="填写将参考证据纳入新版准备的依据" value={note} onChange={e => { setNote(e.target.value); setConfirmed(false); }} disabled={busy} />

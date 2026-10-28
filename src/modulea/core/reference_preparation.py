@@ -189,6 +189,44 @@ def publish(workflow, sid, payload):
     from science_modules.a06.reference_preparation import publish as scientific_publish
     return scientific_publish(workflow, sid, payload)
 
+
+def validate_v2(workflow, sid, payload):
+    """只读预检新版本请求及幂等；科学子进程仍重新核验全部证据。"""
+    from science_modules.a06.reference_preparation_contract import validate_request
+    validate_request(payload)
+    manifest = workflow.load(sid)
+    require(not manifest.get('trashed'), '回收站研究只读')
+    for entry in manifest.get('analysis_plan_a06_reference_preparation_v2_records', []):
+        old = read_json(verified_file(workflow.location(sid), entry['decision']))
+        if old['request']['request_id'] == payload['request_id']:
+            require(old['study_id'] == sid and old['request_hash'] == fingerprint(payload), '请求编号已用于其他内容')
+            require(manifest.get('current', {}).get('A06_PREP') == entry['run_id'] and
+                    workflow.active(manifest, entry['run_id']) and workflow.result(manifest, entry['run_id']),
+                    '参考准备已有后续版本或尚未完整归档，请刷新')
+            current_input = workflow.analysis_plan_info(sid).get('a06_preparation_input')
+            require(current_input and current_input['input_id'] == payload['expected_input_id'], '准备输入已更新，请刷新')
+            return {'repeated': True, 'run_id': entry['run_id']}
+    data = _base(workflow, sid)
+    require(payload['expected_input_id'] == data['input_record']['input_id'] and
+            payload['expected_preparation_run_id'] == data['current_run']['run_id'], '准备或输入已更新，请刷新')
+    record, packet, _ = _review(workflow, sid, data, payload['expected_review_id'])
+    require(packet['summary']['scored_pairs'] == 0 and packet['summary']['handoff_blocked'] is True,
+            '参考证据包不符合评分阻断要求')
+    return {'repeated': False, 'review_id': record['review_id']}
+
+
+def info_v2(workflow, sid):
+    """只读显示新版准备是否已经归档，不运行科学复算。"""
+    manifest = workflow.load(sid)
+    current = manifest.get('current', {}).get('A06_PREP')
+    if current and workflow.run(manifest, current)['config'].get('version') == 'A06.plan_reference_preparation.2':
+        result = workflow.result(manifest, current)
+        active = workflow.active(manifest, current)
+        return {'supported': True, 'enabled': False, 'state': 'bound' if result and active else 'stale',
+                'expected_preparation_run_id': current, 'summary': result['summary'] if result else None,
+                'execution_available': False, 'reason_zh': '参考资格已复算归档，评分仍关闭' if result and active else '准备已失效或未完整归档'}
+    return info(workflow, sid)
+
 def validator(root, previous):
     """复算参考绑定事实，其他准备版本沿用原校验器。"""
     def check(run, summary, tables, anomalies, outcome):

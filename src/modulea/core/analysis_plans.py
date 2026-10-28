@@ -78,6 +78,16 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
         from science_modules.a06.plan_reference_publication_v2 import publish
         return publish(self, study_id, payload)
 
+    def validate_analysis_plan_a06_reference_qualification_v2(self, study_id, payload):
+        """只读预检新版参考准备请求。"""
+        from .reference_preparation import validate_v2
+        return validate_v2(self, study_id, payload)
+
+    def analysis_plan_a06_reference_qualification_v2_info(self, study_id):
+        """只读获取新版参考准备状态。"""
+        from .reference_preparation import info_v2
+        return info_v2(self, study_id)
+
     def publish_analysis_plan_a01(self, study_id, payload):
         """科学子进程显式发布绑定方案的A01；不自动批准或开始下游。"""
         from science_modules.a01.plan_flow import publish

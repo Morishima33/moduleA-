@@ -65,6 +65,8 @@ class App:
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a06-references/reviews", self.post_analysis_a06_references),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a06-reference-preparation", self.get_analysis_a06_reference_preparation),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a06-reference-preparation", self.post_analysis_a06_reference_preparation),
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a06-reference-preparation-v2", self.get_analysis_a06_reference_preparation_v2),
+            ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a06-reference-preparation-v2", self.post_analysis_a06_reference_preparation_v2),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a06-reference-qualification", self.get_analysis_a06_reference_qualification),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a06-scoring-readiness", self.get_analysis_a06_scoring_readiness),
             ("GET", rf"/api/v1/studies/{ID}/trace", self.get_study_trace),
@@ -302,6 +304,16 @@ class App:
         """只读复算新版准备的整体复核资料资格。"""
         from .analysis_reference_preparation_view import qualification
         return qualification(self, req, study_id)
+
+    def get_analysis_a06_reference_preparation_v2(self, req, study_id):
+        """只读参考资格复算准备状态。"""
+        from .analysis_reference_preparation_view import info_v2
+        return info_v2(self, req, study_id)
+
+    def post_analysis_a06_reference_preparation_v2(self, req, study_id):
+        """显式提交参考资格复算后台任务。"""
+        from .analysis_reference_preparation_view import prepare_v2
+        return prepare_v2(self, req, study_id)
 
     def get_analysis_a06_scoring_readiness(self, req, study_id):
         """只读复算正式评分是否具备启动条件。"""
