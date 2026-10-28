@@ -175,6 +175,7 @@ def scoring_readiness(workflow, sid):
     check = qualification(workflow, sid)
     value = {"supported": check["supported"], "enabled": check["supported"],
              "scoring_allowed": False, "execution_available": False,
+             "preflight_available": False,
              "current_run_id": check.get("current_run_id"),
              "blockers": list(check.get("blockers", [])),
              "reason_zh": "正式评分仍不可启动"}
@@ -183,6 +184,8 @@ def scoring_readiness(workflow, sid):
         return value
     manifest = workflow.load(sid)
     current = manifest.get("current", {}).get("A06_PREP")
+    value['preflight_available'] = not manifest.get('trashed') and workflow.run(manifest, current).get(
+        'config', {}).get('version') == 'A06.plan_reference_preparation.2'
     if not workflow.approved(manifest, current):
         value["blockers"].append("A06_PREP尚未完成人工整体复核通过")
     summary = check.get("summary") or {}
@@ -242,6 +245,12 @@ def review_gate(workflow, sid):
     return {"supported": True, "can_submit": False, "allowed_decisions": [],
             "current_run_id": packet.get("current_run_id"), "checked_files": packet.get("checked_files", 0),
             "blockers": unique, "reason_zh": "人工整体复核入口尚未开放；请先满足所有阻断条件"}
+
+
+def validate_scoring_request(workflow, sid, payload):
+    """调用新版只读评分预检，不创建任务或修改研究。"""
+    from .scoring_preflight import validate
+    return validate(workflow, sid, payload)
 
 
 def validate(workflow, sid, payload):

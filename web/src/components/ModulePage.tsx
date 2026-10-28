@@ -105,7 +105,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       {m.module_id === 'A06_PREP' && view.reference_qualification && <ReferenceQualification studyId={studyId} info={view.reference_qualification} packet={view.review_packet} gate={view.review_gate} />}
       {m.module_id === 'A06_PREP' && !view.historical && <ReferenceEvidencePanel studyId={studyId} />}
       {m.module_id === 'A06_PREP' && !view.historical && <ReferencePreparationBinding studyId={studyId} />}
-      {m.module_id === 'A06_PREP' && view.scoring_readiness && <ScoringReadiness info={view.scoring_readiness} />}
+      {m.module_id === 'A06_PREP' && view.scoring_readiness && <ScoringReadiness studyId={studyId} info={view.scoring_readiness} />}
       {m.module_id === 'A07' && <div id="module-report-downloads"><ReportSummary special={sp} studyId={studyId} downloadsOnly />{!sp.report_files?.length && <Alert type="info" message="本版报告尚未生成，请先查看当前模块状态与输入条件。"/>}</div>}
       {view.disease_workflow && <DiseaseWorkflowGuide studyId={studyId} info={view.disease_workflow} scopeDirty={scopeDirty} />}
       {view.input_audit && <InputAudit studyId={studyId} moduleId={m.module_id} info={view.input_audit} archived={oldIntersection}/>}

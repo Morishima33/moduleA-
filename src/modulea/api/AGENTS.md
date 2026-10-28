@@ -22,6 +22,10 @@
 
 `GET /api/v1/studies/{sid}/analysis-plan/a06-review-packet/export.json`下载同一只读材料包JSON；下载前重新读取当前研究并逐件核验归档指纹，文件名绑定研究编号。导出不写入研究、不改变当前版本、不提交评分。
 
+`POST /api/v1/studies/{sid}/analysis-plan/a06-scoring/validate`严格接受`{expected_preparation_run_id,reviewer,note,confirmed:true}`，只读核对第二版参考绑定准备及其原第二版准备、登记输入和方案；返回`protocol_version:A06.scoring_gate.1`、`read_only:true`、当前/来源准备编号、输入编号/指纹、方案参数指纹、来源配置指纹、最新准备复核编号、固定组合数、ready/NA数，以及从原准备读取的实际Vina参数、搜索盒外扩和RMSD上限。不能从客户端覆盖参数或传入批准。`allowed:false`和`execution_available:false`保持，预检确认不构成评分授权。过期版本、错研究/版本、损坏原件、非法字段拒绝；失效上游、变动输入、全NA及未批准等原因列入blockers；读取期间manifest变化拒绝。不创建任务、不写入复核、不解除阻断。
+
+评分闸门只读响应增加`preflight_available`，仅第二版参考准备且非回收站提供预检表单；旧版本接口及执行行为保持。
+
 上述资格核查与评分闸门同时识别`A06.plan_reference_preparation.2`：核对同研究固定输入、事实包、参考包、逐件指纹和空评分矩阵，返回归档完整性状态。此GET不执行科学准备，不将归档完整性显示为正式审批；第二版的`can_enter_review`与`scoring_allowed`仍为false。
 
 清单另返回`current_summary`和当前已完整归档的`saved_decisions`；null口袋键始终回到原第二版状态，修订不能误认为沿用上次已采用口袋。网页独立`#/plan-pockets/{sid}`展示清单、盒参数、残基和两次文件指纹；A06_PREP页顶栏提供入口。保存过的选择可回显，首次不预选采用，提交确认框始终默认未勾选。网页只消费服务端`eligible`和摘要，不计算科学通过与否。

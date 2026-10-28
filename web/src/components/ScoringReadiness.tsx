@@ -1,9 +1,10 @@
 // 文件用途：显示正式评分闸门状态；只读，不提供启动按钮。
 import { Alert, Tag } from 'antd';
 import type { ScoringReadinessInfo } from '../api/types';
+import ScoringPreflight from './ScoringPreflight';
 
 /** 评分能否启动只显示服务端结果，前端不重新判断。 */
-export default function ScoringReadiness({ info }: { info: ScoringReadinessInfo }) {
+export default function ScoringReadiness({ studyId, info }: { studyId: string; info: ScoringReadinessInfo }) {
   if (!info.supported) return null;
   return <section className="card" id="a06-scoring-readiness">
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
@@ -13,5 +14,6 @@ export default function ScoringReadiness({ info }: { info: ScoringReadinessInfo 
     <Alert type={info.scoring_allowed ? 'success' : 'warning'} showIcon message={info.reason_zh}
       description="本卡片只读显示资格，不会创建评分任务或改变人工复核状态。" />
     {!!info.blockers.length && <ul style={{ margin: '10px 0 0', paddingLeft: 22 }}>{info.blockers.map(item => <li key={item}>{item}</li>)}</ul>}
+    {info.preflight_available && info.current_run_id && <ScoringPreflight key={info.current_run_id} studyId={studyId} preparationRunId={info.current_run_id} />}
   </section>;
 }

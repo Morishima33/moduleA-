@@ -73,6 +73,11 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
         from .reference_preparation import review_gate
         return review_gate(self, study_id)
 
+    def validate_analysis_plan_a06_scoring_request(self, study_id, payload):
+        """只读预检正式评分请求，不创建任务。"""
+        from .reference_preparation import validate_scoring_request
+        return validate_scoring_request(self, study_id, payload)
+
     def validate_analysis_plan_a06_reference_preparation_request(self, study_id, payload):
         """绑定请求只核对当前准备和参考证据版本，不运行科学工具。"""
         from .reference_preparation import validate

@@ -55,6 +55,14 @@ def review_gate(app, req, sid):
         raise from_contract(str(error))
 
 
+def validate_scoring(app, req, sid):
+    """POST只读预检正式评分请求，不提交评分任务。"""
+    try:
+        return app.kernel.workflow().validate_analysis_plan_a06_scoring_request(sid, req.json())
+    except ContractError as error:
+        raise from_contract(str(error))
+
+
 def prepare(app, req, sid):
     """提交显式绑定请求；后台只重建准备证据，不运行评分。"""
     body = req.json()

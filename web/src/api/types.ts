@@ -326,7 +326,7 @@ export interface ReferenceChoice {target_id:string; candidate_key:string; refere
 export interface ReferenceCandidate extends ReferenceChoice {pdb_id:string; component_id:string; name:string; selectable:boolean; reason_zh:string; source_url:string}
 export interface ReferenceReviewInfo {supported:boolean;enabled:boolean;execution_available:false;reason_zh:string;expected_input_id?:string;expected_preparation_run_id?:string;source_preparation_run_id?:string;items:{target_id:string;symbol:string;state:string;options:ReferenceCandidate[]}[];saved_reviews?:{request?:{choices?:ReferenceChoice[]}}[]}
 export interface ReferencePreparationInfo {supported:boolean;enabled:boolean;execution_available:false;reason_zh:string;expected_input_id?:string;expected_preparation_run_id?:string;source_preparation_run_id?:string;state?:'bound';summary?:Record<string,unknown>|null;reviews?:{review_id:string;request?:{choices?:ReferenceChoice[]}}[]}
-export interface ScoringReadinessInfo {supported:boolean;enabled:boolean;scoring_allowed:boolean;execution_available:false;current_run_id?:string;blockers:string[];reason_zh:string}
+export interface ScoringReadinessInfo {supported:boolean;enabled:boolean;scoring_allowed:boolean;execution_available:false;preflight_available?:boolean;current_run_id?:string;blockers:string[];reason_zh:string}
 export interface AutomaticRequest {expected_binding: string; expected_connection_id: string; expected_a06: string | null; request_id: string; policy_version: string; reviewer: string; note: string; confirmed: boolean; reference_choices?:ReferenceChoice[]}
 export interface AutomaticMatrixView {
   score_range:[number|null,number|null]; annotation?:{legend_zh?:string}; threshold_note_zh:string;
@@ -505,6 +505,16 @@ export interface ReferenceReviewPacket {supported:boolean;review_available:boole
 
 // A06人工整体复核闸门；当前只读，未满足条件时不提供提交决定。
 export interface ReferenceReviewGate {supported:boolean;can_submit:boolean;allowed_decisions:string[];current_run_id?:string;checked_files?:number;blockers:string[];reason_zh:string}
+
+// 正式评分前置预检；只读，不创建评分任务。
+export interface ScoringValidation {
+  protocol_version:string; supported:boolean; read_only:true; allowed:false; execution_available:false;
+  current_run_id:string; source_preparation_run_id:string; input_id:string; input_key:string;
+  analysis_parameter_hash:string; config_hash:string; input_hash:string; latest_preparation_review_id:string|null;
+  pair_count:number; ready_pairs:number; na_pairs:number;
+  scoring_parameters:{scoring:string;exhaustiveness:number;num_modes:number;energy_range_kcal_mol:number;seed:number};
+  box_padding:number; requested_rmsd_max_A:number; blockers:string[]; reason_zh:string;
+}
 
 // 研究核查草案与同批矩阵只读，身份预核查不代替人工确认。
 export interface DockingReviewCompound extends CompoundChoiceRow {name_zh:string;cid:string;identity_prechecked:boolean;identity_state_zh:string;source_3d_state_zh:string;evidence_zh:string;manual_reason_zh:string}

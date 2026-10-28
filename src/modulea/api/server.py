@@ -72,6 +72,7 @@ class App:
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a06-review-packet", self.get_analysis_a06_review_packet),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a06-review-packet/export.json", self.export_analysis_a06_review_packet),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a06-review-gate", self.get_analysis_a06_review_gate),
+            ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a06-scoring/validate", self.post_analysis_a06_scoring_validate),
             ("GET", rf"/api/v1/studies/{ID}/trace", self.get_study_trace),
             ("GET", rf"/api/v1/studies/{ID}/trace/export.json", self.export_study_trace_json),
             ("GET", rf"/api/v1/studies/{ID}/trace/export.csv", self.export_study_trace_csv),
@@ -337,6 +338,11 @@ class App:
         """只读获取A06人工整体复核闸门。"""
         from .analysis_reference_preparation_view import review_gate
         return review_gate(self, req, study_id)
+
+    def post_analysis_a06_scoring_validate(self, req, study_id):
+        """只读预检正式评分请求。"""
+        from .analysis_reference_preparation_view import validate_scoring
+        return validate_scoring(self, req, study_id)
 
     def get_study_trace(self, req, study_id):
         """返回当前研究的只读追溯摘要；详细数据通过显式导出下载。"""
