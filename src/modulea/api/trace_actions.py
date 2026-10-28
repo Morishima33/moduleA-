@@ -9,7 +9,13 @@ from .errors import from_contract
 
 def _trace(app, study_id, include_data):
     try:
-        return build_trace(app.kernel.read_workflow(), study_id, include_data=include_data)
+        workflow = app.kernel.read_workflow()
+        payload = build_trace(workflow, study_id, include_data=include_data)
+        try:
+            payload["a06_review_packet"] = workflow.analysis_plan_a06_review_packet(study_id)
+        except ContractError:
+            payload["a06_review_packet"] = None
+        return payload
     except ContractError as error:
         raise from_contract(str(error)) from error
 
@@ -26,6 +32,7 @@ def trace_summary(app, req, study_id):
             "plans": [{"plan_id": row["plan_id"], "state": row["state"], "created_at": row["created_at"]}
                       for row in payload["plans"]],
             "file_count": payload["file_count"], "read_only": True,
+            "a06_review_packet_available": bool(payload.get("a06_review_packet", {}).get("supported")),
             "export_json_url": f"/api/v1/studies/{study_id}/trace/export.json",
             "export_csv_url": f"/api/v1/studies/{study_id}/trace/export.csv",
             "message_zh": "摘要、JSON和CSV均绑定当前研究版本；下载前会逐件核验归档指纹。"}
