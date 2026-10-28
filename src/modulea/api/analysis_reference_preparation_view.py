@@ -47,6 +47,14 @@ def export_review_packet(app, req, sid):
             f"{sid}_a06_review_packet.json", "application/json; charset=utf-8")
 
 
+def review_gate(app, req, sid):
+    """GET只读人工整体复核闸门，不保存决定。"""
+    try:
+        return app.kernel.workflow().analysis_plan_a06_review_gate(sid)
+    except ContractError as error:
+        raise from_contract(str(error))
+
+
 def prepare(app, req, sid):
     """提交显式绑定请求；后台只重建准备证据，不运行评分。"""
     body = req.json()

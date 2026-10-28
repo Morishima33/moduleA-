@@ -1,10 +1,10 @@
 // 文件用途：显示新版A06准备的整体复核资格；只读，不提交复核或启动计算。
 import { Alert, Button, Tag } from 'antd';
 import { api } from '../api/client';
-import type { ReferenceQualificationInfo, ReferenceReviewPacket } from '../api/types';
+import type { ReferenceQualificationInfo, ReferenceReviewGate, ReferenceReviewPacket } from '../api/types';
 
 /** 将服务端资格结果用中文卡片呈现，前端不推算资格。 */
-export default function ReferenceQualification({ studyId, info, packet }: { studyId: string; info: ReferenceQualificationInfo; packet?: ReferenceReviewPacket | null }) {
+export default function ReferenceQualification({ studyId, info, packet, gate }: { studyId: string; info: ReferenceQualificationInfo; packet?: ReferenceReviewPacket | null; gate?: ReferenceReviewGate | null }) {
   if (!info.supported) return null;
   const good = info.qualified && info.can_enter_review;
   return (
@@ -23,6 +23,8 @@ export default function ReferenceQualification({ studyId, info, packet }: { stud
         复核材料包：第 {packet.version || '—'}；已核对 {packet.checked_files} 件文件；参考复核仍需人工决定。
         <div style={{ marginTop: 8 }}><Button size="small" href={api.a06ReviewPacketExport(studyId)}>下载整体复核材料包 JSON</Button></div>
       </div>}
+      {gate?.supported && <Alert style={{ marginTop: 10 }} type="warning" showIcon message={gate.reason_zh}
+        description={`当前允许的复核决定：${gate.allowed_decisions.length ? gate.allowed_decisions.join('、') : '无'}；阻断项 ${gate.blockers.length} 条。`} />}
       {!!info.blockers.length && (
         <ul style={{ margin: '10px 0 0', paddingLeft: 22 }}>
           {info.blockers.map((item) => <li key={item}>{item}</li>)}

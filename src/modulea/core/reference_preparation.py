@@ -224,6 +224,26 @@ def review_packet(workflow, sid):
                 reason_zh="复核材料已整理；正式整体复核仍需独立人工决定")
 
 
+def review_gate(workflow, sid):
+    """只读返回人工整体复核闸门；未满足条件时不提供可提交决定。"""
+    packet = review_packet(workflow, sid)
+    if not packet.get("supported"):
+        return {"supported": False, "can_submit": False, "allowed_decisions": [],
+                "blockers": packet.get("blockers", []), "reason_zh": packet.get("reason_zh", "当前无复核材料")}
+    blockers = list(packet.get("blockers", []))
+    if not packet.get("qualification", {}).get("qualified"):
+        blockers.append("复核材料资格尚未通过")
+    if packet.get("summary", {}).get("handoff_blocked") is True:
+        blockers.append("当前准备仍处于handoff_blocked阻断状态")
+    unique = []
+    for item in blockers:
+        if item not in unique:
+            unique.append(item)
+    return {"supported": True, "can_submit": False, "allowed_decisions": [],
+            "current_run_id": packet.get("current_run_id"), "checked_files": packet.get("checked_files", 0),
+            "blockers": unique, "reason_zh": "人工整体复核入口尚未开放；请先满足所有阻断条件"}
+
+
 def validate(workflow, sid, payload):
     """同源预检及重复请求检查，工具复核在后台再次执行。"""
     from science_modules.a06.reference_preparation_contract import validate_request

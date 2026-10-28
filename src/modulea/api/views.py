@@ -396,15 +396,18 @@ class Views:
         reference_qualification = None
         scoring_readiness = None
         review_packet = None
+        review_gate = None
         if module_id == "A06_PREP" and not historical and not preparation_page:
             try:
                 reference_qualification = workflow.analysis_plan_a06_reference_qualification(study_id)
                 scoring_readiness = workflow.analysis_plan_a06_scoring_readiness(study_id)
                 review_packet = workflow.analysis_plan_a06_review_packet(study_id)
+                review_gate = workflow.analysis_plan_a06_review_gate(study_id)
             except ContractError:
                 reference_qualification = None
                 scoring_readiness = None
                 review_packet = None
+                review_gate = None
         handoff = None
         handoff_id = real.get("current", {}).get("A06")
         if module_id in ("A06_PREP", "A06") and handoff_id and not historical and not preparation_page:
@@ -452,6 +455,7 @@ class Views:
             "reference_qualification": reference_qualification,
             "scoring_readiness": scoring_readiness,
             "review_packet": review_packet,
+            "review_gate": review_gate,
             "trial_handoff": handoff,
             "docking_preparation": preparation_context(workflow,real,historical,bool(self.tasks.active_for(study_id))) if module_id=="A06_PREP" and not coverage_info and not preparation_page else None,
             "source_uploads": upload_context(workflow, real, module_id, result, historical, bool(self.tasks.active_for(study_id))) if not historical else None,
