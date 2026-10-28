@@ -457,6 +457,7 @@ class Views:
             "review_packet": review_packet,
             "review_gate": review_gate,
             "reviewable_preparation": workflow.analysis_plan_a06_reviewable_info(study_id) if module_id == 'A06_PREP' and not historical and not preparation_page else None,
+            "plan_scoring": workflow.analysis_plan_a06_scoring_info(study_id) if module_id in ('A06_PREP', 'A06') and not historical and not preparation_page else None,
             "trial_handoff": handoff,
             "docking_preparation": preparation_context(workflow,real,historical,bool(self.tasks.active_for(study_id))) if module_id=="A06_PREP" and not coverage_info and not preparation_page else None,
             "source_uploads": upload_context(workflow, real, module_id, result, historical, bool(self.tasks.active_for(study_id))) if not historical else None,
@@ -475,15 +476,24 @@ class Views:
             for key in ("docking_trial", "docking_coverage", "docking_preparation", "docking_candidates", "docking_review", "trial_handoff"):
                 response[key] = None
         response["automatic_docking"] = None
+        if response.get('plan_scoring') and response['plan_scoring']['enabled']:
+            if self.tasks.active_for(study_id) or self.kernel.settings.science_tools_root is None:
+                reason = '请等待当前研究后台任务结束' if self.tasks.active_for(study_id) else '本机未配置固定科学工具目录'
+                response['plan_scoring'].update(enabled=False, execution_available=False, blockers=[reason], reason_zh=reason)
+                if response.get('scoring_readiness'):
+                    response['scoring_readiness'].update(scoring_allowed=False, execution_available=False, blockers=[reason], reason_zh=reason)
         if response.get('reviewable_preparation') and self.tasks.active_for(study_id):
             response['reviewable_preparation'].update(enabled=False, reason_zh='请等待当前研究后台任务结束')
         plan_preparation = bool(module_id == "A06_PREP" and run and
             run.get("config", {}).get("version") in ("A06.plan_preparation.1", "A06.plan_preparation.2",
                 "A06.plan_preparation.3", "A06.plan_reference_preparation.1",
                 "A06.plan_reference_preparation.2", "A06.plan_reviewable_preparation.1"))
+        plan_result = bool(run and run.get('config', {}).get('version') == 'A06.plan_scoring.1')
         if plan_preparation and run['config'].get('version') == 'A06.plan_reviewable_preparation.1':
-            response['review']['continue'].update(available=False, note_zh='人工决定单独保存；新版评分尚未开放，不接续旧计算协议。')
-        if module_id in ("A06_PREP", "A06") and not historical and not preparation and not handoff and not plan_preparation:
+            response['review']['continue'].update(available=False, note_zh='人工决定单独保存；请在新版评分区明确确认执行，不接续旧计算协议。')
+        if plan_result:
+            response['review']['continue'].update(available=False, note_zh='本版评分独立保存复核决定；新报告协议尚未接通，不调用旧报告。')
+        if module_id in ("A06_PREP", "A06") and not historical and not preparation and not handoff and not plan_preparation and not plan_result:
             from ..core.automatic_experience import automatic_context
             with workflow.handoff_read_cache():
                 response["automatic_docking"] = automatic_context(workflow, real, False, bool(self.tasks.active_for(study_id)))
@@ -513,7 +523,7 @@ class Views:
                 response[key] = None
             response['module'].update(title_zh='单成分靶点' if module_id == 'A01' else '文献疾病靶点',
                 purpose_zh='核对作者公开历史名单及官方身份标准化结果；本研究为同输入方法对比。')
-        response["operation_guide"] = None if plan_preparation else operation_navigation(response, result)
+        response["operation_guide"] = None if plan_preparation or plan_result else operation_navigation(response, result)
         response["input_audit"] = input_audit_context(workflow, real, module_id, run, result, stale=not historical and state["code"] == "stale")
         if literature_input and module_id in ('A01', 'A02'):
             response['input_audit'] = None  # 两侧文献数量已由同源结果数量链展示，避免重复常规范围表。

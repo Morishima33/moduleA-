@@ -26,9 +26,13 @@ def qualification(app, req, sid):
 def scoring_readiness(app, req, sid):
     """GET只读正式评分闸门，不创建任务。"""
     try:
-        return app.kernel.workflow().analysis_plan_a06_scoring_readiness(sid)
+        value = app.kernel.workflow().analysis_plan_a06_scoring_readiness(sid)
     except ContractError as error:
         raise from_contract(str(error))
+    if value['scoring_allowed'] and (app.tasks.active_for(sid) or app.settings.science_tools_root is None):
+        reason = '请等待当前研究后台任务结束' if app.tasks.active_for(sid) else '本机未配置固定科学工具目录'
+        value.update(scoring_allowed=False, execution_available=False, blockers=[reason], reason_zh=reason)
+    return value
 
 
 def review_packet(app, req, sid):

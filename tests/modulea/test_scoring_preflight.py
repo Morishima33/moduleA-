@@ -138,7 +138,7 @@ print(json.dumps({'allowed':value['allowed'],'parameters':value['scoring_paramet
             value = self.check()
         self.assertFalse(value['allowed'])
         self.assertFalse(value['execution_available'])
-        self.assertIn('新版评分执行入口尚未接通', value['blockers'])
+        self.assertIn('只读预检不会启动评分；正式计算须独立明确确认', value['blockers'])
 
     def test_source_file_tampering_is_rejected(self):
         manifest = self.workflow.load(self.sid)

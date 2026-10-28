@@ -16,7 +16,7 @@
 
 `GET /api/v1/studies/{sid}/analysis-plan/a06-reference-qualification`只读复算当前`A06.plan_reference_preparation.1`是否具备进入人工整体复核的资料条件，检查事实包、原准备结果、参考核查包、文件指纹以及`handoff_blocked:true`/`scored_pairs:0`；返回`qualified`和阻塞项。资格通过不等于模块批准，通用复核入口仍按阻断规则拒绝将候选准备批准为正式下游输入；GET不联网、不写入、不启动评分。
 
-`GET /api/v1/studies/{sid}/analysis-plan/a06-scoring-readiness`只读返回正式评分的阻塞项；新版评分执行入口尚未接通，`scoring_allowed`固定为false。该接口不提交评分任务、不改变复核或运行状态。资格核查仅说明已检查归档完整性，当前`can_enter_review:false`，不表示已开放批准。
+`GET /api/v1/studies/{sid}/analysis-plan/a06-scoring-readiness`只读返回正式评分资格与阻塞项；第一/二版参考绑定准备的`scoring_allowed`保持false。新可复核准备按末节评分协议检查当前人工批准、固定输入与任务/工具条件；符合条件也只开放独立明确执行入口。该GET不提交任务、不改变复核或运行状态。
 
 `GET /api/v1/studies/{sid}/analysis-plan/a06-review-packet`只读汇总当前新版准备的运行版本、参考证据、归档文件核查数量、资格结果和评分阻断项；返回`review_available:false`、`can_enter_review:false`、`scoring_allowed:false`。此接口只为人工整体复核提供材料，不写入研究、不提交任务、不改变当前版本。
 
@@ -517,3 +517,9 @@ A03_SELECT.compound_selection新增current_manual_supplements（回读同运行�
 GET `/studies/{sid}/analysis-plan/a06-reviewable-preparation` 只读返回 supported/enabled/execution_available:false/current_run_id/expected_input_id/state/reason_zh。只在第二版参考准备归档完整、上游和固定输入当前有效且 ready_pairs>0 时 enabled；全 NA 不放行。
 POST 同地址严格接受 `{expected_preparation_run_id,expected_input_id,request_id,reviewer,note,confirmed:true}`；request_id 前缀 reviewprep。同编号同内容且原版本仍有效时返回 200 原运行；新请求返回 202 后台 `a06_plan_reviewable_preparation`。后台独立复算原准备科学证据并发布 `A06.plan_reviewable_preparation.1`，保留所有固定组合、NA及原件；summary.reviewable=true、handoff_blocked=false、scored_pairs=0、execution_available=false。该变化只开放原有人工模块复核表单，不提交批准。
 新准备沿用原人工 review 接口和 expected_review_id 并发规则；qualified/can_enter_review 仅表示可人工决定。评分保持关闭，旧自动计算区隐藏，保存并继续/手动继续/后台 continue 均不得进入旧评分协议。历史准备、结果与 reviews 不回写。新版本网页字段 reviewable_preparation 为上述 GET 响应；ReviewPacket.can_enter_review 改为 boolean。
+## 2026-10-28 新方案正式评分协议
+
+GET `/studies/{sid}/analysis-plan/a06-scoring` 只读返回 `supported,enabled,execution_available,protocol_version,blockers,state,reason_zh,current_run_id`；有效准备时另有 `expected_preparation_run_id,expected_preparation_review_id,expected_input_id,parameters,pair_count,ready_pairs,na_pairs`，已归档时有 `result_run_id,summary`。仅 `A06.plan_reviewable_preparation.1` 的当前有效人工批准可执行；后台忙碌或未配置固定科学工具时 enabled=false。已成功同批结果不自动重跑。
+POST 同地址严格接受 `{request_id,expected_preparation_run_id,expected_preparation_review_id,expected_input_id,expected_a06_run_id,operator,note,confirmed:true}`；request_id 前缀 scoreq，expected_a06_run_id 为当前运行或null。无参数/评分/路径覆盖。新请求返回202后台 `a06_plan_scoring`；同编号同内容且当前成功归档返回200原run；改内容、过期版本、回收站、未批准、失败/中断原请求拒绝。失败或中断的已落盘资料保留，明确重试使用新请求和当前A06编号，不自动恢复。
+后台运行 `A06.plan_scoring.1`，固定Vina1.2.7、原方案参数、已准备配体/受体/搜索盒，一CPU顺序计算，单对1800秒超时。完整固定组合保存NA/failed/completed；仅原文Top-1评分有效，NA/失败评分为null，不补位、不用历史分数。全部可用组合失败时结果outcome=failed、任务失败且原诊断保留。成功结果仍需原人工A06复核，不代签，不接旧报告协议。
+GET `/studies/{sid}/analysis-plan/a06-scoring/export.csv` 下载当前A06评分事实包绑定的完整CSV，下载前核验原结果及文件指纹，无客户端路径；历史仍从原运行附件查看。ModuleView 的可选 `plan_scoring` 使用上述GET字段；A06新增表 `plan_scoring_pairs`，列compound_id/target_id/state/score/quality/reason_zh/input_key/execution_path/state_zh，科学数值仅后端生成。接口统一沿用原令牌、状态码和任务并发规则。只读预检仍始终allowed=false，不因正式入口接通而执行。

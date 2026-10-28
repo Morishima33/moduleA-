@@ -63,7 +63,7 @@ def info(workflow, sid):
         q = qualification(workflow, sid)
         return dict(base, supported=True, current_run_id=current,
                     state='published' if q.get('can_enter_review') else 'stale',
-                    reason_zh='可复核准备已归档；请在人工复核表单独立决定，评分未开放'
+                    reason_zh='可复核准备已归档；请独立人工复核，通过后到新版评分区明确确认执行'
                     if q.get('can_enter_review') else q['reason_zh'])
     if version != SOURCE_VERSION:
         return dict(base, reason_zh='当前版本不支持进入整体复核')
@@ -103,4 +103,4 @@ def qualification(workflow, sid, manifest, run, base):
     return dict(base, supported=True, enabled=True, current_run_id=run['run_id'],
                 summary=result['summary'] if result else None, scored_pairs=0, checked_files=checked,
                 qualified=not blockers, can_enter_review=not blockers, blockers=blockers,
-                reason_zh='资料复验通过，可进行人工整体复核；未批准或启动评分' if not blockers else '；'.join(blockers))
+                reason_zh='资料复验通过，可进行人工整体复核；资格核查不代替人工决定或执行确认' if not blockers else '；'.join(blockers))

@@ -15,6 +15,7 @@ from .network import present_a04, present_a05
 from .registration import present_a00
 from .report import present_a07
 from .sources import present_a01, present_a02
+from .plan_scoring import present as present_plan_scoring
 
 PRESENTERS = {
     "A00": present_a00,
@@ -41,6 +42,8 @@ def present_generic(result: dict, ctx: dict) -> Parts:
 def present(module_id: str, result: dict, ctx: dict) -> dict:
     """调用登记的展示函数；任何读取错误都降级为通用展示，并在 focus 中说明，不让整页失败。"""
     function = PRESENTERS.get(module_id, present_generic)
+    if module_id == 'A06' and result.get('summary', {}).get('science_version') == 'A06.plan_scoring.1':
+        function = present_plan_scoring
     try:
         return function(result, ctx).as_dict()
     except Exception as error:  # 展示层错误不应影响复核和其他模块

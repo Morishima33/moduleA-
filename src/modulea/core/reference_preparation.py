@@ -189,6 +189,10 @@ def scoring_readiness(workflow, sid):
     current = manifest.get("current", {}).get("A06_PREP")
     value['preflight_available'] = not manifest.get('trashed') and workflow.run(manifest, current).get(
         'config', {}).get('version') in ('A06.plan_reference_preparation.2', 'A06.plan_reviewable_preparation.1')
+    if workflow.run(manifest, current)['config'].get('version') == 'A06.plan_reviewable_preparation.1':
+        info = workflow.analysis_plan_a06_scoring_info(sid)
+        return dict(value, scoring_allowed=info['enabled'], execution_available=info['execution_available'],
+                    blockers=info['blockers'], reason_zh=info['reason_zh'])
     if not workflow.approved(manifest, current):
         value["blockers"].append("A06_PREP尚未完成人工整体复核通过")
     summary = check.get("summary") or {}

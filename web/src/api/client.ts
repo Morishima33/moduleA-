@@ -122,6 +122,8 @@ export const api = {
   a06ReviewPacketExport: (sid: string) => `/api/v1/studies/${sid}/analysis-plan/a06-review-packet/export.json`,
   validateA06Scoring: (sid: string, body: unknown) => request<import('./types').ScoringValidation>('POST', `/studies/${sid}/analysis-plan/a06-scoring/validate`, body),
   prepareA06Reviewable: (sid: string, body: unknown) => request<{task?:Task;created:boolean;run_id?:string;message_zh:string}>('POST', `/studies/${sid}/analysis-plan/a06-reviewable-preparation`, body),
+  executeA06PlanScoring: (sid: string, body: unknown) => request<{task?:Task;created:boolean;run_id?:string;message_zh:string}>('POST', `/studies/${sid}/analysis-plan/a06-scoring`, body),
+  a06PlanScoringExport: (sid: string) => `/api/v1/studies/${sid}/analysis-plan/a06-scoring/export.csv`,
   /** 目录和校验均不创建研究、不提交任务。 */
   analysisParameters: () => request<import('./types').AnalysisParameterCatalog>('GET', '/analysis-plans/parameters'),
   validateAnalysisPlan: (specification: {mode: 'standard' | 'personalized'; parameters?: Record<string, import('./types').PlanValue>}) =>

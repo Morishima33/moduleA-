@@ -82,8 +82,8 @@ def validate(workflow, sid, payload):
     if summary['ready_pairs'] == 0:
         blockers.append('当前没有可评分组合；NA对象不得补位或填零')
     review = workflow.latest_review(manifest, run['artifact_id'])
-    # 固定执行器尚未接通；即使资料通过也不能以预检冒充批准或授权。
-    blockers = list(dict.fromkeys(blockers + ['新版评分执行入口尚未接通']))
+    # 预检自身不产生执行授权；正式计算仍要求独立明确提交。
+    blockers = list(dict.fromkeys(blockers + ['只读预检不会启动评分；正式计算须独立明确确认']))
     require(workflow.load(sid) == manifest, '研究版本在预检期间已更新，请刷新')
     return {'protocol_version': VERSION, 'supported': True, 'read_only': True,
             'allowed': False, 'execution_available': False, 'current_run_id': current,
@@ -95,4 +95,4 @@ def validate(workflow, sid, payload):
             'na_pairs': summary['na_pairs'], 'scoring_parameters': parameters,
             'box_padding': source['config']['box_padding'],
             'requested_rmsd_max_A': source['config']['requested_rmsd_max_A'],
-            'blockers': blockers, 'reason_zh': '评分前置预检完成；未创建任务，正式复核和评分仍未开放'}
+            'blockers': blockers, 'reason_zh': '只读预检完成，未创建任务；正式评分仍须独立明确确认'}

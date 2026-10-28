@@ -73,6 +73,9 @@ class App:
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a06-review-packet/export.json", self.export_analysis_a06_review_packet),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a06-review-gate", self.get_analysis_a06_review_gate),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a06-scoring/validate", self.post_analysis_a06_scoring_validate),
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a06-scoring", self.get_analysis_a06_scoring),
+            ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a06-scoring", self.post_analysis_a06_scoring),
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a06-scoring/export.csv", self.export_analysis_a06_scoring),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a06-reviewable-preparation", self.get_analysis_a06_reviewable),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a06-reviewable-preparation", self.post_analysis_a06_reviewable),
             ("GET", rf"/api/v1/studies/{ID}/trace", self.get_study_trace),
@@ -346,6 +349,21 @@ class App:
         from .analysis_reference_preparation_view import validate_scoring
         return validate_scoring(self, req, study_id)
 
+    def get_analysis_a06_scoring(self, req, study_id):
+        """只读新版评分资格与本批状态。"""
+        from .plan_scoring_view import info
+        return info(self, req, study_id)
+
+    def post_analysis_a06_scoring(self, req, study_id):
+        """明确确认后提交独立评分后台任务。"""
+        from .plan_scoring_view import submit
+        return submit(self, req, study_id)
+
+    def export_analysis_a06_scoring(self, req, study_id):
+        """核验指纹后下载当前批次完整评分CSV。"""
+        from .plan_scoring_view import export_csv
+        return export_csv(self, req, study_id)
+
     def get_analysis_a06_reviewable(self, req, study_id):
         """只读当前准备的人工整体复核接入资格。"""
         from .reviewable_preparation_view import info
@@ -564,7 +582,7 @@ class App:
             raise ApiError(423, "TRASHED_READONLY", "研究在回收站中，不能继续；请先恢复")
         prep_id = manifest.get('current', {}).get('A06_PREP')
         if prep_id and self.kernel.workflow().run(manifest, prep_id)['config'].get('version') == 'A06.plan_reviewable_preparation.1':
-            raise ApiError(409, 'GATE_BLOCKED', '新版准备不能接续旧评分协议；正式评分入口尚未接通')
+            raise ApiError(409, 'GATE_BLOCKED', '新版准备不能接续旧协议；请到新版评分区独立明确确认，报告仍待新协议接入')
         task, created = self.tasks.submit(study_id, "continue", "手动继续")
         return {"task": task, "created": created}, 202
 

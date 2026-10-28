@@ -326,7 +326,7 @@ export interface ReferenceChoice {target_id:string; candidate_key:string; refere
 export interface ReferenceCandidate extends ReferenceChoice {pdb_id:string; component_id:string; name:string; selectable:boolean; reason_zh:string; source_url:string}
 export interface ReferenceReviewInfo {supported:boolean;enabled:boolean;execution_available:false;reason_zh:string;expected_input_id?:string;expected_preparation_run_id?:string;source_preparation_run_id?:string;items:{target_id:string;symbol:string;state:string;options:ReferenceCandidate[]}[];saved_reviews?:{request?:{choices?:ReferenceChoice[]}}[]}
 export interface ReferencePreparationInfo {supported:boolean;enabled:boolean;execution_available:false;reason_zh:string;expected_input_id?:string;expected_preparation_run_id?:string;source_preparation_run_id?:string;state?:'bound';summary?:Record<string,unknown>|null;reviews?:{review_id:string;request?:{choices?:ReferenceChoice[]}}[]}
-export interface ScoringReadinessInfo {supported:boolean;enabled:boolean;scoring_allowed:boolean;execution_available:false;preflight_available?:boolean;current_run_id?:string;blockers:string[];reason_zh:string}
+export interface ScoringReadinessInfo {supported:boolean;enabled:boolean;scoring_allowed:boolean;execution_available:boolean;preflight_available?:boolean;current_run_id?:string;blockers:string[];reason_zh:string}
 export interface AutomaticRequest {expected_binding: string; expected_connection_id: string; expected_a06: string | null; request_id: string; policy_version: string; reviewer: string; note: string; confirmed: boolean; reference_choices?:ReferenceChoice[]}
 export interface AutomaticMatrixView {
   score_range:[number|null,number|null]; annotation?:{legend_zh?:string}; threshold_note_zh:string;
@@ -366,6 +366,7 @@ export interface ModuleView {
   review_packet?:ReferenceReviewPacket|null;
   review_gate?:ReferenceReviewGate|null;
   reviewable_preparation?:ReviewablePreparationInfo|null;
+  plan_scoring?:PlanScoringInfo|null;
   scoring_readiness?:ScoringReadinessInfo|null;
   docking_coverage?:DockingCoverageInfo|null;
   docking_candidates?: DockingCandidatesInfo | null;
@@ -505,6 +506,15 @@ export interface ReferenceQualificationInfo {supported:boolean;enabled:boolean;q
 export interface ReferenceReviewPacket {supported:boolean;review_available:boolean;execution_available:false;scoring_allowed:false;can_enter_review:boolean;current_run_id?:string;version?:string;summary?:Record<string,unknown>|null;qualification?:ReferenceQualificationInfo;scoring?:ScoringReadinessInfo;checked_files:number;blockers:string[];reason_zh:string}
 
 export interface ReviewablePreparationInfo {supported:boolean;enabled:boolean;execution_available:false;current_run_id?:string;expected_input_id?:string|null;state?:string;reason_zh:string}
+
+export interface PlanScoringInfo {
+  supported:boolean;enabled:boolean;execution_available:boolean;protocol_version:string;
+  blockers:string[];state:string;reason_zh:string;current_run_id:string|null;
+  expected_preparation_run_id?:string;expected_preparation_review_id?:string;expected_input_id?:string;
+  parameters?:{scoring:string;exhaustiveness:number;num_modes:number;energy_range_kcal_mol:number;seed:number};
+  pair_count?:number;ready_pairs?:number;na_pairs?:number;result_run_id?:string;
+  summary?:{scored_pairs:number;failed_pairs:number;na_pairs:number;strict_scored_pairs:number;exploratory_scored_pairs:number};
+}
 
 // A06人工整体复核闸门；当前只读，未满足条件时不提供提交决定。
 export interface ReferenceReviewGate {supported:boolean;can_submit:boolean;allowed_decisions:string[];current_run_id?:string;checked_files?:number;blockers:string[];reason_zh:string}

@@ -33,12 +33,37 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
                     current == read_json(verified_file(home, ref)))
 
     def _begin(self, manifest, module, inputs, config, reason):
-        """新准备批准也不能交给旧A06执行器；正式新版评分接入前统一阻断。"""
+        """仅为绑定新准备的新评分协议放行；报告仍等独立适配。"""
         prep = manifest.get('current', {}).get('A06_PREP')
-        if module == 'A06' and prep:
-            require(self.run(manifest, prep)['config'].get('version') != 'A06.plan_reviewable_preparation.1',
-                    '新版评分执行入口尚未接通，不能调用旧评分协议')
+        if module == 'A06' and (config.get('version') == 'A06.plan_scoring.1' or
+                (prep and self.run(manifest, prep)['config'].get('version') == 'A06.plan_reviewable_preparation.1')):
+            from .plan_scoring import guard_begin
+            guard_begin(self, manifest, inputs, config)
+        a06 = manifest.get('current', {}).get('A06')
+        if module == 'A07' and a06:
+            require(self.run(manifest, a06)['config'].get('version') != 'A06.plan_scoring.1',
+                    '新方案评分尚未接入报告协议，不能调用旧报告')
         return super()._begin(manifest, module, inputs, config, reason)
+
+    def analysis_plan_a06_scoring_info(self, study_id):
+        """只读当前新版评分资格和已归档结果状态。"""
+        from .plan_scoring import info
+        return info(self, study_id)
+
+    def validate_analysis_plan_a06_scoring(self, study_id, payload):
+        """校验明确执行请求，不执行评分。"""
+        from .plan_scoring import check
+        return check(self, study_id, payload)
+
+    def begin_analysis_plan_a06_scoring(self, study_id, payload):
+        """锁内固定人工批准和一次明确执行授权，建立新评分运行。"""
+        from .plan_scoring import begin
+        return begin(self, study_id, payload)
+
+    def finish_analysis_plan_a06_scoring(self, study_id, run_id, summary, tables, files):
+        """再次核对当前版本，经科学校验器提交评分结果，仍待人工复核。"""
+        from .plan_scoring import finish
+        return finish(self, study_id, run_id, summary, tables, files)
 
     def analysis_plan_a06_reviewable_info(self, study_id):
         """只读可复核准备资格，不提交人工决定。"""
