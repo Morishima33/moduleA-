@@ -363,6 +363,7 @@ export interface ModuleView {
   compound_selection?:CompoundSelectionInfo|null;
   docking_preparation?:DockingPreparationInfo|null;
   reference_qualification?:ReferenceQualificationInfo|null;
+  review_packet?:ReferenceReviewPacket|null;
   scoring_readiness?:ScoringReadinessInfo|null;
   docking_coverage?:DockingCoverageInfo|null;
   docking_candidates?: DockingCandidatesInfo | null;
