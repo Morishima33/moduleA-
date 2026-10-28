@@ -20,6 +20,8 @@
 
 `GET /api/v1/studies/{sid}/analysis-plan/a06-review-packet`只读汇总当前新版准备的运行版本、参考证据、归档文件核查数量、资格结果和评分阻断项；返回`review_available:false`、`can_enter_review:false`、`scoring_allowed:false`。此接口只为人工整体复核提供材料，不写入研究、不提交任务、不改变当前版本。
 
+`GET /api/v1/studies/{sid}/analysis-plan/a06-review-packet/export.json`下载同一只读材料包JSON；下载前重新读取当前研究并逐件核验归档指纹，文件名绑定研究编号。导出不写入研究、不改变当前版本、不提交评分。
+
 上述资格核查与评分闸门同时识别`A06.plan_reference_preparation.2`：核对同研究固定输入、事实包、参考包、逐件指纹和空评分矩阵，返回归档完整性状态。此GET不执行科学准备，不将归档完整性显示为正式审批；第二版的`can_enter_review`与`scoring_allowed`仍为false。
 
 清单另返回`current_summary`和当前已完整归档的`saved_decisions`；null口袋键始终回到原第二版状态，修订不能误认为沿用上次已采用口袋。网页独立`#/plan-pockets/{sid}`展示清单、盒参数、残基和两次文件指纹；A06_PREP页顶栏提供入口。保存过的选择可回显，首次不预选采用，提交确认框始终默认未勾选。网页只消费服务端`eligible`和摘要，不计算科学通过与否。

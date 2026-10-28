@@ -85,6 +85,12 @@ class ReferencePublicationV2Tests(unittest.TestCase):
         self.assertTrue(result['summary']['handoff_blocked'])
         self.assertEqual(result['summary']['scored_pairs'], 0)
         self.assertFalse(workflow.approved(manifest, result['run_id']))
+        from modulea.api.analysis_reference_preparation_view import export_review_packet
+        download = export_review_packet(App(base.base.settings), None, sid)
+        self.assertEqual(download[0], 'download')
+        exported = json.loads(download[1].decode('utf-8'))
+        self.assertEqual(exported['current_run_id'], result['run_id'])
+        self.assertFalse(exported['scoring']['scoring_allowed'])
         check = qualification(workflow, sid)
         self.assertTrue(check['supported'])
         self.assertTrue(check['qualified'], check)

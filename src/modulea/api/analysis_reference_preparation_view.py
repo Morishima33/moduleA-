@@ -39,6 +39,14 @@ def review_packet(app, req, sid):
         raise from_contract(str(error))
 
 
+def export_review_packet(app, req, sid):
+    """下载当前A06整体复核材料包JSON；下载前重新核验归档指纹。"""
+    import json
+    packet = review_packet(app, req, sid)
+    return ("download", json.dumps(packet, ensure_ascii=False, indent=2).encode("utf-8"),
+            f"{sid}_a06_review_packet.json", "application/json; charset=utf-8")
+
+
 def prepare(app, req, sid):
     """提交显式绑定请求；后台只重建准备证据，不运行评分。"""
     body = req.json()

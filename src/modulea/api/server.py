@@ -70,6 +70,7 @@ class App:
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a06-reference-qualification", self.get_analysis_a06_reference_qualification),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a06-scoring-readiness", self.get_analysis_a06_scoring_readiness),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a06-review-packet", self.get_analysis_a06_review_packet),
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a06-review-packet/export.json", self.export_analysis_a06_review_packet),
             ("GET", rf"/api/v1/studies/{ID}/trace", self.get_study_trace),
             ("GET", rf"/api/v1/studies/{ID}/trace/export.json", self.export_study_trace_json),
             ("GET", rf"/api/v1/studies/{ID}/trace/export.csv", self.export_study_trace_csv),
@@ -325,6 +326,11 @@ class App:
         """只读获取A06整体复核材料包。"""
         from .analysis_reference_preparation_view import review_packet
         return review_packet(self, req, study_id)
+
+    def export_analysis_a06_review_packet(self, req, study_id):
+        """下载A06整体复核材料包JSON。"""
+        from .analysis_reference_preparation_view import export_review_packet
+        return export_review_packet(self, req, study_id)
 
     def get_study_trace(self, req, study_id):
         """返回当前研究的只读追溯摘要；详细数据通过显式导出下载。"""
