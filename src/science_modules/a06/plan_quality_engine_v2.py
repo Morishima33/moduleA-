@@ -2,6 +2,7 @@
 from pathlib import Path
 import json
 import math
+import os
 import re
 import urllib.request
 from contracts import require
@@ -49,20 +50,39 @@ def prediction_box(text, prediction, padding):
     return box
 
 
+def tool_path(path):
+    """Windows长路径改用同一文件的系统短名；不复制或改动科学输入。"""
+    value = Path(path)
+    if os.name != 'nt' or len(str(value)) < 240:
+        return str(value)
+    import ctypes
+    existing = value if value.exists() else value.parent
+    function = ctypes.windll.kernel32.GetShortPathNameW
+    function.argtypes = [ctypes.c_wchar_p, ctypes.c_wchar_p, ctypes.c_uint]
+    function.restype = ctypes.c_uint
+    buffer = ctypes.create_unicode_buffer(32768)
+    count = function(str(existing), buffer, len(buffer))
+    require(0 < count < len(buffer), 'Vina长路径无法取得系统短名，请使用较短的独立运行目录')
+    shortened = Path(buffer.value) if value.exists() else Path(buffer.value) / value.name
+    require(len(str(shortened)) < 240 and shortened.resolve() == value.resolve(),
+            'Vina长路径短名未缩短或不能对应原文件')
+    return str(shortened)
+
+
 def redock(executable, receptor, reference_pdbqt, reference_sdf, box, label, folder, params):
     """记录实际参数和命令，并以Top-1输出计算对称RMSD。"""
     from docking_redocking import _poses, symmetry_rmsd
     output = folder / "redocking" / f"{label}_redocked.pdbqt"
     output.parent.mkdir(parents=True, exist_ok=True)
-    command = [str(executable), "--receptor", str(receptor), "--ligand", str(reference_pdbqt)]
+    command = [tool_path(executable), "--receptor", tool_path(receptor), "--ligand", tool_path(reference_pdbqt)]
     for axis, value in zip("xyz", box["center"]): command.extend(["--center_" + axis, str(value)])
     for axis, value in zip("xyz", box["size"]): command.extend(["--size_" + axis, str(value)])
     for key, value in (("scoring", params["scoring"]), ("exhaustiveness", params["exhaustiveness"]),
                        ("num_modes", params["num_modes"]), ("energy_range", params["energy_range_kcal_mol"]),
                        ("seed", params["seed"])): command.extend(["--" + key, str(value)])
-    command.extend(["--out", str(output)])
+    command.extend(["--out", tool_path(output)])
     write_json(folder / "redocking" / "command.json", {"parameters": params, "box": box, "arguments": command})
-    result = _run(command, folder, folder / "redocking" / f"{label}_stdout.txt", folder / "redocking" / f"{label}_stderr.txt")
+    result = _run(command, tool_path(folder), folder / "redocking" / f"{label}_stdout.txt", folder / "redocking" / f"{label}_stderr.txt")
     require(result.returncode == 0 and output.is_file(), "参考配体重对接失败：" + label)
     value = symmetry_rmsd(reference_sdf.read_bytes(), reference_pdbqt.read_text("ascii"), _poses(output.read_text("ascii"))[0])["rmsd_angstrom"]
     return value, output

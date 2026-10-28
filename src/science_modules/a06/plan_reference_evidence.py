@@ -1,5 +1,6 @@
 """新方案共晶参考的证据适配；只消费明确稳定键，不替研究选择配体或批准。"""
 from copy import deepcopy
+from pathlib import Path
 
 from contracts import require
 from storage import verified_file
@@ -107,8 +108,12 @@ def validate_ready(home, connection, result, config):
         expected_flags["--size_"+axis] = size
     arguments = command["arguments"]
     for flag, value in expected_flags.items():
-        require(arguments.count(flag) == 1 and arguments[arguments.index(flag)+1] == str(value),
-                "实际参考重对接命令与文件或方案不一致")
+        require(arguments.count(flag) == 1 and arguments.index(flag) + 1 < len(arguments),
+                "实际参考重对接命令缺少唯一参数")
+        actual = arguments[arguments.index(flag)+1]
+        matches = (Path(actual).is_absolute() and Path(actual).resolve() == Path(value).resolve()
+                   if flag in ('--receptor', '--ligand', '--out') else actual == str(value))
+        require(matches, "实际参考重对接命令与文件或方案不一致")
     pose = _poses(verified_file(home, evidence["redocking_output"]).read_text("ascii"))[0]
     value = symmetry_rmsd(verified_file(home, evidence["reference_sdf"]).read_bytes(),
                           verified_file(home, evidence["reference_pdbqt"]).read_text("ascii"), pose)["rmsd_angstrom"]

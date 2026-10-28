@@ -1,15 +1,32 @@
 import unittest
+import os
 import tempfile
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
 from science_modules.a06.plan_preparation_v2 import execution_config, assess_plan_attempt
-from science_modules.a06.plan_quality_engine_v2 import reference_box, prediction_box, redock
+from science_modules.a06.plan_quality_engine_v2 import reference_box, prediction_box, redock, tool_path
 from science_modules.analysis_protocol import compile_plan
 
 
 class PlanPreparationParameterTests(unittest.TestCase):
+    @unittest.skipUnless(os.name == 'nt', '仅Windows外部工具存在此路径限制')
+    def test_long_tool_paths_resolve_to_same_input_and_output(self):
+        """超过260字符的路径缩短后仍指向相同原件，不复制数据。"""
+        with tempfile.TemporaryDirectory() as folder:
+            directory = Path(folder).joinpath(*['long_evidence_directory_' + str(i) for i in range(10)])
+            directory.mkdir(parents=True)
+            source = directory / 'receptor.pdbqt'
+            source.write_text('isolated input', encoding='ascii')
+            self.assertGreater(len(str(source)), 260)
+            shortened = tool_path(source)
+            self.assertLess(len(shortened), 240)
+            self.assertEqual(Path(shortened).resolve(), source.resolve())
+            output = directory / 'output.pdbqt'
+            self.assertEqual(Path(tool_path(output)).resolve(), output.resolve())
+            self.assertFalse(output.exists())
+
     def test_compiled_plan_parameters_are_bound_to_execution_config(self):
         plan = compile_plan({"mode": "personalized", "parameters": {
             "a06.exhaustiveness": 12, "a06.num_modes": 7,
