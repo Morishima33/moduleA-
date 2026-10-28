@@ -102,7 +102,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
 
       {view.operation_guide && <ModuleOperationGuide studyId={studyId} moduleId={m.module_id} info={view.operation_guide} pending={m.module_id === 'A05' && keggPending}
         onLocate={target => {if (target === 'module-enrichment-confirmation') setEnrichmentNavigation(n => n + 1);}}/>}
-      {m.module_id === 'A06_PREP' && view.reference_qualification && <ReferenceQualification info={view.reference_qualification} packet={view.review_packet} />}
+      {m.module_id === 'A06_PREP' && view.reference_qualification && <ReferenceQualification studyId={studyId} info={view.reference_qualification} packet={view.review_packet} />}
       {m.module_id === 'A06_PREP' && !view.historical && <ReferenceEvidencePanel studyId={studyId} />}
       {m.module_id === 'A06_PREP' && !view.historical && <ReferencePreparationBinding studyId={studyId} />}
       {m.module_id === 'A06_PREP' && view.scoring_readiness && <ScoringReadiness info={view.scoring_readiness} />}
