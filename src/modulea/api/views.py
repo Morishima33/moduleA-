@@ -468,7 +468,8 @@ class Views:
         response["automatic_docking"] = None
         plan_preparation = bool(module_id == "A06_PREP" and run and
             run.get("config", {}).get("version") in ("A06.plan_preparation.1", "A06.plan_preparation.2",
-                "A06.plan_preparation.3", "A06.plan_reference_preparation.1"))
+                "A06.plan_preparation.3", "A06.plan_reference_preparation.1",
+                "A06.plan_reference_preparation.2"))
         if module_id in ("A06_PREP", "A06") and not historical and not preparation and not handoff and not plan_preparation:
             from ..core.automatic_experience import automatic_context
             with workflow.handoff_read_cache():

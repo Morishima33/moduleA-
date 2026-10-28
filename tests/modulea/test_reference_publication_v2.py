@@ -12,6 +12,7 @@ from contracts import ContractError
 from science_modules.a06 import reference_review
 from science_modules.a06.plan_reference_publication_v2 import validator
 from modulea.core.reference_preparation import qualification, scoring_readiness
+from modulea.api.server import App
 from tests.modulea.test_plan_pockets import PocketReviewTests
 
 
@@ -90,6 +91,10 @@ class ReferencePublicationV2Tests(unittest.TestCase):
         gate = scoring_readiness(workflow, sid)
         self.assertTrue(gate['supported'])
         self.assertFalse(gate['scoring_allowed'])
+        page = App(base.base.settings).views.module(sid, 'A06_PREP')
+        self.assertIsNone(page['automatic_docking'])
+        self.assertIsNone(page['operation_guide'])
+        self.assertNotEqual(page['module']['title_zh'], '对接准备与自动计算')
         self.assertEqual(workflow.publish_analysis_plan_a06_reference_qualification_v2(sid, payload)['run_id'], result['run_id'])
         with self.assertRaises(ContractError):
             workflow.publish_analysis_plan_a06_reference_qualification_v2(sid, dict(payload, note='改动'))
