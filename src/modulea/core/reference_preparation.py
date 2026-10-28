@@ -195,6 +195,35 @@ def scoring_readiness(workflow, sid):
     return value
 
 
+def review_packet(workflow, sid):
+    """只读汇总人工整体复核所需的版本、证据和阻断条件。"""
+    manifest = workflow.load(sid)
+    current = manifest.get("current", {}).get("A06_PREP")
+    base = {"supported": False, "review_available": False,
+            "execution_available": False, "scoring_allowed": False,
+            "can_enter_review": False, "blockers": []}
+    if not current:
+        return dict(base, reason_zh="当前没有A06准备版本")
+    run = workflow.run(manifest, current)
+    version = run.get("config", {}).get("version")
+    if version not in (VERSION, "A06.plan_reference_preparation.2"):
+        return dict(base, reason_zh="当前准备版本尚未生成整体复核材料包", current_run_id=current)
+    qualification = globals()["qualification"](workflow, sid)
+    scoring = scoring_readiness(workflow, sid)
+    result = workflow.result(manifest, current)
+    blockers = list(qualification.get("blockers", [])) + list(scoring.get("blockers", []))
+    unique = []
+    for item in blockers:
+        if item not in unique:
+            unique.append(item)
+    return dict(base, supported=True, current_run_id=current, version=version,
+                summary=result.get("summary") if result else None,
+                qualification=qualification, scoring=scoring,
+                checked_files=qualification.get("checked_files", 0), blockers=unique,
+                review_available=False, can_enter_review=False,
+                reason_zh="复核材料已整理；正式整体复核仍需独立人工决定")
+
+
 def validate(workflow, sid, payload):
     """同源预检及重复请求检查，工具复核在后台再次执行。"""
     from science_modules.a06.reference_preparation_contract import validate_request

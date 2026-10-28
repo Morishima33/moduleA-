@@ -12,6 +12,7 @@ from contracts import ContractError
 from science_modules.a06 import reference_review
 from science_modules.a06.plan_reference_publication_v2 import validator
 from modulea.core.reference_preparation import qualification, scoring_readiness
+from modulea.core.reference_preparation import review_packet
 from modulea.api.server import App
 from tests.modulea.test_plan_pockets import PocketReviewTests
 
@@ -95,6 +96,16 @@ class ReferencePublicationV2Tests(unittest.TestCase):
         self.assertIsNone(page['automatic_docking'])
         self.assertIsNone(page['operation_guide'])
         self.assertNotEqual(page['module']['title_zh'], '对接准备与自动计算')
+
+        packet = review_packet(workflow, sid)
+        self.assertTrue(packet['supported'])
+        self.assertFalse(packet['review_available'])
+        self.assertFalse(packet['can_enter_review'])
+        self.assertFalse(packet['scoring']['scoring_allowed'])
+        self.assertEqual(packet['summary']['scored_pairs'], 0)
+        before = deepcopy(workflow.load(sid))
+        self.assertEqual(review_packet(workflow, sid)['current_run_id'], result['run_id'])
+        self.assertEqual(workflow.load(sid), before)
         self.assertEqual(workflow.publish_analysis_plan_a06_reference_qualification_v2(sid, payload)['run_id'], result['run_id'])
         with self.assertRaises(ContractError):
             workflow.publish_analysis_plan_a06_reference_qualification_v2(sid, dict(payload, note='改动'))

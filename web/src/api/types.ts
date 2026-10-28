@@ -498,6 +498,9 @@ source_review?:SourceInspectionReview|null;expected_source_review_id?:string|nul
 // 新版A06绑定准备的整体复核资格；只显示服务端复算，不代替人工批准。
 export interface ReferenceQualificationInfo {supported:boolean;enabled:boolean;qualified:boolean;can_enter_review:boolean;execution_available:false;current_run_id?:string;scored_pairs:number|null;checked_files?:number;summary?:Record<string,unknown>|null;blockers:string[];reason_zh:string}
 
+// A06整体复核材料包；只读汇总版本和阻断条件，不提交人工决定。
+export interface ReferenceReviewPacket {supported:boolean;review_available:boolean;execution_available:false;scoring_allowed:false;can_enter_review:false;current_run_id?:string;version?:string;summary?:Record<string,unknown>|null;qualification?:ReferenceQualificationInfo;scoring?:ScoringReadinessInfo;checked_files:number;blockers:string[];reason_zh:string}
+
 // 研究核查草案与同批矩阵只读，身份预核查不代替人工确认。
 export interface DockingReviewCompound extends CompoundChoiceRow {name_zh:string;cid:string;identity_prechecked:boolean;identity_state_zh:string;source_3d_state_zh:string;evidence_zh:string;manual_reason_zh:string}
 export interface DockingMatrixCell {compound_id:string;target_id:string;state:string;score:number|null;reason_zh:string;color:string;text_color:string}

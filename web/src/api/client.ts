@@ -117,6 +117,8 @@ export const api = {
     request<{task?: Task; run_id?: string; created: boolean; message_zh: string}>('POST', `/studies/${sid}/analysis-plan/a06-reference-preparation-v2`, body),
   /** 正式评分只读闸门；不提交评分任务。 */
   a06ScoringReadiness: (sid: string) => request<import('./types').ScoringReadinessInfo>('GET', `/studies/${sid}/analysis-plan/a06-scoring-readiness`),
+  /** A06整体复核材料包只读汇总；不代替人工复核。 */
+  a06ReviewPacket: (sid: string) => request<import('./types').ReferenceReviewPacket>('GET', `/studies/${sid}/analysis-plan/a06-review-packet`),
   /** 目录和校验均不创建研究、不提交任务。 */
   analysisParameters: () => request<import('./types').AnalysisParameterCatalog>('GET', '/analysis-plans/parameters'),
   validateAnalysisPlan: (specification: {mode: 'standard' | 'personalized'; parameters?: Record<string, import('./types').PlanValue>}) =>

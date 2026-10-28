@@ -63,6 +63,11 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
         from .reference_preparation import scoring_readiness
         return scoring_readiness(self, study_id)
 
+    def analysis_plan_a06_review_packet(self, study_id):
+        """只读汇总A06整体复核材料，不提交复核或启动评分。"""
+        from .reference_preparation import review_packet
+        return review_packet(self, study_id)
+
     def validate_analysis_plan_a06_reference_preparation_request(self, study_id, payload):
         """绑定请求只核对当前准备和参考证据版本，不运行科学工具。"""
         from .reference_preparation import validate

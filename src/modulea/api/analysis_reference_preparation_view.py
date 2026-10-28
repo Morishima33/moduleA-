@@ -31,6 +31,14 @@ def scoring_readiness(app, req, sid):
         raise from_contract(str(error))
 
 
+def review_packet(app, req, sid):
+    """GET只读汇总人工整体复核材料，不写入或启动任务。"""
+    try:
+        return app.kernel.workflow().analysis_plan_a06_review_packet(sid)
+    except ContractError as error:
+        raise from_contract(str(error))
+
+
 def prepare(app, req, sid):
     """提交显式绑定请求；后台只重建准备证据，不运行评分。"""
     body = req.json()
