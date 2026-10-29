@@ -7,9 +7,9 @@ from . import system_validation as validation
 VERSION='ModuleA.system_execution.1'
 BATCHES='analysis_plan_system_batch_records'
 EVENTS='analysis_plan_system_batch_events'
-IMPLEMENTED=('A01','A03','A03_SELECT','A04','A05')
-DEPENDENCIES={'A01':{'A00'},'A03':{'A01','A02'},'A03_SELECT':{'A03'},'A04':{'A03'},'A05':{'A03'}}
-SCIENTIFIC_VERSIONS={'A01':'A01.plan_publication.1','A03':'A03.plan_intersection.1',
+IMPLEMENTED=('A01','A02','A03','A03_SELECT','A04','A05')
+DEPENDENCIES={'A01':{'A00'},'A02':{'A00','A01'},'A03':{'A01','A02'},'A03_SELECT':{'A03'},'A04':{'A03'},'A05':{'A03'}}
+SCIENTIFIC_VERSIONS={'A01':'A01.plan_publication.1','A02':'A02.system_normalization.1','A03':'A03.plan_intersection.1',
     'A03_SELECT':'A03.plan_selection.1','A04':'A04.plan_network.1','A05':'A05.plan_enrichment.1'}
 FIELDS={'request_id','expected_a00','expected_plan_id','expected_input_hash','author','note','confirmed'}
 
@@ -39,7 +39,7 @@ def info(workflow,sid):
     return {'schema_version':VERSION,'supported':supported,'enabled':not blockers,'blockers':blockers,
         'expected_a00':a00,'expected_plan_id':draft['plan_id'] if draft else None,'expected_input_hash':fingerprint(snapshot(workflow,m)),
         'implemented_stages':list(IMPLEMENTED),'automatic_execution_available':False,
-        'message_zh':'系统执行基础已接通三库、交集、成分、PPI和富集；完整一键执行入口仍未开放，不代签人工复核。'}
+        'message_zh':'系统执行基础已接通三库、疾病标准化、交集、成分、PPI和富集；完整一键执行入口仍未开放，不代签人工复核。'}
 
 
 def read_batch(workflow,m,reference):
@@ -120,6 +120,10 @@ def is_active(workflow,m,run):
         require(set(run['parent_runs'])==DEPENDENCIES[run['module_id']]
             and run['config'].get('version')==SCIENTIFIC_VERSIONS[run['module_id']], '系统执行科学版本或完整依赖错误')
         require_batch(workflow,m,run['batch_file'])
+        if run['module_id']=='A02':
+            base=read_json(verified_file(workflow.location(m['study_id']),run['inputs']['base_run']))
+            review=workflow.latest_review(m,base['artifact_id'])
+            require(not review or review['decision']=='approved','疾病原候选已被明确暂存或退回')
         require(run['execution_authority']=='system_validation' and run['parent_review_ids']=={}
             and run['parent_validation_records']==parent_records(workflow,m,run['parent_runs']),'系统执行依赖与真实回执不一致')
         require(run['config_hash']==fingerprint(run['config'])
@@ -193,6 +197,9 @@ def _execute(workflow,sid,body):
         # 原件均由不可变记录绑定；科学复算期间释放锁，允许追加新草稿。
         from .system_execution_science import a01
         computed=a01(workflow,m,batch,plan)
+    elif module=='A02':
+        from .system_execution_science import a02
+        computed=a02(workflow,m,batch,plan,ref)
     elif module in ('A04','A05'):
         from . import system_execution_science as science
         computed=getattr(science,module.lower())(workflow,m,batch,plan,ref)
@@ -201,10 +208,14 @@ def _execute(workflow,sid,body):
         require(m['current'].get(module)==body['expected_current_run_id'],'计算前当前阶段已改变')
         require(all(m['current'].get(key)==rid for key,rid in parents.items()),'系统阶段上游已改变')
         require(parent_records(workflow,m,parents)==parent_snapshot,'科学计算期间上游系统回执或人工决定已改变')
+        if module=='A02':
+            base=read_json(verified_file(home,computed[0]['base_run']))
+            reviews=[r for r in m.get('reviews',[]) if read_json(verified_file(home,r))['artifact_id']==base['artifact_id']]
+            require(reviews==computed[0]['base_reviews'],'疾病标准化期间原候选人工决定已改变')
         attachments=[]
-        if module=='A01':
+        if module in ('A01','A02'):
             inputs,config,summary,tables,anomalies,sources=computed
-            outcome='success';figure=None
+            outcome='empty' if module=='A02' and not summary['标准化基因数'] else 'success';figure=None
         elif module=='A03':
             from .system_execution_science import a03
             inputs,config,summary,tables,anomalies,sources,figure=a03(workflow,m,batch,plan,ref,body)

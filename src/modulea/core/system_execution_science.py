@@ -98,6 +98,44 @@ def a05(workflow,m,batch,plan,batch_ref):
         'log':log,'outcome':'success' if any(tables[group.lower()+'_significant'] for group in science.groups(plan['plan'])) else 'empty'}
 
 
+def a02(workflow,m,batch,plan,batch_ref):
+    """消费授权时绑定的原始五库候选，同本批三库映射重新标准化。"""
+    from science_modules.a02.system_normalization import configuration,facts
+    sid=m['study_id'];home=workflow.location(sid);rid=batch['initial_binding']['current'].get('A02')
+    require(rid and m['current'].get('A02')==rid,'原始五库候选尚未提供或已替换，请重新明确批次')
+    run=workflow.run(m,rid);review=workflow.latest_review(m,run['artifact_id'])
+    require(not review or review['decision']=='approved','疾病原候选已有明确暂存或退回')
+    a01=m['current']['A01'];original=batch['initial_binding']['run_files'][rid]
+    inputs={'study_id':sid,'bound_a00':batch['request']['expected_a00'],'analysis_plan_id':plan['plan_id'],
+        'analysis_plan_file':deepcopy(batch['plan_file']),'analysis_parameter_hash':plan['plan']['parameter_hash'],
+        'system_batch_file':deepcopy(batch_ref),'base_run':deepcopy(original['run_file']),
+        'base_reviews':[deepcopy(r) for r in m.get('reviews',[]) if read_json(verified_file(home,r))['artifact_id']==run['artifact_id']],
+        'base_result':deepcopy(original['result_file']),'mapping':deepcopy(batch['mapping']),
+        'a01_result':deepcopy(m['runs'][a01]['result_file']),
+        'intake_result':deepcopy(m['runs'][batch['request']['expected_a00']]['result_file'])}
+    summary,tables,anomalies=facts(home,inputs)
+    return inputs,configuration(),summary,tables,anomalies,[batch['plan_file'],inputs['base_run'],inputs['base_result'],
+        inputs['a01_result'],inputs['intake_result'],inputs['mapping']['mapping_file'],*inputs['mapping']['identity_evidence_files'],
+        *workflow.result(m,rid)['sources']]
+
+
+def a02_validator(root,fallback):
+    """系统A02额外核对真实授权及系统父回执；旧疾病规则完全委托。"""
+    from science_modules.a02.system_normalization import validator,VERSION
+    science=validator(root,fallback)
+    def check(run,*args):
+        if run['config'].get('version')==VERSION:
+            from pathlib import Path
+            from .analysis_plans import AnalysisPlanWorkflow
+            from .system_execution import is_active
+            w=AnalysisPlanWorkflow(root);m=w.load(run['study_id']);home=Path(root)/'studies'/run['study_id']
+            candidate=deepcopy(m);candidate['current']['A02']=run['run_id']
+            candidate['runs'][run['run_id']]={'run_file':file_record(home,home/'runs/A02'/run['run_id']/'run.json','run'),'result_file':None}
+            require(is_active(w,candidate,run),'疾病系统授权或真实依赖已改变')
+        return science(run,*args)
+    return check
+
+
 def a01(workflow,m,batch,plan):
     """使用原三库方案事实和规范配置，只将执行授权改为独立系统协议。"""
     from components import parse_herbs
