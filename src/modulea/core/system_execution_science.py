@@ -4,6 +4,100 @@ from contracts import fingerprint,require
 from storage import file_record,new_id,read_json,verified_file,write_json
 
 
+def compounds(workflow,m,batch,plan,batch_ref):
+    """一次批次授权派生成分选择请求，原排序、并列及身份待核规则完整保留。"""
+    from science_modules.plan_compounds import facts,configuration
+    sid=m['study_id'];home=workflow.location(sid);a03=m['current']['A03'];review=workflow.current_docking_review(m)
+    binding={'study_id':sid,'a00':batch['request']['expected_a00'],'plan_id':plan['plan_id'],
+        'parameter_hash':plan['plan']['parameter_hash'],'current':deepcopy(m['current']),'docking_review':review,
+        'authorization_kind':'delegated_system_batch','authorization_file':deepcopy(batch_ref)}
+    body={'expected_a00':batch['request']['expected_a00'],'expected_a03':a03,'expected_selection':m['current'].get('A03_SELECT',''),
+        'expected_plan_id':plan['plan_id'],'expected_input_hash':fingerprint(binding),'operator':batch['request']['author'],
+        'reason':batch['request']['note'],'confirmed':True}
+    request={'schema_version':'A03.plan_selection.request.1','study_id':sid,'request':body,'binding':binding,
+        'confirmation_basis':'原一次明确系统批次授权派生，不表示另一人工点击'}
+    path=home/'decisions/analysis_plans/system_batches'/batch['batch_id']/'derived_requests'/(new_id('compound_request')+'.json')
+    write_json(path,request);ref=file_record(home,path,'compound_selection_request')
+    inputs={'study_id':sid,'bound_a00':batch['request']['expected_a00'],'bound_a03':a03,'analysis_plan_id':plan['plan_id'],
+        'analysis_plan_file':deepcopy(batch['plan_file']),'analysis_parameter_hash':plan['plan']['parameter_hash'],
+        'a03_result':deepcopy(m['runs'][a03]['result_file']),'execution_request_file':ref}
+    summary,tables=facts(home,inputs)
+    return inputs,configuration(plan['plan']),summary,tables,[
+        '名单来自本批原排序，保留边界并列；系统证据不代表人工批准或真实结构已可用。'],[batch['plan_file'],inputs['a03_result'],ref]
+
+
+def compound_validator(root,fallback):
+    """仅新系统执行分支改用真实系统授权，旧成分科学校验器和人工父签名断言保持。"""
+    def check(run,summary,tables,anomalies,outcome):
+        if run.get('execution_protocol')!='ModuleA.system_execution.1':return fallback(run,summary,tables,anomalies,outcome)
+        from science_modules.plan_compounds import facts,configuration
+        from .analysis_plans import AnalysisPlanWorkflow
+        from .system_execution import is_active
+        from pathlib import Path
+        w=AnalysisPlanWorkflow(root);m=w.load(run['study_id']);candidate=deepcopy(m)
+        # 规范发布时当前运行尚未提交manifest；只在内存提供候选运行，不写或制造批准。
+        candidate['current']['A03_SELECT']=run['run_id']
+        home=Path(root)/'studies'/run['study_id'];request=read_json(verified_file(home,run['inputs']['execution_request_file']))
+        require(run['config'].get('version')=='A03.plan_selection.1' and run['parent_review_ids']=={}
+            and request['binding']['authorization_kind']=='delegated_system_batch'
+            and request['binding']['authorization_file']==run['batch_file'],'系统成分授权或人工字段错误')
+        # is_active读取候选run需已注册文件指纹，run文件本身已真实落盘。
+        candidate['runs'][run['run_id']]={'run_file':file_record(home,home/'runs/A03_SELECT'/run['run_id']/'run.json','run'),'result_file':None}
+        require(is_active(w,candidate,run),'系统成分真实依赖已改变')
+        expected,rows=facts(home,run['inputs']);plan=read_json(verified_file(home,run['inputs']['analysis_plan_file']))['plan']
+        require(run['config']==configuration(plan) and run['parent_runs']['A03']==run['inputs']['bound_a03']
+            and fingerprint((summary,tables))==fingerprint((expected,rows)), '系统成分原科学规则或结果不一致')
+        require(outcome==('success' if rows['selected'] else 'empty'),'系统成分实际状态不一致')
+    return check
+
+
+def a04(workflow,m,batch,plan,batch_ref):
+    """锁外真正请求固定STRING接口，原始响应分步保存，失败不发布占位网络。"""
+    from science_modules.a04 import plan_flow as science
+    sid=m['study_id'];home=workflow.location(sid);a03=m['current']['A03']
+    folder=home/'decisions/analysis_plans/system_batches'/batch['batch_id']/'acquisition/A04'/new_id('attempt')
+    write_json(folder/'request.json',{'system_batch_file':batch_ref,'bound_a03':a03,'analysis_plan_file':batch['plan_file'],
+        'analysis_parameter_hash':plan['plan']['parameter_hash']})
+    def evidence(name,value):
+        """成功响应立即归档，后续请求失败仍保留。"""
+        write_json(folder/(name+'.json'),value)
+    targets=workflow.result(m,a03)['tables']['intersection_targets'];source=science.fetch(targets,plan['plan'],evidence=evidence)
+    path=folder/'source.json';write_json(path,source);ref=file_record(home,path,'ppi_source')
+    summary,tables=science.evaluate(targets,source,plan['plan']);summary['analysis_plan_id']=plan['plan_id']
+    inputs={'study_id':sid,'bound_a00':batch['request']['expected_a00'],'parent_result':deepcopy(m['runs'][a03]['result_file']),
+        'source_file':ref,'analysis_plan_id':plan['plan_id'],'analysis_plan_file':deepcopy(batch['plan_file']),
+        'analysis_parameter_hash':plan['plan']['parameter_hash']}
+    config={'version':'A04.plan_network.1','string_version':'12.0','required_score':int(round(plan['plan']['parameters']['a04.required_score']*1000)),
+        'network_type':'functional','add_nodes':0,'analysis_plan_id':plan['plan_id'],'analysis_parameter_hash':plan['plan']['parameter_hash']}
+    return inputs,config,summary,tables,['PPI按原固定规则和本批实际系统依赖计算，不表示人工批准。'],[
+        batch['plan_file'],ref,inputs['parent_result'],file_record(home,folder/'request.json','system_stage_acquisition')],{
+        'outcome':'success' if summary['参与节点数'] else 'empty'}
+
+
+def a05(workflow,m,batch,plan,batch_ref):
+    """锁外原R来源、ORA及独立BH；输入固定到批次原方案，不调用旧人工资格门控。"""
+    import hashlib
+    from science_modules.a05 import plan_flow as science
+    from science_modules.a05.flow import mapping_record
+    sid=m['study_id'];home=workflow.location(sid);a03=m['current']['A03'];mapping=mapping_record(workflow,m,a03)
+    source_ref=science.source_snapshot(workflow.root,plan['plan']);source=verified_file(workflow.root,source_ref)
+    folder=home/'decisions/analysis_plans/system_batches'/batch['batch_id']/'acquisition/A05'/new_id('attempt')
+    folder.mkdir(parents=True);archived=folder/source.name;archived.write_bytes(source.read_bytes())
+    require(hashlib.sha256(archived.read_bytes()).hexdigest()==source_ref['sha256'],'本批富集原件归档指纹不一致')
+    script=folder/'plan_enrichment.R';script.write_bytes(science.SCRIPT.read_bytes())
+    inputs={'study_id':sid,'expected_a00':batch['request']['expected_a00'],'analysis_plan_id':plan['plan_id'],
+        'analysis_plan_file':deepcopy(batch['plan_file']),'analysis_parameter_hash':plan['plan']['parameter_hash'],
+        'parent_result':deepcopy(m['runs'][a03]['result_file']),'mapping_file':mapping,
+        'source_file':file_record(home,archived,'annotation_source'),'execution_script':file_record(home,script,'execution_script')}
+    write_json(folder/'request.json',{'system_batch_file':batch_ref,'inputs':inputs,'bound_a03':a03})
+    _,summary,tables,log=science.facts(home,inputs);(folder/'R_log.txt').write_text(log,encoding='utf8')
+    sources=[batch['plan_file'],inputs['parent_result'],mapping,inputs['source_file'],inputs['execution_script'],
+        file_record(home,folder/'request.json','system_stage_acquisition'),file_record(home,folder/'R_log.txt','log')]
+    return inputs,science.configuration(plan['plan']),summary,tables,[
+        'GO各族及KEGG独立BH，实际R统计和完整背景保持；系统校验不表示人工批准。'],sources,{
+        'log':log,'outcome':'success' if any(tables[group.lower()+'_significant'] for group in science.groups(plan['plan'])) else 'empty'}
+
+
 def a01(workflow,m,batch,plan):
     """使用原三库方案事实和规范配置，只将执行授权改为独立系统协议。"""
     from components import parse_herbs

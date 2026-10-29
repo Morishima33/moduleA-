@@ -24,7 +24,7 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
         return start(self,study_id,payload)
 
     def execute_analysis_plan_system_stage(self,study_id,payload):
-        """内部真实系统证据阶段入口，当前仅实现A01/A03。"""
+        """内部真实系统证据阶段入口，完整自动调度另行接通。"""
         from .system_execution import execute
         return execute(self,study_id,payload)
 

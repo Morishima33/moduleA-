@@ -85,7 +85,7 @@ class SystemExecutionTests(unittest.TestCase):
             with self.subTest(changes=changes),self.assertRaises(ContractError):
                 self.w.start_analysis_plan_system_batch(self.sid,self.request|changes)
         self.assertEqual(self.w.load(self.sid),self.before);self.start()
-        with self.assertRaises(ContractError):self.execute('A04')
+        with self.assertRaises(ContractError):self.execute('A06')
         self.w.set_trashed(self.sid,True,'明确合成测试','回收站保护')
         with self.assertRaises(ContractError):self.execute('A01')
 
@@ -101,3 +101,27 @@ class SystemExecutionTests(unittest.TestCase):
         trace=build_trace(self.w,self.sid,include_data=True);events=trace['plan_decisions']['system_batch_events']
         self.assertEqual(len(events),1);self.assertEqual(events[0]['state'],'failed');self.assertIsNone(events[0]['run_id'])
         self.assertTrue(any(row['role']=='unpublished_system_run' for row in events[0]['files']))
+
+    def test_unreviewed_intersection_enters_real_compounds_and_ppi(self):
+        from science_modules.a04 import plan_flow as network
+        from tests.modulea.plan_report_nonempty_fixture import string_response
+        self.start();self.execute('A01');a03=self.execute('A03');selected=self.execute('A03_SELECT')
+        with patch.object(network,'request',side_effect=string_response):ppi=self.execute('A04')
+        m=self.w.load(self.sid);self.assertEqual(m['reviews'],self.before['reviews'])
+        self.assertEqual(ppi['summary']['参与节点数'],5);self.assertEqual(len(selected['tables']['selected']),2)
+        for result in (a03,selected,ppi):
+            self.assertTrue(self.w.active(m,result['run_id']));self.assertFalse(self.w.approved(m,result['run_id']))
+        trace=build_trace(self.w,self.sid,include_data=True);self.assertEqual(len(trace['plan_decisions']['system_batch_events']),4)
+
+    def test_network_hold_during_request_keeps_real_source_and_blocks_publish(self):
+        from science_modules.a04 import plan_flow as network
+        from tests.modulea.plan_report_nonempty_fixture import string_response
+        self.start();self.execute('A01');a03=self.execute('A03');called=[]
+        def fetch(method,params,opener=None):
+            if not called:
+                called.append(True);self.w.review(self.sid,a03['run_id'],'pending','明确合成测试','网络期间明确暂存')
+            return string_response(method,params,opener)
+        with patch.object(network,'request',side_effect=fetch),self.assertRaises(ContractError):self.execute('A04')
+        m=self.w.load(self.sid);self.assertNotIn('A04',m['current'])
+        trace=build_trace(self.w,self.sid,include_data=True);failure=trace['plan_decisions']['system_batch_events'][-1]
+        self.assertEqual(failure['state'],'failed');self.assertTrue(any(row['path'].endswith('/source.json') for row in failure['files']))

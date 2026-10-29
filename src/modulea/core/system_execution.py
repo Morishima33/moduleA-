@@ -7,9 +7,10 @@ from . import system_validation as validation
 VERSION='ModuleA.system_execution.1'
 BATCHES='analysis_plan_system_batch_records'
 EVENTS='analysis_plan_system_batch_events'
-IMPLEMENTED=('A01','A03')
-DEPENDENCIES={'A01':{'A00'},'A03':{'A01','A02'}}
-SCIENTIFIC_VERSIONS={'A01':'A01.plan_publication.1','A03':'A03.plan_intersection.1'}
+IMPLEMENTED=('A01','A03','A03_SELECT','A04','A05')
+DEPENDENCIES={'A01':{'A00'},'A03':{'A01','A02'},'A03_SELECT':{'A03'},'A04':{'A03'},'A05':{'A03'}}
+SCIENTIFIC_VERSIONS={'A01':'A01.plan_publication.1','A03':'A03.plan_intersection.1',
+    'A03_SELECT':'A03.plan_selection.1','A04':'A04.plan_network.1','A05':'A05.plan_enrichment.1'}
 FIELDS={'request_id','expected_a00','expected_plan_id','expected_input_hash','author','note','confirmed'}
 
 
@@ -38,7 +39,7 @@ def info(workflow,sid):
     return {'schema_version':VERSION,'supported':supported,'enabled':not blockers,'blockers':blockers,
         'expected_a00':a00,'expected_plan_id':draft['plan_id'] if draft else None,'expected_input_hash':fingerprint(snapshot(workflow,m)),
         'implemented_stages':list(IMPLEMENTED),'automatic_execution_available':False,
-        'message_zh':'系统执行基础只接通A01与A03；完整一键执行入口仍未开放，不代签人工复核。'}
+        'message_zh':'系统执行基础已接通三库、交集、成分、PPI和富集；完整一键执行入口仍未开放，不代签人工复核。'}
 
 
 def read_batch(workflow,m,reference):
@@ -180,33 +181,54 @@ def _execute(workflow,sid,body):
                 '系统阶段回执与实际结果不一致')
             require(event['request']==body,'本批阶段已经执行，请查看当前结果');return workflow.result(m,run['run_id'])
     require(m['current'].get(module)==body['expected_current_run_id'],'当前阶段已改变，请刷新')
-    parents={'A00':batch['request']['expected_a00']} if module=='A01' else {key:m['current'].get(key) for key in ('A01','A02')}
+    parents={key:m['current'].get(key) for key in DEPENDENCIES[module]}
     require(all(parents.values()),'系统阶段上游尚未生成');ensure_parents(workflow,sid,parents)
+    parent_snapshot=parent_records(workflow,workflow.load(sid),parents)
+    if module in ('A03_SELECT','A04','A05'):
+        require(workflow.result(m,parents['A03'])['summary']['交集靶点数']>0,'本批交集为空，该分支不适用，不启动科学任务')
+    if module=='A05':require(plan['plan']['parameters']['a05.include_go'] or plan['plan']['parameters']['a05.include_kegg'],
+        '本批未纳入GO或KEGG，富集不适用，不启动R')
     computed=None
     if module=='A01':
         # 原件均由不可变记录绑定；科学复算期间释放锁，允许追加新草稿。
         from .system_execution_science import a01
         computed=a01(workflow,m,batch,plan)
+    elif module in ('A04','A05'):
+        from . import system_execution_science as science
+        computed=getattr(science,module.lower())(workflow,m,batch,plan,ref)
     with write_lock(workflow.root):
         m=workflow.load(sid);batch,plan=require_batch(workflow,m,ref)
         require(m['current'].get(module)==body['expected_current_run_id'],'计算前当前阶段已改变')
         require(all(m['current'].get(key)==rid for key,rid in parents.items()),'系统阶段上游已改变')
+        require(parent_records(workflow,m,parents)==parent_snapshot,'科学计算期间上游系统回执或人工决定已改变')
+        attachments=[]
         if module=='A01':
             inputs,config,summary,tables,anomalies,sources=computed
             outcome='success';figure=None
-        else:
+        elif module=='A03':
             from .system_execution_science import a03
             inputs,config,summary,tables,anomalies,sources,figure=a03(workflow,m,batch,plan,ref,body)
             outcome='success' if summary['交集靶点数'] else 'empty'
+        elif module=='A03_SELECT':
+            from .system_execution_science import compounds
+            inputs,config,summary,tables,anomalies,sources=compounds(workflow,m,batch,plan,ref)
+            outcome='success' if tables['selected'] else 'empty';figure=None
+        else:
+            inputs,config,summary,tables,anomalies,sources,extra=computed;figure=None
+            outcome=extra['outcome']
         run=begin(workflow,m,module,inputs,config,batch['request']['note'],ref,parents)
         figures=[]
         if figure is not None:
             path=home/'runs'/module/run['run_id']/'venn.svg';path.write_text(figure,encoding='utf8');figures=[file_record(home,path,'figure')]
+        if module=='A05':
+            from science_modules.a05.plan_figures import draw
+            folder=home/'runs'/module/run['run_id'];figures=[file_record(home,path,'figure') for path in draw(tables,plan['plan'],folder).values()]
+            path=folder/'R_log.txt';path.write_text(extra['log'],encoding='utf8');attachments.append(file_record(home,path,'log'))
         # 科学一致性必须取真实生产验证器，不信任调用者传入的lambda或客户端标记。
         canonical=validation.canonical_validator(workflow.root,module);require(callable(canonical),'实际规范验证器未接通')
         canonical(run,summary,tables,anomalies,outcome)
         result=workflow._finish(m,run['run_id'],summary,tables,anomalies,outcome,
-            sources=[ref,*run['parent_validation_records'].values(),*sources],figures=figures)
+            sources=[ref,*run['parent_validation_records'].values(),*sources],figures=figures,attachments=attachments)
         event={'schema_version':VERSION,'study_id':sid,'batch_id':batch['batch_id'],'stage':module,'state':'completed',
             'batch_file':deepcopy(ref),
             'request':deepcopy(body),'run_id':run['run_id'],'result_file':deepcopy(m['runs'][run['run_id']]['result_file']),
