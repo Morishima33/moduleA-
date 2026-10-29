@@ -1,6 +1,6 @@
 """报告全链的真实上游构建器：合成三库/五库原件，所有当前结果经生产验证器生成。"""
 from pathlib import Path
-import gzip,hashlib,json
+import gzip,hashlib,json,io,zipfile
 from uuid import uuid4
 from unittest.mock import patch
 from modulea.core.kernel import full_workflow
@@ -11,10 +11,26 @@ from science_modules.a02.plan_normalization import preview,publish
 from tests.modulea.test_plan_a01_publication import source_package
 
 
-def prepare(root,*,empty=False,stop_before_normalization=False,specification=None,empty_symbol='B',modern=False):
+def multi_target_package(database):
+    """明确合成的两成分/五基因原包；完整性数量按10条原记录核对。"""
+    raw=source_package(database)
+    if database!='TCMSP':return raw
+    with zipfile.ZipFile(io.BytesIO(raw)) as archive:files={name:archive.read(name) for name in archive.namelist()}
+    header='Chinesename\tMOLID\tmoleculename\tob\tdl\tUniProtAC\tGeneNames\tOrganism\n'
+    files['references/tcmsp_snapshot.tsv']=(header+''.join(
+        f'测试药\t{cid}\tTest {cid}\t40\t0.3\tP{i}\t{symbol}\tHomo sapiens (Human)\n'
+        for cid in ('MOL1','MOL2') for i,symbol in enumerate('ABCDE',1))).encode()
+    meta=json.loads(files['modulea_source.json']);meta['completeness']['测试药']['records']=10
+    files['modulea_source.json']=json.dumps(meta,ensure_ascii=False).encode();out=io.BytesIO()
+    with zipfile.ZipFile(out,'w',zipfile.ZIP_DEFLATED) as archive:
+        for name,raw in files.items():archive.writestr(name,raw)
+    return out.getvalue()
+
+
+def prepare(root,*,empty=False,stop_before_normalization=False,specification=None,empty_symbol='B',modern=False,multiple_targets=False):
     """既有科学发布、明确测试复核和新方案交集；不使用假validator/直接改manifest。"""
     root=Path(root);refs=root/'references';refs.mkdir(parents=True)
-    symbols='ABC' if empty_symbol in 'ABC' else 'ABC'+empty_symbol
+    symbols='ABCDE' if multiple_targets else 'ABC' if empty_symbol in 'ABC' else 'ABC'+empty_symbol
     hgnc=('hgnc_id\tsymbol\tstatus\tprev_symbol\talias_symbol\tensembl_gene_id\tuniprot_ids\tentrez_id\n'+
           ''.join(f'HGNC:{i}\t{symbol}\tApproved\t\t\tENSG{i}\tP{i}\t{i}\n' for i,symbol in enumerate(symbols,1))).encode()
     files={'hgnc_complete_set_20260913.tsv':hgnc,
@@ -55,11 +71,13 @@ def prepare(root,*,empty=False,stop_before_normalization=False,specification=Non
     for database in uploads.DATABASES:
         m=w.load(sid)
         uploads.stage(w,sid,a00,m['current'].get('A01',''),(m.get('current_component_uploads') or {}).get('sha256',''),
-            {'database':database,'format':'source_zip','version':'explicit_synthetic_fixture','data':source_package(database)},root/'parse')
+            {'database':database,'format':'source_zip','version':'explicit_synthetic_fixture',
+             'data':multi_target_package(database) if multiple_targets else source_package(database)},root/'parse')
     m=w.load(sid);a01=w.publish_analysis_plan_a01(sid,{'expected_a00':a00,'expected_a01':'',
         'expected_plan_id':draft['plan_id'],'expected_staging':m['current_component_uploads']['sha256'],'reason':'实际三库及HGNC合成发布'})
     w.review(sid,a01['run_id'],'approved','明确合成测试复核','仅对隔离三库结果测试')
-    content=('raw_symbol\tdisease_term\n'+(empty_symbol if empty else 'A')+'\t'+term+'\n').encode()
+    disease_symbols='ABCDE' if multiple_targets else [empty_symbol if empty else 'A']
+    content=('raw_symbol\tdisease_term\n'+''.join(symbol+'\t'+term+'\n' for symbol in disease_symbols)).encode()
     base={'format':'tsv','query':term,'retrieved_at':'2026-10-29','version':'explicit_synthetic_fixture',
           'source_url':'explicit_synthetic_fixture','name':'synthetic_disease.tsv','encoding':'utf-8-sig','data':content}
     databases=source_profile('A02.source_profile.3')['databases'] if modern else DATABASES

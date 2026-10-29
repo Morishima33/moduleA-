@@ -74,6 +74,7 @@ def figure(document,home,entry):
     path=verified_file(home,entry['record']);paragraph=document.add_paragraph()
     from docx.image.image import Image
     size=Image.from_file(str(path));width=min(14.0 if entry.get('module')=='A03' else 15.8,20.0*size.px_width/size.px_height)
+    if entry.get('module')=='A06':width=min(width,size.px_width*2.54/180)
     if width<15.8:paragraph.alignment=1
     paragraph.add_run().add_picture(str(path),width=Cm(width))
     document.add_paragraph(entry['caption'])
@@ -182,7 +183,9 @@ def build(payload,destination,home,*,concise=False,draft=False):
     if payload.get('enrichment'):methods.append('本批富集各检验族独立BH校正。')
     if payload.get('docking'):methods.append('对接范围、原始评分及NA/失败原因按实际保留。')
     methods.append('不适用分支未执行；创建方案参数和术语详见附录。');document.add_paragraph(''.join(methods))
-    network_heading=document.add_heading('4 交集 成分与PPI网络',1);network_heading.paragraph_format.page_break_before=True
+    network_heading=document.add_heading('4 交集 成分与PPI网络',1)
+    # 非空报告来源较长时允许在方法段后接续，避免单独留一页方法说明。
+    network_heading.paragraph_format.page_break_before=not payload.get('counts',{}).get('intersection')
     for row in payload['network_summary']:
         if row!=BOUNDARY:document.add_paragraph(row)  # 总体限制已在开头与附录完整说明。
     for entry in payload.get('figures',[]):

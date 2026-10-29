@@ -61,3 +61,15 @@ class PlanReportFiguresTests(unittest.TestCase):
         figure(document,self.root,{'record':file_record(self.root,paths['png'],'figure'),'caption':'合成完整矩阵图'})
         shape=document.inline_shapes[0];self.assertLessEqual(shape.height,Cm(20)+10)
         self.assertLess(shape.width,Cm(15.8))
+
+    def test_small_na_matrix_is_readable_without_full_page_pixel_enlargement(self):
+        """两组NA矩阵居中保持原图密度，不把短图放大成整页巨字。"""
+        from docx import Document
+        from docx.shared import Cm
+        from storage import file_record
+        from science_modules.a07.plan_documents import figure
+        facts=docking({'compounds':[{'compound_id':'C1'},{'compound_id':'C2'}],'receptors':[{'target_id':'R'}],
+            'pairs':[{'compound_id':cid,'target_id':'R','state':'NA','score':None,'reason_zh':'合成NA'} for cid in ('C1','C2')]},{})
+        paths,_=figures.heatmaps(facts,self.root)[0];document=Document()
+        figure(document,self.root,{'module':'A06','record':file_record(self.root,paths['png'],'figure'),'caption':'合成小矩阵'})
+        shape=document.inline_shapes[0];self.assertLessEqual(shape.width,Cm(10));self.assertLessEqual(shape.height,Cm(10))
