@@ -23,6 +23,11 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
         from .system_execution import start
         return start(self,study_id,payload)
 
+    def execute_analysis_plan_system_decision(self,study_id,payload):
+        """同批系统受体选择及固定准备输入，不生成选择人工审核。"""
+        from .system_decisions import execute
+        return execute(self,study_id,payload)
+
     def execute_analysis_plan_system_stage(self,study_id,payload):
         """内部真实系统证据阶段入口，完整自动调度另行接通。"""
         from .system_execution import execute

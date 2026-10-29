@@ -95,6 +95,8 @@ def _plan_decisions(workflow, manifest, all_files):
             ('system_validations','analysis_plan_system_validation_records','ModuleA.system_validation.1'),
             ('system_batches','analysis_plan_system_batch_records','ModuleA.system_execution.1'),
             ('system_batch_events','analysis_plan_system_batch_events','ModuleA.system_execution.1'),
+            ('system_decisions','analysis_plan_system_decisions','ModuleA.system_decision.1'),
+            ('system_decision_failures','analysis_plan_system_decision_failures','ModuleA.system_decision.1'),
             ('report_requests','analysis_plan_report_requests','A07.plan_report.1'),
             ('report_receipts','analysis_plan_report_receipts','A07.plan_report.1'),
             ('report_failures','analysis_plan_report_failures','A07.plan_report.1')):
@@ -118,6 +120,13 @@ def _plan_decisions(workflow, manifest, all_files):
                 value=read_receipt(workflow,manifest,reference)
             if key=='system_validation_requests':
                 require(value['request_hash']==fingerprint(value['request']),'系统校验请求指纹不一致')
+            if key=='system_decisions':
+                from .system_decisions import read_record
+                value=read_record(workflow,manifest,reference)
+            if key=='system_decision_failures':
+                require(value['state']=='failed' and value['human_review_written'] is False
+                    and value['batch_file'] in manifest.get('analysis_plan_system_batch_records',[])
+                    and value['error_type'] and value['error_zh'],'系统选择失败不能写作成功名单')
             if key=='system_batches':
                 from .system_execution import read_batch
                 value=read_batch(workflow,manifest,reference)[0]
@@ -243,7 +252,7 @@ def build_trace(workflow, study_id, include_data=False):
 
 
 def trace_csv(payload):
-    """将每个模块每张结果表展开为可在Excel中继续处理的UTF-8 CSV。"""
+    """展开结果与系统固定名单；派生选择不伪造运行号，完整身份在独立表名与元数据。"""
     output = io.StringIO(newline="")
     writer = csv.writer(output)
     writer.writerow(["study_id", "module_id", "run_id", "table_name", "row_index", "record_json"])
@@ -265,6 +274,14 @@ def trace_csv(payload):
             rows=value if isinstance(value,list) else [value]
             for index,row in enumerate(rows):
                 writer.writerow([payload['study_id'],'A05',display['a05_run_id'],f"display.{display['display_id']}.{name}",index,
+                                 json.dumps(row,ensure_ascii=False,separators=(',',':'))])
+    for decision in payload.get('plan_decisions',{}).get('system_decisions',[]):
+        tables=dict(decision['payload'])
+        tables['__metadata__']={key:value for key,value in decision.items() if key!='payload'}
+        module='A04' if decision['stage']=='A04_SELECTION' else 'A06_PREP'
+        for name,value in tables.items():
+            for index,row in enumerate(value if isinstance(value,list) else [value]):
+                writer.writerow([payload['study_id'],module,'',f"system_decision.{decision['decision_id']}.{name}",index,
                                  json.dumps(row,ensure_ascii=False,separators=(',',':'))])
     return output.getvalue().encode("utf-8-sig")
 
