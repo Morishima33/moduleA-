@@ -85,13 +85,17 @@ def binding(workflow,sid,rid):
         for value in parent['parent_runs'].values():visit(value)
         visiting.remove(run_id)
     visit(rid)
-    for ref in m.get('reviews',[]):verified_file(home,ref)
+    artifacts={workflow.run(m,run_id)['artifact_id'] for run_id in dependency_files}
+    reviews=[]
+    for ref in m.get('reviews',[]):
+        review=read_json(verified_file(home,ref))
+        if review.get('artifact_id') in artifacts:reviews.append(deepcopy(ref))
     value={'study_id':sid,'module_id':run['module_id'],'run_file':deepcopy(m['runs'][rid]['run_file']),
            'result_file':deepcopy(m['runs'][rid]['result_file']),'a00_result':deepcopy(m['runs'][a00]['result_file']),
            'inputs':deepcopy(run['inputs']),'parent_runs':deepcopy(run['parent_runs']),
            'parent_files':{module:deepcopy(m['runs'][parent]) for module,parent in run['parent_runs'].items()},
            'dependency_files':dependency_files,
-           'reviews':deepcopy(m.get('reviews',[])),'config_hash':run['config_hash'],'input_hash':run['input_hash']}
+           'binding_scope':'dependency_artifacts.1','reviews':reviews,'config_hash':run['config_hash'],'input_hash':run['input_hash']}
     return m,run,result,value
 
 

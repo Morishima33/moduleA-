@@ -93,6 +93,11 @@ export interface PlanSystemValidationsInfo {
  items:{module_id:string;run_id:string;enabled:boolean;blockers:string[];
   request:null|{expected_run_id:string;expected_input_hash:string};current:PlanSystemValidationReceipt|null}[];
 }
+export interface PlanReportsInfo {
+ supported:boolean;enabled:boolean;blockers:string[];expected_report_run_id:string|null;expected_input_hash:string;message_zh:string;
+ history:{run_id:string;created_at:string;active:boolean;approved:boolean;status_zh:string;
+   downloads:{label_zh:string;name:string;url:string}[]}[];
+}
 export interface PlanStagesInfo {
  schema_version:string;supported:boolean;expected_input_hash:string;expected_a00:string;expected_plan_id:string;parameter_hash:string;
  parameters:Record<string,unknown>;stages:{stage:string;enabled:boolean;blockers:string[];current_run:string|null;active:boolean;approved:boolean}[];message_zh:string;
@@ -462,6 +467,7 @@ export interface ModuleView {
   plan_a05_display?:PlanA05DisplayInfo|null;
   plan_stages?:PlanStagesInfo|null;
   plan_system_validations?:PlanSystemValidationsInfo|null;
+  plan_reports?:PlanReportsInfo|null;
   plan_compounds?:PlanCompoundsInfo|null;
   plan_selection_ui?:PlanSelectionUiInfo|null;
   plan_preparation_ui?:PlanPreparationUiInfo|null;

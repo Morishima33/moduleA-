@@ -16,6 +16,20 @@ STATUS_ZH={'completed':'适用分支已完成','partial':'部分结果','valid_e
            'waiting':'仍有适用分支未完成','technical_blocked':'存在关键技术阻塞'}
 
 
+def review_description(payload):
+    """正文简短汇总实际技术核查；完整逐模块回执保存在同批追溯，不能代替人工签名。"""
+    labels={'A00':'研究登记','A01':'三库标准化','A02':'疾病标准化','A03':'交集',
+            'A03_SELECT':'成分选择','A04':'PPI网络','A05':'富集统计','A06_PREP':'结构准备','A06':'对接评分'}
+    records=payload.get('validation_records',[])
+    if not records:return '当前为事实投影与模板核查，尚无可用于生产交付的系统校验回执；未生成任何人工审核签名。'
+    passed=[labels.get(key,key) for key in labels if any(row['module']==key and row['passed'] is True for row in records)]
+    failed=[labels.get(row['module'],row['module']) for row in records if row['passed'] is not True]
+    pieces=[]
+    if passed:pieces.append('、'.join(passed)+'已通过系统技术校验。')
+    if failed:pieces.append('、'.join(failed)+'系统技术校验未通过。')
+    return ''.join(pieces)+'完整回执见同批追溯包；系统校验不表示人工签署。'
+
+
 def check(payload,*,draft=False):
     """报告只消费同研究事实；模板核查与可正式交付资料明确区分，不代替科学验证。"""
     require(isinstance(payload,dict) and payload.get('schema_version')=='A07.plan_payload.1','报告事实包版本无效')
@@ -42,45 +56,10 @@ def validate_receipts(payload,home):
     path=Path(home)/'manifest.json';require(path.is_file(),'正式报告缺少本研究实际归档索引')
     manifest=read_json(path);sid=payload['study_id'];require(manifest.get('study_id')==sid,'报告系统校验研究归属不一致')
     from workflow import Workflow
-    from modulea.core.system_validation import read_receipt,binding
+    from modulea.core.plan_report_contract import validate_receipts as validate
     workflow=Workflow(Path(home).resolve().parents[1])
     require(workflow.location(sid).resolve()==Path(home).resolve(),'报告研究归档位置不一致')
-    runs=payload.get('run_ids');require(isinstance(runs,dict) and all(runs.get(key) for key in ('A00','A01','A02','A03')),
-                                           '正式报告缺少固定上游运行链')
-    expected=set(runs)
-    for module,rid in runs.items():
-        require(manifest['current'].get(module)==rid and rid in manifest['runs'],'报告运行已改变或不属于当前研究')
-        run=read_json(verified_file(home,manifest['runs'][rid]['run_file']))
-        require(run['study_id']==sid and run['module_id']==module and run['run_id']==rid,'报告运行归属错误')
-        require(all(runs.get(parent)==value for parent,value in run['parent_runs'].items()),'报告未固定完整同批上游运行')
-    if payload.get('enrichment'):
-        require(runs.get('A05')==payload['enrichment']['run_id'],'报告富集事实不属于固定运行')
-    if payload.get('docking'):
-        facts=payload['docking'];module='A06_PREP' if facts['preparation_only'] else 'A06'
-        require(runs.get(module)==facts['run_id'],'报告对接事实不属于固定运行')
-    seen=set()
-    for supplied in payload['validation_records']:
-        module=supplied['module'];require(module in expected and module not in seen,'系统校验模块未知或重复')
-        reference=supplied['source'];require(reference in manifest.get('analysis_plan_system_validation_records',[]),'系统校验回执未登记到本研究')
-        receipt=read_receipt(workflow,manifest,reference);rid=runs[module]
-        require(receipt.get('schema_version')=='ModuleA.system_validation.1' and receipt.get('authority_kind')=='system_validation'
-                and receipt.get('passed') is True and receipt.get('study_id')==sid and receipt.get('module_id')==module
-                and receipt.get('run_id')==rid,'系统校验回执版本、结果或归属无效')
-        require(receipt['binding']['study_id']==sid and receipt['input_hash']==fingerprint(receipt['binding'])
-                and receipt['binding']['run_file']==manifest['runs'][rid]['run_file']
-                and receipt['binding']['result_file']==manifest['runs'][rid]['result_file'],'系统校验回执不绑定本批实际结果')
-        require(receipt['binding'].get('reviews')==manifest.get('reviews',[]),'系统校验后原复核记录已有变化，请重新核查')
-        _,_,_,current_binding=binding(workflow,sid,rid)
-        require(fingerprint(current_binding)==receipt['input_hash'],'系统校验所绑定的完整依赖已经改变')
-        for parent,reference in receipt['binding'].get('parent_files',{}).items():
-            require(parent in runs and reference==manifest['runs'][runs[parent]],'系统校验的实际上游已改变')
-        source=verified_file(home,receipt['validator_code'])
-        import hashlib
-        require(hashlib.sha256(source.read_bytes()).hexdigest()==receipt['validator_sha256'],'系统验证器代码指纹不一致')
-        checks=receipt.get('checks');require(isinstance(checks,list) and checks and all(item.get('passed') is True and item.get('name') for item in checks),
-                                           '系统校验回执缺少真实通过检查')
-        verified_file(home,receipt['binding']['run_file']);verified_file(home,receipt['binding']['result_file']);seen.add(module)
-    require(seen==expected,'报告仍缺少适用模块系统校验回执')
+    validate(workflow,manifest,payload)
 
 
 def table(document,title,rows,columns,widths=None):
@@ -93,7 +72,10 @@ def table(document,title,rows,columns,widths=None):
 def figure(document,home,entry):
     """只插入已登记且指纹核验的同研究图件，不从其他批次借图。"""
     path=verified_file(home,entry['record']);paragraph=document.add_paragraph()
-    paragraph.add_run().add_picture(str(path),width=Cm(15.8))
+    from docx.image.image import Image
+    size=Image.from_file(str(path));width=min(14.0 if entry.get('module')=='A03' else 15.8,20.0*size.px_width/size.px_height)
+    if width<15.8:paragraph.alignment=1
+    paragraph.add_run().add_picture(str(path),width=Cm(width))
     document.add_paragraph(entry['caption'])
 
 
@@ -155,6 +137,7 @@ def add_docking(document,payload,home,concise):
 def add_appendix(document,payload,plan):
     """沿用已确认术语附录的通用解释；固定旧数量和旧参数改读本批真实方案。"""
     heading=document.add_heading(APPENDIX_TITLE,1);heading.paragraph_format.page_break_before=True
+    document.add_paragraph('以下术语为方法解释；本批是否实际执行，以前述分支完成情况为准。保存的方案参数不表示不适用分支已经运行。')
     for title,text in APPENDIX:
         if title in ('A与B对接候选分组','分子对接运行参数','热图与评分标记'):continue
         document.add_heading(title,2);document.add_paragraph(text)
@@ -179,10 +162,14 @@ def add_appendix(document,payload,plan):
 def build(payload,destination,home,*,concise=False,draft=False):
     """生成一份Word；此函数不发布A07、不写研究或人工复核，不运行R/Vina。"""
     plan=check(payload,draft=draft)
-    if not draft:validate_receipts(payload,home)
+    if not draft:
+        from .plan_payload import validate
+        validate(payload,home,require_figures=True);validate_receipts(payload,home)
     document=Document();title='ModuleA 方剂与疾病分析报告'+(' 简略版' if concise else '')
     _configure(document,title);document.add_paragraph(title,style='Title')
     document.add_paragraph(payload['intake']['formula']+' 与 '+payload['intake']['disease'])
+    if payload['intake'].get('analysis_purpose')=='workflow_test':
+        document.add_paragraph('用途：流程测试；仅用于技术验证，不作为正式研究结论。')
     if draft:document.add_paragraph('隔离模板核查稿 未完成生产归档及系统校验 不作为正式研究报告')
     state=payload['completion'];document.add_paragraph('本报告状态 '+STATUS_ZH[state['state']]+'。'+BOUNDARY)
     document.add_heading('1 主要结论',1)
@@ -191,26 +178,41 @@ def build(payload,destination,home,*,concise=False,draft=False):
     table(document,'实际分支完成情况',[{'分支':row['branch'],'实际状态':STATUS_ZH[row['state']],'依据':row['reason_zh']} for row in state['branches']],['分支','实际状态','依据'],[3,4,9.8])
     document.add_heading('3 数据来源与方法',1)
     for row in payload['sources']:document.add_paragraph(row['label']+'：'+row['description'])
-    document.add_paragraph('本报告只汇总所绑定原结果；富集各检验族独立BH校正，结构评分保留本批严格与探索范围，参数详见附录。')
-    document.add_heading('4 交集 成分与PPI网络',1)
-    for row in payload['network_summary']:document.add_paragraph(row)
+    methods=['本报告只汇总本批所绑定的原结果。']
+    if payload.get('enrichment'):methods.append('本批富集各检验族独立BH校正。')
+    if payload.get('docking'):methods.append('对接范围、原始评分及NA/失败原因按实际保留。')
+    methods.append('不适用分支未执行；创建方案参数和术语详见附录。');document.add_paragraph(''.join(methods))
+    network_heading=document.add_heading('4 交集 成分与PPI网络',1);network_heading.paragraph_format.page_break_before=True
+    for row in payload['network_summary']:
+        if row!=BOUNDARY:document.add_paragraph(row)  # 总体限制已在开头与附录完整说明。
     for entry in payload.get('figures',[]):
         if entry.get('module') in ('A03','A04'):figure(document,home,entry)
     document.add_heading('5 GO与KEGG富集结果',1);add_enrichment(document,payload,home,concise)
     document.add_heading('6 分子对接结果',1);add_docking(document,payload,home,concise)
     document.add_heading('7 待进一步核验的研究线索',1)
     for text in payload['research_leads']:document.add_paragraph(text)
+    if not payload['research_leads']:document.add_paragraph('本批没有可据以提出具体研究线索的完成结果，不补写机制或疗效推断。')
     document.add_heading('8 结果复核说明',1)
     records=payload.get('validation_records',[])
-    if records:
-        for row in records:document.add_paragraph(f"{row['module']} 系统技术校验：{'通过' if row['passed'] else '未通过'}，完整回执见同批追溯索引。不表示人工签署。")
-    else:document.add_paragraph('当前为事实投影与模板核查，尚无可用于生产交付的系统校验回执；未生成任何人工审核签名。')
+    document.add_paragraph(review_description(payload))
     document.add_heading('9 主要方法参考文献',1)
     for text in payload['references']:document.add_paragraph(text)
     add_appendix(document,payload,plan);tidy(document)
     for paragraph in document.paragraphs:
+        # 短说明保持完整，避免仅两三个字跨页；标题仍与后文相连。
+        paragraph.paragraph_format.keep_together=True
         if paragraph.style.name=='Title':
             paragraph.paragraph_format.space_after=Pt(10)
+        elif paragraph.style.name in ('Heading 1','Heading 2'):
+            paragraph.paragraph_format.space_before=Pt(10)
+            paragraph.paragraph_format.space_after=Pt(5)
+    # 仅新报告的紧凑表格留白，避免末尾一句被参数表挤成孤页。
+    for value in document.tables:
+        for row in value.rows:
+            for cell in row.cells:
+                for paragraph in cell.paragraphs:
+                    paragraph.paragraph_format.space_before=Pt(1)
+                    paragraph.paragraph_format.space_after=Pt(1)
     destination=Path(destination);destination.parent.mkdir(parents=True,exist_ok=True);document.save(destination)
     return destination
 
@@ -223,7 +225,17 @@ def validate_document(path,payload,*,concise=False,draft=False):
               '5 GO与KEGG富集结果','6 分子对接结果','7 待进一步核验的研究线索','8 结果复核说明','9 主要方法参考文献',APPENDIX_TITLE]
     require(headings==required,'报告章节缺失、重复或顺序改变')
     text='\n'.join(paragraph.text for paragraph in document.paragraphs)
+    paragraphs=[paragraph.text for paragraph in document.paragraphs]
+    require(payload['conclusion'] in paragraphs,'报告共同结论与同批实际事实不一致')
+    require(all(row['label']+'：'+row['description'] in paragraphs for row in payload['sources']),'报告实际来源或筛选范围缺失')
+    require(all(row in paragraphs for row in payload['network_summary']+payload['research_leads']+payload['references']),
+            '报告网络说明、研究线索或实际方法参考缺失')
+    old_review=[f"{row['module']} 系统技术校验：{'通过' if row['passed'] else '未通过'}，完整回执见同批追溯索引。不表示人工签署。" for row in payload.get('validation_records',[])]
+    require(review_description(payload) in paragraphs or (old_review and all(row in paragraphs for row in old_review)),
+            '报告技术核查说明与实际回执不一致')
     require(('隔离模板核查稿' in text)==draft,'模板核查身份与实际交付状态不一致')
+    if payload['intake'].get('analysis_purpose')=='workflow_test':
+        require('用途：流程测试；仅用于技术验证，不作为正式研究结论。' in text,'报告漏标真实流程测试用途')
     require('本报告状态 '+STATUS_ZH[payload['completion']['state']] in text,'报告误写实际完成状态')
     def rows_after(caption):
         """按唯一标题定位原Word表格，不依赖截图或未知列号猜测。"""
@@ -234,6 +246,8 @@ def validate_document(path,payload,*,concise=False,draft=False):
         return [[cell.text for cell in row.cells] for row in table.rows]
     expected=[['参数','实际值']]+[[FIELDS[key]['label'] if key in FIELDS else key,str(value)] for key,value in plan['parameters'].items()]
     require(rows_after('创建时保存的参数与规则')==expected,'报告参数与实际绑定方案不一致')
+    branches=[['分支','实际状态','依据']]+[[row['branch'],STATUS_ZH[row['state']],row['reason_zh']] for row in payload['completion']['branches']]
+    require(rows_after('实际分支完成情况')==branches,'报告实际分支完成情况被改变')
     scores=payload.get('docking');checked=0
     if scores and not concise:
         labels={row['compound_id']:row.get('name_zh') or row.get('name') or row['compound_id'] for row in scores['compounds']}

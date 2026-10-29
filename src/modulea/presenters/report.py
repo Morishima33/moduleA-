@@ -33,6 +33,9 @@ def present_a07(result: dict, ctx: dict) -> Parts:
     parts.special["report_files"] = [{"role": r.get("role"), "label_zh": REPORT_ROLES.get(r.get("role"), r.get("role")), "path": r.get("path"),
                                       "sha256": r.get("sha256"), "row": row}
                                      for row, r in enumerate(t.get("report_files") or []) if str(r.get("path", "")).endswith(".docx")]
+    if s.get('报告修订')=='A07.plan_report.1':
+        for item in parts.special['report_files']:
+            item['label_zh']={'detailed_report':'主报告','brief_report':'简略版'}.get(item['role'],item['label_zh'])
     parts.params = clean([param("报告修订", pick(s, "报告修订")), param("结论复核状态", pick(s, "结论复核状态")), param("差异说明", pick(s, "差异说明"))])
     status = ctx.get("state_code")
     if status in ("review", "hold", "returned"):

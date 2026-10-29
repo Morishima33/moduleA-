@@ -92,7 +92,10 @@ def _plan_decisions(workflow, manifest, all_files):
             ('a05_display_requests','analysis_plan_a05_display_requests','A05.plan_display.1'),
             ('a05_display_records','analysis_plan_a05_display_records','A05.plan_display.1'),
             ('system_validation_requests','analysis_plan_system_validation_requests','ModuleA.system_validation.1'),
-            ('system_validations','analysis_plan_system_validation_records','ModuleA.system_validation.1')):
+            ('system_validations','analysis_plan_system_validation_records','ModuleA.system_validation.1'),
+            ('report_requests','analysis_plan_report_requests','A07.plan_report.1'),
+            ('report_receipts','analysis_plan_report_receipts','A07.plan_report.1'),
+            ('report_failures','analysis_plan_report_failures','A07.plan_report.1')):
         output[key]=[]
         for reference in manifest.get(index,[]):
             value=read_json(verified_file(root,reference))
@@ -113,6 +116,18 @@ def _plan_decisions(workflow, manifest, all_files):
                 value=read_receipt(workflow,manifest,reference)
             if key=='system_validation_requests':
                 require(value['request_hash']==fingerprint(value['request']),'系统校验请求指纹不一致')
+            if key=='report_requests':
+                require(value['request_hash']==fingerprint(value['request']) and value['request']['confirmed'] is True
+                        and value['input_hash']==fingerprint(value['binding']),'报告明确请求与实际上游指纹不一致')
+            if key=='report_receipts':
+                from .plan_reports import read_receipt
+                value=read_receipt(workflow,manifest,reference)
+            if key=='report_failures':
+                require(value.get('authority_kind')=='execution_failure' and value.get('human_review_written') is False
+                        and value['request_file'] in manifest.get('analysis_plan_report_requests',[]),'报告失败诊断来源或类型错误')
+                if value.get('run_id'):
+                    run=workflow.run(manifest,value['run_id'])
+                    require(run['module_id']=='A07' and run['inputs']['request_file']==value['request_file'],'报告失败诊断绑定其他运行')
             if key=='preparation_requests':
                 require(value['request_hash']==fingerprint(value['request'])
                         and value['request']['confirmed'] is True
@@ -141,6 +156,9 @@ def build_trace(workflow, study_id, include_data=False):
                 "run_id": run_id, "state": "idle", "result": None, "files": []}
         if run_id:
             run = workflow.run(manifest, run_id)
+            if run.get('execution_authority')=='system_validation':
+                item['execution_authority']=run['execution_authority']
+                item['parent_validation_records']=deepcopy(run['parent_validation_records'])
             item.update({"state": "completed" if manifest["runs"][run_id].get("result_file") else "running",
                          "parent_runs": deepcopy(run.get("parent_runs", {})),
                          "parent_review_ids": deepcopy(run.get("parent_review_ids", {})),

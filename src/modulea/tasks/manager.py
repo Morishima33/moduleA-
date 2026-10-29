@@ -52,6 +52,7 @@ KINDS['a03_plan_selection'] = '按本方案生成成分名单，等待独立复�
 KINDS['a06_plan_preparation_ui'] = '明确执行本批新版结构与配体准备（不评分）'
 KINDS['a05_plan_display'] = '准备A05分类核译或保存本批明确展示决定（不重算统计）'
 KINDS['plan_system_validation'] = '真实复算本批科学证据并归档独立系统回执'
+KINDS['plan_report'] = '按同批真实系统证据生成主报告与简略版'
 
 
 def _now() -> str:

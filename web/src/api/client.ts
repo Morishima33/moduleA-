@@ -119,6 +119,9 @@ export const api = {
   /** 明确核对同批归档，不能上传passed标记或人工批准。 */
   executePlanSystemValidation:(sid:string,body:{request_id:string;expected_run_id:string;expected_input_hash:string})=>
     request<{task:Task;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/system-validations/execute`,body),
+  /** 同批事实和图件由后台重建，浏览器只提交明确生成依据。 */
+  generatePlanReport:(sid:string,body:{request_id:string;expected_report_run_id:string|null;expected_input_hash:string;author:string;note:string;confirmed:true})=>
+    request<{task:Task;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/reports/generate`,body),
   /** 新方案任务独立于旧固定参数获取/整理入口。 */
   acquirePlanA01: (sid:string,body:Record<string,unknown>) => request<{task:Task;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/a01/acquire`,body),
   publishPlanA01: (sid:string,body:Record<string,unknown>) => request<{task:Task;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/a01/publish`,body),

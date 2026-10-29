@@ -18,6 +18,23 @@ class AnalysisPlanConflict(ContractError):
 class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
     """旧研究继承原行为；只有显式新方案登记支持草稿写入。"""
 
+    def publish_analysis_plan_report(self,study_id,payload):
+        """按真实系统依赖生成新A07双报告，原人工复核关系保持。"""
+        from .plan_reports import publish
+        return publish(self,study_id,payload)
+
+    def _view_snapshot(self,study_id):
+        """新报告就绪资格来自真实系统依赖，不把未签人工审核改为通过。"""
+        view=super()._view_snapshot(study_id);m=view['manifest'];a03=m['current'].get('A03')
+        if a03 and self.run(m,a03)['config'].get('version')=='A03.plan_intersection.1':
+            from .plan_reports import info
+            value=info(self,study_id)
+            for item in view['modules']:
+                if item['module_id']=='A07':
+                    item['available']=value['enabled']
+                    if item['run'] is None:item['state']='ready' if value['enabled'] else 'waiting'
+        return view
+
     def validate_analysis_plan_scientific_run(self,study_id,payload):
         """运行真实规范校验并追加系统回执，不伪造人工reviews或授予旧流程批准。"""
         from .system_validation import validate_run
@@ -100,6 +117,10 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
 
     def _active(self, manifest, run_id):
         """仅新可复核准备额外绑定独立选择复核；撤回后普通复核同样失效。"""
+        run=self.run(manifest,run_id)
+        if run['module_id']=='A07' and run['config'].get('version')=='A07.plan_report.1':
+            from .plan_reports import is_active
+            return is_active(self,manifest,run)
         if not super()._active(manifest, run_id):
             return False
         run = self.run(manifest, run_id)
@@ -113,7 +134,10 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
                     current == read_json(verified_file(home, ref)))
 
     def _begin(self, manifest, module, inputs, config, reason):
-        """仅为绑定新准备的新评分协议放行；报告仍等独立适配。"""
+        """保留旧协议保护；显式新报告使用真实系统依赖，其余版本继续原分派。"""
+        if module=='A07' and config.get('version')=='A07.plan_report.1':
+            from .plan_reports import begin
+            return begin(self,manifest,inputs,config,reason)
         from .plan_creation import is_plan_created
         a03 = manifest.get('current', {}).get('A03')
         if a03 and self.run(manifest,a03)['config'].get('version') == 'A03.plan_intersection.1' and module in ('A03','A04','A05'):

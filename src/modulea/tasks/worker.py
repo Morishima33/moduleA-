@@ -600,6 +600,17 @@ def run_plan_system_validation(settings,task,manager):
 
 
 HANDLERS['plan_system_validation']=run_plan_system_validation
+
+
+def run_plan_report(settings,task,manager):
+    """新报告复用原统计和分数，只生成同批图件/Word，不签人工复核。"""
+    manager.update(task['task_id'],progress={'step_zh':'重建同批事实、核对系统证据并生成图表与双报告','done':0,'total':1})
+    result=full_workflow(settings.data_root).publish_analysis_plan_report(task['study_id'],json.loads(task['payload']))
+    manager.update(task['task_id'],progress={'step_zh':'双报告已归档，实际科学状态与人工复核保持','done':1,'total':1})
+    return '同批主报告与简略版已生成：'+result['run_id']+'；未写入人工批准。'
+
+
+HANDLERS['plan_report']=run_plan_report
 HANDLERS["a06_plan_pocket_review"] = run_a06_plan_preparation
 HANDLERS["a06_plan_reference_review"] = run_a06_plan_reference_review
 HANDLERS["a06_plan_reference_preparation"] = run_a06_plan_reference_preparation

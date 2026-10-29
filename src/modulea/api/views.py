@@ -484,6 +484,11 @@ class Views:
         response['plan_a01'] = None
         response['plan_stages'] = None
         response['plan_system_validations'] = None
+        response['plan_reports'] = None
+        if module_id=='A07' and not historical:
+            from .plan_reports import info as plan_report_info
+            value=plan_report_info(self,None,study_id)
+            if value['supported']:response['plan_reports']=value
         if module_id in ('A00','A07') and not historical:
             from .system_validation import info as system_validation_info
             value=system_validation_info(self,None,study_id)

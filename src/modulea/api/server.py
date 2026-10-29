@@ -55,6 +55,9 @@ class App:
         self.plan_creation = PlanCreation(self.kernel)
         self.token = secrets.token_urlsafe(32)
         self.routes = [
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/reports", self.get_plan_reports),
+            ("POST", rf"/api/v1/studies/{ID}/analysis-plan/reports/generate", self.post_plan_report),
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/reports/{ID}/files/([0-9]+)", self.get_plan_report_file),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/system-validations", self.get_plan_system_validations),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/system-validations/execute", self.post_plan_system_validation),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a05-display", self.get_plan_a05_display),
@@ -543,6 +546,21 @@ class App:
         """只读当前系统校验资格、原科学状态及不可变历史。"""
         from .system_validation import info
         return info(self,req,study_id)
+
+    def get_plan_reports(self,req,study_id):
+        """只读本批报告资格和真实历史下载。"""
+        from .plan_reports import info
+        return info(self,req,study_id)
+
+    def post_plan_report(self,req,study_id):
+        """明确提交实际同批双报告，不在HTTP生成文档。"""
+        from .plan_reports import execute
+        return execute(self,req,study_id)
+
+    def get_plan_report_file(self,req,study_id,run_id,index):
+        """下载本研究登记的当前或历史Word，逐件核验。"""
+        from .plan_reports import file
+        return file(self,req,study_id,run_id,index)
 
     def post_plan_system_validation(self,req,study_id):
         """显式提交真实科学复算，不在接口进程执行。"""

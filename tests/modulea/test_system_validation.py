@@ -63,6 +63,16 @@ class SystemValidationTests(unittest.TestCase):
         self.w.revise_intake(self.sid,dict(run['inputs'],operator='新的合成登记人'),'合成祖先变更测试',a00)
         with self.assertRaises(ContractError):validation.request(self.w,self.sid,self.rid)
 
+    def test_unrelated_review_does_not_invalidate_intake_receipt(self):
+        """后续或平行模块复核不能改变A00本身证据，防止最终报告复核让上游回执失效。"""
+        m=self.w.load(self.sid);a00=m['current']['A00'];body=self.body(a00)
+        receipt=self.w.validate_analysis_plan_scientific_run(self.sid,body);old=validation.request(self.w,self.sid,a00)
+        rid=m['current']['A03'];review=self.w.latest_review(m,self.w.run(m,rid)['artifact_id'])
+        self.w.review(self.sid,rid,'pending','明确合成测试复核','撤回与A00自身无关的下游批准',review['review_id'])
+        self.assertEqual(validation.request(self.w,self.sid,a00),old)
+        info=validation.info(self.w,self.sid)
+        self.assertEqual(next(row for row in info['items'] if row['module_id']=='A00')['current']['validation_id'],receipt['validation_id'])
+
     def test_intake_canonical_validator_is_real_and_not_human_approval(self):
         m=self.w.load(self.sid);rid=m['current']['A00'];body=self.body(rid)
         receipt=self.w.validate_analysis_plan_scientific_run(self.sid,body)

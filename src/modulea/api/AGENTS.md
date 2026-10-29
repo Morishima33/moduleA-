@@ -1,5 +1,13 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 新方案同批双报告
+
+GET `/studies/{sid}/analysis-plan/reports`标准库只读返回supported/enabled/blockers、expected_report_run_id(null|run_id)、expected_input_hash、history及message_zh。资格读取真实当前结果和系统校验；空交集可按实际不适用分支进入，非空结果须等适用网络/富集/准备与评分结束，缺真实回执阻断。GET不绘图、不运行R/Vina、不写研究。
+
+POST同路径`/generate`严格接受`{request_id:planreportreq_<32hex>,expected_report_run_id,expected_input_hash,author,note,confirmed:true}`，202提交plan_report后台；不接收事实、结论、图件路径、参数或通过标记。后台独立重建同批事实和范围来源，生成实际PNG/SVG及双Word，锁内重新核验后追加A07.plan_report.1及不可变请求/回执。运行parent_review_ids为空、parent_validation_records是真实系统证据，绝不伪造人工reviews；原A07仍原分派。失败保留请求/诊断/未发布文件，过期409、回收站423、忙碌409、字段422；GET/重启不重跑。
+
+GET同路径`/{run_id}/files/{index}`仅下载本研究已登记报告回执中两份实际DOCX(0主报告/1简略版)，当前与历史逐件SHA核验，不接受裸路径。history含服务端实际active/approved/status_zh和downloads；人工批准只来自真实Workflow.review。新报告自身最终复核不改变上游系统证据，相关来源批准撤回仍使报告失效。追溯增加report_requests/report_receipts完整历史与图件/Word/实现来源；CSV保留原科学表，新增A07平面摘要与分支事实。
+
 ## 新方案A01至疾病标准化兼容
 
 既有A02 `/actions/normalization`在当前A01为A01.plan_publication.1时，由后台采用A02.plan_normalization_bridge.1入口适配。该A01已经三库标准化，须当前复核有效并与疾病侧使用同HGNC规则、快照和补充证据；接口只读资格提前显示阻塞。预览保留其真实摘要和完整三库关系，不读取旧compound_targets或重筛三库；发布只新增A02，A01方案、结果和复核不变。映射或A01复核变更拒绝，A02仍须独立整体复核，不自动启动A03。HTTP字段及原标准化/范围/身份科学规则保持；旧A01继续原入口。此为分阶段兼容修复，最终一次确认自动版尚未开放。
