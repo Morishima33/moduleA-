@@ -35,6 +35,15 @@ class Settings:
     allowed_origins: list[str] = field(default_factory=list)  # 允许跨源访问的前端开发地址
     static_dir: Path | None = None  # 预构建前端所在目录；为空时不提供静态页面
     science_rscript: Path | None = None  # 新字段追加末尾，保留旧位置参数构造兼容
+    compute_slots: int = 1  # 同runtime重任务计算位，不改变各科学命令线程/参数
+    compute_min_free_bytes: int = 16 * 1024 * 1024  # SQLite/日志基础运行余量，非科学产物估算
+
+    def validate_resources(self):
+        """服务器预算须为合法整数；不接受布尔值或静默截断小数。"""
+        if type(self.compute_slots) is not int or not 1<=self.compute_slots<=32:
+            raise ValueError('compute_slots须为1—32整数')
+        if type(self.compute_min_free_bytes) is not int or self.compute_min_free_bytes<0:
+            raise ValueError('compute_min_free_bytes须为非负整数字节')
 
     @property
     def studies_dir(self) -> Path:
@@ -56,6 +65,9 @@ def load_settings(**overrides) -> Settings:
     local = _read_local_toml(settings.project_root)
     paths = local.get("paths", {})
     server = local.get("server", {})
+    resources = local.get('resources', {})
+    settings.compute_slots = resources.get('compute_slots', settings.compute_slots)
+    settings.compute_min_free_bytes = resources.get('compute_min_free_bytes', settings.compute_min_free_bytes)
 
     # local.toml 中的本机路径
     if paths.get("data_root"):
@@ -73,6 +85,8 @@ def load_settings(**overrides) -> Settings:
     settings.allowed_origins = list(server.get("allowed_origins", []))
 
     # 环境变量
+    for name,key in (('MODULEA_COMPUTE_SLOTS','compute_slots'),('MODULEA_COMPUTE_MIN_FREE_BYTES','compute_min_free_bytes')):
+        if name in os.environ:setattr(settings,key,int(os.environ[name]))
     if os.environ.get("MODULEA_DATA_ROOT"):
         settings.data_root = Path(os.environ["MODULEA_DATA_ROOT"]).expanduser()
     if os.environ.get("MODULEA_SCIENCE_PYTHON"):
@@ -98,4 +112,5 @@ def load_settings(**overrides) -> Settings:
 
     settings.data_root = settings.data_root.resolve()
     settings.runtime_dir = settings.runtime_dir.resolve()
+    settings.validate_resources()
     return settings

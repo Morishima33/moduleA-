@@ -70,7 +70,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "task-run":
         from .tasks.worker import run_task
-        return run_task(settings, args.task_id)
+        from .tasks.resource_runner import run_with_budget
+        return run_with_budget(settings, args.task_id, run_task)
     return 1
 
 

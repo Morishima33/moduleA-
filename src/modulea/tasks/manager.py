@@ -99,6 +99,7 @@ class TaskManager:
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self._lock = threading.Lock()
         with self._connect() as db:
+            db.execute('BEGIN IMMEDIATE')  # 多个worker首次并发启动时串行迁移运行索引。
             db.execute(
                 "CREATE TABLE IF NOT EXISTS tasks (task_id TEXT PRIMARY KEY, study_id TEXT, kind TEXT, state TEXT,"
                 " pid INTEGER, requested_by TEXT, message_zh TEXT, error_zh TEXT, progress TEXT, log_path TEXT,"
@@ -107,6 +108,8 @@ class TaskManager:
             columns = {row[1] for row in db.execute("PRAGMA table_info(tasks)")}
             if "payload" not in columns:
                 db.execute("ALTER TABLE tasks ADD COLUMN payload TEXT")
+            if 'resource_owner_pid' not in columns:
+                db.execute('ALTER TABLE tasks ADD COLUMN resource_owner_pid INTEGER')
         self.reconcile()
 
     @contextmanager
@@ -164,6 +167,7 @@ class TaskManager:
                             "cancelled": "已取消", "interrupted": "已中断"}.get(data["state"], data["state"])
         data.pop("payload", None)  # 私有上传输入不进入接口或日志。
         data.pop("pid", None)
+        data.pop('resource_owner_pid',None)
         data.pop("log_path", None)
         return data
 
@@ -177,10 +181,16 @@ class TaskManager:
         """由子进程原子认领排队任务；取消或已认领的任务不能重新开始。"""
         with self._connect() as db:
             changed = db.execute(
-                "UPDATE tasks SET state='running', pid=?, started_at=? WHERE task_id=? AND state='queued'",
-                (pid, _now(), task_id),
+                "UPDATE tasks SET state='running', pid=?, started_at=? WHERE task_id=? AND state='queued' AND (resource_owner_pid IS NULL OR resource_owner_pid=?)",
+                (pid, _now(), task_id,pid),
             ).rowcount
         return changed == 1
+
+    def claim_resources(self,task_id,pid):
+        """原子登记实际等待worker，兼容Windows虚拟环境解释器启动器与内部PID不同。"""
+        with self._connect() as db:
+            return db.execute("UPDATE tasks SET pid=?,resource_owner_pid=? WHERE task_id=? AND state='queued' AND resource_owner_pid IS NULL",
+                (pid,pid,task_id)).rowcount==1
 
     def finish(self, task_id: str, state: str, **fields) -> None:
         """终态只覆盖运行中任务，保留并发取消或中断的决定。"""
@@ -240,6 +250,9 @@ class TaskManager:
         env = dict(os.environ)
         env["PYTHONPATH"] = str(LEGACY_SRC) + os.pathsep + env.get("PYTHONPATH", "")
         env["MODULEA_DATA_ROOT"] = str(self.settings.data_root)
+        self.settings.validate_resources()
+        env['MODULEA_COMPUTE_SLOTS'] = str(self.settings.compute_slots)
+        env['MODULEA_COMPUTE_MIN_FREE_BYTES'] = str(self.settings.compute_min_free_bytes)
         if self.settings.science_rscript:
             env["MODULEA_RSCRIPT"] = str(self.settings.science_rscript)
         if self.settings.science_tools_root:
@@ -251,7 +264,9 @@ class TaskManager:
         with open(log_path, "ab") as stream:
             process = subprocess.Popen(command, cwd=str(self.settings.project_root), env=env, stdout=stream, stderr=subprocess.STDOUT,
                                        creationflags=flags, start_new_session=(os.name != "nt"))
-        self.update(task_id, pid=process.pid)
+        # 启动器PID只在worker尚未认领时登记，不能覆盖真实worker/取消/运行态。
+        with self._connect() as db:
+            db.execute("UPDATE tasks SET pid=? WHERE task_id=? AND state='queued' AND resource_owner_pid IS NULL",(process.pid,task_id))
 
     def cancel(self, task_id: str) -> dict:
         task = self._raw(task_id)

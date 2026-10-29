@@ -17,3 +17,9 @@
 [server]
 # 前端开发服务器地址（仅开发时需要），例如 ["http://localhost:5173"]
 allowed_origins = []
+
+[resources]
+# 同一runtime所有服务/worker须使用一致预算；不修改Vina/R等科学参数
+compute_slots = 1
+# 仅基础运行余量16MiB，不保证整个科学任务空间足够；按本机情况配置
+compute_min_free_bytes = 16777216

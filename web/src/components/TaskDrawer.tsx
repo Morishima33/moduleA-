@@ -28,6 +28,7 @@ export default function TaskDrawer({ open, focusTaskId, onClose, studyId, onTask
   const [error, setError] = useState<string | null>(null); // 加载错误
   const [logTask, setLogTask] = useState<string | undefined>(); // 正在查看日志的任务
   const prevActive = useRef<Set<string>>(new Set()); // 上一次的活动任务编号
+  const loadSequence = useRef(0); // 只接受当前研究/筛选范围的最新读取，忽略旧响应
 
   // 打开时默认展开指定任务的日志
   useEffect(() => {
@@ -39,8 +40,10 @@ export default function TaskDrawer({ open, focusTaskId, onClose, studyId, onTask
 
   /** 读取任务列表 */
   const load = useCallback(async () => {
+    const sequence = ++loadSequence.current;
     try {
       const r = await api.tasks({ study: effectiveScope === 'study' ? studyId || undefined : undefined }); // 按范围读取
+      if (sequence !== loadSequence.current) return;
       setItems(r.items); // 更新列表
       setError(null); // 清除错误
       const active = r.items.filter((t) => ACTIVE.has(t.state)); // 当前活动任务
@@ -50,18 +53,19 @@ export default function TaskDrawer({ open, focusTaskId, onClose, studyId, onTask
       if (ended) onTaskEnded(); // 通知外层刷新研究
       onActive(active); // 交给外层跟踪
     } catch (e) {
-      setError(errorText(e)); // 显示错误
+      if (sequence === loadSequence.current) setError(errorText(e)); // 显示当前读取错误
     } finally {
-      setLoading(false); // 结束加载状态
+      if (sequence === loadSequence.current) setLoading(false); // 结束当前加载状态
     }
   }, [effectiveScope, studyId, onTaskEnded, onActive]);
 
-  // 打开或切换范围时读取一次
+  // 新提交即使抽屉已打开也必须读取；此前空列表不会自行开启轮询。
   useEffect(() => {
     if (!open) return; // 关闭时不读取
     setLoading(true);
     load();
-  }, [open, load]);
+    return () => { ++loadSequence.current; }; // 失效旧研究/范围的在途响应
+  }, [open, load, focusTaskId]);
 
   // 有活动任务时每 3 秒刷新列表
   const hasActive = items.some((t) => ACTIVE.has(t.state));
