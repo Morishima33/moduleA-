@@ -572,6 +572,21 @@ HANDLERS['a03_plan_selection'] = run_plan_compounds
 HANDLERS["a06_plan_input"] = run_a06_plan_input
 HANDLERS["a06_plan_preparation"] = run_a06_plan_preparation
 HANDLERS['a06_plan_preparation_ui'] = run_a06_plan_preparation_ui
+
+
+def run_a05_plan_display(settings,task,manager):
+    """只产生本批展示资料，不运行R或签署科学复核。"""
+    from contracts import require
+    payload=json.loads(task['payload']);require(set(payload)=={'action','request'} and payload['action'] in ('prepare','confirm'),'A05展示任务输入无效')
+    workflow=full_workflow(settings.data_root)
+    manager.update(task['task_id'],progress={'step_zh':'核验同批统计、分类与核译快照，生成展示图表','done':0,'total':1})
+    action=workflow.prepare_analysis_plan_a05_display if payload['action']=='prepare' else workflow.confirm_analysis_plan_a05_display
+    value=action(task['study_id'],payload['request'])
+    manager.update(task['task_id'],progress={'step_zh':'展示资料已归档，未批准A05科学结果','done':1,'total':1})
+    return '本批展示资料已归档：'+value['display_id']+'；原统计和人工复核保持。'
+
+
+HANDLERS['a05_plan_display']=run_a05_plan_display
 HANDLERS["a06_plan_pocket_review"] = run_a06_plan_preparation
 HANDLERS["a06_plan_reference_review"] = run_a06_plan_reference_review
 HANDLERS["a06_plan_reference_preparation"] = run_a06_plan_reference_preparation

@@ -424,7 +424,7 @@ class Views:
             trial_info["note_zh"] = "本批225组合已接入A06扩展结果复核；既有严格结果及批准留存。请使用顶部正式复核入口，无需重复保存试算核查。"
         response = {
             "ranked_pathway_maps": workflow.ranked_map_context(real, run["run_id"], historical,
-                bool(self.tasks.active_for(study_id))) if module_id == "A05" and run else None,
+                bool(self.tasks.active_for(study_id))) if module_id == "A05" and run and result else None,
             "docking_artifacts": workflow.docking_artifact_context(real, run["run_id"], historical,
                                      bool(self.tasks.active_for(study_id))) if module_id == "A06" and run else None,
             "module": {"module_id": module_id, "title_zh": spec.title_zh, "group_zh": spec.group_zh, "purpose_zh": source_intro(module_id, real, result) + ("STRING人类功能关联网络；两分支独立两轮；Degree图展示第二轮候选，Degree表展示第一轮前十，BC＋CC表展示第二轮前十五。" if module_id == "A04" and result and result.get("summary", {}).get("selection_version") == "A04.dual.3" else ("STRING人类功能关联网络；Degree与BC＋CC两分支独立进行两轮筛选，Degree图表显示第一轮前十，BC＋CC表显示第二轮前十五。" if module_id == "A04" and result and result.get("summary", {}).get("selection_version") == "A04.dual.2" else ("STRING人类功能关联网络；双分支独立两轮，显示第二轮排名。" if module_id == "A04" and result and result.get("summary", {}).get("selection_version") == "A04.dual.1" else spec.purpose_zh))),
@@ -519,7 +519,11 @@ class Views:
                 if response.get('ppi_run'):
                     response['ppi_run'].update(enabled=False,disabled_reason_zh='请使用新方案阶段入口，不调用旧固定阈值PPI')
         response['plan_a05'] = None
+        response['plan_a05_display'] = None
         if module_id == 'A05' and not historical:
+            from .plan_a05_display import info as a05_display_info
+            display=a05_display_info(self,None,study_id)
+            if display['supported']:response['plan_a05_display']=display
             from ..core.plan_a05 import info as a05_info
             from .plan_a05_view import execution_blocker as a05_blocker
             value = a05_info(workflow, study_id)

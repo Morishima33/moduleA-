@@ -1,5 +1,11 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 新方案A05分类、核译与展示资料
+
+GET `/studies/{sid}/analysis-plan/a05-display`只读实际A05.plan_enrichment.1绑定方案及独立展示记录，返回supported/enabled/blockers、expected_a05/expected_display_id/expected_input_hash、plan_id/parameter_hash/parameters、current及message_zh。不运行R、不联网、不生成记录。POST同路径`/prepare`严格接受`{request_id:a05displayreq_<32hex>,expected_a05,expected_display_id:"",expected_input_hash,author,note,confirmed:true}`；`/confirm`在相同基础字段上增加`excluded_ids:[]、uncertain_decisions:[{ID,decision:retain|exclude|defer,reason}]、translations:[{ID,english,zh,reason}]`，expected_display_id绑定当前展示。未知字段、路径、参数和批准拒绝；后台a05_plan_display调用公开Workflow追加明确请求、来源快照、同方案数量的双语图表及决定，不改A05/current或reviews，不运行R。未决分类、缺译和暂缓分别记录，ready_for_display不等于科学批准。过期409、回收站423、忙碌409，失败保留请求及未发布原件，GET/重启不重跑。
+
+GET `/studies/{sid}/analysis-plan/a05-display/{display_id}/files/{index}`只允许本研究已登记展示的实际图件编号，逐件SHA核验后供下载／内嵌；不接受路径。完整追溯plan_decisions增加a05_display_requests/a05_display_records，CSV的展示派生表使用`display.<display_id>.<table_name>`独立标识，原科学统计表名和数值保持。
+
 ## 新版结构准备入口与同批导航
 
 GET `/studies/{sid}/analysis-plan/preparation-ui`只读当前固定输入、其绑定方案参数、当前A06_PREP实际版本/摘要、可执行条件及口袋/共晶/整体复核/评分导航。返回supported/enabled/blockers、input_hash、expected_input_id、expected_preparation_run_id、parameters、scope、current及steps，不计算或联网。POST同路径严格接受`{request_id:planprep_<32hex>,expected_input_id,expected_preparation_run_id:null|run_id,expected_input_hash,author,note,confirmed:true}`，拒绝路径/参数/名单/批准。后台a06_plan_preparation_ui核对完整输入与复核快照，归档明确请求后复用原第二版科学准备子进程；成功追加回执，不改人工reviews、不启动评分。已有同输入有效准备不重复执行；原输入、当前准备或复核变动则旧请求拒绝。任务忙碌、工具缺失、回收站明确阻断。A06_PREP可选plan_preparation_ui显示同内容，旧准备接口/科学协议保持。新请求与完成回执进入研究追溯。

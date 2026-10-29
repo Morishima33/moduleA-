@@ -43,6 +43,7 @@ import PlanScoring from './PlanScoring';
 import CreationPlan from './CreationPlan';
 import PlanA01 from './PlanA01';
 import PlanA05, { PlanA05Results } from './PlanA05';
+import PlanA05Display from './PlanA05Display';
 import PlanStages from './PlanStages';
 import PlanCompounds from './PlanCompounds';
 import PlanSelection from './PlanSelection';
@@ -118,6 +119,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       {view.plan_preparation_ui&&<PlanPreparation key={view.plan_preparation_ui.input_hash} studyId={studyId} info={view.plan_preparation_ui}/>}
       {view.plan_selection_ui&&<PlanSelection key={view.plan_selection_ui.input_hash} studyId={studyId} info={view.plan_selection_ui}/>}
       {view.plan_a05&&<PlanA05 key={[view.plan_a05.expected_a00,view.plan_a05.expected_a03,view.plan_a05.expected_a05,view.plan_a05.expected_plan_id].join(':')} studyId={studyId} info={view.plan_a05}/>}
+      {view.plan_a05_display&&<PlanA05Display key={view.plan_a05_display.expected_input_hash} studyId={studyId} info={view.plan_a05_display}/>}
       {sp.plan_enrichment&&<PlanA05Results studyId={studyId} files={view.files} data={sp.plan_enrichment}/>}
       {view.plan_a01&&<PlanA01 key={[view.plan_a01.expected_a00,view.plan_a01.expected_a01,view.plan_a01.expected_plan_id,view.plan_a01.expected_staging].join(':')} studyId={studyId} info={view.plan_a01}/>}
       {m.module_id === 'A06_PREP' && view.reference_qualification && <ReferenceQualification studyId={studyId} info={view.reference_qualification} packet={view.review_packet} gate={view.review_gate} />}

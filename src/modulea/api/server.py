@@ -55,6 +55,10 @@ class App:
         self.plan_creation = PlanCreation(self.kernel)
         self.token = secrets.token_urlsafe(32)
         self.routes = [
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a05-display", self.get_plan_a05_display),
+            ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a05-display/prepare", self.post_plan_a05_display_prepare),
+            ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a05-display/confirm", self.post_plan_a05_display_confirm),
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a05-display/{ID}/files/([0-9]+)", self.get_plan_a05_display_file),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/preparation-ui", self.get_plan_preparation_ui),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/preparation-ui", self.post_plan_preparation_ui),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/selection-ui", self.get_plan_selection_ui),
@@ -265,6 +269,26 @@ class App:
         """读取参数定义，不创建研究或启动任务。"""
         from .analysis_plan_view import schema
         return schema(self, req)
+
+    def get_plan_a05_display(self,req,sid):
+        """读取实际新版A05展示资料。"""
+        from .plan_a05_display import info
+        return info(self,req,sid)
+
+    def post_plan_a05_display_prepare(self,req,sid):
+        """明确准备分类与核译资料。"""
+        from .plan_a05_display import execute
+        return execute(self,req,sid,'prepare')
+
+    def post_plan_a05_display_confirm(self,req,sid):
+        """明确保存展示范围与逐项核译。"""
+        from .plan_a05_display import execute
+        return execute(self,req,sid,'confirm')
+
+    def get_plan_a05_display_file(self,req,sid,identity,index):
+        """下载登记图件，不接受路径。"""
+        from .plan_a05_display import file
+        return file(self,req,sid,identity,index)
 
     def post_analysis_validate(self, req):
         """校验方案；全流程执行未接通前保持不可启动。"""

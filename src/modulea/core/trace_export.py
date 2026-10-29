@@ -88,12 +88,24 @@ def _plan_decisions(workflow, manifest, all_files):
             ('selection_reviews','analysis_plan_selection_reviews','A04.plan_selection_review.1'),
             ('preparation_inputs','analysis_plan_a06_input_records','A06.plan_preparation_record.1'),
             ('preparation_requests','analysis_plan_preparation_ui_requests','ModuleA.plan_preparation_ui.1'),
-            ('preparation_receipts','analysis_plan_preparation_ui_receipts','ModuleA.plan_preparation_ui.1')):
+            ('preparation_receipts','analysis_plan_preparation_ui_receipts','ModuleA.plan_preparation_ui.1'),
+            ('a05_display_requests','analysis_plan_a05_display_requests','A05.plan_display.1'),
+            ('a05_display_records','analysis_plan_a05_display_records','A05.plan_display.1')):
         output[key]=[]
         for reference in manifest.get(index,[]):
             value=read_json(verified_file(root,reference))
             require(value.get('schema_version')==version and value.get('study_id')==manifest['study_id'],
                     '方案选择或固定输入归属不一致')
+            if key=='a05_display_requests':
+                require(value['request_hash']==fingerprint(value['request']) and value['request']['confirmed'] is True
+                        and value['request']['expected_input_hash']==fingerprint(value['binding'])
+                        and value['binding']['study_id']==manifest['study_id'],'A05展示明确请求与输入快照不一致')
+                run=workflow.run(manifest,value['request']['expected_a05'])
+                require(run['module_id']=='A05' and value['binding']['a05_result']==manifest['runs'][run['run_id']]['result_file'],
+                        'A05展示请求统计来源不一致')
+            if key=='a05_display_records':
+                from .plan_a05_display import read_record
+                value=read_record(workflow,manifest,reference)
             if key=='preparation_requests':
                 require(value['request_hash']==fingerprint(value['request'])
                         and value['request']['confirmed'] is True
@@ -200,6 +212,14 @@ def trace_csv(payload):
         if result.get("summary"):
             writer.writerow([payload["study_id"], module["module_id"], module.get("run_id"), "__summary__", 0,
                              json.dumps(result["summary"], ensure_ascii=False, separators=(",", ":"))])
+    for display in payload.get('plan_decisions',{}).get('a05_display_records',[]):
+        presentation=display['presentation'];tables=dict(presentation['tables'],groups=presentation['groups'])
+        tables['__metadata__']={key:value for key,value in presentation.items() if key not in ('tables','groups')}
+        for name,value in tables.items():
+            rows=value if isinstance(value,list) else [value]
+            for index,row in enumerate(rows):
+                writer.writerow([payload['study_id'],'A05',display['a05_run_id'],f"display.{display['display_id']}.{name}",index,
+                                 json.dumps(row,ensure_ascii=False,separators=(',',':'))])
     return output.getvalue().encode("utf-8-sig")
 
 

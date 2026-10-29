@@ -67,6 +67,23 @@ export interface PlanA05Info {
   parameters:{include_go?:boolean;include_kegg?:boolean;adjusted_p_max?:number;min_term_size?:number;max_term_size?:number;
     go_plot_top?:number;go_table_top?:number;kegg_plot_top?:number;kegg_table_top?:number};
 }
+export interface PlanA05DisplayChoice {ID:string;decision:'retain'|'exclude'|'defer';reason:string}
+export interface PlanA05Translation {ID:string;english:string;zh:string;reason:string}
+export interface PlanA05DisplayDecision {excluded_ids:string[];uncertain_decisions:PlanA05DisplayChoice[];translations:PlanA05Translation[];confirmed:true}
+export interface PlanA05DisplayRow extends Record<string,unknown> {
+ ID:string;Description:string;english:string;Count:number;'p.adjust':number;description_zh:string;translation_status:string;
+ classification_status?:string;classification_zh?:string;reason_zh?:string;proposed_exclusion?:boolean;
+ excluded?:boolean;deferred?:boolean;decision?:PlanA05DisplayChoice|null;
+}
+export interface PlanA05DisplayInfo {
+ supported:boolean;enabled:boolean;blockers:string[];expected_a05:string;expected_display_id:string;expected_input_hash:string;
+ plan_id:string;parameter_hash:string;parameters:Record<string,number|boolean>;message_zh:string;
+ current:null|{display_id:string;a05_run_id:string;decision:PlanA05DisplayDecision|null;
+   downloads:{index:number;name:string;url:string}[];
+   presentation:{tables:Record<string,PlanA05DisplayRow[]>;missing_translations:string[];unresolved_classifications:string[];
+     excluded_ids:string[];deferred_ids:string[];decisions_confirmed:boolean;ready_for_display:boolean;scientific_approval:false;note_zh:string;
+     groups:{group:string;included:boolean;significant_count:number|null;retained_count:number|null;plot_count:number|null;table_count:number|null}[]}};
+}
 export interface PlanStagesInfo {
  schema_version:string;supported:boolean;expected_input_hash:string;expected_a00:string;expected_plan_id:string;parameter_hash:string;
  parameters:Record<string,unknown>;stages:{stage:string;enabled:boolean;blockers:string[];current_run:string|null;active:boolean;approved:boolean}[];message_zh:string;
@@ -433,6 +450,7 @@ export interface ModuleView {
   creation_plan?:CreationPlanInfo|null;
   plan_a01?:PlanA01Info|null;
   plan_a05?:PlanA05Info|null;
+  plan_a05_display?:PlanA05DisplayInfo|null;
   plan_stages?:PlanStagesInfo|null;
   plan_compounds?:PlanCompoundsInfo|null;
   plan_selection_ui?:PlanSelectionUiInfo|null;
