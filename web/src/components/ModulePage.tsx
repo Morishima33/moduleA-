@@ -45,6 +45,7 @@ import PlanA01 from './PlanA01';
 import PlanA05, { PlanA05Results } from './PlanA05';
 import PlanA05Display from './PlanA05Display';
 import PlanStages from './PlanStages';
+import PlanSystemValidations from './PlanSystemValidations';
 import PlanCompounds from './PlanCompounds';
 import PlanSelection from './PlanSelection';
 import PlanPreparation from './PlanPreparation';
@@ -114,6 +115,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       {view.operation_guide && <ModuleOperationGuide studyId={studyId} moduleId={m.module_id} info={view.operation_guide} pending={m.module_id === 'A05' && keggPending}
         onLocate={target => {if (target === 'module-enrichment-confirmation') setEnrichmentNavigation(n => n + 1);}}/>}
       {view.creation_plan&&<CreationPlan studyId={studyId} info={view.creation_plan}/>}
+      {view.plan_system_validations&&<PlanSystemValidations key={JSON.stringify(view.plan_system_validations.items.map(row=>[row.request,row.current?.validation_id,row.enabled]))} studyId={studyId} info={view.plan_system_validations}/>}
       {view.plan_stages&&<PlanStages key={view.plan_stages.expected_input_hash} studyId={studyId} info={view.plan_stages}/>}
       {view.plan_compounds&&<PlanCompounds key={view.plan_compounds.expected_input_hash} studyId={studyId} info={view.plan_compounds}/>}
       {view.plan_preparation_ui&&<PlanPreparation key={view.plan_preparation_ui.input_hash} studyId={studyId} info={view.plan_preparation_ui}/>}

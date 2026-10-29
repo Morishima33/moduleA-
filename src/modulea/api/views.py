@@ -483,6 +483,11 @@ class Views:
         response['creation_plan'] = creation_context(workflow, study_id) if module_id == 'A00' and not historical else None
         response['plan_a01'] = None
         response['plan_stages'] = None
+        response['plan_system_validations'] = None
+        if module_id in ('A00','A07') and not historical:
+            from .system_validation import info as system_validation_info
+            value=system_validation_info(self,None,study_id)
+            if value['supported']:response['plan_system_validations']=value
         response['plan_compounds'] = None
         response['plan_selection_ui'] = None
         response['plan_preparation_ui'] = None

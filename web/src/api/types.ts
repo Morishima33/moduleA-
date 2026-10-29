@@ -84,6 +84,15 @@ export interface PlanA05DisplayInfo {
      excluded_ids:string[];deferred_ids:string[];decisions_confirmed:boolean;ready_for_display:boolean;scientific_approval:false;note_zh:string;
      groups:{group:string;included:boolean;significant_count:number|null;retained_count:number|null;plot_count:number|null;table_count:number|null}[]}};
 }
+export interface PlanSystemValidationReceipt {
+ validation_id:string;module_id:string;run_id:string;passed:boolean;label_zh:string;created_at:string;error_zh:string|null;
+ scientific_status:{result_outcome:string;handoff_blocked:boolean;ready_for_successor:boolean;note_zh:string};
+}
+export interface PlanSystemValidationsInfo {
+ supported:boolean;message_zh:string;history:PlanSystemValidationReceipt[];
+ items:{module_id:string;run_id:string;enabled:boolean;blockers:string[];
+  request:null|{expected_run_id:string;expected_input_hash:string};current:PlanSystemValidationReceipt|null}[];
+}
 export interface PlanStagesInfo {
  schema_version:string;supported:boolean;expected_input_hash:string;expected_a00:string;expected_plan_id:string;parameter_hash:string;
  parameters:Record<string,unknown>;stages:{stage:string;enabled:boolean;blockers:string[];current_run:string|null;active:boolean;approved:boolean}[];message_zh:string;
@@ -452,6 +461,7 @@ export interface ModuleView {
   plan_a05?:PlanA05Info|null;
   plan_a05_display?:PlanA05DisplayInfo|null;
   plan_stages?:PlanStagesInfo|null;
+  plan_system_validations?:PlanSystemValidationsInfo|null;
   plan_compounds?:PlanCompoundsInfo|null;
   plan_selection_ui?:PlanSelectionUiInfo|null;
   plan_preparation_ui?:PlanPreparationUiInfo|null;

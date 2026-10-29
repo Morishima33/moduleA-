@@ -18,6 +18,11 @@ class AnalysisPlanConflict(ContractError):
 class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
     """旧研究继承原行为；只有显式新方案登记支持草稿写入。"""
 
+    def validate_analysis_plan_scientific_run(self,study_id,payload):
+        """运行真实规范校验并追加系统回执，不伪造人工reviews或授予旧流程批准。"""
+        from .system_validation import validate_run
+        return validate_run(self,study_id,payload)
+
     def prepare_analysis_plan_a05_display(self,study_id,payload):
         """追加新版A05分类/核译预览，统计和人工复核保持。"""
         from .plan_a05_display import publish

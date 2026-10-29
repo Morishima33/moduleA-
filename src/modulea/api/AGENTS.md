@@ -1,5 +1,11 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 新方案独立系统校验
+
+GET `/studies/{sid}/analysis-plan/system-validations`只读返回supported、items及history。每项包含module_id/run_id、enabled/blockers、request(expected_run_id/expected_input_hash)及绑定当前输入的current回执。历史回执保留实际passed和scientific_status(result_outcome/handoff_blocked/ready_for_successor)，规范一致性通过不消除科学失败、NA或身份阻塞，不授予旧流程批准。GET不运行R/Vina、不写入；旧研究supported:false。
+
+POST同路径`/execute`严格接受`{request_id:syscheckreq_<32hex>,expected_run_id,expected_input_hash}`，拒绝客户端passed/路径/批准。202提交plan_system_validation后台任务，实际生产验证器复算，失败也保存独立失败回执且任务失败；同请求回执幂等，不写人工reviews/current。过期409、回收站423、忙碌409，未知字段422，GET/重启不自动重跑。追溯plan_decisions新增system_validation_requests/system_validations，包含真实请求、输入及父文件、原人工记录快照、验证器源码SHA和检查结果，逐件核验；CSV科学数值不变。
+
 ## 新方案A05分类、核译与展示资料
 
 GET `/studies/{sid}/analysis-plan/a05-display`只读实际A05.plan_enrichment.1绑定方案及独立展示记录，返回supported/enabled/blockers、expected_a05/expected_display_id/expected_input_hash、plan_id/parameter_hash/parameters、current及message_zh。不运行R、不联网、不生成记录。POST同路径`/prepare`严格接受`{request_id:a05displayreq_<32hex>,expected_a05,expected_display_id:"",expected_input_hash,author,note,confirmed:true}`；`/confirm`在相同基础字段上增加`excluded_ids:[]、uncertain_decisions:[{ID,decision:retain|exclude|defer,reason}]、translations:[{ID,english,zh,reason}]`，expected_display_id绑定当前展示。未知字段、路径、参数和批准拒绝；后台a05_plan_display调用公开Workflow追加明确请求、来源快照、同方案数量的双语图表及决定，不改A05/current或reviews，不运行R。未决分类、缺译和暂缓分别记录，ready_for_display不等于科学批准。过期409、回收站423、忙碌409，失败保留请求及未发布原件，GET/重启不重跑。

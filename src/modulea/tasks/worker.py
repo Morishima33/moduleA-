@@ -587,6 +587,19 @@ def run_a05_plan_display(settings,task,manager):
 
 
 HANDLERS['a05_plan_display']=run_a05_plan_display
+
+
+def run_plan_system_validation(settings,task,manager):
+    """使用生产科学验证器；实际失败回执已归档，任务明确失败，不写人工reviews。"""
+    from contracts import require
+    manager.update(task['task_id'],progress={'step_zh':'真实复算本批证据并核对输入指纹','done':0,'total':1})
+    result=full_workflow(settings.data_root).validate_analysis_plan_scientific_run(task['study_id'],json.loads(task['payload']))
+    require(result['passed'],'系统科学校验未通过：'+str(result['error_zh']))
+    manager.update(task['task_id'],progress={'step_zh':'系统校验回执已归档；原科学状态保留','done':1,'total':1})
+    return '实际证据一致性校验通过：'+result['validation_id']+'；不替代科学结论或人工批准。'
+
+
+HANDLERS['plan_system_validation']=run_plan_system_validation
 HANDLERS["a06_plan_pocket_review"] = run_a06_plan_preparation
 HANDLERS["a06_plan_reference_review"] = run_a06_plan_reference_review
 HANDLERS["a06_plan_reference_preparation"] = run_a06_plan_reference_preparation

@@ -90,7 +90,9 @@ def _plan_decisions(workflow, manifest, all_files):
             ('preparation_requests','analysis_plan_preparation_ui_requests','ModuleA.plan_preparation_ui.1'),
             ('preparation_receipts','analysis_plan_preparation_ui_receipts','ModuleA.plan_preparation_ui.1'),
             ('a05_display_requests','analysis_plan_a05_display_requests','A05.plan_display.1'),
-            ('a05_display_records','analysis_plan_a05_display_records','A05.plan_display.1')):
+            ('a05_display_records','analysis_plan_a05_display_records','A05.plan_display.1'),
+            ('system_validation_requests','analysis_plan_system_validation_requests','ModuleA.system_validation.1'),
+            ('system_validations','analysis_plan_system_validation_records','ModuleA.system_validation.1')):
         output[key]=[]
         for reference in manifest.get(index,[]):
             value=read_json(verified_file(root,reference))
@@ -106,6 +108,11 @@ def _plan_decisions(workflow, manifest, all_files):
             if key=='a05_display_records':
                 from .plan_a05_display import read_record
                 value=read_record(workflow,manifest,reference)
+            if key=='system_validations':
+                from .system_validation import read_receipt
+                value=read_receipt(workflow,manifest,reference)
+            if key=='system_validation_requests':
+                require(value['request_hash']==fingerprint(value['request']),'系统校验请求指纹不一致')
             if key=='preparation_requests':
                 require(value['request_hash']==fingerprint(value['request'])
                         and value['request']['confirmed'] is True

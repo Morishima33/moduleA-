@@ -1,5 +1,9 @@
 # tasks/ — 后台任务
 
+## 2026-10-29 新方案独立系统校验
+
+plan_system_validation只消费严格的request_id/expected_run_id/expected_input_hash，经公开Workflow调用生产注册的真实规范验证器；A00补充原登记契约核查。校验前后核对完整祖先运行/结果、原人工记录和指纹；不接受调用者lambda或客户端passed。锁外复算、锁内追加不可变请求/回执及验证器源码SHA，不写reviews/current、不授予旧批准。证据不一致或工具不可用保存失败回执且任务失败；科学计算自身失败但诊断经规范验证器确认一致，可以生成一致性通过回执，同时明确保留result_outcome=failed、handoff_blocked及ready_for_successor:false，不能以系统通过冒充科学成功。GET/重启不执行，旧请求回执幂等；未完整请求保留，新的明确核对使用新请求号。
+
 ## 2026-10-29 A05新方案展示资料
 
 a05_plan_display消费严格prepare/confirm请求，经公开Workflow追加分类与完整显著范围译名快照、明确决定及本方案数量图表。不调用R、重算ORA/BH、替换A05/current或写reviews。图件在科学worker生成，发布前重新核对全部预期输入/复核/展示；未决分类及缺译保持，未知项可明确留因暂缓；展示可用与科学批准分开。失败保留明确请求和未发布资料，重试不偷换后来草稿，旧展示/统计协议保持。

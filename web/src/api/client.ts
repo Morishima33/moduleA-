@@ -116,6 +116,9 @@ export const api = {
   /** 新版富集实际使用不可变方案，浏览器不传统计参数或结果。 */
   runPlanA05:(sid:string,body:Record<string,unknown>)=>request<{task:Task;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/a05`,body),
   savePlanA05Display:(sid:string,action:'prepare'|'confirm',body:Record<string,unknown>)=>request<{task:Task;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/a05-display/${action}`,body),
+  /** 明确核对同批归档，不能上传passed标记或人工批准。 */
+  executePlanSystemValidation:(sid:string,body:{request_id:string;expected_run_id:string;expected_input_hash:string})=>
+    request<{task:Task;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/system-validations/execute`,body),
   /** 新方案任务独立于旧固定参数获取/整理入口。 */
   acquirePlanA01: (sid:string,body:Record<string,unknown>) => request<{task:Task;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/a01/acquire`,body),
   publishPlanA01: (sid:string,body:Record<string,unknown>) => request<{task:Task;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/a01/publish`,body),
