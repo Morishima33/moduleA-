@@ -1,5 +1,11 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 新方案受体选择与准备输入网页
+
+GET `/studies/{sid}/analysis-plan/selection-ui`只读汇总A04实际绑定方案、最新草稿是否另存、原选择及独立复核、A03_SELECT批准和当前A06固定输入。返回supported、input_hash、expected_a00/a03/a03_select/a04/plan_id、parameter_hash、parameters、newer_draft、selection/selection_review/current_input、三项operation的enabled/blockers。GET不计算名单或写入。A04及A06_PREP的可选plan_selection_ui复用该内容；网页复用原三个明确POST：生成a04-selection、选择独立reviews、归档a06-preparation-input，初始不勾确认、不选通过，完成不启动结构准备或评分。参数以A04实际绑定方案为准，不用后存草稿替换旧网络；新成分配置和受体方案数量/排序不一致时，准备输入继续拒绝。HTTP字段及任务语义不变。
+
+追溯JSON的plan_decisions包含receptor_selections、selection_reviews、preparation_inputs完整不可变历史及file记录。导出验证研究/版本和递归文件SHA；决定不进入CSV科学结果表，不修改模块reviews或current。新固定输入页不提供旧自动对接区，避免将保存输入当执行授权。
+
 ## 新方案成分选择
 
 GET `/studies/{sid}/analysis-plan/a03-selection`只读返回supported/enabled/blockers、expected_a00/a03/selection/plan_id/input_hash、parameter_hash、target_count、metric、原A03完整ranking、identity_pending和当前current/current_summary/current_selected，不在HTTP计算名单。POST同路径`/execute`严格接受`{expected_a00,expected_a03,expected_selection,expected_plan_id,expected_input_hash,operator,reason,confirmed:true}`，不接受名单、数量、指标、路径或批准。后台a03_plan_selection经公开Workflow写锁内复算实际A03，读取方案目标/排序，追加A03.plan_selection.1待复核名单及不可变请求。并列全部保留、不足按实际、零交集不补位，实际入选身份待补时停止不换低排名。当前A03_SELECT可选plan_compounds返回相同只读字段并关闭旧固定前五表单；旧研究保持。生成不代签、不启动A06；新A06准备输入须核对新成分配置与受体选择绑定方案的数量/指标一致，历史选择版本保持。

@@ -55,6 +55,7 @@ class App:
         self.plan_creation = PlanCreation(self.kernel)
         self.token = secrets.token_urlsafe(32)
         self.routes = [
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/selection-ui", self.get_plan_selection_ui),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a03-selection", self.get_plan_compounds),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a03-selection/execute", self.post_plan_compounds),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/stages", self.get_plan_stages),
@@ -513,6 +514,11 @@ class App:
     def get_plan_compounds(self,req,study_id):
         """读取本方案成分选择资格，不计算名单。"""
         from .plan_compounds_view import info
+        return info(self,req,study_id)
+
+    def get_plan_selection_ui(self,req,study_id):
+        """只读受体选择及新版准备输入的当前资格。"""
+        from .plan_selection_ui import info
         return info(self,req,study_id)
 
     def post_plan_compounds(self,req,study_id):

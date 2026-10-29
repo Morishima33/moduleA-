@@ -107,6 +107,10 @@ export const api = {
   executePlanStage:(sid:string,body:Record<string,unknown>)=>request<{task:Task;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/stages/execute`,body),
   /** 名单只在后台按实际方案生成，客户端不提交科学选择结果。 */
   executePlanCompounds:(sid:string,body:Record<string,unknown>)=>request<{task:Task;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/a03-selection/execute`,body),
+  /** 原后台选择、独立复核和固定输入分别由明确操作调用。 */
+  generatePlanReceptors:(sid:string,body:Record<string,unknown>)=>request<{task:Task;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/a04-selection`,body),
+  reviewPlanReceptors:(sid:string,id:string,body:Record<string,unknown>)=>request<{review:unknown}>('POST',`/studies/${sid}/analysis-plan/a04-selection/${id}/reviews`,body),
+  savePlanPreparationInput:(sid:string,body:Record<string,unknown>)=>request<{task:Task;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/a06-preparation-input`,body),
   /** 新版富集实际使用不可变方案，浏览器不传统计参数或结果。 */
   runPlanA05:(sid:string,body:Record<string,unknown>)=>request<{task:Task;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/a05`,body),
   /** 新方案任务独立于旧固定参数获取/整理入口。 */

@@ -79,6 +79,24 @@ def _stage_execution(workflow, manifest, all_files):
     return {'requests': requests, 'receipts': receipts}
 
 
+def _plan_decisions(workflow, manifest, all_files):
+    """完整保留受体选择、独立复核和固定输入历史，不把它们当科学运行。"""
+    root=workflow.location(manifest['study_id'])
+    output={}
+    for key,index,version in (
+            ('receptor_selections','analysis_plan_selection_records','A04.plan_selection.1'),
+            ('selection_reviews','analysis_plan_selection_reviews','A04.plan_selection_review.1'),
+            ('preparation_inputs','analysis_plan_a06_input_records','A06.plan_preparation_record.1')):
+        output[key]=[]
+        for reference in manifest.get(index,[]):
+            value=read_json(verified_file(root,reference))
+            require(value.get('schema_version')==version and value.get('study_id')==manifest['study_id'],
+                    '方案选择或固定输入归属不一致')
+            output[key].append(dict(value,file=deepcopy(reference)))
+            _records(reference,all_files);_records(value,all_files)
+    return output
+
+
 def build_trace(workflow, study_id, include_data=False):
     """生成同一研究的模块、版本、来源、参数、结果和文件指纹清单。"""
     manifest = workflow.load(study_id)
@@ -136,6 +154,7 @@ def build_trace(workflow, study_id, include_data=False):
                       "file": deepcopy(reference)})
         _records(reference, all_files)
     execution = _stage_execution(workflow, manifest, all_files)
+    decisions = _plan_decisions(workflow, manifest, all_files)
     # 方案与执行确认加入后再次核验，并把运行文件回挂到对应模块。
     verified = _verified_records(root, all_files)
     for item in modules:
@@ -146,6 +165,7 @@ def build_trace(workflow, study_id, include_data=False):
                "workflow_profile": manifest.get("workflow_profile"), "kind": manifest.get("kind"),
                "current": deepcopy(manifest.get("current", {})), "modules": modules, "plans": plans,
                "stage_execution": execution,
+               "plan_decisions": decisions,
                "files": verified, "file_count": len(verified), "include_data": include_data,
                "read_only": True, "note_zh": "本清单及导出数据来自同一研究的当前归档版本；文件均已在导出前核验指纹。"}
     return payload

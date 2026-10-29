@@ -484,6 +484,16 @@ class Views:
         response['plan_a01'] = None
         response['plan_stages'] = None
         response['plan_compounds'] = None
+        response['plan_selection_ui'] = None
+        if module_id in ('A04','A06_PREP') and not historical:
+            from .plan_selection_ui import info as selection_ui_info
+            value=selection_ui_info(self,None,study_id)
+            if value['supported']:
+                response['plan_selection_ui']=value
+                if module_id=='A06_PREP':
+                    response['review']['continue'].update(available=False,note_zh='新方案固定输入须从新版准备入口继续，不运行旧固定流程。')
+                    for key in ('docking_preparation','docking_review','docking_candidates','docking_trial','docking_coverage'):
+                        response[key]=None
         if module_id=='A03_SELECT' and not historical:
             from .plan_compounds_view import info as compounds_info
             value=compounds_info(self,None,study_id)
@@ -541,7 +551,7 @@ class Views:
             response['review']['continue'].update(available=False, note_zh='人工决定单独保存；请在新版评分区明确确认执行，不接续旧计算协议。')
         if plan_result:
             response['review']['continue'].update(available=False, note_zh='本版评分独立保存复核决定；新报告协议尚未接通，不调用旧报告。')
-        if module_id in ("A06_PREP", "A06") and not historical and not preparation and not handoff and not plan_preparation and not plan_result:
+        if module_id in ("A06_PREP", "A06") and not historical and not preparation and not handoff and not plan_preparation and not plan_result and not response['plan_selection_ui']:
             from ..core.automatic_experience import automatic_context
             with workflow.handoff_read_cache():
                 response["automatic_docking"] = automatic_context(workflow, real, False, bool(self.tasks.active_for(study_id)))
