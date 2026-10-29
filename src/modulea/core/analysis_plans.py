@@ -23,6 +23,16 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
         from .plan_creation import create_study
         return create_study(self, content, proof, evidence, request_id)
 
+    def begin_analysis_plan_preparation_request(self,study_id,payload):
+        """固定新网页的明确准备请求，科学过程继续使用原第二版。"""
+        from .plan_preparation_ui import begin_request
+        return begin_request(self,study_id,payload)
+
+    def finish_analysis_plan_preparation_request(self,study_id,reference,run_id):
+        """成功回执绑定真实准备运行，不提交审批或评分。"""
+        from .plan_preparation_ui import finish_request
+        return finish_request(self,study_id,reference,run_id)
+
     def analysis_plan_compounds_info(self, study_id):
         """只读原A03排名和本方案成分执行资格。"""
         from .plan_compounds import info

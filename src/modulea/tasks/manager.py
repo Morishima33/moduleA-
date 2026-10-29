@@ -49,6 +49,7 @@ KINDS["a01_plan_publish"] = "按本方案整理三库及HGNC，结果待独立�
 KINDS["a05_plan_enrichment"] = "按本方案执行GO/KEGG富集，结果待独立复核"
 KINDS['plan_stage'] = '按已确认方案执行A02/A03/A04阶段，结果待复核'
 KINDS['a03_plan_selection'] = '按本方案生成成分名单，等待独立复核'
+KINDS['a06_plan_preparation_ui'] = '明确执行本批新版结构与配体准备（不评分）'
 
 
 def _now() -> str:

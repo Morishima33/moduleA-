@@ -111,6 +111,8 @@ export const api = {
   generatePlanReceptors:(sid:string,body:Record<string,unknown>)=>request<{task:Task;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/a04-selection`,body),
   reviewPlanReceptors:(sid:string,id:string,body:Record<string,unknown>)=>request<{review:unknown}>('POST',`/studies/${sid}/analysis-plan/a04-selection/${id}/reviews`,body),
   savePlanPreparationInput:(sid:string,body:Record<string,unknown>)=>request<{task:Task;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/a06-preparation-input`,body),
+  /** 明确准备只绑定本批输入和版本，不从浏览器接收科学参数或文件路径。 */
+  startPlanPreparation:(sid:string,body:Record<string,unknown>)=>request<{task:Task;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/preparation-ui`,body),
   /** 新版富集实际使用不可变方案，浏览器不传统计参数或结果。 */
   runPlanA05:(sid:string,body:Record<string,unknown>)=>request<{task:Task;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/a05`,body),
   /** 新方案任务独立于旧固定参数获取/整理入口。 */

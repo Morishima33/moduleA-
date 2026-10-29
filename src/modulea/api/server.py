@@ -55,6 +55,8 @@ class App:
         self.plan_creation = PlanCreation(self.kernel)
         self.token = secrets.token_urlsafe(32)
         self.routes = [
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/preparation-ui", self.get_plan_preparation_ui),
+            ("POST", rf"/api/v1/studies/{ID}/analysis-plan/preparation-ui", self.post_plan_preparation_ui),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/selection-ui", self.get_plan_selection_ui),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a03-selection", self.get_plan_compounds),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a03-selection/execute", self.post_plan_compounds),
@@ -520,6 +522,16 @@ class App:
         """只读受体选择及新版准备输入的当前资格。"""
         from .plan_selection_ui import info
         return info(self,req,study_id)
+
+    def get_plan_preparation_ui(self,req,study_id):
+        """只读固定输入至新版准备和后续证据导航。"""
+        from .plan_preparation_ui import info
+        return info(self,req,study_id)
+
+    def post_plan_preparation_ui(self,req,study_id):
+        """明确启动本批第二版科学准备，不启动评分。"""
+        from .plan_preparation_ui import execute
+        return execute(self,req,study_id)
 
     def post_plan_compounds(self,req,study_id):
         """明确提交本方案成分选择后台任务。"""

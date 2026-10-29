@@ -90,6 +90,14 @@ export interface PlanSelectionUiInfo {
  current_input:{input_id:string;packet:{pair_count:number;compounds:{compound_id:string;name:string}[];receptors:{target_id:string;symbol:string}[]}}|null;
  operations:Record<'selection'|'review'|'input',{enabled:boolean;blockers:string[]}>;message_zh:string;
 }
+export interface PlanPreparationUiInfo {
+ supported:boolean;enabled:boolean;blockers:string[];input_hash:string;expected_input_id:string;
+ expected_preparation_run_id:string|null;parameters:Record<string,unknown>;message_zh:string;
+ scope:{pair_count:number;compounds:{compound_id:string;name:string}[];receptors:{target_id:string;symbol:string}[]}|null;
+ current:{run_id:string;version:string;active:boolean;matches_input:boolean;completed:boolean;approved:boolean;
+  summary:Record<string,unknown>|null}|null;
+ steps:{key:string;label:string;available:boolean;module:string;target:string;detail_zh:string}[];
+}
 export interface PlanCreationPreflight {
   schema_version:string;preflight_id:string;input_hash:string;plan:CompiledAnalysisPlan;
   mesh_verification:{preferred_term:string;mesh_id:string;status:string};materials:CreationMaterials;
@@ -428,6 +436,7 @@ export interface ModuleView {
   plan_stages?:PlanStagesInfo|null;
   plan_compounds?:PlanCompoundsInfo|null;
   plan_selection_ui?:PlanSelectionUiInfo|null;
+  plan_preparation_ui?:PlanPreparationUiInfo|null;
   scoring_readiness?:ScoringReadinessInfo|null;
   docking_coverage?:DockingCoverageInfo|null;
   docking_candidates?: DockingCandidatesInfo | null;

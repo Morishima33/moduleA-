@@ -1,5 +1,9 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 新版结构准备入口与同批导航
+
+GET `/studies/{sid}/analysis-plan/preparation-ui`只读当前固定输入、其绑定方案参数、当前A06_PREP实际版本/摘要、可执行条件及口袋/共晶/整体复核/评分导航。返回supported/enabled/blockers、input_hash、expected_input_id、expected_preparation_run_id、parameters、scope、current及steps，不计算或联网。POST同路径严格接受`{request_id:planprep_<32hex>,expected_input_id,expected_preparation_run_id:null|run_id,expected_input_hash,author,note,confirmed:true}`，拒绝路径/参数/名单/批准。后台a06_plan_preparation_ui核对完整输入与复核快照，归档明确请求后复用原第二版科学准备子进程；成功追加回执，不改人工reviews、不启动评分。已有同输入有效准备不重复执行；原输入、当前准备或复核变动则旧请求拒绝。任务忙碌、工具缺失、回收站明确阻断。A06_PREP可选plan_preparation_ui显示同内容，旧准备接口/科学协议保持。新请求与完成回执进入研究追溯。
+
 ## 新方案受体选择与准备输入网页
 
 GET `/studies/{sid}/analysis-plan/selection-ui`只读汇总A04实际绑定方案、最新草稿是否另存、原选择及独立复核、A03_SELECT批准和当前A06固定输入。返回supported、input_hash、expected_a00/a03/a03_select/a04/plan_id、parameter_hash、parameters、newer_draft、selection/selection_review/current_input、三项operation的enabled/blockers。GET不计算名单或写入。A04及A06_PREP的可选plan_selection_ui复用该内容；网页复用原三个明确POST：生成a04-selection、选择独立reviews、归档a06-preparation-input，初始不勾确认、不选通过，完成不启动结构准备或评分。参数以A04实际绑定方案为准，不用后存草稿替换旧网络；新成分配置和受体方案数量/排序不一致时，准备输入继续拒绝。HTTP字段及任务语义不变。

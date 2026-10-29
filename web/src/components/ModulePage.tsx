@@ -46,6 +46,7 @@ import PlanA05, { PlanA05Results } from './PlanA05';
 import PlanStages from './PlanStages';
 import PlanCompounds from './PlanCompounds';
 import PlanSelection from './PlanSelection';
+import PlanPreparation from './PlanPreparation';
 import ReferenceEvidencePanel from './ReferenceEvidencePanel';
 import ReferencePreparationBinding from './ReferencePreparationBinding';
 import ScoringReadiness from './ScoringReadiness';
@@ -69,6 +70,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       {reviewSlot && <div id="module-review-panel">{reviewSlot}</div>}{downstreamSlot}</div>;
   }
   const m = view.module; // 模块信息
+  const preparationEvidenceAvailable = !view.plan_preparation_ui || !!(view.plan_preparation_ui.current?.completed && view.plan_preparation_ui.current.active && view.plan_preparation_ui.current.matches_input);
   const oldIntersection = !view.historical && m.module_id === 'A03' && view.state.code === 'stale'; // 上游更新后，旧零交集只供追溯。
   const oldSelection = !view.historical && ((m.module_id === 'A03_SELECT' && !(view.plan_compounds?.current||view.compound_selection?.previous_active)) || (['A06', 'A06_PREP'].includes(m.module_id) && !!view.docking_review && !view.docking_review.matrix?.ready && stIsStale(view)));
   const st = view.state; // 状态
@@ -113,14 +115,15 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       {view.creation_plan&&<CreationPlan studyId={studyId} info={view.creation_plan}/>}
       {view.plan_stages&&<PlanStages key={view.plan_stages.expected_input_hash} studyId={studyId} info={view.plan_stages}/>}
       {view.plan_compounds&&<PlanCompounds key={view.plan_compounds.expected_input_hash} studyId={studyId} info={view.plan_compounds}/>}
+      {view.plan_preparation_ui&&<PlanPreparation key={view.plan_preparation_ui.input_hash} studyId={studyId} info={view.plan_preparation_ui}/>}
       {view.plan_selection_ui&&<PlanSelection key={view.plan_selection_ui.input_hash} studyId={studyId} info={view.plan_selection_ui}/>}
       {view.plan_a05&&<PlanA05 key={[view.plan_a05.expected_a00,view.plan_a05.expected_a03,view.plan_a05.expected_a05,view.plan_a05.expected_plan_id].join(':')} studyId={studyId} info={view.plan_a05}/>}
       {sp.plan_enrichment&&<PlanA05Results studyId={studyId} files={view.files} data={sp.plan_enrichment}/>}
       {view.plan_a01&&<PlanA01 key={[view.plan_a01.expected_a00,view.plan_a01.expected_a01,view.plan_a01.expected_plan_id,view.plan_a01.expected_staging].join(':')} studyId={studyId} info={view.plan_a01}/>}
       {m.module_id === 'A06_PREP' && view.reference_qualification && <ReferenceQualification studyId={studyId} info={view.reference_qualification} packet={view.review_packet} gate={view.review_gate} />}
       {m.module_id === 'A06_PREP' && view.reviewable_preparation && <ReviewablePreparation key={view.reviewable_preparation.current_run_id} studyId={studyId} info={view.reviewable_preparation} />}
-      {m.module_id === 'A06_PREP' && !view.historical && <ReferenceEvidencePanel studyId={studyId} />}
-      {m.module_id === 'A06_PREP' && !view.historical && <ReferencePreparationBinding studyId={studyId} />}
+      {m.module_id === 'A06_PREP' && !view.historical && preparationEvidenceAvailable && <ReferenceEvidencePanel studyId={studyId} />}
+      {m.module_id === 'A06_PREP' && !view.historical && preparationEvidenceAvailable && <ReferencePreparationBinding studyId={studyId} />}
       {m.module_id === 'A06_PREP' && view.scoring_readiness && <ScoringReadiness studyId={studyId} info={view.scoring_readiness} />}
       {view.plan_scoring && <PlanScoring key={`${view.plan_scoring.expected_preparation_run_id}-${view.plan_scoring.current_run_id}`} studyId={studyId} moduleId={m.module_id} info={view.plan_scoring} />}
       {m.module_id === 'A07' && <div id="module-report-downloads"><ReportSummary special={sp} studyId={studyId} downloadsOnly />{!sp.report_files?.length && <Alert type="info" message="本版报告尚未生成，请先查看当前模块状态与输入条件。"/>}</div>}

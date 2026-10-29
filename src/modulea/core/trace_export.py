@@ -86,12 +86,25 @@ def _plan_decisions(workflow, manifest, all_files):
     for key,index,version in (
             ('receptor_selections','analysis_plan_selection_records','A04.plan_selection.1'),
             ('selection_reviews','analysis_plan_selection_reviews','A04.plan_selection_review.1'),
-            ('preparation_inputs','analysis_plan_a06_input_records','A06.plan_preparation_record.1')):
+            ('preparation_inputs','analysis_plan_a06_input_records','A06.plan_preparation_record.1'),
+            ('preparation_requests','analysis_plan_preparation_ui_requests','ModuleA.plan_preparation_ui.1'),
+            ('preparation_receipts','analysis_plan_preparation_ui_receipts','ModuleA.plan_preparation_ui.1')):
         output[key]=[]
         for reference in manifest.get(index,[]):
             value=read_json(verified_file(root,reference))
             require(value.get('schema_version')==version and value.get('study_id')==manifest['study_id'],
                     '方案选择或固定输入归属不一致')
+            if key=='preparation_requests':
+                require(value['request_hash']==fingerprint(value['request'])
+                        and value['request']['confirmed'] is True
+                        and value['request']['expected_input_hash']==fingerprint(value['binding'])
+                        and value['binding']['study_id']==manifest['study_id'], '准备明确请求与输入快照不一致')
+            if key=='preparation_receipts':
+                require(value['request'] in manifest.get('analysis_plan_preparation_ui_requests',[]),
+                        '准备回执请求不属于本研究')
+                run=workflow.run(manifest,value['run_id'])
+                require(run['module_id']=='A06_PREP' and value['result_file']==manifest['runs'][value['run_id']]['result_file'],
+                        '准备回执与实际运行或结果不一致')
             output[key].append(dict(value,file=deepcopy(reference)))
             _records(reference,all_files);_records(value,all_files)
     return output

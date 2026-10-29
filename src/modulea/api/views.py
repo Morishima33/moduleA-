@@ -485,6 +485,11 @@ class Views:
         response['plan_stages'] = None
         response['plan_compounds'] = None
         response['plan_selection_ui'] = None
+        response['plan_preparation_ui'] = None
+        if module_id=='A06_PREP' and not historical:
+            from .plan_preparation_ui import info as preparation_ui_info
+            value=preparation_ui_info(self,None,study_id)
+            if value['supported']:response['plan_preparation_ui']=value
         if module_id in ('A04','A06_PREP') and not historical:
             from .plan_selection_ui import info as selection_ui_info
             value=selection_ui_info(self,None,study_id)

@@ -406,6 +406,18 @@ def run_a06_plan_preparation(settings, task, manager):
             + str(result["summary"]["pair_count"]) + "；未评分、未批准。")
 
 
+def run_a06_plan_preparation_ui(settings,task,manager):
+    """归档明确输入快照后复用原准备子进程，成功才追加真实回执。"""
+    body=json.loads(task['payload']);workflow=full_workflow(settings.data_root)
+    reference=workflow.begin_analysis_plan_preparation_request(task['study_id'],body)
+    canonical={key:body[key] for key in ('request_id','expected_input_id','author','note','confirmed')}
+    text=run_a06_plan_preparation(settings,dict(task,kind='a06_plan_preparation',payload=json.dumps(canonical,ensure_ascii=False)),manager)
+    output=settings.runtime_dir/'a06_plan_preparation_requests'/task['task_id']/'result.json'
+    result=json.loads(output.read_text('utf8'))
+    workflow.finish_analysis_plan_preparation_request(task['study_id'],reference,result['run_id'])
+    return text
+
+
 def run_a06_plan_reference_review(settings, task, manager):
     """复核显式共晶选择并追加证据包；不改变当前准备或评分授权。"""
     import subprocess
@@ -559,6 +571,7 @@ HANDLERS['plan_stage'] = run_plan_stage
 HANDLERS['a03_plan_selection'] = run_plan_compounds
 HANDLERS["a06_plan_input"] = run_a06_plan_input
 HANDLERS["a06_plan_preparation"] = run_a06_plan_preparation
+HANDLERS['a06_plan_preparation_ui'] = run_a06_plan_preparation_ui
 HANDLERS["a06_plan_pocket_review"] = run_a06_plan_preparation
 HANDLERS["a06_plan_reference_review"] = run_a06_plan_reference_review
 HANDLERS["a06_plan_reference_preparation"] = run_a06_plan_reference_preparation
