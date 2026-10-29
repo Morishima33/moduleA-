@@ -67,6 +67,10 @@ export interface PlanA05Info {
   parameters:{include_go?:boolean;include_kegg?:boolean;adjusted_p_max?:number;min_term_size?:number;max_term_size?:number;
     go_plot_top?:number;go_table_top?:number;kegg_plot_top?:number;kegg_table_top?:number};
 }
+export interface PlanStagesInfo {
+ schema_version:string;supported:boolean;expected_input_hash:string;expected_a00:string;expected_plan_id:string;parameter_hash:string;
+ parameters:Record<string,unknown>;stages:{stage:string;enabled:boolean;blockers:string[];current_run:string|null;active:boolean;approved:boolean}[];message_zh:string;
+}
 export interface PlanCreationPreflight {
   schema_version:string;preflight_id:string;input_hash:string;plan:CompiledAnalysisPlan;
   mesh_verification:{preferred_term:string;mesh_id:string;status:string};materials:CreationMaterials;
@@ -402,6 +406,7 @@ export interface ModuleView {
   creation_plan?:CreationPlanInfo|null;
   plan_a01?:PlanA01Info|null;
   plan_a05?:PlanA05Info|null;
+  plan_stages?:PlanStagesInfo|null;
   scoring_readiness?:ScoringReadinessInfo|null;
   docking_coverage?:DockingCoverageInfo|null;
   docking_candidates?: DockingCandidatesInfo | null;

@@ -43,6 +43,7 @@ import PlanScoring from './PlanScoring';
 import CreationPlan from './CreationPlan';
 import PlanA01 from './PlanA01';
 import PlanA05, { PlanA05Results } from './PlanA05';
+import PlanStages from './PlanStages';
 import ReferenceEvidencePanel from './ReferenceEvidencePanel';
 import ReferencePreparationBinding from './ReferencePreparationBinding';
 import ScoringReadiness from './ScoringReadiness';
@@ -108,6 +109,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       {view.operation_guide && <ModuleOperationGuide studyId={studyId} moduleId={m.module_id} info={view.operation_guide} pending={m.module_id === 'A05' && keggPending}
         onLocate={target => {if (target === 'module-enrichment-confirmation') setEnrichmentNavigation(n => n + 1);}}/>}
       {view.creation_plan&&<CreationPlan studyId={studyId} info={view.creation_plan}/>}
+      {view.plan_stages&&<PlanStages key={view.plan_stages.expected_input_hash} studyId={studyId} info={view.plan_stages}/>}
       {view.plan_a05&&<PlanA05 key={[view.plan_a05.expected_a00,view.plan_a05.expected_a03,view.plan_a05.expected_a05,view.plan_a05.expected_plan_id].join(':')} studyId={studyId} info={view.plan_a05}/>}
       {sp.plan_enrichment&&<PlanA05Results studyId={studyId} files={view.files} data={sp.plan_enrichment}/>}
       {view.plan_a01&&<PlanA01 key={[view.plan_a01.expected_a00,view.plan_a01.expected_a01,view.plan_a01.expected_plan_id,view.plan_a01.expected_staging].join(':')} studyId={studyId} info={view.plan_a01}/>}
@@ -176,7 +178,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
         </section>
       )}
 
-      {view.ppi_run && <div id="module-ppi-run"><PpiRun studyId={studyId} info={view.ppi_run} /></div>}
+      {view.ppi_run && !view.plan_stages && <div id="module-ppi-run"><PpiRun studyId={studyId} info={view.ppi_run} /></div>}
       {view.source_uploads && (m.module_id !== 'A02' || view.historical) && <div id="module-source-inputs"><SourceUploads studyId={studyId} moduleId={m.module_id} info={view.source_uploads} /></div>}
 
       {/* 需要知悉 */}

@@ -49,6 +49,36 @@ def _verified_records(root, records):
     return verified
 
 
+def _stage_execution(workflow, manifest, all_files):
+    """核验明确请求与成功回执的研究、阶段及运行关系，失败尝试也进入追溯。"""
+    from science_modules.plan_stages_contract import STAGES, VERSION, verified_request
+    root = workflow.location(manifest['study_id'])
+    requests, receipts = [], []
+    references = manifest.get('analysis_plan_stage_requests', [])
+    for reference in references:
+        value = read_json(verified_file(root, reference))
+        body = value['request']
+        require(body['stage'] in STAGES, '阶段请求包含未知阶段')
+        verified_request(root, reference, body['stage'], body['expected_plan_id'], body['expected_a00'])
+        require(value['binding']['study_id'] == manifest['study_id'], '阶段请求研究归属不一致')
+        requests.append(dict(value, file=deepcopy(reference)))
+        _records(reference, all_files)
+        _records(value, all_files)
+    for reference in manifest.get('analysis_plan_stage_receipts', []):
+        value = read_json(verified_file(root, reference))
+        require(value['schema_version'] == VERSION and value['study_id'] == manifest['study_id']
+                and value['request'] in references, '阶段回执或请求不属于本研究')
+        request = read_json(verified_file(root, value['request']))
+        run = workflow.run(manifest, value['run_id'])
+        require(value['stage'] == request['request']['stage'] == run['module_id']
+                and value['result_file'] == manifest['runs'][value['run_id']]['result_file'],
+                '阶段回执与实际运行或结果不一致')
+        receipts.append(dict(value, file=deepcopy(reference)))
+        _records(reference, all_files)
+        _records(value, all_files)
+    return {'requests': requests, 'receipts': receipts}
+
+
 def build_trace(workflow, study_id, include_data=False):
     """生成同一研究的模块、版本、来源、参数、结果和文件指纹清单。"""
     manifest = workflow.load(study_id)
@@ -95,7 +125,8 @@ def build_trace(workflow, study_id, include_data=False):
                       "request_hash": plan.get("request_hash"), "plan": deepcopy(plan.get("plan", {})),
                       "file": deepcopy(reference)})
         _records(reference, all_files)
-    # 方案文件加入后再次核验，并把每个运行目录中的文件回挂到对应模块。
+    execution = _stage_execution(workflow, manifest, all_files)
+    # 方案与执行确认加入后再次核验，并把运行文件回挂到对应模块。
     verified = _verified_records(root, all_files)
     for item in modules:
         marker = f"/runs/{item['module_id']}/"
@@ -104,6 +135,7 @@ def build_trace(workflow, study_id, include_data=False):
                "manifest_updated_at": manifest.get("updated_at"), "created_at": manifest.get("created_at"),
                "workflow_profile": manifest.get("workflow_profile"), "kind": manifest.get("kind"),
                "current": deepcopy(manifest.get("current", {})), "modules": modules, "plans": plans,
+               "stage_execution": execution,
                "files": verified, "file_count": len(verified), "include_data": include_data,
                "read_only": True, "note_zh": "本清单及导出数据来自同一研究的当前归档版本；文件均已在导出前核验指纹。"}
     return payload

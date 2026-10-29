@@ -136,10 +136,12 @@ def evaluate(targets, bundle, plan):
                                 json.loads(network["response_text"]), plan)
     summary.update(analysis_plan_id=bundle["analysis_plan_id"], analysis_parameter_hash=plan["parameter_hash"],
                    STRING版本="12.0", 计算库版本=NETWORKX_VERSION)
+    if bundle.get('execution_request_file'):
+        summary['analysis_purpose']=bundle.get('analysis_purpose')
     return summary, tables
 
 
-def fetch(targets, plan, opener=None):
+def fetch(targets, plan, opener=None, evidence=None):
     """按方案置信度生成映射与网络请求；不扩展交集之外的节点。"""
     plan = checked_plan(plan)
     threshold = _threshold(plan)
@@ -148,6 +150,7 @@ def fetch(targets, plan, opener=None):
     mapping = request("get_string_ids", mapping_params, opener) if targets else {
         "url": BASE + "get_string_ids", "params": mapping_params, "response_text": "[]",
         "response_sha256": fingerprint("[]"), "method": "get_string_ids"}
+    if evidence:evidence('mapping', mapping)
     records = json.loads(mapping["response_text"])
     ids = [x["stringId"] for i, target in enumerate(targets)
            for x in records if int(x["queryIndex"]) == i and int(x["ncbiTaxonId"]) == 9606
@@ -159,6 +162,7 @@ def fetch(targets, plan, opener=None):
     network = request("network", network_params, opener) if len(ids) > 1 else {
         "url": BASE + "network", "params": network_params, "response_text": "[]",
         "response_sha256": fingerprint("[]"), "method": "network", "skipped": "少于两个已核验节点"}
+    if evidence:evidence('network', network)
     return {"schema_version": "A04.plan_source.1", "string_version": "12.0",
             "analysis_plan_id": plan["parameter_hash"], "analysis_parameter_hash": plan["parameter_hash"],
             "mapped_string_ids": ids, "mapping": mapping, "network": network}
@@ -174,7 +178,7 @@ def _plan_record(workflow, manifest, plan_id, expected_a00):
 def publish(workflow, study_id, payload):
     """绑定当前A03与方案、复算来源包并追加A04运行；不批准下游。"""
     fields = {"expected_a00", "expected_a03", "expected_plan_id", "source_file", "reason"}
-    require(isinstance(payload, dict) and set(payload) == fields, "A04发布字段不完整或含未支持选项")
+    require(isinstance(payload, dict) and set(payload) in (fields,fields|{'expected_a04','expected_a03_review'}), "A04发布字段不完整或含未支持选项")
     safe_id(payload["expected_a00"], "run"); safe_id(payload["expected_a03"], "run")
     safe_id(payload["expected_plan_id"], "plan")
     require(isinstance(payload["reason"], str) and payload["reason"].strip(), "请填写A04发布依据")
@@ -183,6 +187,10 @@ def publish(workflow, study_id, payload):
         require(manifest["current"].get("A00") == payload["expected_a00"]
                 and manifest["current"].get("A03") == payload["expected_a03"], "上游版本已改变，请刷新")
         require(workflow.approved(manifest, payload["expected_a03"]), "请先通过当前A03")
+        if 'expected_a04' in payload:
+            review=workflow.latest_review(manifest,workflow.run(manifest,payload['expected_a03'])['artifact_id'])
+            require(manifest['current'].get('A04','')==payload['expected_a04'] and review['review_id']==payload['expected_a03_review'],
+                    'A04或A03复核已改变，请刷新；本次STRING原件保留')
         record = _plan_record(workflow, manifest, payload["expected_plan_id"], payload["expected_a00"])
         plan = checked_plan(record["plan"])
         home = workflow.location(study_id)
@@ -229,6 +237,10 @@ def validator(root, fallback):
                 and plan_record["expected_a00"] == run["inputs"]["bound_a00"],
                 "A04方案记录与研究或登记绑定不一致")
         plan = checked_plan(plan_record["plan"])
+        if source.get('execution_request_file'):
+            from science_modules.plan_stages_contract import verified_request
+            verified_request(home,source['execution_request_file'],'A04',plan_record['plan_id'],run['inputs']['bound_a00'])
+            require(source.get('analysis_purpose')==parent['summary'].get('analysis_purpose'),'A04研究用途与本次A03不同')
         require(plan["parameter_hash"] == run["inputs"]["analysis_parameter_hash"], "A04方案指纹不一致")
         require(run["config"]["analysis_plan_id"] == plan_record["plan_id"]
                 and run["config"]["analysis_parameter_hash"] == plan["parameter_hash"],

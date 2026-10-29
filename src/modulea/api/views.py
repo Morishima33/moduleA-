@@ -482,6 +482,18 @@ class Views:
             response['review']['continue'].update(available=False, note_zh='新方案自动接续尚未开放；请先核对研究资料，不调用旧固定参数流程。')
         response['creation_plan'] = creation_context(workflow, study_id) if module_id == 'A00' and not historical else None
         response['plan_a01'] = None
+        response['plan_stages'] = None
+        if module_id in ('A00','A02','A03','A04') and not historical:
+            from science_modules.plan_stages_contract import info as stages_info
+            value=stages_info(workflow,study_id)
+            if value['supported']:
+                response['review']['continue'].update(available=False,note_zh='请仅保存本阶段复核决定，再到本方案阶段入口明确执行已就绪的下一步。')
+                if self.tasks.active_for(study_id):
+                    for stage in value['stages']:
+                        stage['enabled']=False;stage['blockers'].append('请等待当前研究后台任务结束')
+                response['plan_stages']=value
+                if response.get('ppi_run'):
+                    response['ppi_run'].update(enabled=False,disabled_reason_zh='请使用新方案阶段入口，不调用旧固定阈值PPI')
         response['plan_a05'] = None
         if module_id == 'A05' and not historical:
             from ..core.plan_a05 import info as a05_info

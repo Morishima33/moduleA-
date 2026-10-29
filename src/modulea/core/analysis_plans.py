@@ -23,6 +23,31 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
         from .plan_creation import create_study
         return create_study(self, content, proof, evidence, request_id)
 
+    def execute_analysis_plan_stage(self, study_id, payload, *, progress=None):
+        """后台明确执行一个新方案阶段，科学结果仍独立复核。"""
+        from science_modules import plan_stages
+        from science_modules.plan_stages_contract import VERSION as STAGE_VERSION, binding, context, validate
+        with write_lock(self.root):
+            validate(self,study_id,payload)
+            manifest,_,draft=context(self,study_id)
+            record={'schema_version':STAGE_VERSION,'study_id':study_id,'created_at':now(),
+                    'request':dict(payload),'binding':binding(self,manifest,draft)}
+            path=self.location(study_id)/'decisions/analysis_plans/stage_requests'/(new_id('stage_request')+'.json')
+            write_json(path,record);reference=file_record(self.location(study_id),path,'plan_stage_request')
+            manifest.setdefault('analysis_plan_stage_requests',[]).append(reference)
+            self.save(manifest)
+        result={'A02':plan_stages.run_a02,'A03':plan_stages.run_a03,'A04':plan_stages.run_a04}[payload['stage']](
+            self,study_id,payload,reference,progress)
+        with write_lock(self.root):
+            manifest=self.load(study_id)
+            receipt={'schema_version':STAGE_VERSION,'study_id':study_id,'request':reference,'stage':payload['stage'],
+                     'run_id':result['run_id'],'result_file':manifest['runs'][result['run_id']]['result_file'],
+                     'created_at':now(),'message_zh':'阶段结果已发布，未自动批准'}
+            path=self.location(study_id)/'decisions/analysis_plans/stage_receipts'/(new_id('stage_receipt')+'.json')
+            write_json(path,receipt);manifest.setdefault('analysis_plan_stage_receipts',[]).append(file_record(self.location(study_id),path,'plan_stage_receipt'))
+            self.save(manifest)
+        return result
+
     def _finish(self, manifest, run_id, summary, tables, anomalies, outcome, sources=None, figures=None, attachments=None):
         """仅新建A00首次发布时附加初始方案；其他版本沿用原结果校验。"""
         from .plan_creation import VERSION as CREATION_VERSION, record_for_a00
@@ -50,9 +75,16 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
     def _begin(self, manifest, module, inputs, config, reason):
         """仅为绑定新准备的新评分协议放行；报告仍等独立适配。"""
         from .plan_creation import is_plan_created
+        a03 = manifest.get('current', {}).get('A03')
+        if a03 and self.run(manifest,a03)['config'].get('version') == 'A03.plan_intersection.1' and module in ('A03','A04','A05'):
+            require(config.get('version') == {'A03':'A03.plan_intersection.1','A04':'A04.plan_network.1','A05':'A05.plan_enrichment.1'}[module],
+                    '上游为新方案交集，须使用对应新方案协议，不能回退固定参数流程')
+        if module == 'A03_SELECT' and a03 and self.run(manifest,a03)['config'].get('version') == 'A03.plan_intersection.1':
+            require(config.get('version') == 'A03.plan_selection.1',
+                    '上游为新方案交集，须使用读取方案数量及排序的新版成分选择，不能沿用固定前五')
         if module != 'A00' and is_plan_created(self, manifest):
-            if module in ('A01', 'A04'):
-                require(config.get('version') == {'A01': 'A01.plan_publication.1', 'A04': 'A04.plan_network.1'}[module],
+            if module in ('A01', 'A03', 'A04'):
+                require(config.get('version') == {'A01': 'A01.plan_publication.1', 'A03':'A03.plan_intersection.1', 'A04': 'A04.plan_network.1'}[module],
                         '新版研究必须使用绑定方案的科学协议，不能调用旧固定参数流程')
             if module == 'A05':
                 require(config.get('version') == 'A05.plan_enrichment.1', '新版富集须使用本方案协议，不能使用旧固定参数替代')
@@ -69,6 +101,13 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
             require(self.run(manifest, a06)['config'].get('version') != 'A06.plan_scoring.1',
                     '新方案评分尚未接入报告协议，不能调用旧报告')
         return super()._begin(manifest, module, inputs, config, reason)
+
+    def selection_binding(self, study_id):
+        """新交集不能进入旧固定前五表单；独立方案选择接通前明确阻断。"""
+        manifest=self.load(study_id);a03=manifest.get('current',{}).get('A03')
+        require(not a03 or self.run(manifest,a03)['config'].get('version') != 'A03.plan_intersection.1',
+                '上游新方案交集已就绪；方案成分选择尚待接通，不使用旧固定前五入口')
+        return super().selection_binding(study_id)
 
     def analysis_plan_a06_scoring_info(self, study_id):
         """只读当前新版评分资格和已归档结果状态。"""

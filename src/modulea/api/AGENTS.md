@@ -1,5 +1,13 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+研究追溯 JSON 的 stage_execution 附加不可变 requests/receipts，包含确认快照、实际运行/结果及各自文件记录；导出逐件核验 SHA 并检查研究和运行关系。该字段只读，旧研究为空数组。CSV 仍为当前结果表，不将未发布来源响应当计算结果。新方案交集与方案阶段页面的旧“保存并继续”保持关闭，复核后从明确阶段入口继续。
+
+## 2026-10-29 新方案阶段接续
+
+GET `/studies/{sid}/analysis-plan/stages`仅读取ModuleA.plan_stages.1资格，含supported、expected_input_hash、expected_a00/expected_plan_id、parameter_hash、parameters及stages(A02/A03/A04的enabled/blockers/current_run/active/approved)。指纹绑定当前全部运行/复核、方案及原件清单；GET不写入或启动。POST同路径`/execute`严格接受`{stage,expected_a00,expected_plan_id,expected_input_hash,operator,reason,confirmed:true}`，不接受路径/阈值/批准。202提交plan_stage，字段422、过期/忙碌409、回收站423。后台再校验，公开Workflow追加不可变明确确认/输入快照和完成回执；失败只留请求和原件，不写成功回执或reviews。取消/中断不自动重跑，过期重试须刷新后重新确认。
+
+A02仅初始化尚无当前版本且具有效MeSH新登记的五库候选，真实单库失败和缺库保留；已有A02继续原来源/范围/身份入口，不自动通过。A03.plan_intersection.1复用原交集算法，绑定同研究方案、实际A01/A02结果及批准，完整保留旧排序/韦恩规则；结果待独立复核。A04接续复用A04.plan_network.1，当前方案置信度进入真实STRING；联网期间另存草稿不改变本批，发布前A03批准和A04版本变化拒绝。已有同方案有效结果不能重复生成。A04/A05互不代替；本入口不调用旧continue，不启动A05/A06或报告。当前A00/A02/A03/A04可选plan_stages提供同GET字段；新方案A04不再提供旧固定阈值按钮。
+
 ## 新方案A06口袋证据核查
 
 `GET /api/v1/studies/{sid}/analysis-plan/a06-pockets`只读当前第二版准备或其第三版确认修订的预测口袋清单。返回` supported,enabled,reason_zh,expected_input_id,expected_preparation_run_id,source_preparation_run_id,items`；每个受体的`options`逐项提供口袋键、PDB、链、搜索盒、原始预测文件指纹及`eligible/reason_zh`。GET不联网、不准备、不保存决定。

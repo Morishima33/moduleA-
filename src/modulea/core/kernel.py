@@ -95,6 +95,7 @@ def full_workflow(data_root: Path) -> Workflow:
     from science_modules.a01.plan_flow import validator as plan_a01_validator
     from disease import validate_disease
     from intersection_flow import validate_intersection, validate_selection
+    from science_modules.plan_stages import a02_validator as stage_a02_validator, a03_validator as stage_a03_validator
     from ppi_dispatch import validator as ppi_validator, docking_validator
     from science_modules.a04.plan_flow import validator as plan_ppi_validator
     from science_modules.a05.compact_flow import validator as enrichment_validator
@@ -119,8 +120,8 @@ def full_workflow(data_root: Path) -> Workflow:
     root = data_root
     return DockingWorkflow(root, {
         "A01": plan_a01_validator(root, literature_validator(root, "A01", collection_validator(root, upload_validator(root, multisource_validator(root, normalization_validator(root, validate_components)))))),
-        "A02": literature_validator(root, "A02", normalization_validator(root, validate_disease)),
-        "A03": validate_intersection,
+        "A02": stage_a02_validator(root, literature_validator(root, "A02", normalization_validator(root, validate_disease))),
+        "A03": stage_a03_validator(root, validate_intersection),
         "A03_SELECT": validate_selection,
         "A04": plan_ppi_validator(root, ppi_validator(root)),
         "A05": plan_enrichment_validator(root, enrichment_validator(root)),

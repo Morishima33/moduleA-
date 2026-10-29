@@ -64,7 +64,7 @@ def present_a04(result: dict, ctx: dict) -> Parts:
     parts.params = clean(
         [
             param("STRING 版本", pick(s, "STRING版本")),
-            param("置信度", "≥ 0.9", "outline"),
+            param("置信度", f"≥ {s['required_score']}" if 'required_score' in s else "≥ 0.9", "outline"),
             param("计算库版本", pick(s, "计算库版本")),
             param("覆盖说明", pick(s, "覆盖说明")),
         ]
