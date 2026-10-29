@@ -93,6 +93,8 @@ def _plan_decisions(workflow, manifest, all_files):
             ('a05_display_records','analysis_plan_a05_display_records','A05.plan_display.1'),
             ('system_validation_requests','analysis_plan_system_validation_requests','ModuleA.system_validation.1'),
             ('system_validations','analysis_plan_system_validation_records','ModuleA.system_validation.1'),
+            ('system_batches','analysis_plan_system_batch_records','ModuleA.system_execution.1'),
+            ('system_batch_events','analysis_plan_system_batch_events','ModuleA.system_execution.1'),
             ('report_requests','analysis_plan_report_requests','A07.plan_report.1'),
             ('report_receipts','analysis_plan_report_receipts','A07.plan_report.1'),
             ('report_failures','analysis_plan_report_failures','A07.plan_report.1')):
@@ -116,6 +118,23 @@ def _plan_decisions(workflow, manifest, all_files):
                 value=read_receipt(workflow,manifest,reference)
             if key=='system_validation_requests':
                 require(value['request_hash']==fingerprint(value['request']),'系统校验请求指纹不一致')
+            if key=='system_batches':
+                from .system_execution import read_batch
+                value=read_batch(workflow,manifest,reference)[0]
+            if key=='system_batch_events':
+                require(value['human_review_written'] is False
+                        and value['batch_file'] in manifest.get('analysis_plan_system_batch_records',[]),
+                        '系统阶段回执缺少实际批次授权')
+                if value['state']=='completed':
+                    run=workflow.run(manifest,value['run_id'])
+                    require(value['result_file']==manifest['runs'][value['run_id']]['result_file']
+                        and run.get('execution_protocol')==version
+                        and run['module_id']==value['stage']
+                        and run['batch_file']==value['batch_file'],
+                        '系统批次阶段回执与实际运行不一致')
+                else:
+                    require(value['state']=='failed' and value['run_id'] is None and value['error_type'] and value['error_zh'],
+                            '系统失败诊断不能伪造科学成功结果')
             if key=='report_requests':
                 require(value['request_hash']==fingerprint(value['request']) and value['request']['confirmed'] is True
                         and value['input_hash']==fingerprint(value['binding']),'报告明确请求与实际上游指纹不一致')
@@ -159,6 +178,8 @@ def build_trace(workflow, study_id, include_data=False):
             if run.get('execution_authority')=='system_validation':
                 item['execution_authority']=run['execution_authority']
                 item['parent_validation_records']=deepcopy(run['parent_validation_records'])
+                if run.get('execution_protocol'):
+                    item['execution_protocol']=run['execution_protocol'];item['batch_file']=deepcopy(run['batch_file'])
             item.update({"state": "completed" if manifest["runs"][run_id].get("result_file") else "running",
                          "parent_runs": deepcopy(run.get("parent_runs", {})),
                          "parent_review_ids": deepcopy(run.get("parent_review_ids", {})),

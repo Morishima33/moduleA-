@@ -18,6 +18,16 @@ class AnalysisPlanConflict(ContractError):
 class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
     """旧研究继承原行为；只有显式新方案登记支持草稿写入。"""
 
+    def start_analysis_plan_system_batch(self,study_id,payload):
+        """登记一次明确系统批次授权，不制造人工批准或后台隐式执行。"""
+        from .system_execution import start
+        return start(self,study_id,payload)
+
+    def execute_analysis_plan_system_stage(self,study_id,payload):
+        """内部真实系统证据阶段入口，当前仅实现A01/A03。"""
+        from .system_execution import execute
+        return execute(self,study_id,payload)
+
     def publish_analysis_plan_report(self,study_id,payload):
         """按真实系统依赖生成新A07双报告，原人工复核关系保持。"""
         from .plan_reports import publish
@@ -118,6 +128,9 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
     def _active(self, manifest, run_id):
         """仅新可复核准备额外绑定独立选择复核；撤回后普通复核同样失效。"""
         run=self.run(manifest,run_id)
+        if run.get('execution_protocol')=='ModuleA.system_execution.1':
+            from .system_execution import is_active
+            return is_active(self,manifest,run)
         if run['module_id']=='A07' and run['config'].get('version')=='A07.plan_report.1':
             from .plan_reports import is_active
             return is_active(self,manifest,run)
