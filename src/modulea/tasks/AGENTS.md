@@ -1,5 +1,9 @@
 # tasks/ — 后台任务
 
+## 2026-10-29 新三库到疾病标准化修复
+
+既有normalization_preview/normalization_publish仅在真实当前A01.plan_publication.1时选择局部A02.plan_normalization_bridge.1适配。生产A01验证器复验完整三库原件和参数后复用当前已批准结果，HGNC/补充证据或批准变动拒绝；A02计算及发布仍执行原冻结函数，调用时的独立命名空间不修改模块全局。只新增A02待复核，原A01方案、来源、结果、人工复核保持，不启动A03；旧任务分支不变。接口仅显示资格，不做科学计算。
+
 ## 2026-10-29 新方案独立系统校验
 
 plan_system_validation只消费严格的request_id/expected_run_id/expected_input_hash，经公开Workflow调用生产注册的真实规范验证器；A00补充原登记契约核查。校验前后核对完整祖先运行/结果、原人工记录和指纹；不接受调用者lambda或客户端passed。锁外复算、锁内追加不可变请求/回执及验证器源码SHA，不写reviews/current、不授予旧批准。证据不一致或工具不可用保存失败回执且任务失败；科学计算自身失败但诊断经规范验证器确认一致，可以生成一致性通过回执，同时明确保留result_outcome=failed、handoff_blocked及ready_for_successor:false，不能以系统通过冒充科学成功。GET/重启不执行，旧请求回执幂等；未完整请求保留，新的明确核对使用新请求号。

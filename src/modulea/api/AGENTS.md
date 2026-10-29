@@ -1,5 +1,9 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 新方案A01至疾病标准化兼容
+
+既有A02 `/actions/normalization`在当前A01为A01.plan_publication.1时，由后台采用A02.plan_normalization_bridge.1入口适配。该A01已经三库标准化，须当前复核有效并与疾病侧使用同HGNC规则、快照和补充证据；接口只读资格提前显示阻塞。预览保留其真实摘要和完整三库关系，不读取旧compound_targets或重筛三库；发布只新增A02，A01方案、结果和复核不变。映射或A01复核变更拒绝，A02仍须独立整体复核，不自动启动A03。HTTP字段及原标准化/范围/身份科学规则保持；旧A01继续原入口。此为分阶段兼容修复，最终一次确认自动版尚未开放。
+
 ## 新方案独立系统校验
 
 GET `/studies/{sid}/analysis-plan/system-validations`只读返回supported、items及history。每项包含module_id/run_id、enabled/blockers、request(expected_run_id/expected_input_hash)及绑定当前输入的current回执。历史回执保留实际passed和scientific_status(result_outcome/handoff_blocked/ready_for_successor)，规范一致性通过不消除科学失败、NA或身份阻塞，不授予旧流程批准。GET不运行R/Vina、不写入；旧研究supported:false。

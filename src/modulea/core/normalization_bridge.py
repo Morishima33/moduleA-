@@ -19,6 +19,12 @@ def bindings(manifest):
     return {"expected_" + key.lower(): manifest.get("current", {}).get(key, "") for key in ("A00", "A01", "A02")}
 
 
+def has_plan_a01(workflow,manifest):
+    """只按真实运行协议选择疾病适配，不依据病名或客户端选项。"""
+    rid=manifest.get('current',{}).get('A01')
+    return bool(rid and workflow.run(manifest,rid)['config'].get('version')=='A01.plan_publication.1')
+
+
 def preview_path(settings, sid):
     """预览是运行缓存，按项目独立存放，不进入科研归档。"""
     safe_id(sid, "study")
@@ -35,6 +41,8 @@ def context(workflow, manifest, result, settings, busy=False):
         reasons.append("研究在回收站中，只读")
     if busy:
         reasons.append("当前研究已有后台任务，请等待完成")
+    if has_plan_a01(workflow,manifest) and not workflow.approved(manifest,manifest['current']['A01']):
+        reasons.append('请先复核通过新方案A01三库结果，疾病标准化将保留该结果及方案')
     missing_reference = reference_error(workflow.root)
     if missing_reference:
         reasons.append(missing_reference)
@@ -62,6 +70,8 @@ def validate(workflow, sid, payload):
     require(all(payload.get(k) == v and v for k, v in bindings(manifest).items()), "A00、A01或A02版本已改变，请重新生成标准化预览")
     require(all(workflow.active(manifest, rid) for rid in bindings(manifest).values()), "输入已失效，请重新整理资料")
     require(workflow.approved(manifest, manifest["current"]["A00"]), "请先复核通过A00")
+    require(not has_plan_a01(workflow,manifest) or workflow.approved(manifest,manifest['current']['A01']),
+            '请先复核通过新方案A01三库结果，疾病标准化将保留该结果及方案')
     result = workflow.result(manifest, manifest["current"]["A02"])
     require("标准化基因数" not in result.get("summary", {}), "当前已是标准化结果，请直接整体复核")
     require(all(row["scope"] != "pending" for row in result["tables"]["scope_groups"]), "仍有待核验范围，请先保存完整范围决定")
@@ -83,8 +93,12 @@ def execute(settings, workflow, sid, payload):
     from normalization import preview, publish
     from storage import write_json
     manifest = validate(workflow, sid, payload)
+    if has_plan_a01(workflow,manifest):
+        from science_modules.a02.plan_normalization import preview,publish
     if payload["action"] == "publish":
         made = publish(workflow, sid, payload["stamp"], payload["reviewer"], payload["note"], True, payload["accept_omit"], payload["accept_source_exception"])
+        if has_plan_a01(workflow,manifest):
+            return '疾病标准化结果已生成，等待A02整体复核；本方案A01原结果和已有复核保持，未启动A03。',made
         return "标准化结果已生成，等待A01/A02整体复核；未批准或启动A03。", made
     data = preview(workflow, sid)
     results = data[5]
