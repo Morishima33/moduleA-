@@ -5,7 +5,7 @@ import io
 import json
 from copy import deepcopy
 
-from contracts import MODULES, SCHEMA_VERSION, require
+from contracts import MODULES, SCHEMA_VERSION, fingerprint, require
 from storage import read_json, verified_file
 
 TRACE_VERSION = "ModuleA.trace_export.1"
@@ -99,6 +99,16 @@ def build_trace(workflow, study_id, include_data=False):
                          "inputs": deepcopy(run.get("inputs", {})), "config": deepcopy(run.get("config", {})),
                          "reason": run.get("reason"), "created_at": run.get("created_at")})
             _records(run.get("inputs", {}), all_files)
+            if run.get('config',{}).get('version')=='A03.plan_selection.1':
+                reference=run['inputs']['execution_request_file']
+                request=read_json(verified_file(root,reference))
+                body=request['request']
+                require(request['schema_version']=='A03.plan_selection.request.1' and request['study_id']==study_id
+                        and body['confirmed'] is True and body['expected_input_hash']==fingerprint(request['binding'])
+                        and body['expected_a03']==run['parent_runs']['A03']
+                        and body['expected_plan_id']==run['inputs']['analysis_plan_id'],
+                        '成分选择执行确认与当前运行不一致')
+                item['execution_request']=request
             _records(run.get("config", {}), all_files)
             run_ref = manifest["runs"][run_id].get("run_file")
             _records(run_ref, all_files)

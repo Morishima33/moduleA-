@@ -23,6 +23,21 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
         from .plan_creation import create_study
         return create_study(self, content, proof, evidence, request_id)
 
+    def analysis_plan_compounds_info(self, study_id):
+        """只读原A03排名和本方案成分执行资格。"""
+        from .plan_compounds import info
+        return info(self,study_id)
+
+    def validate_analysis_plan_compounds(self, study_id, payload):
+        """明确确认只绑定当前输入，名单由后台科学过程计算。"""
+        from .plan_compounds import validate
+        return validate(self,study_id,payload)
+
+    def publish_analysis_plan_compounds(self, study_id, payload):
+        """公开入口追加本方案成分名单，等待模块独立复核。"""
+        from .plan_compounds import publish
+        return publish(self,study_id,payload)
+
     def execute_analysis_plan_stage(self, study_id, payload, *, progress=None):
         """后台明确执行一个新方案阶段，科学结果仍独立复核。"""
         from science_modules import plan_stages
@@ -560,6 +575,11 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
             selection_review_ref = manifest["analysis_plan_selection_reviews"][review_index]
             selected = self.result(manifest, runs["A03_SELECT"])["tables"].get("selected")
             require(isinstance(selected, list) and selected, "A03_SELECT成分选择为空")
+            compound_run=self.run(manifest,runs['A03_SELECT'])
+            if compound_run['config'].get('version')=='A03.plan_selection.1':
+                from science_modules.plan_compounds import configuration
+                require(compound_run['config']==configuration(plan_record['plan']),
+                        '成分选择目标或排序与受体方案不一致，请先按同一方案重新生成并复核名单')
             reviews = {module: self.latest_review(manifest, self.run(manifest, run_id)["artifact_id"])["review_id"]
                        for module, run_id in runs.items()}
             result_refs = {module: manifest["runs"][run_id]["result_file"] for module, run_id in runs.items()}

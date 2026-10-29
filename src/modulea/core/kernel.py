@@ -96,6 +96,7 @@ def full_workflow(data_root: Path) -> Workflow:
     from disease import validate_disease
     from intersection_flow import validate_intersection, validate_selection
     from science_modules.plan_stages import a02_validator as stage_a02_validator, a03_validator as stage_a03_validator
+    from science_modules.plan_compounds import validator as plan_compound_validator
     from ppi_dispatch import validator as ppi_validator, docking_validator
     from science_modules.a04.plan_flow import validator as plan_ppi_validator
     from science_modules.a05.compact_flow import validator as enrichment_validator
@@ -122,7 +123,7 @@ def full_workflow(data_root: Path) -> Workflow:
         "A01": plan_a01_validator(root, literature_validator(root, "A01", collection_validator(root, upload_validator(root, multisource_validator(root, normalization_validator(root, validate_components)))))),
         "A02": stage_a02_validator(root, literature_validator(root, "A02", normalization_validator(root, validate_disease))),
         "A03": stage_a03_validator(root, validate_intersection),
-        "A03_SELECT": validate_selection,
+        "A03_SELECT": plan_compound_validator(root,validate_selection),
         "A04": plan_ppi_validator(root, ppi_validator(root)),
         "A05": plan_enrichment_validator(root, enrichment_validator(root)),
         "A06_PREP": reviewable_preparation_validator(root, reference_qualification_v2_validator(root, reference_preparation_validator(root, plan_pocket_validator(root, plan_preparation_v2_validator(root, plan_preparation_validator(root, coverage_validator(root, quality_validator(root, docking_validator(root, prep_validator(root)))))))))),

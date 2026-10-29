@@ -317,6 +317,24 @@ class PlanA04SelectionTaskTests(unittest.TestCase):
             plan_preparation.run(workflow, self.sid, dict(request, note="不同请求内容"),
                                  Path(self.temp.name), lambda _: None)
 
+    def test_new_compound_configuration_must_match_receptor_plan(self):
+        """使用合成选择隔离验证准备输入闸门，不冒充原A03科学计算。"""
+        from science_modules.plan_compounds import configuration
+        selection=self.workflow.save_analysis_plan_a04_selection(self.sid,self.payload())['record']
+        review=self.workflow.review_analysis_plan_a04_selection(self.sid,self.review_payload(selection['selection_id']))['review']
+        expected=configuration(self.plan_record['plan'])
+        for change in ({'target_count':2},{'metric':'mixed_degree'},{}):
+            config=dict(expected,**change)
+            run=self.workflow.begin(self.sid,'A03_SELECT',{},config,'合成名单配置闸门验证')
+            self.workflow.finish(self.sid,run['run_id'],{}, {'selected':[{'compound_id':'CMP1','name':'合成一'}]})
+            self.workflow.review(self.sid,run['run_id'],'approved','隔离测试','仅核验参数闸门夹具')
+            if change:
+                with self.subTest(change=change),self.assertRaisesRegex(ContractError,'目标或排序'):
+                    self.workflow.save_analysis_plan_a06_preparation_input(self.sid,self.a06_payload(selection,review))
+            else:
+                packet=self.workflow.save_analysis_plan_a06_preparation_input(self.sid,self.a06_payload(selection,review))['record']['packet']
+                self.assertEqual([r['compound_id'] for r in packet['compounds']],['CMP1'])
+
     def test_a06_preparation_v2_archives_bound_config_and_delegates_v1(self):
         from modulea.core.kernel import full_workflow
         from science_modules.a06 import plan_preparation_v2

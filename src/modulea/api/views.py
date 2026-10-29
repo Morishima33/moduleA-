@@ -483,6 +483,15 @@ class Views:
         response['creation_plan'] = creation_context(workflow, study_id) if module_id == 'A00' and not historical else None
         response['plan_a01'] = None
         response['plan_stages'] = None
+        response['plan_compounds'] = None
+        if module_id=='A03_SELECT' and not historical:
+            from .plan_compounds_view import info as compounds_info
+            value=compounds_info(self,None,study_id)
+            if value['supported']:
+                response['plan_compounds']=value
+                response['compound_selection']=None
+                response['docking_review']=None
+                response['review']['continue'].update(available=False,note_zh='请仅保存名单的独立复核决定；本方案下游从对应新版入口明确执行。')
         if module_id in ('A00','A02','A03','A04') and not historical:
             from science_modules.plan_stages_contract import info as stages_info
             value=stages_info(workflow,study_id)

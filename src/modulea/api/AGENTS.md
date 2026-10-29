@@ -1,5 +1,9 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 新方案成分选择
+
+GET `/studies/{sid}/analysis-plan/a03-selection`只读返回supported/enabled/blockers、expected_a00/a03/selection/plan_id/input_hash、parameter_hash、target_count、metric、原A03完整ranking、identity_pending和当前current/current_summary/current_selected，不在HTTP计算名单。POST同路径`/execute`严格接受`{expected_a00,expected_a03,expected_selection,expected_plan_id,expected_input_hash,operator,reason,confirmed:true}`，不接受名单、数量、指标、路径或批准。后台a03_plan_selection经公开Workflow写锁内复算实际A03，读取方案目标/排序，追加A03.plan_selection.1待复核名单及不可变请求。并列全部保留、不足按实际、零交集不补位，实际入选身份待补时停止不换低排名。当前A03_SELECT可选plan_compounds返回相同只读字段并关闭旧固定前五表单；旧研究保持。生成不代签、不启动A06；新A06准备输入须核对新成分配置与受体选择绑定方案的数量/指标一致，历史选择版本保持。
+
 研究追溯 JSON 的 stage_execution 附加不可变 requests/receipts，包含确认快照、实际运行/结果及各自文件记录；导出逐件核验 SHA 并检查研究和运行关系。该字段只读，旧研究为空数组。CSV 仍为当前结果表，不将未发布来源响应当计算结果。新方案交集与方案阶段页面的旧“保存并继续”保持关闭，复核后从明确阶段入口继续。
 
 ## 2026-10-29 新方案阶段接续

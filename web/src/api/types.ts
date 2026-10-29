@@ -71,6 +71,16 @@ export interface PlanStagesInfo {
  schema_version:string;supported:boolean;expected_input_hash:string;expected_a00:string;expected_plan_id:string;parameter_hash:string;
  parameters:Record<string,unknown>;stages:{stage:string;enabled:boolean;blockers:string[];current_run:string|null;active:boolean;approved:boolean}[];message_zh:string;
 }
+export interface PlanCompoundRow {
+ compound_id:string;name:string;herbs:string|string[];intersection_count:number;mixed_degree:number;in_network:boolean;
+ selection_score?:number;selection_role?:string;
+}
+export interface PlanCompoundsInfo {
+ supported:boolean;enabled:boolean;blockers:string[];expected_a00:string;expected_a03:string;expected_selection:string;
+ expected_plan_id:string;expected_input_hash:string;parameter_hash:string;target_count:number|null;metric:string|null;
+ ranking:PlanCompoundRow[];identity_pending:string[];current:boolean;current_summary:Record<string,unknown>|null;
+ current_selected:PlanCompoundRow[];message_zh:string;
+}
 export interface PlanCreationPreflight {
   schema_version:string;preflight_id:string;input_hash:string;plan:CompiledAnalysisPlan;
   mesh_verification:{preferred_term:string;mesh_id:string;status:string};materials:CreationMaterials;
@@ -407,6 +417,7 @@ export interface ModuleView {
   plan_a01?:PlanA01Info|null;
   plan_a05?:PlanA05Info|null;
   plan_stages?:PlanStagesInfo|null;
+  plan_compounds?:PlanCompoundsInfo|null;
   scoring_readiness?:ScoringReadinessInfo|null;
   docking_coverage?:DockingCoverageInfo|null;
   docking_candidates?: DockingCandidatesInfo | null;

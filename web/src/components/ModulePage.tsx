@@ -44,6 +44,7 @@ import CreationPlan from './CreationPlan';
 import PlanA01 from './PlanA01';
 import PlanA05, { PlanA05Results } from './PlanA05';
 import PlanStages from './PlanStages';
+import PlanCompounds from './PlanCompounds';
 import ReferenceEvidencePanel from './ReferenceEvidencePanel';
 import ReferencePreparationBinding from './ReferencePreparationBinding';
 import ScoringReadiness from './ScoringReadiness';
@@ -68,7 +69,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
   }
   const m = view.module; // 模块信息
   const oldIntersection = !view.historical && m.module_id === 'A03' && view.state.code === 'stale'; // 上游更新后，旧零交集只供追溯。
-  const oldSelection = !view.historical && ((m.module_id === 'A03_SELECT' && !view.compound_selection?.previous_active) || (['A06', 'A06_PREP'].includes(m.module_id) && !!view.docking_review && !view.docking_review.matrix?.ready && stIsStale(view)));
+  const oldSelection = !view.historical && ((m.module_id === 'A03_SELECT' && !(view.plan_compounds?.current||view.compound_selection?.previous_active)) || (['A06', 'A06_PREP'].includes(m.module_id) && !!view.docking_review && !view.docking_review.matrix?.ready && stIsStale(view)));
   const st = view.state; // 状态
   const sp = view.special || {}; // 专属数据
   const style = stateStyle(st.code); // 状态配色
@@ -110,6 +111,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
         onLocate={target => {if (target === 'module-enrichment-confirmation') setEnrichmentNavigation(n => n + 1);}}/>}
       {view.creation_plan&&<CreationPlan studyId={studyId} info={view.creation_plan}/>}
       {view.plan_stages&&<PlanStages key={view.plan_stages.expected_input_hash} studyId={studyId} info={view.plan_stages}/>}
+      {view.plan_compounds&&<PlanCompounds key={view.plan_compounds.expected_input_hash} studyId={studyId} info={view.plan_compounds}/>}
       {view.plan_a05&&<PlanA05 key={[view.plan_a05.expected_a00,view.plan_a05.expected_a03,view.plan_a05.expected_a05,view.plan_a05.expected_plan_id].join(':')} studyId={studyId} info={view.plan_a05}/>}
       {sp.plan_enrichment&&<PlanA05Results studyId={studyId} files={view.files} data={sp.plan_enrichment}/>}
       {view.plan_a01&&<PlanA01 key={[view.plan_a01.expected_a00,view.plan_a01.expected_a01,view.plan_a01.expected_plan_id,view.plan_a01.expected_staging].join(':')} studyId={studyId} info={view.plan_a01}/>}

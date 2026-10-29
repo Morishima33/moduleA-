@@ -196,6 +196,15 @@ def run_plan_stage(settings,task,manager):
     return text
 
 
+def run_plan_compounds(settings,task,manager):
+    """实际科学后台复算本方案名单，不改变上游或批准。"""
+    manager.update(task['task_id'],progress={'step_zh':'核对方案数量、排序及实际A03','done':0,'total':1})
+    result=full_workflow(settings.data_root).publish_analysis_plan_compounds(task['study_id'],json.loads(task['payload']))
+    text='本方案成分名单已归档：'+result['run_id']+'；仍须独立复核，未启动对接。'
+    manager.update(task['task_id'],progress={'step_zh':text,'done':1,'total':1})
+    return text
+
+
 def run_a01_plan(settings, task, manager):
     """新协议任务只经公开Workflow调用；与旧固定参数任务保持隔离。"""
     from ..core.plan_a01 import validate
@@ -547,6 +556,7 @@ HANDLERS["a01_plan_acquire"] = run_a01_plan
 HANDLERS["a01_plan_publish"] = run_a01_plan
 HANDLERS["a05_plan_enrichment"] = run_a05_plan
 HANDLERS['plan_stage'] = run_plan_stage
+HANDLERS['a03_plan_selection'] = run_plan_compounds
 HANDLERS["a06_plan_input"] = run_a06_plan_input
 HANDLERS["a06_plan_preparation"] = run_a06_plan_preparation
 HANDLERS["a06_plan_pocket_review"] = run_a06_plan_preparation
