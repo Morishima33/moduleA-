@@ -615,6 +615,17 @@ from .system_pipeline import run as run_system_pipeline
 HANDLERS['plan_system_pipeline']=run_system_pipeline
 from .system_acquisition import run as run_system_acquisition
 HANDLERS['plan_system_acquisition']=run_system_acquisition
+
+
+def run_system_source_binding(settings,task,manager):
+    """实际科学worker执行原ZIP重建核验，来源绑定不签复核或发布A01。"""
+    manager.update(task['task_id'],progress={'step_zh':'从原ZIP重建三库解析产物并核验原确认','done':0,'total':1})
+    result=full_workflow(settings.data_root).bind_analysis_plan_system_a01_sources(task['study_id'],json.loads(task['payload']))
+    manager.update(task['task_id'],progress={'step_zh':'独立科学输入已绑定，旧上传和复核保持','done':1,'total':1})
+    return '三库原件已绑定独立科学输入：'+result['file']['sha256']+'；未发布科学A01或签署复核。'
+
+
+HANDLERS['plan_system_source_binding']=run_system_source_binding
 HANDLERS["a06_plan_pocket_review"] = run_a06_plan_preparation
 HANDLERS["a06_plan_reference_review"] = run_a06_plan_reference_review
 HANDLERS["a06_plan_reference_preparation"] = run_a06_plan_reference_preparation

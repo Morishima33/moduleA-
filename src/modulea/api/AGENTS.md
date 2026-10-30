@@ -2,6 +2,10 @@
 
 ## 2026-10-30 系统三库原件获取后台入口
 
+新增POST同路径`/bind`严格接收`{request_id:systemsourcebindreq_<32hex>,expected_acquisition_request_id,expected_record_sha256,expected_input_hash,author,note,confirmed:true}`，202提交plan_system_source_binding。HTTP只按当前原获取、最新完整记录、原方案、当前A00/A01/旧暂存与人工意见做标准库预检；原ZIP解包/派生产物重建在实际科学worker执行，不在HTTP。字段422、过期/忙碌409、回收站423、令牌/Origin403沿用。绑定只追加系统科学来源指针，不改旧上传、current/runs/reviews或发布A01；完成同请求幂等，排队后输入/方案/人工暂停变化拒绝。GET每request增加binding(enabled/blockers/bound/request三expected字段)，未成整批、缺库和新草稿均不可绑定；已有当前绑定显示bound并禁用新绑定。实际绑定后科学批次仍按五库/HGNC和身份规则检查，不自动启动计算。
+
+session.capabilities.system_source_binding=true仅新绑定服务返回。页面提供明确“绑定为本批科学输入”，确认窗口展示原门槛、原获取登记人/说明及不批准科学结果的范围；只在用户明确继续时提交严格新绑定请求，网络失败保留请求号，409只刷新。旧服务即使有三库获取能力但没有新绑定能力也不显示绑定按钮。
+
 统一网页`#/system-pipeline/{sid}`增加三库原件区，仅在session.capabilities.system_acquisition=true时读取/显示。GET增加当前screening_parameters、各原请求绑定的screening_parameters/state_label_zh/display_sources；display_sources逐库合并实际最新整批与已归档成功检查点，不能把未形成整批记录当complete。每行含database/state_label_zh/reason_zh；这些均为服务器事实翻译，不在浏览器推算通过或完整。新获取默认未勾确认；原请求重试经明确确认窗口，仍提交原七字段。页面读取/刷新/任务完成不自动POST，409只刷新不重交，复核与科学批次语义保持。
 
 GET `/studies/{sid}/analysis-plan/system-acquisition`只读返回A01.system_acquisition.1的supported/enabled/blockers、expected_a00/expected_plan_id/expected_input_hash、busy、scientific_publication_available:false与requests。每个请求含原request、plan_id、state(complete/partial_failure/incomplete)、最后整批sources、独立source_checkpoints、record_count/failure_count/source_receipt_count、retry_enabled/retry_blockers和说明。sources是最后整批事实，source_checkpoints可含整批写入前已保存的成功库；GET不下载、解析科学数据、创建任务或签署复核。

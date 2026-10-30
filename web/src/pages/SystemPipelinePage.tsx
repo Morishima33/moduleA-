@@ -39,6 +39,7 @@ export default function SystemPipelinePage({studyId}:{studyId:string}){
    }else result=await api.continueSystemPipeline(studyId,{batch_id:batch!.batch_id,expected_input_hash:batch!.expected_input_hash});
    if(result.task.state==='failed')setError(result.task.error_zh??'任务启动失败，请查看后台日志');else{
     setNotice(result.message_zh);app.trackTasks([result.task]);app.openTasks(result.task.task_id);}
+   if(start)setSelected(result.batch_id);
    setConfirmed(false);app.bumpRefresh();
   }catch(e){setError(errorText(e));if(e instanceof ApiError&&e.status===409){setConfirmed(false);setTick(n=>n+1);}}
   finally{setSaving(false);}

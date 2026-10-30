@@ -12,7 +12,8 @@ export default function SystemAcquisitionPanel({studyId}:{studyId:string}){
  const [author,setAuthor]=useState('');const [note,setNote]=useState('');const [confirmed,setConfirmed]=useState(false);
  const [saving,setSaving]=useState(false);const [notice,setNotice]=useState('');const [tick,setTick]=useState(0);
  const [selected,setSelected]=useState<string>();const binding=useRef('');const request=useRef({signature:'',id:''});
- useEffect(()=>{setInfo(null);setSelected(undefined);setAuthor('');setNote('');setConfirmed(false);setNotice('');request.current={signature:'',id:''};},[studyId]);
+ const bindRequest=useRef({signature:'',id:''});
+ useEffect(()=>{setInfo(null);setSelected(undefined);setAuthor('');setNote('');setConfirmed(false);setNotice('');request.current={signature:'',id:''};bindRequest.current={signature:'',id:''};},[studyId]);
  useEffect(()=>{let current=true;api.systemAcquisition(studyId).then(value=>{if(!current)return;
   const key=studyId+':'+value.expected_input_hash+':'+value.expected_plan_id;
   if(binding.current!==key){binding.current=key;setConfirmed(false);}
@@ -43,6 +44,24 @@ export default function SystemAcquisitionPanel({studyId}:{studyId:string}){
    <p>保留原登记人和原说明；已归档的合格库不会重复下载。本次仍只处理原件，不发布科学结果。</p></>,
    okText:'按原确认继续',cancelText:'取消',onOk:()=>submit(previous.request)});
  }
+ /** 来源绑定只采用服务端原件及原获取依据，明确确认后由实际后台重建核验。 */
+ function bindSources(){if(!previous?.binding?.enabled||!previous.binding.request||disabled)return;
+  const original=previous;const expected=previous.binding.request;
+  Modal.confirm({title:'绑定为本批科学输入',content:<><p>原TCMSP门槛：OB≥{original.screening_parameters.ob_min}%，DL≥{original.screening_parameters.dl_min}。</p>
+   <p>登记人：{original.request.author}。沿用原件获取说明：{original.request.note}</p>
+   <p>后台将从原ZIP重建核验后绑定同方案输入。此操作不发布A01或批准科研结果；科学批次另按实际资料条件执行。</p></>,
+   okText:'确认绑定科学输入',cancelText:'取消',onOk:async()=>{
+    const content={...expected,author:original.request.author,note:original.request.note,confirmed:true as const};const signature=JSON.stringify(content);
+    if(bindRequest.current.signature!==signature)bindRequest.current={signature,id:'systemsourcebindreq_'+crypto.randomUUID().replace(/-/g,'')};
+    setSaving(true);setError('');setNotice('');
+    try{const value=await api.bindSystemSources(studyId,{...content,request_id:bindRequest.current.id});
+     if(value.task.state==='failed')setError(value.task.error_zh??'绑定任务启动失败，请查看日志');else{
+      setNotice(value.message_zh);app.trackTasks([value.task]);app.openTasks(value.task.task_id);}
+     app.bumpRefresh();
+    }catch(e){setError(errorText(e));if(e instanceof ApiError&&e.status===409)setTick(n=>n+1);}
+    finally{setSaving(false);}
+   }});
+ }
  return <section className="card stack" id="system-source-acquisition"><h2>补齐三库原件</h2>
   <Alert showIcon type="info" message="获取和核验本研究原件" description="成功来源会保留，失败后可以补取。这里尚未自动衔接科学标准化；原件齐全后仍须满足新批次的资料检查。"/>
   {error&&<Alert type="error" showIcon message={error} action={<Button onClick={()=>setTick(n=>n+1)}>重新读取原件状态</Button>}/>}
@@ -63,6 +82,10 @@ export default function SystemAcquisitionPanel({studyId}:{studyId:string}){
       columns={[{title:'来源',dataIndex:'database',width:86},{title:'实际状态',dataIndex:'state_label_zh',width:100},{title:'依据或原因',dataIndex:'reason_zh'}]}/>
      <div style={{display:'flex',flexWrap:'wrap',gap:12}}><Button disabled={disabled||!previous.retry_enabled} onClick={retry}>按原确认核验或补取</Button>
       <Button onClick={()=>setTick(n=>n+1)}>刷新原件状态</Button></div>
+     {app.session?.capabilities.system_source_binding&&previous.binding&&<>
+      <p>{previous.binding.bound?'本次原件已绑定科学输入，可继续核对新科学批次的其余资料。':previous.binding.blockers.join('；')||'三库原件已齐，可明确绑定为本批科学输入。'}</p>
+      <Button disabled={disabled||!previous.binding.enabled} onClick={bindSources}>绑定为本批科学输入</Button>
+     </>}
     </>}
    </>}
   </>}

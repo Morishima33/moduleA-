@@ -181,12 +181,18 @@ export interface ApiErrorBody {
 export interface SystemAcquisitionRequest {
  request_id:string;expected_a00:string;expected_plan_id:string;expected_input_hash:string;author:string;note:string;confirmed:true;
 }
+/** 独立科学输入绑定的实际预期字段，不接受浏览器路径或参数覆盖。 */
+export interface SystemSourceBindingRequest {
+ request_id:string;expected_acquisition_request_id:string;expected_record_sha256:string;expected_input_hash:string;
+ author:string;note:string;confirmed:true;
+}
 export interface SystemAcquisitionInfo {
  supported:boolean;enabled:boolean;blockers:string[];busy:boolean;expected_a00:string|null;expected_plan_id:string|null;expected_input_hash:string;
  screening_parameters:{ob_min:number;dl_min:number}|null;message_zh:string;
  requests:{request_id:string;request:SystemAcquisitionRequest;plan_id:string;created_at:string;state:string;state_label_zh:string;
   screening_parameters:{ob_min:number;dl_min:number};display_sources:{database:string;state_label_zh:string;reason_zh:string}[];
-  retry_enabled:boolean;retry_blockers:string[];message_zh:string;record_count:number;failure_count:number;source_receipt_count:number}[];
+  retry_enabled:boolean;retry_blockers:string[];message_zh:string;record_count:number;failure_count:number;source_receipt_count:number;
+  binding?:{enabled:boolean;blockers:string[];bound:boolean;request:Pick<SystemSourceBindingRequest,'expected_acquisition_request_id'|'expected_record_sha256'|'expected_input_hash'>|null}}[];
 }
 
 /** GET /session 的返回 */

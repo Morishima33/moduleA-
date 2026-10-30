@@ -57,6 +57,7 @@ class App:
         self.routes = [
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/system-acquisition", self.get_system_acquisition),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/system-acquisition/execute", self.post_system_acquisition),
+            ("POST", rf"/api/v1/studies/{ID}/analysis-plan/system-acquisition/bind", self.post_system_source_binding),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/system-pipeline", self.get_system_pipeline),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/system-pipeline/start", self.post_system_pipeline_start),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/system-pipeline/continue", self.post_system_pipeline_continue),
@@ -517,7 +518,7 @@ class App:
 
     def session(self, req):
         return {"token": self.token, "version": __version__, "platform": sys.platform,
-                "capabilities": {"review": True, "batch_review": True, "tasks": True, "trash": True, "module_actions": False, "source_upload": True, "ppi_compute": True, "create_study": True, "system_pipeline": True, "system_acquisition": True},
+                "capabilities": {"review": True, "batch_review": True, "tasks": True, "trash": True, "module_actions": False, "source_upload": True, "ppi_compute": True, "create_study": True, "system_pipeline": True, "system_acquisition": True, "system_source_binding": True},
                 "decisions_zh": {"approved": "通过，允许下游使用", "rejected": "退回修改", "pending": "暂存待定"}}
 
     def post_create_study(self, req):
@@ -571,6 +572,11 @@ class App:
         """严格明确确认后仅排队，HTTP不获取或发布科学结果。"""
         from .system_acquisition import execute
         return execute(self,req,study_id)
+
+    def post_system_source_binding(self,req,study_id):
+        """明确绑定已有三库原件，HTTP不解包、不发布科学结果。"""
+        from .system_acquisition import bind_sources
+        return bind_sources(self,req,study_id)
 
     def post_system_pipeline_start(self,req,study_id):
         """登记一次明确授权并提交独立后台任务。"""

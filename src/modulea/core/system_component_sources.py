@@ -43,28 +43,12 @@ def current(workflow,m,*,plan_id=None):
 
 def publish(workflow,sid,body):
     """后台明确将完整原件解包成独立输入；不生成A01/current或人工复核。"""
-    require(isinstance(body,dict) and set(body)==FIELDS,'三库来源绑定字段错误，不接受路径或通过标记')
-    safe_id(body['request_id'],'systemsourcebindreq');safe_id(body['expected_acquisition_request_id'],'systemacqreq')
-    require(body['confirmed'] is True and all(isinstance(body[k],str) and 0<len(body[k].strip())<=2000 for k in ('author','note')),
-        '请填写绑定登记人和说明并明确确认')
+    validate_request(workflow,sid,body)
     m=workflow.load(sid);home=workflow.location(sid)
-    require(not m.get('trashed'),'回收站研究只读')
     for ref in m.get(INDEX,[]):
         value=read_record(workflow,m,ref)
-        if value['request']['request_id']==body['request_id']:
-            require(value['request']==body and m.get(CURRENT)==ref,'来源绑定请求内容或当前指针已改变，请刷新')
-            return dict(value,file=deepcopy(ref),created=False)
-    require(body['expected_input_hash']==fingerprint(acquisition.snapshot(workflow,m)),'来源绑定输入已改变，请刷新')
-    choices=[]
-    for ref in m.get(acquisition.RECORDS,[]):
-        record=acquisition.read_record(workflow,m,ref,kind='record')
-        request=acquisition.read_record(workflow,m,record['request_file'],kind='request')
-        if request['request']['request_id']==body['expected_acquisition_request_id']:choices.append((ref,record,request))
-    require(choices,'本研究没有明确获取记录');ref,record,request=choices[-1]
-    require(record['state']=='complete' and ref['sha256']==body['expected_record_sha256'],'三库未齐或最新获取记录已改变，请刷新')
-    acquisition.require_current(workflow,m,request)
-    plans=workflow._analysis_plan_records(m)
-    require(plans and plans[-1]['plan_id']==request['request']['expected_plan_id'],'绑定只接受当前明确方案，请刷新后按新方案获取')
+        if value['request']['request_id']==body['request_id']:return dict(value,file=deepcopy(ref),created=False)
+    ref,record,request=acquisition_for(workflow,m,body['expected_acquisition_request_id'])
     from science_modules.a01.system_source_binding import materialize,validate_binding
     folder=home/'raw/A01_system_bindings'/new_id('sourcebinding')
     value=materialize(home,folder,request,record)
@@ -80,3 +64,54 @@ def publish(workflow,sid,body):
         path=folder/'binding.json';write_json(path,value);result_ref=file_record(home,path,'system_component_source_binding')
         current_m.setdefault(INDEX,[]).append(result_ref);current_m[CURRENT]=result_ref;workflow.save(current_m)
     return dict(value,file=result_ref,created=True)
+
+
+def acquisition_for(workflow,m,request_id):
+    """只沿本研究指定请求定位最新实际整批记录，不挑选较早成功掩盖失败。"""
+    choices=[]
+    for ref in m.get(acquisition.RECORDS,[]):
+        record=acquisition.read_record(workflow,m,ref,kind='record')
+        request=acquisition.read_record(workflow,m,record['request_file'],kind='request')
+        if request['request']['request_id']==request_id:choices.append((ref,record,request))
+    require(choices,'本研究没有明确获取记录')
+    return choices[-1]
+
+
+def info(workflow,m,request_id):
+    """只读来源绑定资格，实际解包仍在后台，不构造待签或已签确认。"""
+    from contracts import ContractError
+    ref,record,request=acquisition_for(workflow,m,request_id);blockers=[]
+    if record['state']!='complete':blockers.append('三库原件未齐，不能绑定科学输入')
+    try:acquisition.require_current(workflow,m,request)
+    except ContractError as error:blockers.append(str(error))
+    plans=workflow._analysis_plan_records(m)
+    if not plans or plans[-1]['plan_id']!=request['request']['expected_plan_id']:blockers.append('当前方案已改变，请按新方案核验原件')
+    current_ref=m.get(CURRENT);bound=False
+    if current_ref:
+        value=read_record(workflow,m,current_ref);bound=value['acquisition_record']==ref
+    if bound:blockers.append('本次原件已绑定科学输入，无需重复绑定')
+    return {'enabled':not blockers,'blockers':blockers,'bound':bound,'request':{
+        'expected_acquisition_request_id':request_id,'expected_record_sha256':ref['sha256'],
+        'expected_input_hash':fingerprint(acquisition.snapshot(workflow,m))}}
+
+
+def validate_request(workflow,sid,body):
+    """只读HTTP/排队预检，不解包、不运行科学函数或写入研究。"""
+    require(isinstance(body,dict) and set(body)==FIELDS,'三库来源绑定字段错误，不接受路径或通过标记')
+    safe_id(body['request_id'],'systemsourcebindreq');safe_id(body['expected_acquisition_request_id'],'systemacqreq')
+    require(body['confirmed'] is True and all(isinstance(body[k],str) and 0<len(body[k].strip())<=2000 for k in ('author','note')),
+        '请填写绑定登记人和说明并明确确认')
+    m=workflow.load(sid)
+    require(not m.get('trashed'),'回收站研究只读')
+    for ref in m.get(INDEX,[]):
+        value=read_record(workflow,m,ref)
+        if value['request']['request_id']==body['request_id']:
+            require(value['request']==body and m.get(CURRENT)==ref,'来源绑定请求内容或当前指针已改变，请刷新')
+            return deepcopy(body)
+    require(body['expected_input_hash']==fingerprint(acquisition.snapshot(workflow,m)),'来源绑定输入已改变，请刷新')
+    ref,record,request=acquisition_for(workflow,m,body['expected_acquisition_request_id'])
+    require(record['state']=='complete' and ref['sha256']==body['expected_record_sha256'],'三库未齐或最新获取记录已改变，请刷新')
+    acquisition.require_current(workflow,m,request)
+    plans=workflow._analysis_plan_records(m)
+    require(plans and plans[-1]['plan_id']==request['request']['expected_plan_id'],'绑定只接受当前明确方案，请刷新后按新方案获取')
+    return deepcopy(body)

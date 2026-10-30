@@ -107,6 +107,7 @@ export const api = {
   systemPipeline: (sid:string)=>request<import('./types').SystemPipelineInfo>('GET',`/studies/${sid}/analysis-plan/system-pipeline`),
   systemAcquisition: (sid:string)=>request<import('./types').SystemAcquisitionInfo>('GET',`/studies/${sid}/analysis-plan/system-acquisition`),
   acquireSystemSources: (sid:string,body:import('./types').SystemAcquisitionRequest)=>request<{task:Task;request_id:string;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/system-acquisition/execute`,body),
+  bindSystemSources: (sid:string,body:import('./types').SystemSourceBindingRequest)=>request<{task:Task;request_id:string;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/system-acquisition/bind`,body),
   startSystemPipeline: (sid:string,body:Record<string,unknown>)=>request<{task:Task;batch_id:string;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/system-pipeline/start`,body),
   continueSystemPipeline: (sid:string,body:{batch_id:string;expected_input_hash:string})=>request<{task:Task;batch_id:string;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/system-pipeline/continue`,body),
   /** 新版阶段不接旧continue，不接收浏览器科学参数或来源路径。 */
