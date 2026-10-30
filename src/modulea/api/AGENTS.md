@@ -2,6 +2,8 @@
 
 ## 2026-10-30 系统三库原件获取后台入口
 
+统一网页`#/system-pipeline/{sid}`增加三库原件区，仅在session.capabilities.system_acquisition=true时读取/显示。GET增加当前screening_parameters、各原请求绑定的screening_parameters/state_label_zh/display_sources；display_sources逐库合并实际最新整批与已归档成功检查点，不能把未形成整批记录当complete。每行含database/state_label_zh/reason_zh；这些均为服务器事实翻译，不在浏览器推算通过或完整。新获取默认未勾确认；原请求重试经明确确认窗口，仍提交原七字段。页面读取/刷新/任务完成不自动POST，409只刷新不重交，复核与科学批次语义保持。
+
 GET `/studies/{sid}/analysis-plan/system-acquisition`只读返回A01.system_acquisition.1的supported/enabled/blockers、expected_a00/expected_plan_id/expected_input_hash、busy、scientific_publication_available:false与requests。每个请求含原request、plan_id、state(complete/partial_failure/incomplete)、最后整批sources、独立source_checkpoints、record_count/failure_count/source_receipt_count、retry_enabled/retry_blockers和说明。sources是最后整批事实，source_checkpoints可含整批写入前已保存的成功库；GET不下载、解析科学数据、创建任务或签署复核。
 
 POST同路径`/execute`只接受`{request_id:systemacqreq_<32hex>,expected_a00,expected_plan_id,expected_input_hash,author,note,confirmed:true}`。新请求核对当前方案及输入；原请求必须原字原意相同，后存草稿不替换其计划。202登记plan_system_acquisition任务；HTTP只做标准库预检，实际A00生产规范核验、获取、ZIP校验和恢复均在隔离科学进程。路径、URL、门槛、passed等覆盖字段422；过期409、忙碌409、回收站423、令牌/Origin沿用原403。排队期间实际登记/来源/人工意见变化拒绝，不自动重交。

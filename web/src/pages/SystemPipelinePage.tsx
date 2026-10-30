@@ -6,6 +6,7 @@ import type {PipelineParameters,SystemPipelineInfo} from '../api/types';
 import {useApp} from '../lib/appContext';
 import {hrefFor} from '../lib/route';
 import {fmtTime} from '../lib/format';
+import SystemAcquisitionPanel from '../components/SystemAcquisitionPanel';
 
 /** 原参数只读展示；不在浏览器重编译方案或计算科学通过与否。 */
 function Parameters({value}:{value:PipelineParameters}){
@@ -51,6 +52,7 @@ export default function SystemPipelinePage({studyId}:{studyId:string}){
   {notice&&<Alert type="success" showIcon message={notice}/>}
   {!info?(!error&&<Skeleton active/>):<>
    {info.busy&&<Alert type="info" showIcon message="本研究后台任务正在进行" description="任务完成后会刷新实际状态。"/>}
+   {app.session?.capabilities.system_acquisition&&<SystemAcquisitionPanel studyId={studyId}/>}
    <section className="card stack" id="pipeline-start"><h2>确认新的执行批次</h2>
     {!info.start.enabled&&<Alert type="warning" showIcon message="当前资料尚不能启动新批次" description={info.start.blockers.join('；')}/>}
     <Parameters value={info.start}/>

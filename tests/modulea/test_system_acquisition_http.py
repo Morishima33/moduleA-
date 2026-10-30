@@ -67,6 +67,8 @@ class SystemAcquisitionHttpTests(unittest.TestCase):
         self.assertFalse(value['enabled']);self.assertFalse(value['requests'][0]['retry_enabled'])
 
     def test_http_submission_only_queues_without_scientific_validation_or_mutation(self):
+        status,session=self.call('GET','/session');self.assertEqual(status,200,session)
+        self.assertTrue(session['capabilities']['system_acquisition'])
         before=self.w.load(self.sid);task={'task_id':'task_'+uuid4().hex,'state':'queued'}
         with patch.object(self.app.tasks,'submit',return_value=(task,True)) as submit,\
                 patch('modulea.core.system_validation.canonical_validator',side_effect=AssertionError('HTTP不得运行科学验证')):
@@ -82,9 +84,26 @@ class SystemAcquisitionHttpTests(unittest.TestCase):
         status,value=self.call('GET',self.path);self.assertEqual(status,200,value)
         self.assertNotEqual(value['expected_plan_id'],self.body['expected_plan_id'])
         self.assertEqual(value['requests'][0]['request'],self.body);self.assertTrue(value['requests'][0]['retry_enabled'])
+        self.assertEqual(value['screening_parameters']['ob_min'],45)
+        self.assertEqual(value['requests'][0]['screening_parameters']['ob_min'],30)
         status,value=self.call('POST',self.path+'/execute',self.body);self.assertEqual(status,202,value)
         self.assertEqual(self.wait_task(value['task']['task_id'])['state'],'succeeded')
         self.assertEqual(len(self.w.load(self.sid)[core.REQUESTS]),1)
+
+    def test_display_uses_archived_checkpoint_when_no_batch_record_exists(self):
+        value=core.info(self.w,self.sid);body={key:value[key] for key in ('expected_a00','expected_plan_id','expected_input_hash')}|{
+            'request_id':'systemacqreq_'+uuid4().hex,'author':'明确合成检查点页面测试','note':'未形成整批不显示完整','confirmed':True}
+        def interrupted(db,*args,**kwargs):
+            if db=='HERB':raise KeyboardInterrupt('合成中断')
+            return source_fixture.synthetic_source(db,*args,**kwargs)
+        with patch.object(source_fixture.collection,'acquire_for_plan',side_effect=interrupted),self.assertRaises(KeyboardInterrupt):
+            self.w.acquire_analysis_plan_system_a01_sources(self.sid,body)
+        before=self.w.load(self.sid);status,value=self.call('GET',self.path);self.assertEqual(status,200,value)
+        record=next(r for r in value['requests'] if r['request_id']==body['request_id'])
+        self.assertEqual(record['state'],'incomplete');self.assertEqual(record['record_count'],0)
+        self.assertEqual(record['source_receipt_count'],1);self.assertEqual(record['display_sources'][0]['database'],'TCMSP')
+        self.assertEqual(record['display_sources'][0]['state_label_zh'],'已核验归档');self.assertTrue(record['retry_enabled'])
+        self.assertEqual(self.w.load(self.sid),before)
 
     def test_human_hold_after_queue_is_rechecked_in_actual_worker_before_fetch(self):
         with patch.object(self.app.tasks,'_spawn'):
