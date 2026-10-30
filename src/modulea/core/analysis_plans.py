@@ -18,6 +18,11 @@ class AnalysisPlanConflict(ContractError):
 class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
     """旧研究继承原行为；只有显式新方案登记支持草稿写入。"""
 
+    def bind_analysis_plan_system_a01_sources(self,study_id,payload):
+        """将已明确获取的完整原件绑定为独立科学输入，不改旧上传或复核。"""
+        from .system_component_sources import publish
+        return publish(self,study_id,payload)
+
     def acquire_analysis_plan_system_a01_sources(self,study_id,payload,*,progress=None,opener=None,sleeper=None):
         """内部明确获取三库原件，真实A00证据授权，不发布或伪造人工复核。"""
         from .system_acquisition import execute

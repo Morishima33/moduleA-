@@ -18,16 +18,26 @@ FIELDS={'request_id','expected_a00','expected_plan_id','expected_input_hash','au
 
 def scientific_version(module,config):
     """新资格修订仍属PREP，显式列出科学版本，不修改旧人工协议。"""
-    return config.get('version')==SCIENTIFIC_VERSIONS[module] or (module=='A06_PREP' and config.get('version')=='A06.system_qualification.1') or (
+    return config.get('version')==SCIENTIFIC_VERSIONS[module] or (module=='A01' and config.get('version')=='A01.system_publication.1'
+        and config.get('source_binding_protocol')=='A01.system_source_binding.1') or (module=='A06_PREP' and config.get('version')=='A06.system_qualification.1') or (
         module=='A02' and config.get('version')=='A02.system_normalization.2' and config.get('source_binding_protocol')=='A02.system_source_reuse.1')
 
 
 def snapshot(workflow,m):
     """只读确认时的完整实际输入；报告自身最终决定不改变科学批次输入。"""
-    return {'study_id':m['study_id'],'current':{key:rid for key,rid in m['current'].items() if key!='A07'},
+    value={'study_id':m['study_id'],'current':{key:rid for key,rid in m['current'].items() if key!='A07'},
         'run_files':{rid:deepcopy(m['runs'][rid]) for key,rid in m['current'].items() if key!='A07'},
         'plan_records':deepcopy(m.get('analysis_plan_records',[])),
         'staging_file':deepcopy(m.get('current_component_uploads')),'reviews':deepcopy(m.get('reviews',[])),'trashed':bool(m.get('trashed'))}
+    if m.get('current_system_component_sources'):value['system_component_source_file']=deepcopy(m['current_system_component_sources'])
+    return value
+
+
+def source_for(workflow,m,plan_id):
+    """新明确系统来源优先，旧上传协议保持；不自动跨方案借用来源。"""
+    from . import system_component_sources as sources
+    system=sources.current(workflow,m,plan_id=plan_id)
+    return (system,sources.VERSION) if system else (deepcopy(m.get('current_component_uploads')),None)
 
 
 def info(workflow,sid):
@@ -39,9 +49,10 @@ def info(workflow,sid):
     if not supported:blockers.append('系统执行要求新版已核验疾病身份的登记')
     if m.get('trashed'):blockers.append('回收站研究只读')
     if not draft:blockers.append('当前登记没有可绑定方案')
-    if not m.get('current_component_uploads'):blockers.append('请先补齐三库实际原件')
+    staging,protocol=source_for(workflow,m,draft['plan_id'] if draft else None)
+    if not staging:blockers.append('请先补齐并明确绑定三库实际原件')
     else:
-        value=read_json(verified_file(home,m['current_component_uploads']))
+        value=read_json(verified_file(home,staging))
         if {row['database'] for row in value['datasets']}!={'TCMSP','HERB','BATMAN'} or len(value['datasets'])!=3:
             blockers.append('三库原件尚未完整暂存，不回退单库')
     return {'schema_version':VERSION,'supported':supported,'enabled':not blockers,'blockers':blockers,
@@ -65,8 +76,14 @@ def read_batch(workflow,m,reference):
     from science_modules.analysis_protocol import checked_plan
     checked_plan(plan['plan'])
     require(value['initial_binding']['study_id']==m['study_id']
-        and fingerprint(value['initial_binding'])==value['request']['expected_input_hash']
-        and value['staging_file']==value['initial_binding']['staging_file'],'系统执行原始输入指纹无效')
+        and fingerprint(value['initial_binding'])==value['request']['expected_input_hash'],'系统执行原始输入指纹无效')
+    if value.get('component_source_protocol'):
+        from . import system_component_sources as sources
+        require(value['component_source_protocol']==sources.VERSION
+            and value['staging_file']==value['initial_binding'].get('system_component_source_file'),'系统批次新三库绑定不同')
+        source=sources.read_record(workflow,m,value['staging_file'])
+        require(source['plan_file']==value['plan_file'] and source['a00_run_id']==value['request']['expected_a00'],'系统批次来源不是原方案和登记')
+    else:require(value['staging_file']==value['initial_binding']['staging_file'],'系统执行原始三库输入不同')
     for ref in (value['staging_file'],value['mapping']['mapping_file'],*value['mapping']['identity_evidence_files']):verified_file(home,ref)
     if value.get('disease_source_file') or value.get('disease_source_protocol'):
         from . import system_disease_sources
@@ -92,8 +109,10 @@ def start(workflow,sid,body):
         from science_modules.a01.uploads import mapping_binding
         record={'schema_version':VERSION,'study_id':sid,'batch_id':new_id('systembatch'),'request':deepcopy(body),
             'request_hash':fingerprint(body),'initial_binding':snapshot(workflow,m),'plan_file':deepcopy(plan_ref),
-            'staging_file':deepcopy(m['current_component_uploads']),'mapping':mapping_binding(workflow,m),
+            'staging_file':source_for(workflow,m,body['expected_plan_id'])[0],'mapping':mapping_binding(workflow,m),
             'human_review_written':False,'created_at':now()}
+        protocol=source_for(workflow,m,body['expected_plan_id'])[1]
+        if protocol:record['component_source_protocol']=protocol
         a02=m['current'].get('A02')
         from . import system_disease_sources
         if a02 and workflow.run(m,a02)['config'].get('version') in system_disease_sources.NORMALIZED:
@@ -108,7 +127,9 @@ def require_batch(workflow,m,ref):
     """绑定原方案、当前登记和同一原件；后来新草稿不替换正在执行的旧批。"""
     batch,plan=read_batch(workflow,m,ref)
     require(not m.get('trashed') and m['current'].get('A00')==batch['request']['expected_a00'],'批次登记已改变或研究只读')
-    require(m.get('current_component_uploads')==batch['staging_file'],'批次三库原件已替换，请明确启动新批次')
+    if batch.get('component_source_protocol'):
+        require(m.get('current_system_component_sources')==batch['staging_file'],'批次系统三库原件已替换，请明确启动新批次')
+    else:require(m.get('current_component_uploads')==batch['staging_file'],'批次三库原件已替换，请明确启动新批次')
     return batch,plan
 
 

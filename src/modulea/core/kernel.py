@@ -93,6 +93,7 @@ def full_workflow(data_root: Path) -> Workflow:
     from science_modules.a01.uploads import validator as upload_validator
     from science_modules.a01.collection_flow import validator as collection_validator
     from science_modules.a01.plan_flow import validator as plan_a01_validator
+    from science_modules.a01.system_source_binding import validator as system_a01_validator
     from disease import validate_disease
     from intersection_flow import validate_intersection, validate_selection
     from science_modules.plan_stages import a02_validator as stage_a02_validator, a03_validator as stage_a03_validator
@@ -126,7 +127,7 @@ def full_workflow(data_root: Path) -> Workflow:
 
     root = data_root
     return DockingWorkflow(root, {
-        "A01": plan_a01_validator(root, literature_validator(root, "A01", collection_validator(root, upload_validator(root, multisource_validator(root, normalization_validator(root, validate_components)))))),
+        "A01": system_a01_validator(root,plan_a01_validator(root, literature_validator(root, "A01", collection_validator(root, upload_validator(root, multisource_validator(root, normalization_validator(root, validate_components))))))),
         "A02": system_a02_validator(root,stage_a02_validator(root, literature_validator(root, "A02", normalization_validator(root, validate_disease)))),
         "A03": stage_a03_validator(root, validate_intersection),
         "A03_SELECT": system_compound_validator(root,plan_compound_validator(root,validate_selection)),

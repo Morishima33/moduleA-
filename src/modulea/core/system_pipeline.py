@@ -85,10 +85,12 @@ def info(workflow,sid):
 
 def state_hash(workflow,m,ref):
     """排队请求固定实际已保存的科学状态，后来草稿与运行时任务状态不替换原批参数。"""
-    return fingerprint({'study_id':m['study_id'],'batch_file':ref,'current':m['current'],
+    value={'study_id':m['study_id'],'batch_file':ref,'current':m['current'],
         'runs':{rid:m['runs'][rid] for rid in m['current'].values()},'reviews':m.get('reviews',[]),
         'staging_file':m.get('current_component_uploads'),'system_validations':m.get(execution.validation.INDEX,[]),
-        'system_decisions':m.get(system_decisions.INDEX,[]),'trashed':bool(m.get('trashed'))})
+        'system_decisions':m.get(system_decisions.INDEX,[]),'trashed':bool(m.get('trashed'))}
+    if m.get('current_system_component_sources'):value['system_component_source_file']=m['current_system_component_sources']
+    return fingerprint(value)
 
 
 def validate_request(workflow,sid,body):

@@ -77,7 +77,8 @@ def _build(workflow,sid,*,source_evidence=None):
         return result
     a03=add('A03')
     for module in ('A00','A01','A02'):add(module)
-    require(runs['A01']['config'].get('version')=='A01.plan_publication.1','新报告方剂侧尚未形成实际三库新方案结果')
+    require(runs['A01']['config'].get('version') in ('A01.plan_publication.1','A01.system_publication.1'),
+        '新报告方剂侧尚未形成实际三库新方案结果')
     require(runs['A03']['config'].get('version')=='A03.plan_intersection.1','正式新报告须绑定真实新方案交集')
     reference=runs['A03']['inputs']['analysis_plan_file'];record=read_json(verified_file(home,reference));plan=checked_plan(record['plan'])
     require(reference in m.get('analysis_plan_records',[]) and record['study_id']==sid and record['expected_a00']==run_ids['A00']

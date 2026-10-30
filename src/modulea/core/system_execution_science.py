@@ -152,10 +152,15 @@ def a01(workflow,m,batch,plan):
         'disease_identity':validate_mesh_identity(intake) if intake['analysis_purpose']=='formal_research' else None,
         'analysis_plan_id':plan['plan_id'],'analysis_plan_file':deepcopy(batch['plan_file']),
         'analysis_parameter_hash':plan['plan']['parameter_hash'],'mapping':deepcopy(batch['mapping'])}
-    summary,tables,anomalies=facts(home,inputs);source=read_json(verified_file(home,inputs['staging_file']))
+    source=read_json(verified_file(home,inputs['staging_file']))
+    if batch.get('component_source_protocol')=='A01.system_source_binding.1':
+        from science_modules.a01 import system_source_binding as system_sources
+        inputs['system_source_binding']=deepcopy(batch['staging_file'])
+        summary,tables,anomalies=system_sources.facts(home,inputs);config=system_sources.configuration(plan['plan'])
+    else:summary,tables,anomalies=facts(home,inputs);config=configuration(plan['plan'])
     sources=[batch['plan_file'],batch['staging_file'],inputs['mapping']['mapping_file'],*inputs['mapping']['identity_evidence_files']]
     for slot in source['datasets']:sources.extend([slot['source_record'],*slot['files']])
-    return inputs,configuration(plan['plan']),summary,tables,anomalies,sources
+    return inputs,config,summary,tables,anomalies,sources
 
 
 def a03(workflow,m,batch,plan,batch_ref,body):
