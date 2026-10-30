@@ -22,7 +22,9 @@ def batch_for(workflow,m,batch_id):
 def required_inputs(workflow,m,batch=None):
     """必需原件只读预检；不联网获取，不把缺失、失败或未检索记为零条。"""
     home=workflow.location(m['study_id']);initial=batch['initial_binding'] if batch else m
-    rid=initial['current'].get('A02');require(rid,'请先提供本研究现代五库原始候选，再确认统一执行')
+    from . import system_disease_sources
+    binding=system_disease_sources.read(workflow,m,batch) if batch and batch.get('disease_source_file') else system_disease_sources.resolve(workflow,m,initial)
+    rid=binding['base_run_id']
     run=workflow.run(m,rid);result=workflow.result(m,rid)
     for source_id in (rid,initial['current']['A00']):
         review=workflow.latest_review(m,workflow.run(m,source_id)['artifact_id'])

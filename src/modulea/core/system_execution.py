@@ -18,7 +18,8 @@ FIELDS={'request_id','expected_a00','expected_plan_id','expected_input_hash','au
 
 def scientific_version(module,config):
     """新资格修订仍属PREP，显式列出科学版本，不修改旧人工协议。"""
-    return config.get('version')==SCIENTIFIC_VERSIONS[module] or (module=='A06_PREP' and config.get('version')=='A06.system_qualification.1')
+    return config.get('version')==SCIENTIFIC_VERSIONS[module] or (module=='A06_PREP' and config.get('version')=='A06.system_qualification.1') or (
+        module=='A02' and config.get('version')=='A02.system_normalization.2' and config.get('source_binding_protocol')=='A02.system_source_reuse.1')
 
 
 def snapshot(workflow,m):
@@ -67,6 +68,9 @@ def read_batch(workflow,m,reference):
         and fingerprint(value['initial_binding'])==value['request']['expected_input_hash']
         and value['staging_file']==value['initial_binding']['staging_file'],'系统执行原始输入指纹无效')
     for ref in (value['staging_file'],value['mapping']['mapping_file'],*value['mapping']['identity_evidence_files']):verified_file(home,ref)
+    if value.get('disease_source_file') or value.get('disease_source_protocol'):
+        from . import system_disease_sources
+        system_disease_sources.read(workflow,m,value,check_reviews=False)
     return value,plan
 
 
@@ -90,6 +94,11 @@ def start(workflow,sid,body):
             'request_hash':fingerprint(body),'initial_binding':snapshot(workflow,m),'plan_file':deepcopy(plan_ref),
             'staging_file':deepcopy(m['current_component_uploads']),'mapping':mapping_binding(workflow,m),
             'human_review_written':False,'created_at':now()}
+        a02=m['current'].get('A02')
+        from . import system_disease_sources
+        if a02 and workflow.run(m,a02)['config'].get('version') in system_disease_sources.NORMALIZED:
+            record['disease_source_protocol']=system_disease_sources.VERSION
+            record['disease_source_file']=system_disease_sources.create(workflow,m,record['batch_id'],record['initial_binding'])
         target=home/'decisions/analysis_plans/system_batches'/record['batch_id']/'batch.json';write_json(target,record)
         ref=file_record(home,target,'system_batch_authorization');m.setdefault(BATCHES,[]).append(ref);workflow.save(m)
         return dict(record,file=ref,created=True)
@@ -142,6 +151,11 @@ def is_active(workflow,m,run):
             base=read_json(verified_file(workflow.location(m['study_id']),run['inputs']['base_run']))
             review=workflow.latest_review(m,base['artifact_id'])
             require(not review or review['decision']=='approved','疾病原候选已被明确暂存或退回')
+            if run['config'].get('version')=='A02.system_normalization.2':
+                from . import system_disease_sources
+                batch,_=read_batch(workflow,m,run['batch_file']);source=system_disease_sources.read(workflow,m,batch)
+                require(run['inputs']['disease_source_binding']==batch['disease_source_file']
+                    and run['inputs']['base_run']==source['base_run'],'疾病新批原件复用绑定不同')
         if run['module_id']=='A06_PREP':
             from . import system_decisions
             fixed=system_decisions.read_record(workflow,m,run['inputs']['system_input_ref'])
@@ -264,6 +278,10 @@ def _execute(workflow,sid,body,*,tools=None,progress=None):
             base=read_json(verified_file(home,computed[0]['base_run']))
             reviews=[r for r in m.get('reviews',[]) if read_json(verified_file(home,r))['artifact_id']==base['artifact_id']]
             require(reviews==computed[0]['base_reviews'],'疾病标准化期间原候选人工决定已改变')
+            if computed[1]['version']=='A02.system_normalization.2':
+                source=read_json(verified_file(home,computed[0]['source_current_run']))
+                reviews=[r for r in m.get('reviews',[]) if read_json(verified_file(home,r))['artifact_id']==source['artifact_id']]
+                require(reviews==computed[0]['source_current_reviews'],'疾病原件复用期间原标准化人工决定已改变')
         attachments=[]
         if module in ('A01','A02'):
             inputs,config,summary,tables,anomalies,sources=computed
