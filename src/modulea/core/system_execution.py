@@ -7,12 +7,18 @@ from . import system_validation as validation
 VERSION='ModuleA.system_execution.1'
 BATCHES='analysis_plan_system_batch_records'
 EVENTS='analysis_plan_system_batch_events'
-IMPLEMENTED=('A01','A02','A03','A03_SELECT','A04','A05','A06_PREP')
+IMPLEMENTED=('A01','A02','A03','A03_SELECT','A04','A05','A06_PREP','A06')
 DEPENDENCIES={'A01':{'A00'},'A02':{'A00','A01'},'A03':{'A01','A02'},'A03_SELECT':{'A03'},'A04':{'A03'},'A05':{'A03'},
-    'A06_PREP':{'A03','A03_SELECT','A04'}}
+    'A06_PREP':{'A03','A03_SELECT','A04'},'A06':{'A06_PREP'}}
 SCIENTIFIC_VERSIONS={'A01':'A01.plan_publication.1','A02':'A02.system_normalization.1','A03':'A03.plan_intersection.1',
-    'A03_SELECT':'A03.plan_selection.1','A04':'A04.plan_network.1','A05':'A05.plan_enrichment.1','A06_PREP':'A06.system_preparation.1'}
+    'A03_SELECT':'A03.plan_selection.1','A04':'A04.plan_network.1','A05':'A05.plan_enrichment.1','A06_PREP':'A06.system_preparation.1',
+    'A06':'A06.system_scoring.1'}
 FIELDS={'request_id','expected_a00','expected_plan_id','expected_input_hash','author','note','confirmed'}
+
+
+def scientific_version(module,config):
+    """新资格修订仍属PREP，显式列出科学版本，不修改旧人工协议。"""
+    return config.get('version')==SCIENTIFIC_VERSIONS[module] or (module=='A06_PREP' and config.get('version')=='A06.system_qualification.1')
 
 
 def snapshot(workflow,m):
@@ -40,7 +46,7 @@ def info(workflow,sid):
     return {'schema_version':VERSION,'supported':supported,'enabled':not blockers,'blockers':blockers,
         'expected_a00':a00,'expected_plan_id':draft['plan_id'] if draft else None,'expected_input_hash':fingerprint(snapshot(workflow,m)),
         'implemented_stages':list(IMPLEMENTED),'automatic_execution_available':False,
-        'message_zh':'内部系统执行已接通三库、疾病标准化、交集、成分、PPI、富集和结构准备；准备资格及评分继续接通，完整一键入口仍未开放，不代签人工复核。'}
+        'message_zh':'内部系统执行已接通三库、疾病标准化、交集、成分、PPI、富集、结构准备及专用资格/评分入口；完整一键入口仍未开放，不代签人工复核。'}
 
 
 def read_batch(workflow,m,reference):
@@ -130,7 +136,7 @@ def is_active(workflow,m,run):
         require(run.get('execution_protocol')==VERSION and run['module_id'] in IMPLEMENTED
             and m['current'].get(run['module_id'])==run['run_id'],'系统执行运行或协议无效')
         require(set(run['parent_runs'])==DEPENDENCIES[run['module_id']]
-            and run['config'].get('version')==SCIENTIFIC_VERSIONS[run['module_id']], '系统执行科学版本或完整依赖错误')
+            and scientific_version(run['module_id'],run['config']), '系统执行科学版本或完整依赖错误')
         require_batch(workflow,m,run['batch_file'])
         if run['module_id']=='A02':
             base=read_json(verified_file(workflow.location(m['study_id']),run['inputs']['base_run']))
@@ -141,14 +147,34 @@ def is_active(workflow,m,run):
             fixed=system_decisions.read_record(workflow,m,run['inputs']['system_input_ref'])
             require(fixed['stage']=='A06_INPUT' and fixed['binding']['batch_file']==run['batch_file']
                 and system_decisions.active(workflow,m,fixed),'结构准备的系统固定范围已失效')
+            if run['config'].get('version')=='A06.system_qualification.1':
+                request=read_json(verified_file(workflow.location(m['study_id']),run['inputs']['qualification_request']))
+                source=read_json(verified_file(workflow.location(m['study_id']),run['inputs']['source_preparation_run']))
+                review=workflow.latest_review(m,source['artifact_id'])
+                require(not review or review['decision']=='approved','资格来源准备已有明确暂存或退回')
+                require(request['binding']['source_run']==run['inputs']['source_preparation_run'],'系统资格来源运行不同')
         require(run['execution_authority']=='system_validation' and run['parent_review_ids']=={}
-            and run['parent_validation_records']==parent_records(workflow,m,run['parent_runs']),'系统执行依赖与真实回执不一致')
+            and bound_parent_records(workflow,m,run),'系统执行依赖与真实回执不一致')
         require(run['config_hash']==fingerprint(run['config'])
             and run['input_hash']==fingerprint({'inputs':run['inputs'],'parents':run['parent_artifact_ids']}),'系统执行运行指纹无效')
         require(run['parent_artifact_ids']==[workflow.run(m,run['parent_runs'][key])['artifact_id'] for key in sorted(run['parent_runs'])],
             '系统执行父产物身份不一致')
         return True
     except ContractError:return False
+
+
+def bound_parent_records(workflow,m,run):
+    """新评分保留实际采用回执；同输入再次通过不废弃原评分，最新失败仍否决。"""
+    latest=parent_records(workflow,m,run['parent_runs']);bound=run['parent_validation_records']
+    if run['config'].get('version')!='A06.system_scoring.1':return bound==latest
+    require(set(bound)==set(latest),'系统评分原依赖回执不完整')
+    for module,reference in bound.items():
+        require(reference in m.get(validation.INDEX,[]),'系统评分原采用回执未登记')
+        old=validation.read_receipt(workflow,m,reference);current=validation.read_receipt(workflow,m,latest[module])
+        require(old['passed'] and old['scientific_status']['ready_for_successor']
+            and old['run_id']==run['parent_runs'][module]==current['run_id'] and old['input_hash']==current['input_hash'],
+            '系统评分原回执与当前实际输入、结果或人工决定不同')
+    return True
 
 
 def ensure_parents(workflow,sid,parents):
@@ -167,7 +193,7 @@ def ensure_parents(workflow,sid,parents):
 def begin(workflow,m,module,inputs,config,reason,batch_ref,parents):
     """只供内部真实科学适配调用，运行明确记录系统授权而不是人工父签名。"""
     require(module in IMPLEMENTED and module in workflow.validators,'系统执行尚未接入该模块')
-    require(set(parents)==DEPENDENCIES[module] and config.get('version')==SCIENTIFIC_VERSIONS[module],'系统执行依赖或科学版本错误')
+    require(set(parents)==DEPENDENCIES[module] and scientific_version(module,config),'系统执行依赖或科学版本错误')
     batch,plan=require_batch(workflow,m,batch_ref)
     require(inputs['analysis_plan_file']==batch['plan_file'] and inputs['analysis_plan_id']==plan['plan_id']
         and inputs['analysis_parameter_hash']==plan['plan']['parameter_hash'],'系统执行输入与批次绑定方案不一致')
@@ -188,6 +214,7 @@ def _execute(workflow,sid,body,*,tools=None,progress=None):
     """内部逐阶段真实执行；全自动调度未开放，拒绝未接入阶段和客户端科学覆盖。"""
     require(isinstance(body,dict) and set(body)=={'batch_id','stage','expected_current_run_id'},'系统阶段请求字段错误')
     safe_id(body['batch_id'],'systembatch');require(body['stage'] in IMPLEMENTED,'系统执行尚未接通该阶段')
+    require(body['stage']!='A06','系统评分须使用绑定实际资格准备的专用评分入口')
     if body['expected_current_run_id'] is not None:safe_id(body['expected_current_run_id'],'run')
     m=workflow.load(sid);home=workflow.location(sid)
     ref=next((ref for ref in m.get(BATCHES,[]) if read_batch(workflow,m,ref)[0]['batch_id']==body['batch_id']),None)

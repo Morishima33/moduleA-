@@ -28,6 +28,16 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
         from .system_decisions import execute
         return execute(self,study_id,payload)
 
+    def qualify_analysis_plan_system_preparation(self,study_id,payload):
+        """本批真实准备证据系统资格核验，不模拟人工口袋或结果复核。"""
+        from .system_qualification import execute
+        return execute(self,study_id,payload)
+
+    def score_analysis_plan_system_preparation(self,study_id,payload,*,tools,progress=None):
+        """同批实际资格准备后执行或续算真实评分，完成组合只核验不重算。"""
+        from .system_scoring import execute
+        return execute(self,study_id,payload,tools,progress or (lambda message:None))
+
     def execute_analysis_plan_system_stage(self,study_id,payload,*,tools=None,progress=None):
         """内部真实系统证据阶段入口，完整自动调度另行接通。"""
         from .system_execution import execute

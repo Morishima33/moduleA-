@@ -97,6 +97,10 @@ def _plan_decisions(workflow, manifest, all_files):
             ('system_batch_events','analysis_plan_system_batch_events','ModuleA.system_execution.1'),
             ('system_decisions','analysis_plan_system_decisions','ModuleA.system_decision.1'),
             ('system_decision_failures','analysis_plan_system_decision_failures','ModuleA.system_decision.1'),
+            ('system_qualifications','analysis_plan_system_qualification_records','A06.system_qualification.1'),
+            ('system_qualification_failures','analysis_plan_system_qualification_failures','A06.system_qualification.1'),
+            ('system_scores','analysis_plan_system_scoring_records','A06.system_scoring.1'),
+            ('system_scoring_failures','analysis_plan_system_scoring_failures','A06.system_scoring.1'),
             ('report_requests','analysis_plan_report_requests','A07.plan_report.1'),
             ('report_receipts','analysis_plan_report_receipts','A07.plan_report.1'),
             ('report_failures','analysis_plan_report_failures','A07.plan_report.1')):
@@ -127,6 +131,25 @@ def _plan_decisions(workflow, manifest, all_files):
                 require(value['state']=='failed' and value['human_review_written'] is False
                     and value['batch_file'] in manifest.get('analysis_plan_system_batch_records',[])
                     and value['error_type'] and value['error_zh'],'系统选择失败不能写作成功名单')
+            if key=='system_qualifications':
+                run=workflow.run(manifest,value['run_id'])
+                require(value['human_review_written'] is False and value['request_hash']==fingerprint(value['request'])
+                    and run['config'].get('version')==version and run['batch_file']==value['batch_file']
+                    and run['inputs']['source_preparation_run']==value['source_run']
+                    and manifest['runs'][run['run_id']]['result_file']==value['result_file'],'系统资格回执与真实归档不同')
+            if key=='system_qualification_failures':
+                require(value['human_review_written'] is False and value['state']=='failed'
+                    and value['error_type'] and value['error_zh'],'系统资格失败诊断无效')
+            if key=='system_scores':
+                run=workflow.run(manifest,value['run_id'])
+                require(value['human_review_written'] is False and run['config'].get('version')==version
+                    and run['batch_file']==value['batch_file'] and run['inputs']['scoring_request']==value['request_file']
+                    and manifest['runs'][run['run_id']]['result_file']==value['result_file'],'系统评分回执与真实归档不同')
+            if key=='system_scoring_failures':
+                run=workflow.run(manifest,value['run_id'])
+                require(value['human_review_written'] is False and value['state']=='failed'
+                    and run['config'].get('version')==version and run['batch_file']==value['batch_file']
+                    and value['error_type'] and value['error_zh'],'系统评分失败诊断无效')
             if key=='system_batches':
                 from .system_execution import read_batch
                 value=read_batch(workflow,manifest,reference)[0]
