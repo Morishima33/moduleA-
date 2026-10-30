@@ -14,6 +14,7 @@ import NewStudyModal from './components/NewStudyModal';
 import AnalysisPlanPreviewPage from './pages/AnalysisPlanPreviewPage';
 import PlanStudyCreationPage from './pages/PlanStudyCreationPage';
 import PlanPocketPage from './pages/PlanPocketPage';
+import SystemPipelinePage from './pages/SystemPipelinePage';
 
 // 任务仍在进行的状态
 const ACTIVE = new Set(['queued', 'running']);
@@ -192,6 +193,8 @@ export default function App() {
         <AnalysisPlanPreviewPage />
       ) : route.page === 'new-plan-study' ? (
         <PlanStudyCreationPage />
+      ) : route.page === 'system-pipeline' && route.studyId ? (
+        <SystemPipelinePage key={route.studyId} studyId={route.studyId} />
       ) : route.page === 'plan-pockets' && route.studyId ? (
         <PlanPocketPage key={route.studyId} studyId={route.studyId} />
       ) : route.page === 'study' && route.studyId ? (

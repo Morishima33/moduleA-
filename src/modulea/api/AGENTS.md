@@ -2,7 +2,11 @@
 
 ## 2026-10-30 统一系统批次后台入口
 
-GET `/studies/{sid}/analysis-plan/system-pipeline`标准库只读已有明确批次、原绑定plan_id、流水历史、expected_input_hash及start/busy；不联网、计算、写决定或自动恢复。尚无整套网页按钮，automatic_execution_available仍false。
+统一网页位于`#/system-pipeline/{sid}`，当前A00方案卡提供入口。GET增加study_label_zh、purpose_zh、start.parameters/parameter_hash/mode_label_zh及各批次原绑定参数；history增加stage_label_zh/state_label_zh，批次增加continue_enabled/continue_blockers。这些显示字段只翻译真实方案和流水。API层automatic_execution_available=true表示网页入口已接通，提交仍按start.enabled、continue_enabled、busy和实际指纹判断。首次confirmed默认不勾选；续做只提交已有批次当前指纹，网络失败不自动重交。
+
+GET `/session` 的capabilities.system_pipeline=true仅由已接通接口的新服务返回。前端A00入口还须此能力；仍运行旧后端的服务即使读取新静态文件也不显示不可用入口。此能力不代表研究资料已齐或科学结果通过。
+
+GET `/studies/{sid}/analysis-plan/system-pipeline`标准库只读已有明确批次、原绑定plan_id、流水历史、expected_input_hash及start/busy；不联网、计算、写决定或自动恢复。
 
 POST同路径`/start`严格沿用ModuleA.system_execution.1的request_id、expected_a00、expected_plan_id、expected_input_hash、author、note、confirmed:true，登记一次实际授权后提交plan_system_pipeline。POST`/continue`只接受batch_id与当前expected_input_hash，明确续做已有授权，不再要求逐阶段确认。HTTP不运行科学验证器；后台排队后再次核对输入，原批方案不被后来草稿替换。字段422、过期/忙碌409、回收站423，原令牌/Origin保护保持。重复原确认不重复建批，已完成有效科学运行和同源报告复用。
 

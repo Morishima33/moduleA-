@@ -103,6 +103,10 @@ function qs(params: Record<string, string | number | undefined | null>): string 
 
 // 各端点的薄封装；路径与契约第 3 节一致
 export const api = {
+  /** 统一批次只读及明确执行，沿用令牌与过期保护。 */
+  systemPipeline: (sid:string)=>request<import('./types').SystemPipelineInfo>('GET',`/studies/${sid}/analysis-plan/system-pipeline`),
+  startSystemPipeline: (sid:string,body:Record<string,unknown>)=>request<{task:Task;batch_id:string;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/system-pipeline/start`,body),
+  continueSystemPipeline: (sid:string,body:{batch_id:string;expected_input_hash:string})=>request<{task:Task;batch_id:string;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/system-pipeline/continue`,body),
   /** 新版阶段不接旧continue，不接收浏览器科学参数或来源路径。 */
   executePlanStage:(sid:string,body:Record<string,unknown>)=>request<{task:Task;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/stages/execute`,body),
   /** 名单只在后台按实际方案生成，客户端不提交科学选择结果。 */

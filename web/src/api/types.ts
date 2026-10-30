@@ -673,6 +673,15 @@ export interface TrialPreparationInfo {
  compounds:{compound_id:string;name_zh:string;cid:string;state:string;files:PreparationFile[];
    preparation:{identity?:{identity_check?:string;inchi_key?:string;formula?:string};[key:string]:unknown}}[];
 }
+/** 统一批次仅读服务端状态和原参数，首次确认不代签科研结论。 */
+export interface PipelineParameters {parameter_hash?:string;mode_label_zh?:string;parameters?:{key:string;label_zh:string;value:string|number|boolean;unit:string}[]}
+export interface SystemPipelineEvent {attempt_id:string;event:string;stage?:string;stage_label_zh:string;state_label_zh:string;state?:string;reason_zh?:string;error_zh?:string;created_at:string;report_run_id?:string}
+export interface SystemPipelineInfo {
+ study_label_zh:string;purpose_zh:string;busy:boolean;automatic_execution_available:boolean;
+ start:PipelineParameters&{enabled:boolean;supported:boolean;blockers:string[];expected_a00:string;expected_plan_id:string;expected_input_hash:string};
+ batches:(PipelineParameters&{batch_id:string;plan_id:string;expected_input_hash:string;continue_enabled:boolean;continue_blockers:string[];
+  history:SystemPipelineEvent[];latest_event:SystemPipelineEvent|null})[];
+}
 export interface DockingTrialInfo {
  trial_id:string;state:string;stale:boolean;enabled:boolean;note_zh:string;
  progress:{step_zh:string;pairs_done:number;pairs_total:number;regions_done:number;regions_total:number};

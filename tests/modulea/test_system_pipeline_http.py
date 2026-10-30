@@ -2,6 +2,7 @@
 from pathlib import Path
 import json,shutil,tempfile,threading,time,unittest
 from unittest.mock import patch
+from uuid import uuid4
 from modulea.core.kernel import full_workflow
 from modulea.core import system_execution,system_pipeline
 from storage import read_json,verified_file
@@ -61,3 +62,20 @@ class SystemPipelineHttpTests(unittest.TestCase):
         self.assertEqual(self.call('POST',self.path+'/continue',body)[0],423)
         self.assertEqual(self.call('POST',self.path+'/start',self.start_body)[0],423)
         self.assertEqual(self.app.tasks.list(self.sid),[])
+
+    def test_page_parameters_keep_original_batch_when_later_draft_changes_and_trash_is_read_only(self):
+        status,session=self.call('GET','/session');self.assertEqual(status,200,session)
+        self.assertTrue(session['capabilities']['system_pipeline'])
+        before=self.w.load(self.sid);draft=self.w.analysis_plan_info(self.sid)['draft']
+        self.w.save_analysis_plan_draft(self.sid,{'request_id':'planreq_'+uuid4().hex,'expected_a00':before['current']['A00'],
+            'expected_draft_id':draft['plan_id'],'specification':{'mode':'personalized','parameters':{'a06.seed':7}},
+            'author':'明确合成网页参数测试','note':'后来草稿不改变已确认原批参数'})
+        m=self.w.load(self.sid);status,value=self.call('GET',self.path);self.assertEqual(status,200,value)
+        self.assertTrue(value['automatic_execution_available'])
+        self.assertEqual(next(r['value'] for r in value['start']['parameters'] if r['key']=='a06.seed'),7)
+        self.assertEqual(next(r['value'] for r in value['batches'][0]['parameters'] if r['key']=='a06.seed'),1)
+        self.assertEqual(self.w.load(self.sid),m);self.assertEqual(self.app.tasks.list(self.sid),[])
+        self.w.set_trashed(self.sid,True,'明确合成测试','只读原方案')
+        m=self.w.load(self.sid);status,value=self.call('GET',self.path);self.assertEqual(status,200,value)
+        self.assertFalse(value['batches'][0]['continue_enabled']);self.assertTrue(value['batches'][0]['continue_blockers'])
+        self.assertEqual(self.w.load(self.sid),m)
