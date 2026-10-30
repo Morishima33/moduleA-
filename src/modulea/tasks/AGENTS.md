@@ -1,5 +1,9 @@
 # tasks/ — 后台任务
 
+## 2026-10-30 系统三库获取与恢复
+
+plan_system_acquisition只消费严格systemacqreq确认，经`-I -S -B tools/run_system_acquisition.py`先重核当前输入，再调用公开Workflow按真实A00系统回执获取同研究三库原件。解释器由服务器配置，浏览器不能传路径/URL/参数/通过标记。原采集器与ZIP核验完整复用，成功库即时检查点归档，中断后明确重试只补缺失库；旧人工approved不伪造、明确人工暂停仍否决。部分失败必须任务failed，成功证据保留，绝不将缺库当0或完整。完成同请求只核验归档，不重新获取，不切换旧暂存、不发布科学A01。沿用计算资源位、进程树取消及同研究单任务，GET/服务重启不自动重跑。
+
 ## 2026-10-30 统一系统批次
 
 plan_system_pipeline消费严格batch_id/expected_input_hash，独立`-I -S -B tools/run_system_pipeline.py`先核对实际排队输入，再经公开Workflow依次执行已授权批次适用阶段。解释器、R与固定工具只来自服务器配置；科学代码不在HTTP或GET执行。任务占既有全局计算位，同研究只允许一个写任务；取消时沿用进程树保护，不新增守护或自动重跑。逐阶段流水、失败和不适用归档为ModuleA.system_pipeline.1；已完成有效科学阶段和报告只核对复用。空交集不启动不适用下游，未纳入富集不运行R，全NA不运行Vina；最终待报告结论复核，不生成reviews或假parent_review_ids。原三库/现代五库/HGNC仍为前置输入，资料获取接续后续单独补齐。

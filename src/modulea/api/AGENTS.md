@@ -1,5 +1,13 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-10-30 系统三库原件获取后台入口
+
+GET `/studies/{sid}/analysis-plan/system-acquisition`只读返回A01.system_acquisition.1的supported/enabled/blockers、expected_a00/expected_plan_id/expected_input_hash、busy、scientific_publication_available:false与requests。每个请求含原request、plan_id、state(complete/partial_failure/incomplete)、最后整批sources、独立source_checkpoints、record_count/failure_count/source_receipt_count、retry_enabled/retry_blockers和说明。sources是最后整批事实，source_checkpoints可含整批写入前已保存的成功库；GET不下载、解析科学数据、创建任务或签署复核。
+
+POST同路径`/execute`只接受`{request_id:systemacqreq_<32hex>,expected_a00,expected_plan_id,expected_input_hash,author,note,confirmed:true}`。新请求核对当前方案及输入；原请求必须原字原意相同，后存草稿不替换其计划。202登记plan_system_acquisition任务；HTTP只做标准库预检，实际A00生产规范核验、获取、ZIP校验和恢复均在隔离科学进程。路径、URL、门槛、passed等覆盖字段422；过期409、忙碌409、回收站423、令牌/Origin沿用原403。排队期间实际登记/来源/人工意见变化拒绝，不自动重交。
+
+后台部分失败保存成功库和真实诊断，任务明确failed，不能当0或完整；明确重试只补缺库，完成的同请求只核验复用。current/runs/reviews及旧current_component_uploads保持；来源获取尚未自动接入科学批次，不发布科学A01。日志、资源位、取消及同研究单任务沿用既有管理，GET/重启不恢复。当前仅接口/任务，网页按钮后续接入。
+
 ## 2026-10-30 统一系统批次后台入口
 
 统一网页位于`#/system-pipeline/{sid}`，当前A00方案卡提供入口。GET增加study_label_zh、purpose_zh、start.parameters/parameter_hash/mode_label_zh及各批次原绑定参数；history增加stage_label_zh/state_label_zh，批次增加continue_enabled/continue_blockers。这些显示字段只翻译真实方案和流水。API层automatic_execution_available=true表示网页入口已接通，提交仍按start.enabled、continue_enabled、busy和实际指纹判断。首次confirmed默认不勾选；续做只提交已有批次当前指纹，网络失败不自动重交。

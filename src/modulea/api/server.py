@@ -55,6 +55,8 @@ class App:
         self.plan_creation = PlanCreation(self.kernel)
         self.token = secrets.token_urlsafe(32)
         self.routes = [
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/system-acquisition", self.get_system_acquisition),
+            ("POST", rf"/api/v1/studies/{ID}/analysis-plan/system-acquisition/execute", self.post_system_acquisition),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/system-pipeline", self.get_system_pipeline),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/system-pipeline/start", self.post_system_pipeline_start),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/system-pipeline/continue", self.post_system_pipeline_continue),
@@ -559,6 +561,16 @@ class App:
         """只读统一编排的真实批次和阶段流水。"""
         from .system_pipeline import info
         return info(self,req,study_id)
+
+    def get_system_acquisition(self,req,study_id):
+        """只读三库原件获取条件、实际失败和逐库恢复进度。"""
+        from .system_acquisition import info
+        return info(self,req,study_id)
+
+    def post_system_acquisition(self,req,study_id):
+        """严格明确确认后仅排队，HTTP不获取或发布科学结果。"""
+        from .system_acquisition import execute
+        return execute(self,req,study_id)
 
     def post_system_pipeline_start(self,req,study_id):
         """登记一次明确授权并提交独立后台任务。"""

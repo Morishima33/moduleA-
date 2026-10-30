@@ -49,6 +49,24 @@ def require_current(workflow,m,request):
     return plan
 
 
+def validate_request(workflow,sid,body):
+    """HTTP和排队后共享只读预检；不获取、不运行科学校验或登记请求。"""
+    require(isinstance(body,dict) and set(body)==FIELDS,'系统获取请求字段错误，不接受路径、阈值或通过标志')
+    for key,prefix in (('request_id','systemacqreq'),('expected_a00','run'),('expected_plan_id','plan')):safe_id(body[key],prefix)
+    require(body['confirmed'] is True and all(isinstance(body[k],str) and 0<len(body[k].strip())<=2000 for k in ('author','note')),
+        '请填写获取登记人、说明并明确确认')
+    m=workflow.load(sid);home=workflow.location(sid)
+    require(not m.get('trashed'),'回收站研究只读')
+    for ref in m.get(REQUESTS,[]):
+        value=read_record(workflow,m,ref,kind='request')
+        if value['request']['request_id']==body['request_id']:
+            require(value['request']==body,'原件获取请求号已用于其他内容');require_current(workflow,m,value)
+            return deepcopy(body)
+    value=info(workflow,sid);require(value['enabled'],'原件获取条件未齐：'+'；'.join(value['blockers']))
+    require(all(body[k]==value[k] for k in ('expected_a00','expected_plan_id','expected_input_hash')),'来源或方案已改变，请刷新后确认')
+    return deepcopy(body)
+
+
 def read_record(workflow,m,reference,*,kind):
     """标准库只读原件获取档案；真实科学解析仅在后台执行，不在导出重跑下载。"""
     home=workflow.location(m['study_id']);value=read_json(verified_file(home,reference))
@@ -94,10 +112,7 @@ def execute(workflow,sid,body,*,progress=None,opener=None,sleeper=None):
 
 def _execute(workflow,sid,body,*,progress=None,opener=None,sleeper=None):
     """内部明确授权入口；成功原件与失败请求均留存，但不改旧approved或科学结果。"""
-    require(isinstance(body,dict) and set(body)==FIELDS,'系统获取请求字段错误，不接受路径、阈值或通过标志')
-    safe_id(body['request_id'],'systemacqreq');safe_id(body['expected_a00'],'run');safe_id(body['expected_plan_id'],'plan')
-    require(body['confirmed'] is True and all(isinstance(body[k],str) and 0<len(body[k].strip())<=2000 for k in ('author','note')),
-        '请填写获取登记人、说明并明确确认')
+    validate_request(workflow,sid,body)
     m=workflow.load(sid);home=workflow.location(sid);request_ref=None;request=None;previous=None
     for ref in m.get(REQUESTS,[]):
         candidate=read_json(verified_file(home,ref))

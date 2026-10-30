@@ -54,6 +54,7 @@ KINDS['a05_plan_display'] = '准备A05分类核译或保存本批明确展示决
 KINDS['plan_system_validation'] = '真实复算本批科学证据并归档独立系统回执'
 KINDS['plan_report'] = '按同批真实系统证据生成主报告与简略版'
 KINDS['plan_system_pipeline'] = '按一次明确批次统一接续实际科学阶段和双报告'
+KINDS['plan_system_acquisition'] = '获取本方案三库原件并保留逐库恢复记录（不发布）'
 
 
 def _now() -> str:

@@ -613,6 +613,8 @@ def run_plan_report(settings,task,manager):
 HANDLERS['plan_report']=run_plan_report
 from .system_pipeline import run as run_system_pipeline
 HANDLERS['plan_system_pipeline']=run_system_pipeline
+from .system_acquisition import run as run_system_acquisition
+HANDLERS['plan_system_acquisition']=run_system_acquisition
 HANDLERS["a06_plan_pocket_review"] = run_a06_plan_preparation
 HANDLERS["a06_plan_reference_review"] = run_a06_plan_reference_review
 HANDLERS["a06_plan_reference_preparation"] = run_a06_plan_reference_preparation
