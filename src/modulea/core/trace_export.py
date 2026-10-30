@@ -102,6 +102,10 @@ def _plan_decisions(workflow, manifest, all_files):
             ('system_scores','analysis_plan_system_scoring_records','A06.system_scoring.1'),
             ('system_scoring_failures','analysis_plan_system_scoring_failures','A06.system_scoring.1'),
             ('system_pipeline','analysis_plan_system_pipeline_records','ModuleA.system_pipeline.1'),
+            ('system_acquisition_requests','analysis_plan_system_acquisition_requests','A01.system_acquisition.1'),
+            ('system_acquisitions','analysis_plan_system_acquisition_records','A01.system_acquisition.1'),
+            ('system_acquisition_sources','analysis_plan_system_acquisition_source_records','A01.system_acquisition.1'),
+            ('system_acquisition_failures','analysis_plan_system_acquisition_failures','A01.system_acquisition.1'),
             ('report_requests','analysis_plan_report_requests','A07.plan_report.1'),
             ('report_receipts','analysis_plan_report_receipts','A07.plan_report.1'),
             ('report_failures','analysis_plan_report_failures','A07.plan_report.1')):
@@ -149,6 +153,10 @@ def _plan_decisions(workflow, manifest, all_files):
             if key=='system_pipeline':
                 from .system_pipeline import read_record
                 value=read_record(workflow,manifest,reference)
+            if key in ('system_acquisition_requests','system_acquisitions','system_acquisition_failures','system_acquisition_sources'):
+                from .system_acquisition import read_record
+                kind={'system_acquisition_requests':'request','system_acquisitions':'record','system_acquisition_failures':'failure','system_acquisition_sources':'source'}[key]
+                value=read_record(workflow,manifest,reference,kind=kind)
             if key=='system_scoring_failures':
                 run=workflow.run(manifest,value['run_id'])
                 require(value['human_review_written'] is False and value['state']=='failed'
