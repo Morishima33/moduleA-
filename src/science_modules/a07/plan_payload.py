@@ -43,6 +43,8 @@ def input_reference(workflow,m,run):
     home=workflow.location(m['study_id']);seen=set()
     for _ in range(10):
         require(run['run_id'] not in seen,'对接准备修订依赖循环');seen.add(run['run_id'])
+        if run.get('execution_protocol')=='ModuleA.system_execution.1' and run['inputs'].get('system_input_ref'):
+            return run['inputs']['system_input_ref']
         if run['inputs'].get('a06_plan_input'):return run['inputs']['a06_plan_input']
         key=next((key for key in ('reference_preparation_run','source_run','preparation_run') if run['inputs'].get(key)),None)
         require(key,'准备版本缺少原固定输入来源，不能生成报告矩阵')
@@ -54,6 +56,13 @@ def input_reference(workflow,m,run):
 
 
 def build(workflow,sid,*,source_evidence=None):
+    """同一次事实读取内复用核验结果，操作结束清除，不跨发布沿用旧输入。"""
+    if getattr(workflow,'_view_cache',None) is None and hasattr(workflow,'handoff_read_cache'):
+        with workflow.handoff_read_cache():return _build(workflow,sid,source_evidence=source_evidence)
+    return _build(workflow,sid,source_evidence=source_evidence)
+
+
+def _build(workflow,sid,*,source_evidence=None):
     """只读重建当前同方案事实；缺分支为waiting，合法空交集不借用旧下游。"""
     m=workflow.load(sid);home=workflow.location(sid);runs={};results={};run_ids={}
     def add(module):
@@ -115,13 +124,20 @@ def build(workflow,sid,*,source_evidence=None):
             result=add(module);run=runs[module];preparation_only=module=='A06_PREP'
             if not preparation_only:require(run['config'].get('version')=='A06.plan_scoring.1','当前评分不属于新方案评分协议')
             fixed_ref=input_reference(workflow,m,run);fixed=read_json(verified_file(home,fixed_ref))
-            require(fixed_ref in m.get('analysis_plan_a06_input_records',[]) and fixed['study_id']==sid
-                    and fixed['packet']['plan_ref']==reference and fixed['packet']['analysis_parameter_hash']==plan['parameter_hash'],
-                    '报告固定对接名单不属于本批方案')
-            for key,value in fixed['packet']['runs'].items():require(m['current'].get(key)==value,'对接固定名单的上游已改变')
+            if fixed.get('schema_version')=='ModuleA.system_decision.1':
+                from modulea.core import system_decisions
+                fixed=system_decisions.read_record(workflow,m,fixed_ref)
+                require(fixed['stage']=='A06_INPUT' and system_decisions.active(workflow,m,fixed),'报告系统固定名单已失效')
+                fixed_packet=fixed['payload']
+            else:
+                require(fixed_ref in m.get('analysis_plan_a06_input_records',[]),'报告旧固定输入未登记')
+                fixed_packet=fixed['packet']
+            require(fixed['study_id']==sid and fixed_packet['plan_ref']==reference
+                    and fixed_packet['analysis_parameter_hash']==plan['parameter_hash'],'报告固定对接名单不属于本批方案')
+            for key,value in fixed_packet['runs'].items():require(m['current'].get(key)==value,'对接固定名单的上游已改变')
             pairs=result['tables'].get('planned_pairs') if preparation_only else result['tables'].get('plan_scoring_pairs')
-            packet={'study_id':sid,'run_id':run['run_id'],'compounds':fixed['packet']['compounds'],
-                    'receptors':fixed['packet']['receptors'],'planned_pairs' if preparation_only else 'pairs':pairs}
+            packet={'study_id':sid,'run_id':run['run_id'],'compounds':fixed_packet['compounds'],
+                    'receptors':fixed_packet['receptors'],'planned_pairs' if preparation_only else 'pairs':pairs}
             docking=model.docking(packet,run['config'],preparation_only=preparation_only)
             branch('分子对接',docking['state'],docking['reason_zh'])
         else:branch('分子对接','waiting','本批对接准备或评分尚未归档');reasons['docking']='等待本批固定对象和实际评分；不填零、不补用其他对象。'

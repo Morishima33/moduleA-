@@ -58,6 +58,13 @@ def read_receipt(workflow,m,reference):
 
 
 def info(workflow,sid):
+    """单次资格读取内复用已验证内容，独立请求与发布前重新核验。"""
+    if getattr(workflow,'_view_cache',None) is None and hasattr(workflow,'handoff_read_cache'):
+        with workflow.handoff_read_cache():return _info(workflow,sid)
+    return _info(workflow,sid)
+
+
+def _info(workflow,sid):
     """标准库资格只读，完整事实/图件由后台生成；新旧报告及人工批准独立。"""
     m=workflow.load(sid);a03=m['current'].get('A03');supported=bool(a03 and workflow.run(m,a03)['config'].get('version')=='A03.plan_intersection.1')
     blockers=[]

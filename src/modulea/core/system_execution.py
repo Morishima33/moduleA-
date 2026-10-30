@@ -7,10 +7,11 @@ from . import system_validation as validation
 VERSION='ModuleA.system_execution.1'
 BATCHES='analysis_plan_system_batch_records'
 EVENTS='analysis_plan_system_batch_events'
-IMPLEMENTED=('A01','A02','A03','A03_SELECT','A04','A05')
-DEPENDENCIES={'A01':{'A00'},'A02':{'A00','A01'},'A03':{'A01','A02'},'A03_SELECT':{'A03'},'A04':{'A03'},'A05':{'A03'}}
+IMPLEMENTED=('A01','A02','A03','A03_SELECT','A04','A05','A06_PREP')
+DEPENDENCIES={'A01':{'A00'},'A02':{'A00','A01'},'A03':{'A01','A02'},'A03_SELECT':{'A03'},'A04':{'A03'},'A05':{'A03'},
+    'A06_PREP':{'A03','A03_SELECT','A04'}}
 SCIENTIFIC_VERSIONS={'A01':'A01.plan_publication.1','A02':'A02.system_normalization.1','A03':'A03.plan_intersection.1',
-    'A03_SELECT':'A03.plan_selection.1','A04':'A04.plan_network.1','A05':'A05.plan_enrichment.1'}
+    'A03_SELECT':'A03.plan_selection.1','A04':'A04.plan_network.1','A05':'A05.plan_enrichment.1','A06_PREP':'A06.system_preparation.1'}
 FIELDS={'request_id','expected_a00','expected_plan_id','expected_input_hash','author','note','confirmed'}
 
 
@@ -39,7 +40,7 @@ def info(workflow,sid):
     return {'schema_version':VERSION,'supported':supported,'enabled':not blockers,'blockers':blockers,
         'expected_a00':a00,'expected_plan_id':draft['plan_id'] if draft else None,'expected_input_hash':fingerprint(snapshot(workflow,m)),
         'implemented_stages':list(IMPLEMENTED),'automatic_execution_available':False,
-        'message_zh':'系统执行基础已接通三库、疾病标准化、交集、成分、PPI和富集；完整一键执行入口仍未开放，不代签人工复核。'}
+        'message_zh':'内部系统执行已接通三库、疾病标准化、交集、成分、PPI、富集和结构准备；准备资格及评分继续接通，完整一键入口仍未开放，不代签人工复核。'}
 
 
 def read_batch(workflow,m,reference):
@@ -97,15 +98,26 @@ def require_batch(workflow,m,ref):
 
 
 def parent_records(workflow,m,parents):
+    """同一次只读依赖核验复用已核验内容；操作结束清除，发布前另建新作用域。"""
+    if getattr(workflow,'_view_cache',None) is None and hasattr(workflow,'handoff_read_cache'):
+        with workflow.handoff_read_cache():return _parent_records(workflow,m,parents)
+    return _parent_records(workflow,m,parents)
+
+
+def _parent_records(workflow,m,parents):
     """真实规范回执及原科学状态逐件核验，明确人工暂存或退回仍否决交接。"""
     home=workflow.location(m['study_id']);records={}
-    values=[(ref,validation.read_receipt(workflow,m,ref)) for ref in m.get(validation.INDEX,[])]
     for module,rid in parents.items():
         require(m['current'].get(module)==rid and workflow.active(m,rid),'系统交接上游已改变：'+module)
         run=workflow.run(m,rid);review=workflow.latest_review(m,run['artifact_id'])
         require(not review or review['decision']=='approved','系统交接来源已被明确暂存或退回：'+module)
         expected=validation.request(workflow,m['study_id'],rid)
-        matching=[(ref,value) for ref,value in values if value['run_id']==rid and value['input_hash']==expected['expected_input_hash']]
+        matching=[]
+        # 当前交接只展开所需父运行的最新精确回执；历史仍逐件验SHA，完整追溯另核全部内容。
+        for ref in reversed(m.get(validation.INDEX,[])):
+            value=read_json(verified_file(home,ref))
+            if value.get('run_id')==rid and value.get('input_hash')==expected['expected_input_hash']:
+                matching=[(ref,validation.read_receipt(workflow,m,ref))];break
         require(matching and matching[-1][1]['passed'] and matching[-1][1]['scientific_status']['ready_for_successor'],
             '系统交接仍缺少真实可交接规范回执：'+module)
         records[module]=deepcopy(matching[-1][0]);verified_file(home,records[module])
@@ -124,6 +136,11 @@ def is_active(workflow,m,run):
             base=read_json(verified_file(workflow.location(m['study_id']),run['inputs']['base_run']))
             review=workflow.latest_review(m,base['artifact_id'])
             require(not review or review['decision']=='approved','疾病原候选已被明确暂存或退回')
+        if run['module_id']=='A06_PREP':
+            from . import system_decisions
+            fixed=system_decisions.read_record(workflow,m,run['inputs']['system_input_ref'])
+            require(fixed['stage']=='A06_INPUT' and fixed['binding']['batch_file']==run['batch_file']
+                and system_decisions.active(workflow,m,fixed),'结构准备的系统固定范围已失效')
         require(run['execution_authority']=='system_validation' and run['parent_review_ids']=={}
             and run['parent_validation_records']==parent_records(workflow,m,run['parent_runs']),'系统执行依赖与真实回执不一致')
         require(run['config_hash']==fingerprint(run['config'])
@@ -167,7 +184,7 @@ def begin(workflow,m,module,inputs,config,reason,batch_ref,parents):
     return run
 
 
-def _execute(workflow,sid,body):
+def _execute(workflow,sid,body,*,tools=None,progress=None):
     """内部逐阶段真实执行；全自动调度未开放，拒绝未接入阶段和客户端科学覆盖。"""
     require(isinstance(body,dict) and set(body)=={'batch_id','stage','expected_current_run_id'},'系统阶段请求字段错误')
     safe_id(body['batch_id'],'systembatch');require(body['stage'] in IMPLEMENTED,'系统执行尚未接通该阶段')
@@ -203,11 +220,19 @@ def _execute(workflow,sid,body):
     elif module in ('A04','A05'):
         from . import system_execution_science as science
         computed=getattr(science,module.lower())(workflow,m,batch,plan,ref)
+    elif module=='A06_PREP':
+        require(tools is not None,'系统准备尚未配置固定结构工具，不启动来源或计算')
+        from science_modules.a06.system_preparation import compute
+        computed=compute(workflow,m,batch,plan,ref,tools,progress or (lambda _:None))
     with write_lock(workflow.root):
         m=workflow.load(sid);batch,plan=require_batch(workflow,m,ref)
         require(m['current'].get(module)==body['expected_current_run_id'],'计算前当前阶段已改变')
         require(all(m['current'].get(key)==rid for key,rid in parents.items()),'系统阶段上游已改变')
         require(parent_records(workflow,m,parents)==parent_snapshot,'科学计算期间上游系统回执或人工决定已改变')
+        if module=='A06_PREP':
+            from . import system_decisions
+            fixed=system_decisions.read_record(workflow,m,computed[0]['system_input_ref'])
+            require(system_decisions.active(workflow,m,fixed),'科学计算期间系统固定准备范围已改变')
         if module=='A02':
             base=read_json(verified_file(home,computed[0]['base_run']))
             reviews=[r for r in m.get('reviews',[]) if read_json(verified_file(home,r))['artifact_id']==base['artifact_id']]
@@ -249,9 +274,9 @@ def _execute(workflow,sid,body):
     return result
 
 
-def execute(workflow,sid,body):
+def execute(workflow,sid,body,*,tools=None,progress=None):
     """失败保留真实批次请求、异常和未发布文件，不挂伪结果或写人工批准。"""
-    try:return _execute(workflow,sid,body)
+    try:return _execute(workflow,sid,body,tools=tools,progress=progress)
     except Exception as error:
         if isinstance(body,dict) and set(body)=={'batch_id','stage','expected_current_run_id'} and body.get('stage') in IMPLEMENTED:
             with write_lock(workflow.root):

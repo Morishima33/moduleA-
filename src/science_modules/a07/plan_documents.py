@@ -97,6 +97,11 @@ def add_enrichment(document,payload,home,concise):
         for entry in payload.get('figures',[]):
             if entry.get('module')=='A05' and entry.get('group')==group:
                 require(entry.get('scope_hash')==fingerprint(facts),'富集图不属于本批实际展示范围');figure(document,home,entry)
+                if concise:
+                    # 图后说明与紧随的名称摘要一起显示，避免摘要单独落到下一页。
+                    document.paragraphs[-2].paragraph_format.keep_with_next=True
+                    document.paragraphs[-1].paragraph_format.space_after=Pt(0)
+                    document.paragraphs[-1].paragraph_format.keep_with_next=True
         key=group.lower();values=facts['tables'][key+'_plan_top']
         def rows(items):
             """原统计值完整写入表格，不因显示格式改变阈值判断或排序。"""
@@ -199,7 +204,9 @@ def build(payload,destination,home,*,concise=False,draft=False):
     records=payload.get('validation_records',[])
     document.add_paragraph(review_description(payload))
     document.add_heading('9 主要方法参考文献',1)
-    for text in payload['references']:document.add_paragraph(text)
+    for index,text in enumerate(payload['references']):
+        paragraph=document.add_paragraph(text)
+        paragraph.paragraph_format.keep_with_next=index<len(payload['references'])-1
     add_appendix(document,payload,plan);tidy(document)
     for paragraph in document.paragraphs:
         # 短说明保持完整，避免仅两三个字跨页；标题仍与后文相连。

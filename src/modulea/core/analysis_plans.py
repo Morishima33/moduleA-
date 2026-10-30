@@ -28,10 +28,10 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
         from .system_decisions import execute
         return execute(self,study_id,payload)
 
-    def execute_analysis_plan_system_stage(self,study_id,payload):
+    def execute_analysis_plan_system_stage(self,study_id,payload,*,tools=None,progress=None):
         """内部真实系统证据阶段入口，完整自动调度另行接通。"""
         from .system_execution import execute
-        return execute(self,study_id,payload)
+        return execute(self,study_id,payload,tools=tools,progress=progress)
 
     def publish_analysis_plan_report(self,study_id,payload):
         """按真实系统依赖生成新A07双报告，原人工复核关系保持。"""
