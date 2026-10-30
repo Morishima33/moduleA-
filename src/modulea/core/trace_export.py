@@ -101,6 +101,7 @@ def _plan_decisions(workflow, manifest, all_files):
             ('system_qualification_failures','analysis_plan_system_qualification_failures','A06.system_qualification.1'),
             ('system_scores','analysis_plan_system_scoring_records','A06.system_scoring.1'),
             ('system_scoring_failures','analysis_plan_system_scoring_failures','A06.system_scoring.1'),
+            ('system_pipeline','analysis_plan_system_pipeline_records','ModuleA.system_pipeline.1'),
             ('report_requests','analysis_plan_report_requests','A07.plan_report.1'),
             ('report_receipts','analysis_plan_report_receipts','A07.plan_report.1'),
             ('report_failures','analysis_plan_report_failures','A07.plan_report.1')):
@@ -145,6 +146,9 @@ def _plan_decisions(workflow, manifest, all_files):
                 require(value['human_review_written'] is False and run['config'].get('version')==version
                     and run['batch_file']==value['batch_file'] and run['inputs']['scoring_request']==value['request_file']
                     and manifest['runs'][run['run_id']]['result_file']==value['result_file'],'系统评分回执与真实归档不同')
+            if key=='system_pipeline':
+                from .system_pipeline import read_record
+                value=read_record(workflow,manifest,reference)
             if key=='system_scoring_failures':
                 run=workflow.run(manifest,value['run_id'])
                 require(value['human_review_written'] is False and value['state']=='failed'

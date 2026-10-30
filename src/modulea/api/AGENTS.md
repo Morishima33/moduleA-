@@ -1,5 +1,13 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-10-30 统一系统批次后台入口
+
+GET `/studies/{sid}/analysis-plan/system-pipeline`标准库只读已有明确批次、原绑定plan_id、流水历史、expected_input_hash及start/busy；不联网、计算、写决定或自动恢复。尚无整套网页按钮，automatic_execution_available仍false。
+
+POST同路径`/start`严格沿用ModuleA.system_execution.1的request_id、expected_a00、expected_plan_id、expected_input_hash、author、note、confirmed:true，登记一次实际授权后提交plan_system_pipeline。POST`/continue`只接受batch_id与当前expected_input_hash，明确续做已有授权，不再要求逐阶段确认。HTTP不运行科学验证器；后台排队后再次核对输入，原批方案不被后来草稿替换。字段422、过期/忙碌409、回收站423，原令牌/Origin保护保持。重复原确认不重复建批，已完成有效科学运行和同源报告复用。
+
+目前前置条件仍须已提供三库原件、同批HGNC及现代五库候选；缺资料失败不等于零结果。空交集的PPI/富集/结构/评分不执行，方案未纳入富集不运行R，全NA不执行Vina；逐阶段真实状态与不适用原因进入追溯system_pipeline。失败留原件及诊断，取消/中断不自动重启，过期排队请求先刷新后明确续做。最终停在实际双报告待结论复核，不写人工reviews。科学完整原件恢复与评分逐组合续算按各既有新协议，尚未覆盖所有不完整准备过程。
+
 ## 新方案同批双报告
 
 GET `/studies/{sid}/analysis-plan/reports`标准库只读返回supported/enabled/blockers、expected_report_run_id(null|run_id)、expected_input_hash、history及message_zh。资格读取真实当前结果和系统校验；空交集可按实际不适用分支进入，非空结果须等适用网络/富集/准备与评分结束，缺真实回执阻断。GET不绘图、不运行R/Vina、不写研究。

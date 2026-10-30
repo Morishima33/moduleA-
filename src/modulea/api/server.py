@@ -55,6 +55,9 @@ class App:
         self.plan_creation = PlanCreation(self.kernel)
         self.token = secrets.token_urlsafe(32)
         self.routes = [
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/system-pipeline", self.get_system_pipeline),
+            ("POST", rf"/api/v1/studies/{ID}/analysis-plan/system-pipeline/start", self.post_system_pipeline_start),
+            ("POST", rf"/api/v1/studies/{ID}/analysis-plan/system-pipeline/continue", self.post_system_pipeline_continue),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/reports", self.get_plan_reports),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/reports/generate", self.post_plan_report),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/reports/{ID}/files/([0-9]+)", self.get_plan_report_file),
@@ -551,6 +554,21 @@ class App:
         """只读本批报告资格和真实历史下载。"""
         from .plan_reports import info
         return info(self,req,study_id)
+
+    def get_system_pipeline(self,req,study_id):
+        """只读统一编排的真实批次和阶段流水。"""
+        from .system_pipeline import info
+        return info(self,req,study_id)
+
+    def post_system_pipeline_start(self,req,study_id):
+        """登记一次明确授权并提交独立后台任务。"""
+        from .system_pipeline import execute
+        return execute(self,req,study_id,start=True)
+
+    def post_system_pipeline_continue(self,req,study_id):
+        """只对当前实际输入明确续做，不从GET或重启自动执行。"""
+        from .system_pipeline import execute
+        return execute(self,req,study_id)
 
     def post_plan_report(self,req,study_id):
         """明确提交实际同批双报告，不在HTTP生成文档。"""

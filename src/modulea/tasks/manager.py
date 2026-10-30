@@ -53,6 +53,7 @@ KINDS['a06_plan_preparation_ui'] = '明确执行本批新版结构与配体准�
 KINDS['a05_plan_display'] = '准备A05分类核译或保存本批明确展示决定（不重算统计）'
 KINDS['plan_system_validation'] = '真实复算本批科学证据并归档独立系统回执'
 KINDS['plan_report'] = '按同批真实系统证据生成主报告与简略版'
+KINDS['plan_system_pipeline'] = '按一次明确批次统一接续实际科学阶段和双报告'
 
 
 def _now() -> str:

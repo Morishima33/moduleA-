@@ -18,6 +18,11 @@ class AnalysisPlanConflict(ContractError):
 class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
     """旧研究继承原行为；只有显式新方案登记支持草稿写入。"""
 
+    def execute_analysis_plan_system_pipeline(self,study_id,payload,*,tools=None,progress=None):
+        """按已明确授权批次统一接续适用阶段，保留失败和未完原件。"""
+        from .system_pipeline import execute
+        return execute(self,study_id,payload,tools=tools,progress=progress)
+
     def start_analysis_plan_system_batch(self,study_id,payload):
         """登记一次明确系统批次授权，不制造人工批准或后台隐式执行。"""
         from .system_execution import start
