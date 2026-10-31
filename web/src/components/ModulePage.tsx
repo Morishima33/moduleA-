@@ -78,6 +78,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
   const oldSelection = !view.historical && ((m.module_id === 'A03_SELECT' && !(view.plan_compounds?.current||view.compound_selection?.previous_active)) || (['A06', 'A06_PREP'].includes(m.module_id) && !!view.docking_review && !view.docking_review.matrix?.ready && stIsStale(view)));
   const st = view.state; // 状态
   const sp = view.special || {}; // 专属数据
+  const systemA01 = m.module_id === 'A01' && !!sp.system_component_publication; // 已归档系统来源不用旧人工上传清单推断缺库。
   const style = stateStyle(st.code); // 状态配色
   const showBox = BOXED.has(st.code) || !!st.reason_zh; // 是否显示状态说明框
   return (
@@ -113,7 +114,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
         </div>
       </section>
 
-      {view.operation_guide && <ModuleOperationGuide studyId={studyId} moduleId={m.module_id} info={view.operation_guide} pending={m.module_id === 'A05' && keggPending}
+      {view.operation_guide && !systemA01 && <ModuleOperationGuide studyId={studyId} moduleId={m.module_id} info={view.operation_guide} pending={m.module_id === 'A05' && keggPending}
         onLocate={target => {if (target === 'module-enrichment-confirmation') setEnrichmentNavigation(n => n + 1);}}/>}
       {view.creation_plan&&<CreationPlan studyId={studyId} info={view.creation_plan}/>}
       {view.creation_plan&&!view.historical&&app.session?.capabilities.system_pipeline&&<section className="card"><h2>统一执行与续做</h2><p>核对本批资料和方案后一次确认，后台按实际条件接续；已有结果、NA和失败原因保留。</p>
@@ -127,7 +128,10 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       {view.plan_a05&&<PlanA05 key={[view.plan_a05.expected_a00,view.plan_a05.expected_a03,view.plan_a05.expected_a05,view.plan_a05.expected_plan_id].join(':')} studyId={studyId} info={view.plan_a05}/>}
       {view.plan_a05_display&&<PlanA05Display key={view.plan_a05_display.expected_input_hash} studyId={studyId} info={view.plan_a05_display}/>}
       {sp.plan_enrichment&&<PlanA05Results studyId={studyId} files={view.files} data={sp.plan_enrichment}/>}
-      {view.plan_a01&&<PlanA01 key={[view.plan_a01.expected_a00,view.plan_a01.expected_a01,view.plan_a01.expected_plan_id,view.plan_a01.expected_staging].join(':')} studyId={studyId} info={view.plan_a01}/>}
+      {systemA01 && <section className="card" id="system-a01-source-status"><h2>本版三库原件已绑定</h2>
+        <p>{sp.system_component_publication!.message_zh}</p>
+        <Button href={hrefFor({page:'system-pipeline',studyId})}>核对来源与统一接续条件</Button></section>}
+      {view.plan_a01&&!systemA01&&<PlanA01 key={[view.plan_a01.expected_a00,view.plan_a01.expected_a01,view.plan_a01.expected_plan_id,view.plan_a01.expected_staging].join(':')} studyId={studyId} info={view.plan_a01}/>}
       {m.module_id === 'A06_PREP' && view.reference_qualification && <ReferenceQualification studyId={studyId} info={view.reference_qualification} packet={view.review_packet} gate={view.review_gate} />}
       {m.module_id === 'A06_PREP' && view.reviewable_preparation && <ReviewablePreparation key={view.reviewable_preparation.current_run_id} studyId={studyId} info={view.reviewable_preparation} />}
       {m.module_id === 'A06_PREP' && !view.historical && preparationEvidenceAvailable && <ReferenceEvidencePanel studyId={studyId} />}
@@ -194,7 +198,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       )}
 
       {view.ppi_run && !view.plan_stages && <div id="module-ppi-run"><PpiRun studyId={studyId} info={view.ppi_run} /></div>}
-      {view.source_uploads && (m.module_id !== 'A02' || view.historical) && <div id="module-source-inputs"><SourceUploads studyId={studyId} moduleId={m.module_id} info={view.source_uploads} /></div>}
+      {view.source_uploads && !systemA01 && (m.module_id !== 'A02' || view.historical) && <div id="module-source-inputs"><SourceUploads studyId={studyId} moduleId={m.module_id} info={view.source_uploads} /></div>}
 
       {/* 需要知悉 */}
       {!oldIntersection && <KnowSection items={view.focus} />}

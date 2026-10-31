@@ -66,6 +66,11 @@ def present_a01_multisource(result: dict, ctx: dict) -> Parts:
     s = result.get("summary") or {}
     t = tables_of(result)
     parts = Parts()
+    if s.get('component_source_profile') == 'A01.system_publication.1' and s.get('source_binding_protocol') == 'A01.system_source_binding.1':
+        parts.special['system_component_publication'] = {
+            'source_binding_protocol': s['source_binding_protocol'],
+            'message_zh': '本版结果来自本研究系统绑定的三库原件；候选身份与结构待核仍保留。当前获取资格、来源版本及后续接续请在统一执行页核对，不以旧人工上传清单判断缺库。',
+        }
     parts.kpis = clean([
         kpi("候选成分分组", pick(s, "候选成分分组数"), "保守分组，含结构待核条目"),
         kpi("方剂标准化靶点", pick(s, "标准化基因数"), "HGNC 统一身份"),
@@ -103,6 +108,14 @@ def present_a01_multisource(result: dict, ctx: dict) -> Parts:
     if s.get("handoff_blocked"):
         detail = (f"三库完整性待核 {s.get('完整性待核项数', 0)} 项，身份未决 {s.get('未决身份组数', 0)} 组。请在本页资料区核对并保存处理；当前A02保持。"
                   if s.get('component_source_profile') == 'A01.multisource.collect.1' else "当前仍有未处理的资料或身份问题；历史病例决定不会自动应用。")
+        if s.get('component_source_profile') in ('A01.plan_publication.1', 'A01.system_publication.1'):
+            counts = []
+            if s.get('完整性待核项数') is not None:
+                counts.append(f"三库完整性待核 {s['完整性待核项数']} 项")
+            if s.get('未决身份组数') is not None:
+                counts.append(f"身份未决 {s['未决身份组数']} 组")
+            if counts:
+                detail = '，'.join(counts) + '。候选结果仍须核对资料与身份，未决项不自动采用；历史病例决定不会自动应用。'
         parts.focus.insert(0, focus("尚不能交给下游", detail, blocks=["A03"]))
     return parts
 

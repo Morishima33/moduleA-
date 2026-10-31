@@ -439,6 +439,8 @@ special新增enrichment_display_tables：{bp_top15,cc_top15,mf_top15,kegg_p_top1
 
 ## 6 special（模块专属数据）
 
+A01系统三库发布仅在归档摘要同时为`A01.system_publication.1`及`A01.system_source_binding.1`时，追加可选`system_component_publication:{source_binding_protocol,message_zh}`。只标记本版原件来源，不表示候选身份已解决、当前新方案仍可执行或科研已批准；前端据此显示统一来源入口，隐藏不适用的旧人工上传/获取表单和旧分步向导。缺标记沿旧页面，状态与复核门控仍读原字段。新方案阻断提示从已存在摘要读取实际完整性/身份待核数量，缺字段省略，旧协议保持。
+
 | 模块 | 键 | 结构 |
 |---|---|---|
 | A03 | `venn` | `{formula_only, both, disease_only, formula_total, disease_total}` |

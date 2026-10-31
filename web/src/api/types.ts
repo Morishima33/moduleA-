@@ -422,6 +422,7 @@ export interface SourceUploadItem {
 
 /** 模块专属数据（第 6 节）；各模块只有其中一部分键 */
 export interface Special {
+  system_component_publication?: {source_binding_protocol:string;message_zh:string};
   venn?: Venn;
   component_top?: { compound_id: string; name: string; herbs: string; main_rank: number; intersection_count: number; mixed_degree: number }[];
   component_top_note_zh?: string;
