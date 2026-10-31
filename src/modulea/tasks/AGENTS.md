@@ -1,5 +1,9 @@
 # tasks/ — 后台任务
 
+## 2026-10-31 疾病五库系统原件获取
+
+plan_system_disease_acquisition在既有独立科学worker内调用公开acquire_analysis_plan_system_disease_sources，原确认、当前登记/A02/手动原件与人工意见排队后重核，真实A00生产规范回执授权而非伪approved。复用原公共采集器/解析和有效本研究原件，逐库成功立即检查点，失败/缺失与有效0条分列。部分incomplete必须任务failed，原件和诊断留存，明确原请求重试只补缺库；补上传后新确认可复用同A00已成功系统原文。完整请求只核验，旧current/runs/reviews/手动暂存保持，不发布A02。重任务沿用计算位、磁盘、取消进程树与日志，GET和重启不自动获取。
+
 ## 2026-10-30 系统三库获取与恢复
 
 plan_system_source_binding经既有独立科学worker进程调用公开bind_analysis_plan_system_a01_sources，先重核原确认/最新完整原件/当前方案和人工意见，再从原ZIP重建与核验所有解析产物后发布独立科学输入。HTTP不解包。任务沿用全局资源位、磁盘余量、取消进程树和日志；绑定不是轻任务。只追加独立来源索引/指针，旧上传、科学current/runs和reviews保持，不发布A01或自动计算。成功同内容重试返回原指纹，过期输入和排队期间的人工暂停失败，不写成功来源。

@@ -106,6 +106,8 @@ export const api = {
   /** 统一批次只读及明确执行，沿用令牌与过期保护。 */
   systemPipeline: (sid:string)=>request<import('./types').SystemPipelineInfo>('GET',`/studies/${sid}/analysis-plan/system-pipeline`),
   systemAcquisition: (sid:string)=>request<import('./types').SystemAcquisitionInfo>('GET',`/studies/${sid}/analysis-plan/system-acquisition`),
+  systemDiseaseAcquisition: (sid:string)=>request<import('./types').SystemDiseaseAcquisitionInfo>('GET',`/studies/${sid}/analysis-plan/disease-acquisition`),
+  acquireSystemDiseaseSources: (sid:string,body:import('./types').SystemAcquisitionRequest)=>request<{task:Task;request_id:string;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/disease-acquisition/execute`,body),
   acquireSystemSources: (sid:string,body:import('./types').SystemAcquisitionRequest)=>request<{task:Task;request_id:string;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/system-acquisition/execute`,body),
   bindSystemSources: (sid:string,body:import('./types').SystemSourceBindingRequest)=>request<{task:Task;request_id:string;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/system-acquisition/bind`,body),
   startSystemPipeline: (sid:string,body:Record<string,unknown>)=>request<{task:Task;batch_id:string;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/system-pipeline/start`,body),

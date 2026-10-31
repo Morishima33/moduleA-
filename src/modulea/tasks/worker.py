@@ -626,6 +626,21 @@ def run_system_source_binding(settings,task,manager):
 
 
 HANDLERS['plan_system_source_binding']=run_system_source_binding
+
+
+def run_system_disease_acquisition(settings,task,manager):
+    """既有隔离科学worker实际获取，部分原件未齐必须任务失败但保留成功来源。"""
+    manager.update(task['task_id'],progress={'step_zh':'核验本研究疾病原件并只补缺失来源','done':0,'total':5})
+    result=full_workflow(settings.data_root).acquire_analysis_plan_system_disease_sources(task['study_id'],json.loads(task['payload']),
+        progress=lambda message:manager.update(task['task_id'],progress={'step_zh':message,'done':0,'total':5}))
+    if result['state']!='complete':
+        reasons='；'.join(row['database']+'：'+row['reason_zh'] for row in result['sources'] if row['state']!='ready')
+        raise ValueError('疾病五库原件未齐，成功来源已保留，不是0条结果：'+reasons)
+    manager.update(task['task_id'],progress={'step_zh':'五库原件完整归档，尚未发布疾病候选','done':5,'total':5})
+    return '疾病五库原件已核验归档；未发布A02、切换科学运行或签署复核。'
+
+
+HANDLERS['plan_system_disease_acquisition']=run_system_disease_acquisition
 HANDLERS["a06_plan_pocket_review"] = run_a06_plan_preparation
 HANDLERS["a06_plan_reference_review"] = run_a06_plan_reference_review
 HANDLERS["a06_plan_reference_preparation"] = run_a06_plan_reference_preparation

@@ -181,6 +181,15 @@ export interface ApiErrorBody {
 export interface SystemAcquisitionRequest {
  request_id:string;expected_a00:string;expected_plan_id:string;expected_input_hash:string;author:string;note:string;confirmed:true;
 }
+/** 疾病五库原件资格与逐库事实，不把缺失或查询失败显示为0。 */
+export interface SystemDiseaseAcquisitionInfo {
+ supported:boolean;enabled:boolean;blockers:string[];busy:boolean;expected_a00:string|null;expected_plan_id:string|null;expected_input_hash:string;
+ disease_identity_zh:string;automatic_databases:string[];manual_databases:string[];message_zh:string;
+ requests:{request_id:string;request:SystemAcquisitionRequest;plan_id:string;created_at:string;state:string;state_label_zh:string;
+  retry_enabled:boolean;retry_blockers:string[];message_zh:string;
+  display_sources:{database:string;state:string;state_label_zh:string;records_text_zh:string;reason_zh:string}[]}[];
+}
+
 /** 独立科学输入绑定的实际预期字段，不接受浏览器路径或参数覆盖。 */
 export interface SystemSourceBindingRequest {
  request_id:string;expected_acquisition_request_id:string;expected_record_sha256:string;expected_input_hash:string;

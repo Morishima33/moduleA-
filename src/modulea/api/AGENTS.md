@@ -1,5 +1,13 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-10-31 疾病五库系统原件获取
+
+GET `/studies/{sid}/analysis-plan/disease-acquisition`标准库只读返回A02.system_acquisition.1的supported/enabled/blockers、expected_a00/expected_plan_id/expected_input_hash、automatic_databases(TTD/PharmGKB/OTP)、manual_databases(GeneCards/OMIM)、scientific_publication_available:false、busy、disease_identity_zh、requests及message_zh。每请求含原request/plan_id、state(complete/incomplete/not_recorded)、state_label_zh、display_sources（database/state/state_label_zh/records_text_zh/reason_zh）、retry_enabled/blockers和整批/检查点/失败计数。显示合并真实最新整批与实际成功检查点；缺库、失败、未写成整批不作为0条。GET不采集、不解析科学原文、不排队或改变研究。
+
+POST同路径`/execute`只接受`{request_id:diseaseacqreq_<32hex>,expected_a00,expected_plan_id,expected_input_hash,author,note,confirmed:true}`，202提交plan_system_disease_acquisition。HTTP只做标准库预检，科学worker再核对原确认/来源/人工意见后实际获取及解析。缺确认/路径/URL/疾病词/passed等覆盖422，过期或忙碌409、回收站423，令牌/Origin403沿用。同内容原请求补取保留原方案，后来草稿不替换；补上传改变绑定后须新确认，同A00已有成功系统原文可核验复用。部分incomplete任务必须failed，成功库和诊断保留，不写0或完整，不发布A02或人工批准。
+
+统一页面按session.capabilities.system_disease_acquisition=true显示疾病原件区；默认不勾新获取确认，原请求补取经明确窗口，网络失败保留请求号，409只刷新不重交。旧服务无该能力不显示/请求新接口。页面只展示服务端事实，不能将原件完整解释为疾病候选或科学分析已完成。
+
 ## 2026-10-30 系统三库原件获取后台入口
 
 新增POST同路径`/bind`严格接收`{request_id:systemsourcebindreq_<32hex>,expected_acquisition_request_id,expected_record_sha256,expected_input_hash,author,note,confirmed:true}`，202提交plan_system_source_binding。HTTP只按当前原获取、最新完整记录、原方案、当前A00/A01/旧暂存与人工意见做标准库预检；原ZIP解包/派生产物重建在实际科学worker执行，不在HTTP。字段422、过期/忙碌409、回收站423、令牌/Origin403沿用。绑定只追加系统科学来源指针，不改旧上传、current/runs/reviews或发布A01；完成同请求幂等，排队后输入/方案/人工暂停变化拒绝。GET每request增加binding(enabled/blockers/bound/request三expected字段)，未成整批、缺库和新草稿均不可绑定；已有当前绑定显示bound并禁用新绑定。实际绑定后科学批次仍按五库/HGNC和身份规则检查，不自动启动计算。
