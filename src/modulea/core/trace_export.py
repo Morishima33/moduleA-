@@ -107,6 +107,9 @@ def _plan_decisions(workflow, manifest, all_files):
             ('system_acquisition_sources','analysis_plan_system_acquisition_source_records','A01.system_acquisition.1'),
             ('system_acquisition_failures','analysis_plan_system_acquisition_failures','A01.system_acquisition.1'),
             ('system_component_sources','analysis_plan_system_component_source_records','A01.system_source_binding.1'),
+            ('preparation_sessions','analysis_plan_system_preparation_sessions','A06.system_preparation_checkpoints.1'),
+            ('preparation_objects','analysis_plan_system_preparation_objects','A06.system_preparation_checkpoints.1'),
+            ('preparation_packets','analysis_plan_system_preparation_packets','A06.system_preparation_checkpoints.1'),
             ('disease_acquisition_requests','analysis_plan_disease_acquisition_requests','A02.system_acquisition.1'),
             ('disease_acquisitions','analysis_plan_disease_acquisition_records','A02.system_acquisition.1'),
             ('disease_acquisition_sources','analysis_plan_disease_acquisition_sources','A02.system_acquisition.1'),
@@ -117,8 +120,16 @@ def _plan_decisions(workflow, manifest, all_files):
         output[key]=[]
         for reference in manifest.get(index,[]):
             value=read_json(verified_file(root,reference))
-            require(value.get('schema_version')==version and value.get('study_id')==manifest['study_id'],
+            accepted={'system_qualifications':('A06.system_qualification.1','A06.system_qualification.2'),
+                'system_qualification_failures':('A06.system_qualification.1','A06.system_qualification.2'),
+                'system_scores':('A06.system_scoring.1','A06.system_scoring.2'),
+                'system_scoring_failures':('A06.system_scoring.1','A06.system_scoring.2')}.get(key,(version,))
+            require(value.get('schema_version') in accepted and value.get('study_id')==manifest['study_id'],
                     '方案选择或固定输入归属不一致')
+            if key in ('preparation_sessions','preparation_objects','preparation_packets'):
+                from . import system_preparation_checkpoints as checkpoints
+                value={'preparation_sessions':checkpoints.read_session,'preparation_objects':checkpoints.read_object,
+                    'preparation_packets':checkpoints.read_packet}[key](workflow,manifest,reference)
             if key=='a05_display_requests':
                 require(value['request_hash']==fingerprint(value['request']) and value['request']['confirmed'] is True
                         and value['request']['expected_input_hash']==fingerprint(value['binding'])
@@ -144,7 +155,7 @@ def _plan_decisions(workflow, manifest, all_files):
             if key=='system_qualifications':
                 run=workflow.run(manifest,value['run_id'])
                 require(value['human_review_written'] is False and value['request_hash']==fingerprint(value['request'])
-                    and run['config'].get('version')==version and run['batch_file']==value['batch_file']
+                    and run['config'].get('version')==value['schema_version'] and run['batch_file']==value['batch_file']
                     and run['inputs']['source_preparation_run']==value['source_run']
                     and manifest['runs'][run['run_id']]['result_file']==value['result_file'],'系统资格回执与真实归档不同')
             if key=='system_qualification_failures':
@@ -152,7 +163,7 @@ def _plan_decisions(workflow, manifest, all_files):
                     and value['error_type'] and value['error_zh'],'系统资格失败诊断无效')
             if key=='system_scores':
                 run=workflow.run(manifest,value['run_id'])
-                require(value['human_review_written'] is False and run['config'].get('version')==version
+                require(value['human_review_written'] is False and run['config'].get('version')==value['schema_version']
                     and run['batch_file']==value['batch_file'] and run['inputs']['scoring_request']==value['request_file']
                     and manifest['runs'][run['run_id']]['result_file']==value['result_file'],'系统评分回执与真实归档不同')
             if key=='system_pipeline':

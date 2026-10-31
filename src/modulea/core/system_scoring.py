@@ -11,6 +11,11 @@ FAILURES='analysis_plan_system_scoring_failures'
 
 def execute(workflow,sid,body,tools,progress):
     """内部公开入口只绑定当前批次/准备；工具及参数不由客户端提供。"""
+    m=workflow.load(sid);current=m['current'].get('A06_PREP');score=m['current'].get('A06')
+    if ((current and workflow.run(m,current)['config'].get('version')=='A06.system_qualification.2')
+            or (score and workflow.run(m,score)['config'].get('version')=='A06.system_scoring.2')):
+        from .system_scoring_incremental import execute as execute_incremental
+        return execute_incremental(workflow,sid,body,tools,progress)
     require(isinstance(body,dict) and set(body)=={'batch_id','expected_preparation_run_id','expected_scoring_run_id'},'系统评分请求字段错误')
     safe_id(body['batch_id'],'systembatch');safe_id(body['expected_preparation_run_id'],'run')
     if body['expected_scoring_run_id'] is not None:safe_id(body['expected_scoring_run_id'],'run')

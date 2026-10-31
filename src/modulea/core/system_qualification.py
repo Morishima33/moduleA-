@@ -52,6 +52,10 @@ def _execute(workflow,sid,body):
 
 def execute(workflow,sid,body):
     """失败保存实际请求与已生成文件，不以资格失败覆盖原准备。"""
+    m=workflow.load(sid);current=m['current'].get('A06_PREP')
+    if current and workflow.run(m,current)['config'].get('version') in ('A06.system_preparation.2','A06.system_qualification.2'):
+        from .system_qualification_incremental import execute as execute_incremental
+        return execute_incremental(workflow,sid,body)
     try:return _execute(workflow,sid,body)
     except Exception as error:
         if isinstance(body,dict) and set(body)=={'batch_id','expected_preparation_run_id'}:

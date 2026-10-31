@@ -48,6 +48,11 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
         from .system_execution import start
         return start(self,study_id,payload)
 
+    def start_analysis_plan_recoverable_system_batch(self,study_id,payload):
+        """明确新批使用逐对象准备恢复；旧批和原开始入口继续原版本。"""
+        from .system_execution import start
+        return start(self,study_id,payload,preparation_protocol='A06.system_preparation.2')
+
     def execute_analysis_plan_system_decision(self,study_id,payload):
         """同批系统受体选择及固定准备输入，不生成选择人工审核。"""
         from .system_decisions import execute

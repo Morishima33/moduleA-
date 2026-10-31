@@ -40,6 +40,7 @@ class SystemPipelineHttpTests(unittest.TestCase):
         m=self.w.load(self.sid);self.assertEqual(m['reviews'],before['reviews']);self.assertIn('A07',m['current'])
         self.assertFalse(self.w.approved(m,m['current']['A07']))
         self.assertEqual(len(m[system_execution.BATCHES]),1)
+        self.assertNotIn('preparation_protocol',system_execution.read_batch(self.w,m,m[system_execution.BATCHES][0])[0])
         status,value=self.call('GET',self.path);self.assertEqual(status,200,value)
         self.assertEqual(value['batches'][0]['latest_event']['state'],'awaiting_report_review')
         self.assertEqual(self.w.load(self.sid),m)
@@ -66,6 +67,7 @@ class SystemPipelineHttpTests(unittest.TestCase):
     def test_page_parameters_keep_original_batch_when_later_draft_changes_and_trash_is_read_only(self):
         status,session=self.call('GET','/session');self.assertEqual(status,200,session)
         self.assertTrue(session['capabilities']['system_pipeline'])
+        self.assertTrue(session['capabilities']['system_preparation_recovery'])
         before=self.w.load(self.sid);draft=self.w.analysis_plan_info(self.sid)['draft']
         self.w.save_analysis_plan_draft(self.sid,{'request_id':'planreq_'+uuid4().hex,'expected_a00':before['current']['A00'],
             'expected_draft_id':draft['plan_id'],'specification':{'mode':'personalized','parameters':{'a06.seed':7}},
@@ -79,3 +81,13 @@ class SystemPipelineHttpTests(unittest.TestCase):
         m=self.w.load(self.sid);status,value=self.call('GET',self.path);self.assertEqual(status,200,value)
         self.assertFalse(value['batches'][0]['continue_enabled']);self.assertTrue(value['batches'][0]['continue_blockers'])
         self.assertEqual(self.w.load(self.sid),m)
+
+    def test_new_http_confirmation_binds_recoverable_preparation_and_rejects_client_protocol_override(self):
+        body=self.start_body|{'request_id':'systembatchreq_'+uuid4().hex}
+        with patch.object(self.app.tasks,'submit',return_value=({'task_id':'task_synthetic','state':'queued'},True)):
+            status,value=self.call('POST',self.path+'/start',body)
+        self.assertEqual(status,202,value);m=self.w.load(self.sid)
+        selected=next(system_execution.read_batch(self.w,m,ref)[0] for ref in m[system_execution.BATCHES]
+            if system_execution.read_batch(self.w,m,ref)[0]['batch_id']==value['batch_id'])
+        self.assertEqual(selected['preparation_protocol'],'A06.system_preparation.2')
+        self.assertEqual(self.call('POST',self.path+'/start',body|{'preparation_protocol':'other'})[0],422)

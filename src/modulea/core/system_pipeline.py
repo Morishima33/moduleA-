@@ -147,7 +147,7 @@ def execute(workflow,sid,body,*,tools=None,progress=None):
             event=completed[-1];rid=event['run_id']
             if module=='A06_PREP' and latest['current'].get(module)!=rid:
                 candidate=workflow.run(latest,latest['current'][module])
-                require(candidate['config'].get('version')=='A06.system_qualification.1'
+                require(candidate['config'].get('version') in ('A06.system_qualification.1','A06.system_qualification.2')
                     and candidate['inputs']['source_preparation_run']==latest['runs'][rid]['run_file'],
                     '本批准备已由其他来源替换')
                 usable(workflow,latest,candidate['run_id']);result=workflow.result(latest,rid)
@@ -180,7 +180,7 @@ def execute(workflow,sid,body,*,tools=None,progress=None):
             usable(workflow,workflow.load(sid),qualified['run_id']);record('A06_QUALIFY',qualified)
             if qualified['summary']['ready_pairs']:
                 current_stage='A06';notify('执行或恢复本批实际评分');latest=workflow.load(sid);score=latest['current'].get('A06')
-                if score and workflow.run(latest,score)['config'].get('version')=='A06.system_scoring.1':
+                if score and workflow.run(latest,score)['config'].get('version') in ('A06.system_scoring.1','A06.system_scoring.2'):
                     run=workflow.run(latest,score);request=read_json(verified_file(home,run['inputs']['scoring_request']))['request']
                     require(run['batch_file']==ref,'当前评分属于其他系统批次')
                 else:request={'batch_id':batch['batch_id'],'expected_preparation_run_id':qualified['run_id'],'expected_scoring_run_id':score}

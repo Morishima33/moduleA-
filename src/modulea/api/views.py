@@ -479,7 +479,7 @@ class Views:
         from ..core.plan_creation import is_plan_created, context as creation_context
         from ..core.plan_a05 import is_current as has_new_a05
         if not historical and (is_plan_created(workflow, real) or has_new_a05(workflow,real)):
-            response['review']['continue'].update(available=False, note_zh='新方案自动接续尚未开放；请先核对研究资料，不调用旧固定参数流程。')
+            response['review']['continue'].update(available=False, note_zh='新方案计算从对应模块或统一执行与续做入口接续；此处仅保存人工复核决定。')
         response['creation_plan'] = creation_context(workflow, study_id) if module_id == 'A00' and not historical else None
         response['plan_a01'] = None
         response['plan_stages'] = None
@@ -566,11 +566,13 @@ class Views:
                 "A06.plan_preparation.3", "A06.plan_reference_preparation.1",
                 "A06.plan_reference_preparation.2", "A06.plan_reviewable_preparation.1"))
         plan_result = bool(run and run.get('config', {}).get('version') == 'A06.plan_scoring.1')
+        from ..presenters.system_docking import VERSIONS as SYSTEM_STRUCTURE_VERSIONS
+        system_structure=bool(run and run.get('config',{}).get('version') in SYSTEM_STRUCTURE_VERSIONS)
         if plan_preparation and run['config'].get('version') == 'A06.plan_reviewable_preparation.1':
             response['review']['continue'].update(available=False, note_zh='人工决定单独保存；请在新版评分区明确确认执行，不接续旧计算协议。')
         if plan_result:
             response['review']['continue'].update(available=False, note_zh='本版评分独立保存复核决定；新报告协议尚未接通，不调用旧报告。')
-        if module_id in ("A06_PREP", "A06") and not historical and not preparation and not handoff and not plan_preparation and not plan_result and not response['plan_selection_ui']:
+        if module_id in ("A06_PREP", "A06") and not historical and not preparation and not handoff and not plan_preparation and not plan_result and not system_structure and not response['plan_selection_ui']:
             from ..core.automatic_experience import automatic_context
             with workflow.handoff_read_cache():
                 response["automatic_docking"] = automatic_context(workflow, real, False, bool(self.tasks.active_for(study_id)))
@@ -600,7 +602,10 @@ class Views:
                 response[key] = None
             response['module'].update(title_zh='单成分靶点' if module_id == 'A01' else '文献疾病靶点',
                 purpose_zh='核对作者公开历史名单及官方身份标准化结果；本研究为同输入方法对比。')
-        response["operation_guide"] = None if plan_preparation or plan_result else operation_navigation(response, result)
+        if system_structure and result:
+            from .system_docking_view import apply as apply_system_docking
+            apply_system_docking(workflow,real,run,result,response)
+        response["operation_guide"] = None if plan_preparation or plan_result or system_structure else operation_navigation(response, result)
         response["input_audit"] = input_audit_context(workflow, real, module_id, run, result, stale=not historical and state["code"] == "stale")
         if literature_input and module_id in ('A01', 'A02'):
             response['input_audit'] = None  # 两侧文献数量已由同源结果数量链展示，避免重复常规范围表。
