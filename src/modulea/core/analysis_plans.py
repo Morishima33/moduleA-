@@ -18,6 +18,11 @@ class AnalysisPlanConflict(ContractError):
 class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
     """旧研究继承原行为；只有显式新方案登记支持草稿写入。"""
 
+    def publish_analysis_plan_system_disease_candidates(self,study_id,payload):
+        """完整原件经真实系统登记证据发布独立候选，仍禁止直接交接A03。"""
+        from .system_disease_publication import publish
+        return publish(self,study_id,payload)
+
     def acquire_analysis_plan_system_disease_sources(self,study_id,payload,*,progress=None):
         """明确获取疾病五库原件，真实登记校验，不发布A02或造人工批准。"""
         from .system_disease_acquisition import execute
@@ -163,6 +168,9 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
     def _active(self, manifest, run_id):
         """仅新可复核准备额外绑定独立选择复核；撤回后普通复核同样失效。"""
         run=self.run(manifest,run_id)
+        if run.get('execution_protocol')=='A02.system_collection.1':
+            from .system_disease_publication import is_active
+            return is_active(self,manifest,run)
         if run.get('execution_protocol')=='ModuleA.system_execution.1':
             from .system_execution import is_active
             return is_active(self,manifest,run)

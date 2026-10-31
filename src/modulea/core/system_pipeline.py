@@ -29,7 +29,7 @@ def required_inputs(workflow,m,batch=None):
     for source_id in (rid,initial['current']['A00']):
         review=workflow.latest_review(m,workflow.run(m,source_id)['artifact_id'])
         require(not review or review['decision']=='approved','必需来源已有明确人工暂存或退回')
-    require(run['config'].get('version')=='A02.collect.2' and result is not None
+    require(run['config'].get('version') in ('A02.collect.2',system_disease_sources.COLLECTION_VERSION) and result is not None
         and result['summary'].get('source_profile')=='A02.source_profile.3','统一编排要求本研究现代五库原始候选，不接受旧标准化结果替代')
     require(run['parent_runs']=={'A00':initial['current']['A00']},'五库候选与本批登记不同')
     manifests=[r for r in result['sources'] if r['role']=='source_manifest'];require(len(manifests)==1,'五库原件清单不唯一')

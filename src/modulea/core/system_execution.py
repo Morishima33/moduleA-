@@ -20,7 +20,8 @@ def scientific_version(module,config):
     """新资格修订仍属PREP，显式列出科学版本，不修改旧人工协议。"""
     return config.get('version')==SCIENTIFIC_VERSIONS[module] or (module=='A01' and config.get('version')=='A01.system_publication.1'
         and config.get('source_binding_protocol')=='A01.system_source_binding.1') or (module=='A06_PREP' and config.get('version')=='A06.system_qualification.1') or (
-        module=='A02' and config.get('version')=='A02.system_normalization.2' and config.get('source_binding_protocol')=='A02.system_source_reuse.1')
+        module=='A02' and (config.get('version'),config.get('source_binding_protocol')) in (
+            ('A02.system_normalization.2','A02.system_source_reuse.1'),('A02.system_normalization.3','A02.system_source_reuse.2')))
 
 
 def snapshot(workflow,m):
@@ -115,8 +116,8 @@ def start(workflow,sid,body):
         if protocol:record['component_source_protocol']=protocol
         a02=m['current'].get('A02')
         from . import system_disease_sources
-        if a02 and workflow.run(m,a02)['config'].get('version') in system_disease_sources.NORMALIZED:
-            record['disease_source_protocol']=system_disease_sources.VERSION
+        if a02 and workflow.run(m,a02)['config'].get('version') in (system_disease_sources.NORMALIZED|{system_disease_sources.COLLECTION_VERSION}):
+            record['disease_source_protocol']=system_disease_sources.resolve(workflow,m,record['initial_binding'])['schema_version']
             record['disease_source_file']=system_disease_sources.create(workflow,m,record['batch_id'],record['initial_binding'])
         target=home/'decisions/analysis_plans/system_batches'/record['batch_id']/'batch.json';write_json(target,record)
         ref=file_record(home,target,'system_batch_authorization');m.setdefault(BATCHES,[]).append(ref);workflow.save(m)
@@ -172,7 +173,7 @@ def is_active(workflow,m,run):
             base=read_json(verified_file(workflow.location(m['study_id']),run['inputs']['base_run']))
             review=workflow.latest_review(m,base['artifact_id'])
             require(not review or review['decision']=='approved','疾病原候选已被明确暂存或退回')
-            if run['config'].get('version')=='A02.system_normalization.2':
+            if run['config'].get('version') in ('A02.system_normalization.2','A02.system_normalization.3'):
                 from . import system_disease_sources
                 batch,_=read_batch(workflow,m,run['batch_file']);source=system_disease_sources.read(workflow,m,batch)
                 require(run['inputs']['disease_source_binding']==batch['disease_source_file']
@@ -299,7 +300,7 @@ def _execute(workflow,sid,body,*,tools=None,progress=None):
             base=read_json(verified_file(home,computed[0]['base_run']))
             reviews=[r for r in m.get('reviews',[]) if read_json(verified_file(home,r))['artifact_id']==base['artifact_id']]
             require(reviews==computed[0]['base_reviews'],'疾病标准化期间原候选人工决定已改变')
-            if computed[1]['version']=='A02.system_normalization.2':
+            if computed[1]['version'] in ('A02.system_normalization.2','A02.system_normalization.3'):
                 source=read_json(verified_file(home,computed[0]['source_current_run']))
                 reviews=[r for r in m.get('reviews',[]) if read_json(verified_file(home,r))['artifact_id']==source['artifact_id']]
                 require(reviews==computed[0]['source_current_reviews'],'疾病原件复用期间原标准化人工决定已改变')

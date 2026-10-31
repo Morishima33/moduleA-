@@ -236,7 +236,10 @@ def build_trace(workflow, study_id, include_data=False):
                 item['execution_authority']=run['execution_authority']
                 item['parent_validation_records']=deepcopy(run['parent_validation_records'])
                 if run.get('execution_protocol'):
-                    item['execution_protocol']=run['execution_protocol'];item['batch_file']=deepcopy(run['batch_file'])
+                    item['execution_protocol']=run['execution_protocol']
+                    if run['execution_protocol']=='A02.system_collection.1':
+                        item['acquisition_record']=deepcopy(run['inputs']['acquisition_record'])
+                    else:item['batch_file']=deepcopy(run['batch_file'])
             item.update({"state": "completed" if manifest["runs"][run_id].get("result_file") else "running",
                          "parent_runs": deepcopy(run.get("parent_runs", {})),
                          "parent_review_ids": deepcopy(run.get("parent_review_ids", {})),

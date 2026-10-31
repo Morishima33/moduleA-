@@ -100,6 +100,9 @@ def a05(workflow,m,batch,plan,batch_ref):
 
 def a02(workflow,m,batch,plan,batch_ref):
     """消费授权时绑定的原始五库候选，同本批三库映射重新标准化。"""
+    if batch.get('disease_source_protocol')=='A02.system_source_reuse.2':
+        from science_modules.a02.system_normalization_collection import compute
+        return compute(workflow,m,batch,plan,batch_ref)
     if batch.get('disease_source_protocol')=='A02.system_source_reuse.1':
         from science_modules.a02.system_normalization_reuse import compute
         return compute(workflow,m,batch,plan,batch_ref)
@@ -126,9 +129,10 @@ def a02_validator(root,fallback):
     """系统A02额外核对真实授权及系统父回执；旧疾病规则完全委托。"""
     from science_modules.a02.system_normalization import validator,VERSION
     from science_modules.a02.system_normalization_reuse import validator as reuse_validator,VERSION as REUSE_VERSION
-    science=reuse_validator(root,validator(root,fallback))
+    from science_modules.a02.system_normalization_collection import validator as collection_validator,VERSION as COLLECTION_VERSION
+    science=collection_validator(root,reuse_validator(root,validator(root,fallback)))
     def check(run,*args):
-        if run['config'].get('version') in (VERSION,REUSE_VERSION):
+        if run['config'].get('version') in (VERSION,REUSE_VERSION,COLLECTION_VERSION):
             from pathlib import Path
             from .analysis_plans import AnalysisPlanWorkflow
             from .system_execution import is_active
