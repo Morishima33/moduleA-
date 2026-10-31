@@ -45,6 +45,14 @@ def _herb_transient(error):
                               http.client.IncompleteRead, HerbResponseError))
 
 
+def _uniprot_transient(error):
+    """只补取临时服务/连接错误；证书、身份、格式及永久HTTP错误仍立即失败。"""
+    if isinstance(error, urllib.error.HTTPError):
+        return error.code in (429, 500, 502, 503, 504)
+    reason = error.reason if isinstance(error, urllib.error.URLError) else error
+    return isinstance(reason, (TimeoutError, ConnectionError, http.client.IncompleteRead))
+
+
 class Fetcher:
     """同目录固定请求键断点复用；不同研究不自动借用资料。"""
     def __init__(self, folder, opener, sleeper, progress=None, resume_folders=()):
@@ -94,7 +102,9 @@ class Fetcher:
                 self.reused_requests += 1
                 return raw
         herb_request = url == HERB_API and payload is not None
-        attempts = 5 if herb_request else 2
+        uniprot_request = (parsed.scheme == "https" and parsed.hostname == "rest.uniprot.org"
+                           and parsed.path == "/uniprotkb/search" and payload is None)
+        attempts = 5 if herb_request or uniprot_request else 2
         for attempt in range(attempts):
             raw = None
             try:
@@ -118,21 +128,30 @@ class Fetcher:
                         raw = error.read(8 * 1024 * 1024)
                     finally:
                         error.close()
+                elif uniprot_request and isinstance(error, http.client.IncompleteRead):
+                    raw = error.partial
                 if raw is not None:
                     failure.with_suffix(".bin").write_bytes(raw)
-                retry = attempt + 1 < attempts and (not herb_request or _herb_transient(error))
-                delay = min(30, 2 ** (attempt + 1)) if herb_request else 0
-                if herb_request and isinstance(error, urllib.error.HTTPError):
+                transient = (_herb_transient(error) if herb_request else
+                             _uniprot_transient(error) if uniprot_request else True)
+                retry = attempt + 1 < attempts and transient
+                delay = min(30, 2 ** (attempt + 1)) if herb_request or uniprot_request else 0
+                if (herb_request or uniprot_request) and isinstance(error, urllib.error.HTTPError):
                     retry_after = (error.headers or {}).get("Retry-After", "")
                     if str(retry_after).isdigit():
                         delay = min(60, max(delay, int(retry_after)))
-                write_json(failure.with_suffix(".json"), {"url": url, "payload": payload, "error": str(error), "at": now(),
-                                                       "attempt": attempt + 1, "will_retry": retry, "retry_seconds": delay if retry else None})
+                diagnostic = {"url": url, "payload": payload, "error": str(error), "at": now(),
+                              "attempt": attempt + 1, "will_retry": retry, "retry_seconds": delay if retry else None}
+                if uniprot_request:
+                    diagnostic.update(retry_policy="A01.uniprot_transport.1",
+                                      http_status=error.code if isinstance(error, urllib.error.HTTPError) else None)
+                write_json(failure.with_suffix(".json"), diagnostic)
                 if not retry:
                     raise
-                if herb_request:
+                if herb_request or uniprot_request:
                     if self.progress:
-                        self.progress(f"HERB连接暂时失败（{error}）；{delay}秒后重试（{attempt + 2}/{attempts}），已下载原件保留")
+                        source = "HERB" if herb_request else "UniProt"
+                        self.progress(f"{source}连接暂时失败（{error}）；{delay}秒后重试（{attempt + 2}/{attempts}），已下载原件保留")
                     self.sleeper(delay)
 
     def herb(self, func, **values):
