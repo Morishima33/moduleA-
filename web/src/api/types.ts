@@ -187,6 +187,8 @@ export interface SystemDiseaseAcquisitionInfo {
  disease_identity_zh:string;automatic_databases:string[];manual_databases:string[];message_zh:string;
  requests:{request_id:string;request:SystemAcquisitionRequest;plan_id:string;created_at:string;state:string;state_label_zh:string;
   retry_enabled:boolean;retry_blockers:string[];message_zh:string;
+  publication?:{enabled:boolean;blockers:string[];published_run_id:string|null;candidate_count_text_zh:string;message_zh:string;
+   request:Pick<SystemSourceBindingRequest,'expected_acquisition_request_id'|'expected_record_sha256'|'expected_input_hash'>|null};
   display_sources:{database:string;state:string;state_label_zh:string;records_text_zh:string;reason_zh:string}[]}[];
 }
 

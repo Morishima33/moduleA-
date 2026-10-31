@@ -108,6 +108,7 @@ export const api = {
   systemAcquisition: (sid:string)=>request<import('./types').SystemAcquisitionInfo>('GET',`/studies/${sid}/analysis-plan/system-acquisition`),
   systemDiseaseAcquisition: (sid:string)=>request<import('./types').SystemDiseaseAcquisitionInfo>('GET',`/studies/${sid}/analysis-plan/disease-acquisition`),
   acquireSystemDiseaseSources: (sid:string,body:import('./types').SystemAcquisitionRequest)=>request<{task:Task;request_id:string;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/disease-acquisition/execute`,body),
+  publishSystemDiseaseCandidates: (sid:string,body:import('./types').SystemSourceBindingRequest)=>request<{task:Task;request_id:string;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/disease-acquisition/publish`,body),
   acquireSystemSources: (sid:string,body:import('./types').SystemAcquisitionRequest)=>request<{task:Task;request_id:string;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/system-acquisition/execute`,body),
   bindSystemSources: (sid:string,body:import('./types').SystemSourceBindingRequest)=>request<{task:Task;request_id:string;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/system-acquisition/bind`,body),
   startSystemPipeline: (sid:string,body:Record<string,unknown>)=>request<{task:Task;batch_id:string;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/system-pipeline/start`,body),

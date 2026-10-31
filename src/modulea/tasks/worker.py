@@ -641,6 +641,17 @@ def run_system_disease_acquisition(settings,task,manager):
 
 
 HANDLERS['plan_system_disease_acquisition']=run_system_disease_acquisition
+
+
+def run_system_disease_publication(settings,task,manager):
+    """隔离科学进程重核明确确认并实际发布候选，不触发标准化或人工复核。"""
+    manager.update(task['task_id'],progress={'step_zh':'重核完整疾病原件与发布确认，按原算法整理候选','done':0,'total':1})
+    result=full_workflow(settings.data_root).publish_analysis_plan_system_disease_candidates(task['study_id'],json.loads(task['payload']))
+    manager.update(task['task_id'],progress={'step_zh':'疾病候选已归档，仍须本批标准化','done':1,'total':1})
+    return '疾病候选已归档：'+result['run_id']+'，原始候选记录数 '+str(result['summary']['候选记录数'])+'；未批准科研结果，未自动标准化或启动A03。'
+
+
+HANDLERS['plan_system_disease_publication']=run_system_disease_publication
 HANDLERS["a06_plan_pocket_review"] = run_a06_plan_preparation
 HANDLERS["a06_plan_reference_review"] = run_a06_plan_reference_review
 HANDLERS["a06_plan_reference_preparation"] = run_a06_plan_reference_preparation

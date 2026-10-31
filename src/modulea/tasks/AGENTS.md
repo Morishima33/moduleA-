@@ -1,5 +1,11 @@
 # tasks/ — 后台任务
 
+## 2026-10-31 疾病完整原件发布候选
+
+plan_system_disease_publication使用既有独立科学worker和重任务资源位，执行公开publish_analysis_plan_system_disease_candidates。排队后重新校验明确发布确认、当前实际获取记录/登记/方案与人工暂停，不在HTTP导入科学依赖或整理候选。只有完整五库及生产校验通过才成功；原始候选handoff_blocked=true，不写人工批准、不启动标准化或A03。成功同请求只返回原结果，原件、旧运行和复核保持；过期和排队期间人工暂停必须failed。沿用磁盘、全局资源预算、取消进程树和日志，GET/重启不自动发布。
+
+启动器保留Popen句柄至实际进程退出，以等待线程回收系统资源；线程只调用wait，不写任务状态、不重新派发、不另占计算位。避免启动后立即丢弃句柄导致ResourceWarning及进程资源未回收。
+
 ## 2026-10-31 疾病五库系统原件获取
 
 plan_system_disease_acquisition在既有独立科学worker内调用公开acquire_analysis_plan_system_disease_sources，原确认、当前登记/A02/手动原件与人工意见排队后重核，真实A00生产规范回执授权而非伪approved。复用原公共采集器/解析和有效本研究原件，逐库成功立即检查点，失败/缺失与有效0条分列。部分incomplete必须任务failed，原件和诊断留存，明确原请求重试只补缺库；补上传后新确认可复用同A00已成功系统原文。完整请求只核验，旧current/runs/reviews/手动暂存保持，不发布A02。重任务沿用计算位、磁盘、取消进程树与日志，GET和重启不自动获取。

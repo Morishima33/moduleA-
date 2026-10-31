@@ -1,5 +1,13 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-10-31 疾病完整原件发布候选
+
+GET疾病获取路径的每个request增加publication：enabled/blockers/published_run_id、candidate_count_text_zh、message_zh及request（三字段expected_acquisition_request_id/expected_record_sha256/expected_input_hash）。无整批记录时request=null且禁止发布，缺失或失败不作为零。GET只读核验本研究实际归档与发布来源，不解析科学原文、不启动任务。busy时禁止发布。
+
+POST `/studies/{sid}/analysis-plan/disease-acquisition/publish`严格七字段`{request_id:diseasepublishreq_<32hex>,expected_acquisition_request_id,expected_record_sha256,expected_input_hash,author,note,confirmed:true}`，202登记plan_system_disease_publication。HTTP只做标准库预检，独立科学worker排队后重核原确认、当前登记/来源/方案和人工意见，经公开Workflow及生产规范校验发布A02.system_collection.1；缺库不发布，不伪造approved/parent_review_ids，原件、旧运行和复核保留。此候选handoff_blocked=true，须另经已确认批次标准化，不能直接启动A03。字段422、过期/忙碌409、回收站423、令牌/Origin403沿用。原相同发布确认可幂等核对已发布候选或其真实标准化祖先；其他新内容不能借旧请求号覆盖。
+
+session.capabilities.system_disease_publication=true仅实际支持的服务声明。统一疾病原件区提供明确发布按钮和确认框，展示原获取登记人/说明，发布登记沿用并明确注明本次候选操作；不开页面自动提交，不预选批准。网络失败保留发布请求号，409只刷新不重交。旧服务缺能力时隐藏发布入口，即使支持原件获取也不显示。已发布显示实际原始候选记录数及后续批次入口含义，不称正式基因数或人工批准。
+
 ## 2026-10-31 疾病五库系统原件获取
 
 GET `/studies/{sid}/analysis-plan/disease-acquisition`标准库只读返回A02.system_acquisition.1的supported/enabled/blockers、expected_a00/expected_plan_id/expected_input_hash、automatic_databases(TTD/PharmGKB/OTP)、manual_databases(GeneCards/OMIM)、scientific_publication_available:false、busy、disease_identity_zh、requests及message_zh。每请求含原request/plan_id、state(complete/incomplete/not_recorded)、state_label_zh、display_sources（database/state/state_label_zh/records_text_zh/reason_zh）、retry_enabled/blockers和整批/检查点/失败计数。显示合并真实最新整批与实际成功检查点；缺库、失败、未写成整批不作为0条。GET不采集、不解析科学原文、不排队或改变研究。

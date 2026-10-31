@@ -16,6 +16,7 @@ import signal
 import sqlite3
 import subprocess
 import threading
+import threading
 import uuid
 from contextlib import contextmanager
 from collections.abc import Iterator
@@ -57,6 +58,7 @@ KINDS['plan_system_pipeline'] = '按一次明确批次统一接续实际科学�
 KINDS['plan_system_acquisition'] = '获取本方案三库原件并保留逐库恢复记录（不发布）'
 KINDS['plan_system_source_binding'] = '复验三库原ZIP并绑定独立科学输入（不发布A01）'
 KINDS['plan_system_disease_acquisition'] = '获取疾病五库原件并保留逐库恢复记录（不发布A02）'
+KINDS['plan_system_disease_publication'] = '将完整疾病原件整理为可追溯候选（不批准或启动标准化）'
 
 
 def _now() -> str:
@@ -271,6 +273,8 @@ class TaskManager:
         with open(log_path, "ab") as stream:
             process = subprocess.Popen(command, cwd=str(self.settings.project_root), env=env, stdout=stream, stderr=subprocess.STDOUT,
                                        creationflags=flags, start_new_session=(os.name != "nt"))
+        # 保持已启动进程的句柄直到退出，仅等待回收；不改任务状态、不监控或重启任务。
+        threading.Thread(target=process.wait,daemon=True,name='modulea-reap-'+task_id).start()
         # 启动器PID只在worker尚未认领时登记，不能覆盖真实worker/取消/运行态。
         with self._connect() as db:
             db.execute("UPDATE tasks SET pid=? WHERE task_id=? AND state='queued' AND resource_owner_pid IS NULL",(process.pid,task_id))

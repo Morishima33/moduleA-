@@ -6,6 +6,9 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import time
+import warnings
+import weakref
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch, Mock
@@ -28,6 +31,23 @@ class TaskTest(unittest.TestCase):
         with self.manager._connect() as db:
             db.execute("INSERT INTO tasks (task_id,study_id,kind,state,pid,log_path,created_at) VALUES (?,?,?,?,?,?,?)", (task_id,"study_test","continue",state,pid,str(self.manager.log_dir / (task_id+".log")),created))
         return task_id
+
+    def test_spawn_retains_real_child_until_exit_without_changing_queued_state_or_resource_warning(self):
+        """真实短子进程退出前保留句柄，等待回收不代表科研任务成功或消耗资源位。"""
+        tid=self.seed();popen=subprocess.Popen;children=[]
+        def start(*args,**kwargs):
+            process=popen([sys.executable,'-c','import time; time.sleep(1)'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+            children.append(weakref.ref(process));return process
+        with warnings.catch_warnings(record=True) as seen:
+            warnings.simplefilter('always',ResourceWarning)
+            with patch('modulea.tasks.manager.subprocess.Popen',side_effect=start):
+                self.manager._spawn(tid,self.manager.log_dir/(tid+'.log'))
+            gc.collect();self.assertIsNotNone(children[0]())
+            self.assertEqual(self.manager.get(tid)['state'],'queued')
+            deadline=time.monotonic()+5
+            while children[0]() is not None and time.monotonic()<deadline:time.sleep(.05);gc.collect()
+            self.assertIsNone(children[0]());self.assertFalse(any(issubclass(row.category,ResourceWarning) for row in seen))
+        self.assertEqual(self.manager.get(tid)['state'],'queued');self.assertIsNone(self.manager._raw(tid)['resource_owner_pid'])
     def test_spawn_failure_is_terminal_and_retry_creates_new_task(self):
         first, created = self.manager.submit("study_test", "continue", "测试")
         self.assertTrue(created)
