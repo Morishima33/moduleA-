@@ -58,6 +58,8 @@ class App:
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/disease-acquisition", self.get_system_disease_acquisition),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/disease-acquisition/execute", self.post_system_disease_acquisition),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/disease-acquisition/publish", self.post_system_disease_publication),
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/disease-manual-sources", self.get_system_disease_manual_sources),
+            ("POST", rf"/api/v1/studies/{ID}/analysis-plan/disease-manual-sources", self.post_system_disease_manual_sources),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/system-acquisition", self.get_system_acquisition),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/system-acquisition/execute", self.post_system_acquisition),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/system-acquisition/bind", self.post_system_source_binding),
@@ -521,7 +523,7 @@ class App:
 
     def session(self, req):
         return {"token": self.token, "version": __version__, "platform": sys.platform,
-                "capabilities": {"review": True, "batch_review": True, "tasks": True, "trash": True, "module_actions": False, "source_upload": True, "ppi_compute": True, "create_study": True, "system_pipeline": True, "system_acquisition": True, "system_source_binding": True, "system_disease_acquisition": True, "system_disease_publication": True, "system_preparation_recovery": True},
+                "capabilities": {"review": True, "batch_review": True, "tasks": True, "trash": True, "module_actions": False, "source_upload": True, "ppi_compute": True, "create_study": True, "system_pipeline": True, "system_acquisition": True, "system_source_binding": True, "system_disease_acquisition": True, "system_disease_publication": True, "system_preparation_recovery": True, "system_disease_manual_sources": True},
                 "decisions_zh": {"approved": "通过，允许下游使用", "rejected": "退回修改", "pending": "暂存待定"}}
 
     def post_create_study(self, req):
@@ -575,6 +577,16 @@ class App:
         """只读疾病五库原件及恢复资格，不解析来源、不联网。"""
         from .system_disease_acquisition import info
         return info(self,req,study_id)
+
+    def get_system_disease_manual_sources(self,req,study_id):
+        """只读首次预上传资格与本研究原件元信息。"""
+        from .system_disease_manual_sources import info
+        return info(self,req,study_id)
+
+    def post_system_disease_manual_sources(self,req,study_id):
+        """严格原件上传仅排队，科学解析在独立后台执行。"""
+        from .system_disease_manual_sources import upload
+        return upload(self,req,study_id)
 
     def post_system_disease_acquisition(self,req,study_id):
         """明确提交疾病获取任务，失败不能被当成科学零结果。"""

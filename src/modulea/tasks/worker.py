@@ -626,6 +626,8 @@ def run_system_source_binding(settings,task,manager):
 
 
 HANDLERS['plan_system_source_binding']=run_system_source_binding
+from .system_disease_manual_sources import run as run_system_disease_manual_source
+HANDLERS['plan_system_disease_manual_source']=run_system_disease_manual_source
 
 
 def run_system_disease_acquisition(settings,task,manager):

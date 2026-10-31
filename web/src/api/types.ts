@@ -181,6 +181,12 @@ export interface ApiErrorBody {
 export interface SystemAcquisitionRequest {
  request_id:string;expected_a00:string;expected_plan_id:string;expected_input_hash:string;author:string;note:string;confirmed:true;
 }
+/** 新登记受限原件只暂存，GET不解析、不启动任务或确认登记。 */
+export interface SystemDiseaseManualSourcesInfo {
+ supported:boolean;enabled:boolean;blockers:string[];busy:boolean;expected_a00:string|null;expected_plan_id:string|null;expected_input_hash:string|null;
+ disease_identity_zh:string;message_zh:string;formats:Record<string,string[]>;
+ sources:{database:string;name:string;query:string;retrieved_at:string;version:string;format:string;bytes:number;sha256:string;status_zh:string}[];
+}
 /** 疾病五库原件资格与逐库事实，不把缺失或查询失败显示为0。 */
 export interface SystemDiseaseAcquisitionInfo {
  supported:boolean;enabled:boolean;blockers:string[];busy:boolean;expected_a00:string|null;expected_plan_id:string|null;expected_input_hash:string;

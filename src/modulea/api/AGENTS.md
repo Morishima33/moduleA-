@@ -1,5 +1,13 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-10-31 新登记的疾病手动原件预上传
+
+GET `/studies/{sid}/analysis-plan/disease-manual-sources`只读返回A02.system_manual_source.1支持与资格、expected_a00/expected_plan_id/expected_input_hash、疾病首选词和GeneCards/OMIM当前暂存原件元信息；不解析原文或启动科学任务。仅支持新方案、有效且未人工批准的A00；人工暂存/退回、回收站、忙碌或版本改变阻断。旧已批准登记仍沿原A02来源入口。
+
+POST同路径接收multipart：request_id=manualsourceq、expected_a00、expected_plan_id、expected_input_hash、author、note、confirmed=yes、database、format、query、retrieved_at、version、encoding、query_quoted、export_completeness及唯一upload文件；不接收URL、路径、批准、分数或参数覆盖，沿原16MiB请求边界。HTTP只校验结构和版本并保存实际字节/指纹，202提交plan_system_disease_manual_source；科学worker重核原确认及真实A00规范证据，复用冻结intake_sources.stage、原元信息/解析和疾病标题身份校验，原件与明确上传回执在同一次Workflow保存中发布。仅预上传，不批准A00、不发布A02或启动后续计算。相同请求及文件只返回原回执，不恢复已被替换的旧文件。原始文件、暂存版本及SHA进入完整追溯。
+
+session.capabilities.system_disease_manual_sources=true仅新服务声明。统一疾病原件区提供明确上传表单及原件状态；不默认确认、不自动上传，旧服务缺能力隐藏入口。新上传改变疾病获取绑定，补齐后须按当前状态另行明确获取或核验五库，不能偷偷修改原获取请求。
+
 ## 2026-10-31 逐对象结构准备恢复的新批次
 
 系统准备/资格/评分1及2的A06_PREP/A06模块页只读展示同运行摘要、固定对象和完整NA组合，名称来自本运行system_input_ref，科学状态来自归档表。评分复用现有heatmap字段，包含全部固定行列，不丢弃全NA对象；有效评分不存在时不生成空热图。隐藏旧连接/评分执行区，明确续做仍从统一批次入口；不改变复核资格或归档。新展示不导入科学计算、读取最新草稿或其他研究名单。

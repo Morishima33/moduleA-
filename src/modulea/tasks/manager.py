@@ -59,6 +59,7 @@ KINDS['plan_system_acquisition'] = '获取本方案三库原件并保留逐库�
 KINDS['plan_system_source_binding'] = '复验三库原ZIP并绑定独立科学输入（不发布A01）'
 KINDS['plan_system_disease_acquisition'] = '获取疾病五库原件并保留逐库恢复记录（不发布A02）'
 KINDS['plan_system_disease_publication'] = '将完整疾病原件整理为可追溯候选（不批准或启动标准化）'
+KINDS['plan_system_disease_manual_source'] = '校验并预上传GeneCards或OMIM原件（不批准登记或发布候选）'
 
 
 def _now() -> str:

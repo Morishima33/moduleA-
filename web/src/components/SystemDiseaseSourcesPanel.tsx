@@ -5,6 +5,7 @@ import {api,ApiError,errorText} from '../api/client';
 import type {SystemAcquisitionRequest,SystemDiseaseAcquisitionInfo,SystemSourceBindingRequest} from '../api/types';
 import {useApp} from '../lib/appContext';
 import {fmtTime} from '../lib/format';
+import SystemDiseaseManualSources from './SystemDiseaseManualSources';
 
 /** 只在明确点击时提交；旧读取响应忽略，刷新和任务完成不触发获取。 */
 export default function SystemDiseaseSourcesPanel({studyId}:{studyId:string}){
@@ -70,6 +71,7 @@ export default function SystemDiseaseSourcesPanel({studyId}:{studyId:string}){
  return <section className="card stack" id="system-disease-acquisition"><h2>补齐疾病五库原件</h2>
   <Alert showIcon type="info" message="获取和核验本研究疾病资料" description={'公共来源可补取；GeneCards、OMIM需要本研究原始资料。缺失、失败与有效0条分别保留。'+
    (app.session?.capabilities.system_disease_publication?'原件完整后可明确发布候选；科学集合须经后续标准化。':'本区仅保存原件，当前服务尚未提供候选发布入口。')}/>
+  {app.session?.capabilities.system_disease_manual_sources&&<SystemDiseaseManualSources studyId={studyId}/>}
   {error&&<Alert type="error" showIcon message={error} action={<Button onClick={()=>setTick(n=>n+1)}>重新读取疾病原件</Button>}/>}
   {notice&&<Alert type="success" showIcon message={notice}/>}
   {!info?(!error&&<Skeleton active/>):<>

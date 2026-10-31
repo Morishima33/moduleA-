@@ -18,6 +18,11 @@ class AnalysisPlanConflict(ContractError):
 class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
     """旧研究继承原行为；只有显式新方案登记支持草稿写入。"""
 
+    def stage_analysis_plan_system_disease_source(self,study_id,payload,data):
+        """明确预上传疾病受限原件，不签登记、不发布候选或启动下游。"""
+        from .system_disease_manual_sources import stage
+        return stage(self,study_id,payload,data)
+
     def publish_analysis_plan_system_disease_candidates(self,study_id,payload):
         """完整原件经真实系统登记证据发布独立候选，仍禁止直接交接A03。"""
         from .system_disease_publication import publish
