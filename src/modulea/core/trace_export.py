@@ -107,6 +107,10 @@ def _plan_decisions(workflow, manifest, all_files):
             ('system_acquisition_sources','analysis_plan_system_acquisition_source_records','A01.system_acquisition.1'),
             ('system_acquisition_failures','analysis_plan_system_acquisition_failures','A01.system_acquisition.1'),
             ('system_component_sources','analysis_plan_system_component_source_records','A01.system_source_binding.1'),
+            ('disease_acquisition_requests','analysis_plan_disease_acquisition_requests','A02.system_acquisition.1'),
+            ('disease_acquisitions','analysis_plan_disease_acquisition_records','A02.system_acquisition.1'),
+            ('disease_acquisition_sources','analysis_plan_disease_acquisition_sources','A02.system_acquisition.1'),
+            ('disease_acquisition_failures','analysis_plan_disease_acquisition_failures','A02.system_acquisition.1'),
             ('report_requests','analysis_plan_report_requests','A07.plan_report.1'),
             ('report_receipts','analysis_plan_report_receipts','A07.plan_report.1'),
             ('report_failures','analysis_plan_report_failures','A07.plan_report.1')):
@@ -161,6 +165,11 @@ def _plan_decisions(workflow, manifest, all_files):
             if key=='system_component_sources':
                 from .system_component_sources import read_record
                 value=read_record(workflow,manifest,reference)
+            if key in ('disease_acquisition_requests','disease_acquisitions','disease_acquisition_sources','disease_acquisition_failures'):
+                from .system_disease_acquisition import read_record
+                kind={'disease_acquisition_requests':'request','disease_acquisitions':'record',
+                    'disease_acquisition_sources':'source','disease_acquisition_failures':'failure'}[key]
+                value=read_record(workflow,manifest,reference,kind=kind)
             if key=='system_scoring_failures':
                 run=workflow.run(manifest,value['run_id'])
                 require(value['human_review_written'] is False and value['state']=='failed'
