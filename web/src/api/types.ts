@@ -443,6 +443,16 @@ export interface Special {
 }
 
 /** 本版待核原件只读整理；原查询返回量不等于可采用身份数。 */
+export interface ComponentIdentityProbeRequest {request_id:string;expected_a01:string;expected_input_hash:string;author:string;note:string;confirmed:true}
+export interface ComponentIdentityProbeInfo {
+ schema_version:string;supported:boolean;enabled:boolean;busy:boolean;blockers:string[];message_zh:string;expected_a01:string|null;expected_input_hash:string;
+ targets:{target_id:string}[];
+ records:{probe_id:string;created_at:string;state:string;message_zh:string;request:ComponentIdentityProbeRequest;candidate_coverage_complete:boolean;coverage_message_zh:string;
+  rows:{target_id:string;message_zh:string;issues:Record<string,unknown>[];adopted:false}[];
+  queries:{label_zh:string;state:string;http_status:number|null;retrieved_at:string;reused:boolean;error_zh:string}[];
+  downloads:{label_zh:string;url:string}[]}[];
+}
+
 export interface ComponentIdentityEvidence {
  schema_version:string;supported:boolean;read_only:true;study_id:string;expected_a01:string|null;expected_input_hash:string;message_zh:string;
  stats:null|{source_rows:number;protein_query_groups:number;source_without_target_rows:number;other_identity_rows:number;display_groups:number};

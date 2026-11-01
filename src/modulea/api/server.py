@@ -55,6 +55,9 @@ class App:
         self.plan_creation = PlanCreation(self.kernel)
         self.token = secrets.token_urlsafe(32)
         self.routes = [
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/component-identity-probes", self.get_component_identity_probes),
+            ("POST", rf"/api/v1/studies/{ID}/analysis-plan/component-identity-probes/execute", self.post_component_identity_probes),
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/component-identity-probes/(componentprobe_[0-9a-f]{{32}})/files/([0-9]+)", self.file_component_identity_probes),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/component-identity-evidence", self.get_component_identity_evidence),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/component-identity-evidence/export", self.export_component_identity_evidence),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/component-identity-evidence/files/([0-9]+)", self.file_component_identity_evidence),
@@ -526,7 +529,7 @@ class App:
 
     def session(self, req):
         return {"token": self.token, "version": __version__, "platform": sys.platform,
-                "capabilities": {"review": True, "batch_review": True, "tasks": True, "trash": True, "module_actions": False, "source_upload": True, "ppi_compute": True, "create_study": True, "system_pipeline": True, "system_acquisition": True, "system_source_binding": True, "system_disease_acquisition": True, "system_disease_publication": True, "system_preparation_recovery": True, "system_disease_manual_sources": True, "component_identity_evidence": True},
+                "capabilities": {"review": True, "batch_review": True, "tasks": True, "trash": True, "module_actions": False, "source_upload": True, "ppi_compute": True, "create_study": True, "system_pipeline": True, "system_acquisition": True, "system_source_binding": True, "system_disease_acquisition": True, "system_disease_publication": True, "system_preparation_recovery": True, "system_disease_manual_sources": True, "component_identity_evidence": True, "component_identity_probes": True},
                 "decisions_zh": {"approved": "通过，允许下游使用", "rejected": "退回修改", "pending": "暂存待定"}}
 
     def post_create_study(self, req):
@@ -580,6 +583,21 @@ class App:
         """本版系统A01原件与原官方响应只读核对。"""
         from .component_identity_evidence import info
         return info(self,req,study_id)
+
+    def get_component_identity_probes(self,req,study_id):
+        """读取正式补查历史及当前资格，不发出外部请求。"""
+        from .component_identity_probes import info
+        return info(self,req,study_id)
+
+    def post_component_identity_probes(self,req,study_id):
+        """明确补查只排队，不在HTTP联网或采用身份。"""
+        from .component_identity_probes import execute
+        return execute(self,req,study_id)
+
+    def file_component_identity_probes(self,req,study_id,probe_id,index):
+        """按已登记补查回执下载原文。"""
+        from .component_identity_probes import file
+        return file(self,req,study_id,probe_id,index)
 
     def export_component_identity_evidence(self,req,study_id):
         """导出必须保持读到的研究和版本绑定。"""

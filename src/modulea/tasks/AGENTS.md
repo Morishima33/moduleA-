@@ -1,5 +1,9 @@
 # tasks/ — 后台任务
 
+## 2026-11-01 A01官方精确编号补查
+
+plan_component_identity_probe经公开probe_analysis_plan_component_identities执行。HTTP仅预检与排队；科学worker按本版原HERB关系精确编号获取固定官方HERB/HGNC/NCBI原文并保存查询、失败和实现快照。开始与发布前重核当前A01/来源/科研意见，原件不一致或人工暂停不能发布回执。同请求完整结果只读返回，部分失败任务failed，明确重试仅复用指纹核验成功原文；每次失败与原获取时间保持。来源非人类或稳定编号一致均只作为未采用凭据，不写reviews/current/runs、不自动排除或启动下游。沿用同研究单任务、全局资源位、进程树取消及日志；GET/重启不自动获取。
+
 ## 2026-10-31 新登记疾病手动原件预上传
 
 plan_system_disease_manual_source只消费严格请求和队列固定文件名/SHA/长度，排队后重新核对当前新方案、未批准登记、原件版本与人工暂停，实际调用公开stage_analysis_plan_system_disease_source。复用冻结intake_sources.stage原格式解析、同研究原件保存和暂存规则，并校验明确疾病标题；在原stage写锁内重核输入，原件、暂存与新明确上传回执由同一次Workflow.save发布，禁止嵌套同根非重入锁。只保存GeneCards/OMIM本研究原件，不签A00、不生成A02。沿用原16MiB边界、同研究单任务、重任务预算、取消与真实失败日志；不在HTTP解析。原已批准A00仍沿旧A02上传行为，旧协议不改。

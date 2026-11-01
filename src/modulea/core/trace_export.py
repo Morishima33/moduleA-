@@ -107,6 +107,7 @@ def _plan_decisions(workflow, manifest, all_files):
             ('system_acquisition_sources','analysis_plan_system_acquisition_source_records','A01.system_acquisition.1'),
             ('system_acquisition_failures','analysis_plan_system_acquisition_failures','A01.system_acquisition.1'),
             ('system_component_sources','analysis_plan_system_component_source_records','A01.system_source_binding.1'),
+            ('component_identity_probes','analysis_plan_component_identity_probes','A01.identity_probe.1'),
             ('disease_manual_sources','analysis_plan_system_manual_source_records','A02.system_manual_source.1'),
             ('preparation_sessions','analysis_plan_system_preparation_sessions','A06.system_preparation_checkpoints.1'),
             ('preparation_objects','analysis_plan_system_preparation_objects','A06.system_preparation_checkpoints.1'),
@@ -179,6 +180,9 @@ def _plan_decisions(workflow, manifest, all_files):
                 value=read_record(workflow,manifest,reference,kind=kind)
             if key=='system_component_sources':
                 from .system_component_sources import read_record
+                value=read_record(workflow,manifest,reference)
+            if key=='component_identity_probes':
+                from .component_identity_probes import read_record
                 value=read_record(workflow,manifest,reference)
             if key in ('disease_acquisition_requests','disease_acquisitions','disease_acquisition_sources','disease_acquisition_failures'):
                 from .system_disease_acquisition import read_record

@@ -626,6 +626,18 @@ def run_system_source_binding(settings,task,manager):
 
 
 HANDLERS['plan_system_source_binding']=run_system_source_binding
+
+
+def run_component_identity_probe(settings,task,manager):
+    """科学worker实际联网留证；部分补查失败明确失败，不写通过或采用决定。"""
+    result=full_workflow(settings.data_root).probe_analysis_plan_component_identities(task['study_id'],json.loads(task['payload']),
+        progress=lambda message:manager.update(task['task_id'],progress={'step_zh':message,'done':0,'total':1}))
+    if result['state']!='complete':raise ValueError('官方补查部分失败；已成功原文与失败原因均已归档，可明确重试原请求')
+    manager.update(task['task_id'],progress={'step_zh':'官方凭据已完整归档，原身份及复核未改','done':1,'total':1})
+    return '官方精确编号凭据已归档：'+result['probe_id']+'；原身份待核、科学结果及人工复核保持。'
+
+
+HANDLERS['plan_component_identity_probe']=run_component_identity_probe
 from .system_disease_manual_sources import run as run_system_disease_manual_source
 HANDLERS['plan_system_disease_manual_source']=run_system_disease_manual_source
 

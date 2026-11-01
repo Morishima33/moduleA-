@@ -1,5 +1,11 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-11-01 官方精确编号补查归档
+
+GET `/studies/{sid}/analysis-plan/component-identity-probes`返回`A01.identity_probe.1`的supported/enabled/blockers、expected_a01/expected_input_hash、由本版原关系核对的HERB精确编号targets及不可变records。GET只读原文，不联网或重试。POST `.../execute`严格六字段`{request_id:componentprobereq_<32hex>,expected_a01,expected_input_hash,author,note,confirmed:true}`，202提交plan_component_identity_probe；拒绝URL、路径、客户端编号及采用/通过标记。后台经公开Workflow重新核对原A01、三库绑定、方案、原关系行和人工意见，固定官方HERB/HGNC/NCBI端点获取精确编号凭据。来源稳定编号一致、非人类、缺编号、冲突和请求失败分列；adopted始终false，不改变科研结果、current/runs/reviews或原待核。完整请求幂等；部分失败任务failed并保留所有尝试，明确重试同请求只复用已逐件核验的成功响应。排队或获取期间输入/人工意见改变不得发布回执。
+
+GET `.../{probe_id}/files/{index}?expected_record_sha256=...`只下载本研究已登记该回执及其files编号，历史回执可读，原文指纹逐件核验；拒绝路径、URL、额外参数及其他研究编号。损坏明确报错，不当作零结果。完整追溯plan_decisions.component_identity_probes纳入正式回执和原文。session.capabilities.component_identity_probes=true开启独立网页面板；默认不执行、不勾确认、补查成功不表示身份已采用。旧后端缺能力不请求新接口。
+
 ## 2026-11-01 系统A01待核原件只读核对
 
 GET `/studies/{sid}/analysis-plan/component-identity-evidence`返回`A01.identity_evidence_view.1`。仅当前`A01.system_publication.1`及其已登记三库绑定支持，旧版本返回supported=false。按已归档identity_decisions和TCMSP原表行整理核对组，展示原名/原编号/原决定及对应原UniProt请求和响应，不重新科学映射、不联网、不写研究。重复关系共享原查询组但保留全部issue_key和原表行，无靶点的源行单列，不能当作已检索零结果。原JSON响应条目数仅为原返回量，不代表可采用身份数。

@@ -18,6 +18,11 @@ class AnalysisPlanConflict(ContractError):
 class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
     """旧研究继承原行为；只有显式新方案登记支持草稿写入。"""
 
+    def probe_analysis_plan_component_identities(self,study_id,payload,*,opener=None,sleeper=None,progress=None):
+        """按原精确编号补查并归档官方原文，不采用身份、排除关系或写人工复核。"""
+        from .component_identity_probes import execute
+        return execute(self,study_id,payload,opener=opener,sleeper=sleeper,progress=progress)
+
     def stage_analysis_plan_system_disease_source(self,study_id,payload,data):
         """明确预上传疾病受限原件，不签登记、不发布候选或启动下游。"""
         from .system_disease_manual_sources import stage

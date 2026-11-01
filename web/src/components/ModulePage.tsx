@@ -43,6 +43,7 @@ import PlanScoring from './PlanScoring';
 import CreationPlan from './CreationPlan';
 import PlanA01 from './PlanA01';
 import ComponentIdentityEvidence from './ComponentIdentityEvidence';
+import ComponentIdentityProbes from './ComponentIdentityProbes';
 import PlanA05, { PlanA05Results } from './PlanA05';
 import PlanA05Display from './PlanA05Display';
 import PlanStages from './PlanStages';
@@ -163,6 +164,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       {/* 待核验事项紧接标题；证据直接展开，不藏在结果末尾。 */}
       {!view.historical && !oldIntersection && <div id="module-focus"><FocusSection items={view.focus} evidence={sp.ppi_identity ? <IdentityReview studyId={studyId} view={view} data={sp.ppi_identity} /> : undefined} /></div>}
       {systemA01&&!view.historical&&app.session?.capabilities.component_identity_evidence&&<ComponentIdentityEvidence key={view.run?.run_id} studyId={studyId}/>}
+      {systemA01&&!view.historical&&app.session?.capabilities.component_identity_probes&&<ComponentIdentityProbes key={view.run?.run_id} studyId={studyId}/>}
       {m.module_id === 'A02' && !view.historical && view.source_uploads && <SourceUploads studyId={studyId} moduleId={m.module_id} info={view.source_uploads} />}
       {view.disease_scope && <DiseaseScopeReview key={view.run?.run_id} studyId={studyId} info={view.disease_scope} onDirtyChange={setScopeDirty} />}
       {view.normalization && <NormalizationReview key={'normalization-' + view.run?.run_id + (view.normalization.preview?.stamp || '')} studyId={studyId} info={view.normalization} scopeDirty={scopeDirty} />}
