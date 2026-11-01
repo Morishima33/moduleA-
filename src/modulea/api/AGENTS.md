@@ -1,5 +1,17 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-11-01 单研究历史疾病版本例外
+
+GET `/studies/{sid}/analysis-plan/historical-disease-sources`只读返回`A02.historical_sources.1`资格、原五库文件元信息、精确expected_a00/expected_plan_id/expected_input_hash/expected_source_hashes及历史明确例外。仅新版workflow_test首次疾病候选支持；GeneCards和OMIM须均为当前登记已上传的未知发布版本原件，其他三库须有同登记成功且满足原版本说明或响应快照规则的系统原文。不联网、不自动决定。正式研究、缺库、版本或文件改变、人工暂停和回收站拒绝。
+
+POST `.../publish`严格九字段`{request_id:historicaldiseaseq_<32hex>,expected_a00,expected_plan_id,expected_input_hash,expected_source_hashes:{GeneCards,OMIM},author,note,user_decision,confirmed:true}`，202排队plan_historical_disease_sources。必须记录真实用户明确决定，不能改版本、注入路径/URL/采用或通过标记。后台公开Workflow核对原登记/方案/两份文件和原成功公共来源后保存不可变单研究例外，生产规范完整复算`A02.historical_collection.1`；只发布待标准化候选，不写人工reviews，不启动下游。原版本仍拒绝未知，导出日期与指纹不冒充发布版本。开始的新批次只有同一已批准方案和原件可采用`A02.system_source_reuse.3`与`A02.system_normalization.4`；旧批和旧规范不变，后来未采用草稿不替换原批参数。身份、范围、质控及最终复核不豁免。
+
+候选、标准化和报告携带`database_versions_complete:false/source_version_exception:true/source_limitations_zh`，网页醒目标注“仅流程测试，数据库发布版本未知”；双Word来源段保留同一说明。完整追溯包含`plan_decisions.historical_disease_sources`。session.capabilities.historical_disease_sources=true才显示独立面板，默认不勾、不自动执行；旧服务隐藏新入口。
+
+A02上述两种新协议的special.historical_disease_source={message_zh}标识本版来源限制和统一接续入口；不显示不适用的旧分步操作指南、上传、范围保存或身份预览表单。状态码和复核门控保持，等待说明明确到统一流程核对前置条件，不引导寻找已隐藏的旧表单。其他三库沿原有版本说明/响应快照规则；尤其OTP原“接口未提供数据库发布版本；以响应快照固定”据实保留，不声称已有可核实数据库发布号。
+
+疾病获取GET在当前A02为上述历史协议时追加historical_candidate:{run_id,candidate_records,source_limitations_zh,message_zh}。当前候选与先前获取失败分别展示：仅隐藏不适用的再次获取/原协议发布表单，原获取记录以明确“历史获取记录”折叠保留，不把旧失败改成成功或误报当前没有候选。未携带标记的原接口行为和页面保持。
+
 ## 2026-11-01 官方精确编号补查归档
 
 GET `/studies/{sid}/analysis-plan/component-identity-probes`返回`A01.identity_probe.1`的supported/enabled/blockers、expected_a01/expected_input_hash、由本版原关系核对的HERB精确编号targets及不可变records。GET只读原文，不联网或重试。POST `.../execute`严格六字段`{request_id:componentprobereq_<32hex>,expected_a01,expected_input_hash,author,note,confirmed:true}`，202提交plan_component_identity_probe；拒绝URL、路径、客户端编号及采用/通过标记。后台经公开Workflow重新核对原A01、三库绑定、方案、原关系行和人工意见，固定官方HERB/HGNC/NCBI端点获取精确编号凭据。来源稳定编号一致、非人类、缺编号、冲突和请求失败分列；adopted始终false，不改变科研结果、current/runs/reviews或原待核。完整请求幂等；部分失败任务failed并保留所有尝试，明确重试同请求只复用已逐件核验的成功响应。排队或获取期间输入/人工意见改变不得发布回执。

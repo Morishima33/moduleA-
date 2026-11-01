@@ -166,12 +166,15 @@ def _build(workflow,sid,*,source_evidence=None):
     sources=[{'label':'方剂成分与靶点来源','description':'、'.join(databases)+'；本研究原始三库资料经方案门槛及唯一人类身份核对后形成标准化集合，逐条原件见追溯包。'},
              {'label':'疾病靶点来源与筛选范围','description':'、'.join(disease_databases)+'；只采用本批保存的本病直接范围，标准化后按同一HGNC口径去重；未用缺失评分补零或附加阈值。'},
              {'label':'基因身份口径','description':str(results['A01']['summary']['mapping_rule'])+'；两侧实际映射及补充依据的版本和SHA保存在同批原件索引。'}]
-    if runs['A02']['config'].get('version') in ('A02.system_normalization.1','A02.system_normalization.2','A02.system_normalization.3'):
+    if runs['A02']['config'].get('version') in ('A02.system_normalization.1','A02.system_normalization.2','A02.system_normalization.3','A02.system_normalization.4'):
         scope=results['A02'];deferred=scope['summary']['暂缓范围组数']
         require(deferred==sum(row['action']=='deferred' for row in scope['tables']['scope_system_decisions']),
             '报告疾病暂缓数量与实际范围记录不同')
         sources[1]['description']='、'.join(disease_databases)+f'；仅纳入本批系统规则明确的本病直接范围；暂缓{deferred}组身份未精确对应的疾病范围，不作为已排除。'
         sources[1]['description']+='未产生人工范围审核；逐条原因、原文及已有范围意见见A02的scope_system_decisions与同批追溯。标准化按同一HGNC口径去重，无新增评分阈值。'
+    if runs['A02']['config'].get('version')=='A02.system_normalization.4':
+        require(intake['analysis_purpose']=='workflow_test' and results['A02']['summary']['database_versions_complete'] is False,'历史版本例外不能作为正式研究或版本完整')
+        for notice in results['A02']['summary']['source_limitations_zh']:sources.append({'label':'历史数据库版本限制','description':notice})
     return {'schema_version':VERSION,'study_id':sid,'intake':intake,'plan':plan,'plan_source':deepcopy(reference),
             'counts':{'a01_genes':counts['A01'],'a02_genes':counts['A02'],'intersection':count},
             'run_ids':run_ids,'completion':state,'enrichment':enrichment,'docking':docking,'branch_reasons':reasons,

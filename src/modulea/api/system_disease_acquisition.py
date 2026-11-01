@@ -9,6 +9,12 @@ def info(app,req,sid):
     w=app.kernel.workflow();m=w.load(sid);value=core.info(w,sid);value['busy']=bool(app.tasks.active_for(sid));value['requests']=[]
     intake=w.result(m,m['current']['A00'])['summary'] if m['current'].get('A00') else {}
     value['disease_identity_zh']=intake.get('mesh_verification',{}).get('preferred_term','')
+    rid=m['current'].get('A02')
+    if rid and w.run(m,rid)['config'].get('version') in ('A02.historical_collection.1','A02.system_normalization.4'):
+        summary=w.result(m,rid)['summary'];value['enabled']=False
+        value['historical_candidate']={'run_id':rid,'candidate_records':summary.get('候选记录数'),
+            'source_limitations_zh':summary['source_limitations_zh'],
+            'message_zh':'当前研究已采用明确限定的历史原件来源，版本说明保持；无需重复上传或用旧获取请求重新发布。下列记录仅反映例外前的获取历史，原失败未改写。'}
     groups={kind:[core.read_record(w,m,ref,kind=kind) for ref in m.get(index,[])]
         for kind,index in (('record',core.RECORDS),('source',core.SOURCES),('failure',core.FAILURES))}
     for ref in m.get(core.REQUESTS,[]):

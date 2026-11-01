@@ -1,5 +1,9 @@
 # tasks/ — 后台任务
 
+## 2026-11-01 单研究历史疾病版本例外
+
+plan_historical_disease_sources仅消费严格明确请求及真实用户决定，经公开publish_analysis_plan_historical_disease_candidates处理。绑定原A00/方案、GeneCards和OMIM精确SHA及同登记三库成功原件；只允许workflow_test，正式研究拒绝，不伪造发布版本。后台按原解析/来源身份/候选算法发布historical_collection.1，保存实际实现快照和不可变例外，不联网重下成功原件、不写模块reviews、不启动标准化或下游。开始/发布前重核原件及人工暂停，失败或中断保留原件与决定；同请求相同孤立决定可核验恢复，不覆盖历史。沿用资源位、同研究单任务、取消进程树和日志。系统来源复用3和标准化4须同一方案/原件，其他科学规则与版本保持。
+
 ## 2026-11-01 A01官方精确编号补查
 
 plan_component_identity_probe经公开probe_analysis_plan_component_identities执行。HTTP仅预检与排队；科学worker按本版原HERB关系精确编号获取固定官方HERB/HGNC/NCBI原文并保存查询、失败和实现快照。开始与发布前重核当前A01/来源/科研意见，原件不一致或人工暂停不能发布回执。同请求完整结果只读返回，部分失败任务failed，明确重试仅复用指纹核验成功原文；每次失败与原获取时间保持。来源非人类或稳定编号一致均只作为未采用凭据，不写reviews/current/runs、不自动排除或启动下游。沿用同研究单任务、全局资源位、进程树取消及日志；GET/重启不自动获取。

@@ -17,7 +17,14 @@ class SystemDiseaseManualSourcesHttpTests(unittest.TestCase):
         self.server,self.app=create_server(Settings(data_root=self.root,runtime_dir=self.root/'http_runtime'),0)
         self.port=self.server.server_port;self.thread=threading.Thread(target=self.server.serve_forever,daemon=True);self.thread.start()
         self.addCleanup(self.close);self.path=f'/api/v1/studies/{self.sid}/analysis-plan/disease-manual-sources'
-    def close(self):self.server.shutdown();self.server.server_close();self.thread.join()
+    def close(self):
+        """任务终态先落库，科学进程稍后退出；等待本测试的真实启动器释放日志再清理。"""
+        self.server.shutdown();self.server.server_close();self.thread.join()
+        names={'modulea-reap-'+task['task_id'] for task in self.app.tasks.list(self.sid)}
+        for thread in threading.enumerate():
+            if thread.name in names:
+                thread.join(30)
+                self.assertFalse(thread.is_alive(),'本测试科学启动器未退出，不能删除仍使用的临时目录')
     def form(self,body=None,raw=None,**changes):
         body=body or self.body();fields={key:value for key,value in body.items() if key not in ('source','confirmed')}
         fields.update({key:value for key,value in body['source'].items() if key!='name'},confirmed='yes');fields.update(changes)

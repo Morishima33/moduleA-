@@ -96,6 +96,7 @@ def full_workflow(data_root: Path) -> Workflow:
     from science_modules.a01.system_source_binding import validator as system_a01_validator
     from disease import validate_disease
     from science_modules.a02.system_collection import validator as system_collection_validator
+    from science_modules.a02.historical_collection import validator as historical_collection_validator
     from intersection_flow import validate_intersection, validate_selection
     from science_modules.plan_stages import a02_validator as stage_a02_validator, a03_validator as stage_a03_validator
     from science_modules.plan_compounds import validator as plan_compound_validator
@@ -132,7 +133,7 @@ def full_workflow(data_root: Path) -> Workflow:
     root = data_root
     return DockingWorkflow(root, {
         "A01": system_a01_validator(root,plan_a01_validator(root, literature_validator(root, "A01", collection_validator(root, upload_validator(root, multisource_validator(root, normalization_validator(root, validate_components))))))),
-        "A02": system_collection_validator(root,system_a02_validator(root,stage_a02_validator(root, literature_validator(root, "A02", normalization_validator(root, validate_disease))))),
+        "A02": historical_collection_validator(root,system_collection_validator(root,system_a02_validator(root,stage_a02_validator(root, literature_validator(root, "A02", normalization_validator(root, validate_disease)))))),
         "A03": stage_a03_validator(root, validate_intersection),
         "A03_SELECT": system_compound_validator(root,plan_compound_validator(root,validate_selection)),
         "A04": plan_ppi_validator(root, ppi_validator(root)),

@@ -103,6 +103,8 @@ function qs(params: Record<string, string | number | undefined | null>): string 
 
 // 各端点的薄封装；路径与契约第 3 节一致
 export const api = {
+  historicalDiseaseSources:(sid:string)=>request<import('./types').HistoricalDiseaseSourcesInfo>('GET',`/studies/${sid}/analysis-plan/historical-disease-sources`),
+  publishHistoricalDiseaseSources:(sid:string,body:Record<string,unknown>)=>request<{task:Task;request_id:string;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/historical-disease-sources/publish`,body),
   componentIdentityProbes:(sid:string)=>request<import('./types').ComponentIdentityProbeInfo>('GET',`/studies/${sid}/analysis-plan/component-identity-probes`),
   probeComponentIdentities:(sid:string,body:import('./types').ComponentIdentityProbeRequest)=>request<{task:Task;request_id:string;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/component-identity-probes/execute`,body),
   componentIdentityEvidence:(sid:string)=>request<import('./types').ComponentIdentityEvidence>('GET',`/studies/${sid}/analysis-plan/component-identity-evidence`),

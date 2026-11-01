@@ -190,7 +190,8 @@ def build(payload,destination,home,*,concise=False,draft=False):
     methods.append('不适用分支未执行；创建方案参数和术语详见附录。');document.add_paragraph(''.join(methods))
     network_heading=document.add_heading('4 交集 成分与PPI网络',1)
     # 非空报告来源较长时允许在方法段后接续，避免单独留一页方法说明。
-    network_heading.paragraph_format.page_break_before=not payload.get('counts',{}).get('intersection')
+    historical_sources=any(row['label']=='历史数据库版本限制' for row in payload['sources'])
+    network_heading.paragraph_format.page_break_before=not payload.get('counts',{}).get('intersection') and not historical_sources
     for row in payload['network_summary']:
         if row!=BOUNDARY:document.add_paragraph(row)  # 总体限制已在开头与附录完整说明。
     for entry in payload.get('figures',[]):

@@ -1,5 +1,5 @@
 // 文件用途：疾病五库原件明确获取与补取；只显示服务端事实，不生成科学结果或复核。
-import {Alert,Button,Checkbox,Input,Modal,Select,Skeleton,Table} from 'antd';
+import {Alert,Button,Checkbox,Collapse,Input,Modal,Select,Skeleton,Table} from 'antd';
 import {useEffect,useRef,useState} from 'react';
 import {api,ApiError,errorText} from '../api/client';
 import type {SystemAcquisitionRequest,SystemDiseaseAcquisitionInfo,SystemSourceBindingRequest} from '../api/types';
@@ -68,6 +68,13 @@ export default function SystemDiseaseSourcesPanel({studyId}:{studyId:string}){
   }catch(e){setError(errorText(e));if(e instanceof ApiError&&e.status===409){setConfirmed(false);setTick(n=>n+1);}}
   finally{setSaving(false);}
  }
+ if(info?.historical_candidate)return <section className="card stack" id="system-disease-acquisition"><h2>疾病原件与历史获取记录</h2>
+  <Alert type="info" showIcon message={info.historical_candidate.message_zh}/>
+  {info.historical_candidate.source_limitations_zh.map(text=><Alert key={text} type="warning" showIcon message={text}/>)}
+  {info.historical_candidate.candidate_records!=null&&<p>本版原始候选记录：{info.historical_candidate.candidate_records}；不是标准化基因数。</p>}
+  <Button onClick={()=>document.getElementById('historical-disease-sources')?.scrollIntoView({block:'start',behavior:'smooth'})}>查看本研究已记录的限定例外</Button>
+  <Collapse items={info.requests.map((row,i)=>({key:row.request_id,label:`历史获取 ${i+1} · ${row.state_label_zh} · ${fmtTime(row.created_at)}`,children:<div className="stack"><p>本记录是当时的获取事实；当前候选以本研究实际A02及明确例外为准。</p><Table rowKey="database" size="small" pagination={false} dataSource={row.display_sources} scroll={{x:650}} columns={[{title:'来源',dataIndex:'database'},{title:'当时状态',dataIndex:'state_label_zh'},{title:'原始记录数',dataIndex:'records_text_zh'},{title:'当时依据',dataIndex:'reason_zh'}]}/></div>}))}/>
+ </section>;
  return <section className="card stack" id="system-disease-acquisition"><h2>补齐疾病五库原件</h2>
   <Alert showIcon type="info" message="获取和核验本研究疾病资料" description={'公共来源可补取；GeneCards、OMIM需要本研究原始资料。缺失、失败与有效0条分别保留。'+
    (app.session?.capabilities.system_disease_publication?'原件完整后可明确发布候选；科学集合须经后续标准化。':'本区仅保存原件，当前服务尚未提供候选发布入口。')}/>

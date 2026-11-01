@@ -189,6 +189,7 @@ export interface SystemDiseaseManualSourcesInfo {
 }
 /** 疾病五库原件资格与逐库事实，不把缺失或查询失败显示为0。 */
 export interface SystemDiseaseAcquisitionInfo {
+  historical_candidate?:{run_id:string;candidate_records:number|null;source_limitations_zh:string[];message_zh:string};
  supported:boolean;enabled:boolean;blockers:string[];busy:boolean;expected_a00:string|null;expected_plan_id:string|null;expected_input_hash:string;
  disease_identity_zh:string;automatic_databases:string[];manual_databases:string[];message_zh:string;
  requests:{request_id:string;request:SystemAcquisitionRequest;plan_id:string;created_at:string;state:string;state_label_zh:string;
@@ -422,6 +423,7 @@ export interface SourceUploadItem {
 
 /** 模块专属数据（第 6 节）；各模块只有其中一部分键 */
 export interface Special {
+  historical_disease_source?:{message_zh:string};
   system_component_publication?: {source_binding_protocol:string;message_zh:string};
   venn?: Venn;
   component_top?: { compound_id: string; name: string; herbs: string; main_rank: number; intersection_count: number; mixed_degree: number }[];
@@ -444,6 +446,11 @@ export interface Special {
 
 /** 本版待核原件只读整理；原查询返回量不等于可采用身份数。 */
 export interface ComponentIdentityProbeRequest {request_id:string;expected_a01:string;expected_input_hash:string;author:string;note:string;confirmed:true}
+export interface HistoricalDiseaseSourcesInfo {
+ schema_version:string;supported:boolean;enabled:boolean;busy:boolean;blockers:string[];notice_zh:string;expected_a00:string|null;expected_plan_id:string|null;expected_input_hash:string|null;expected_source_hashes:Record<string,string>;
+ sources:{database:string;source:{version:string;retrieved_at:string};archive:{sha256:string}}[];
+ records:{created_at:string;notice_zh:string;request:{request_id:string;author:string;note:string;user_decision:string}}[];
+}
 export interface ComponentIdentityProbeInfo {
  schema_version:string;supported:boolean;enabled:boolean;busy:boolean;blockers:string[];message_zh:string;expected_a01:string|null;expected_input_hash:string;
  targets:{target_id:string}[];

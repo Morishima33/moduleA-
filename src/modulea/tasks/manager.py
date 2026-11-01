@@ -30,6 +30,7 @@ KINDS = {"a02_scope_review": "保存疾病范围核验", "a02_sources_retry": "�
 
 
 KINDS['plan_component_identity_probe'] = '按原精确编号补查官方身份凭据（不采用）'
+KINDS['plan_historical_disease_sources'] = '按本研究明确历史版本例外整理五库候选（仅流程测试）'
 KINDS["a05_pathway_maps"] = "生成KEGG排名首位命中图"
 KINDS['a06_resume'] = '核验原件并续算明确授权的中断批次'
 KINDS.update(a01_acquire="获取本研究三库原始资料", a01_resolve="保存A01完整性与身份例外处理", a02_mapping_preview="预览TTD与PharmGKB疾病候选（不改变A02）")

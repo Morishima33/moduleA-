@@ -18,6 +18,11 @@ class AnalysisPlanConflict(ContractError):
 class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
     """旧研究继承原行为；只有显式新方案登记支持草稿写入。"""
 
+    def publish_analysis_plan_historical_disease_candidates(self,study_id,payload):
+        """仅本研究明确未知版本例外整理五库候选，原字段保持，不签科研复核。"""
+        from .historical_disease_sources import publish
+        return publish(self,study_id,payload)
+
     def probe_analysis_plan_component_identities(self,study_id,payload,*,opener=None,sleeper=None,progress=None):
         """按原精确编号补查并归档官方原文，不采用身份、排除关系或写人工复核。"""
         from .component_identity_probes import execute
@@ -183,6 +188,9 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
     def _active(self, manifest, run_id):
         """仅新可复核准备额外绑定独立选择复核；撤回后普通复核同样失效。"""
         run=self.run(manifest,run_id)
+        if run.get('execution_protocol')=='A02.historical_collection.1':
+            from .historical_disease_sources import is_active
+            return is_active(self,manifest,run)
         if run.get('execution_protocol')=='A02.system_collection.1':
             from .system_disease_publication import is_active
             return is_active(self,manifest,run)

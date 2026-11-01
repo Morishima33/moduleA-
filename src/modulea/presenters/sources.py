@@ -127,6 +127,10 @@ def present_a02(result: dict, ctx: dict) -> Parts:
     t = tables_of(result)
     sources = source_display_rows(t.get("source_summary") or [])
     parts = Parts()
+    if s.get('protocol_version') in ('A02.historical_collection.1','A02.system_normalization.4'):
+        parts.special['historical_disease_source']={'message_zh':'本版采用已明确限定的历史原件；版本说明保持，后续从统一执行与续做核对条件，不使用旧分步表单。'}
+        for notice in s.get('source_limitations_zh',[]):parts.focus.append(focus('历史数据库版本例外（仅流程测试）',notice,tier='should_know'))
+        if s.get('handoff_blocked'):parts.focus.append(focus('历史候选尚不能交给下游','本版仅整理原五库候选；后续由统一批次按原身份、范围和质控规则处理，版本例外不代替科研复核。',blocks=['A03']))
     expected = len(s.get("databases") or []) or len(sources) or None
     parts.kpis = clean([
         kpi("疾病标准化靶点", pick(s, "标准化基因数"), "多库并集"),
@@ -148,7 +152,9 @@ def present_a02(result: dict, ctx: dict) -> Parts:
         parts.focus.append(focus("有数据库查询失败", f"{failed} 个来源查询失败；这是执行失败，不是 0 条结果。", blocks=["A03"]))
     pending = pick(s, "待范围复核条目数", "待定范围组数", default=0)
     if pending:
-        parts.focus.append(focus("疾病范围尚待复核", f"{pending} 个条目尚未判断是否属于本病；范围未定的记录不进入疾病主集合。", blocks=["A03"]))
+        if s.get('protocol_version')=='A02.historical_collection.1':
+            parts.focus.append(focus('疾病范围待处理',f'{pending} 个原范围组待核验；后续仅按本批已确认规则处理本病直接范围，未明确范围留因暂缓，不进入疾病主集合。',blocks=['A03']))
+        else:parts.focus.append(focus("疾病范围尚待复核", f"{pending} 个条目尚未判断是否属于本病；范围未定的记录不进入疾病主集合。", blocks=["A03"]))
     if pick(s, "身份问题组数"):
         parts.focus.append(focus("身份问题组", f"共 {s['身份问题组数']} 组；处理方式：{pick(s, '身份问题处理', default='见明细')}", tier="should_know"))
     for row in sources:

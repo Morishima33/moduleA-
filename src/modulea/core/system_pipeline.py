@@ -29,14 +29,21 @@ def required_inputs(workflow,m,batch=None):
     for source_id in (rid,initial['current']['A00']):
         review=workflow.latest_review(m,workflow.run(m,source_id)['artifact_id'])
         require(not review or review['decision']=='approved','必需来源已有明确人工暂存或退回')
-    require(run['config'].get('version') in ('A02.collect.2',system_disease_sources.COLLECTION_VERSION) and result is not None
+    require(run['config'].get('version') in ('A02.collect.2',system_disease_sources.COLLECTION_VERSION,system_disease_sources.HISTORICAL_COLLECTION) and result is not None
         and result['summary'].get('source_profile')=='A02.source_profile.3','统一编排要求本研究现代五库原始候选，不接受旧标准化结果替代')
     require(run['parent_runs']=={'A00':initial['current']['A00']},'五库候选与本批登记不同')
     manifests=[r for r in result['sources'] if r['role']=='source_manifest'];require(len(manifests)==1,'五库原件清单不唯一')
     sources=read_json(verified_file(home,manifests[0]));rows=sources['datasets']
+    historical=run['config'].get('version')==system_disease_sources.HISTORICAL_COLLECTION
+    if historical:
+        from .historical_disease_sources import read_record,require_current
+        value=read_record(workflow,m,run['inputs']['historical_exception']);require_current(workflow,m,value)
+        require(sources['historical_exception']==run['inputs']['historical_exception']
+            and (not batch or batch['plan_file']==value['binding']['plan_file']),'例外与本批方案或原件不同')
     require(len(rows)==5 and {r['database'] for r in rows}=={'GeneCards','OMIM','TTD','PharmGKB','OTP'},'五库原件缺失，不启动统一科学处理')
     for row in rows:
-        require(isinstance(row.get('version'),str) and row['version'].strip().casefold() not in ('','unknown','未知','未注明'),
+        require(isinstance(row.get('version'),str) and (row['version'].strip().casefold() not in ('','unknown','未知','未注明')
+            or historical and row['database'] in ('GeneCards','OMIM') and any(slot['database']==row['database'] and slot['archive']==row['source_record'] for slot in value['binding']['sources'])),
             '五库来源版本待核，不启动统一处理')
         verified_file(home,row['source_record'])
     return True

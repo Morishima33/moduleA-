@@ -638,6 +638,16 @@ def run_component_identity_probe(settings,task,manager):
 
 
 HANDLERS['plan_component_identity_probe']=run_component_identity_probe
+
+
+def run_historical_disease_sources(settings,task,manager):
+    """科学worker完整复核本研究原件及用户例外，不填假版本或签署科研复核。"""
+    result=full_workflow(settings.data_root).publish_analysis_plan_historical_disease_candidates(task['study_id'],json.loads(task['payload']))
+    manager.update(task['task_id'],progress={'step_zh':'本研究历史候选已归档；发布版本仍未知，尚未标准化或批准','done':1,'total':1})
+    return '仅流程测试的历史版本例外候选已保存：'+result['run_id']+'；原件和版本未知说明保持，未批准身份或启动下游。'
+
+
+HANDLERS['plan_historical_disease_sources']=run_historical_disease_sources
 from .system_disease_manual_sources import run as run_system_disease_manual_source
 HANDLERS['plan_system_disease_manual_source']=run_system_disease_manual_source
 

@@ -55,6 +55,8 @@ class App:
         self.plan_creation = PlanCreation(self.kernel)
         self.token = secrets.token_urlsafe(32)
         self.routes = [
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/historical-disease-sources", self.get_historical_disease_sources),
+            ("POST", rf"/api/v1/studies/{ID}/analysis-plan/historical-disease-sources/publish", self.post_historical_disease_sources),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/component-identity-probes", self.get_component_identity_probes),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/component-identity-probes/execute", self.post_component_identity_probes),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/component-identity-probes/(componentprobe_[0-9a-f]{{32}})/files/([0-9]+)", self.file_component_identity_probes),
@@ -529,7 +531,7 @@ class App:
 
     def session(self, req):
         return {"token": self.token, "version": __version__, "platform": sys.platform,
-                "capabilities": {"review": True, "batch_review": True, "tasks": True, "trash": True, "module_actions": False, "source_upload": True, "ppi_compute": True, "create_study": True, "system_pipeline": True, "system_acquisition": True, "system_source_binding": True, "system_disease_acquisition": True, "system_disease_publication": True, "system_preparation_recovery": True, "system_disease_manual_sources": True, "component_identity_evidence": True, "component_identity_probes": True},
+                "capabilities": {"review": True, "batch_review": True, "tasks": True, "trash": True, "module_actions": False, "source_upload": True, "ppi_compute": True, "create_study": True, "system_pipeline": True, "system_acquisition": True, "system_source_binding": True, "system_disease_acquisition": True, "system_disease_publication": True, "system_preparation_recovery": True, "system_disease_manual_sources": True, "component_identity_evidence": True, "component_identity_probes": True, "historical_disease_sources": True},
                 "decisions_zh": {"approved": "通过，允许下游使用", "rejected": "退回修改", "pending": "暂存待定"}}
 
     def post_create_study(self, req):
@@ -583,6 +585,16 @@ class App:
         """本版系统A01原件与原官方响应只读核对。"""
         from .component_identity_evidence import info
         return info(self,req,study_id)
+
+    def get_historical_disease_sources(self,req,study_id):
+        """读取本研究例外条件和已记录的用户决定。"""
+        from .historical_disease_sources import info
+        return info(self,req,study_id)
+
+    def post_historical_disease_sources(self,req,study_id):
+        """明确例外仅排队，候选整理在独立后台执行。"""
+        from .historical_disease_sources import publish
+        return publish(self,req,study_id)
 
     def get_component_identity_probes(self,req,study_id):
         """读取正式补查历史及当前资格，不发出外部请求。"""

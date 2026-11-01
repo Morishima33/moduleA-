@@ -352,7 +352,8 @@ class Views:
             run, result, review = raw["run"], raw["result"], raw["review"]
 
         state = dict(states[module_id])
-        normalization_info = normalization_context(workflow, real, result, self.kernel.settings, bool(self.tasks.active_for(study_id))) if module_id == "A02" and not historical else None
+        historical_source_result=bool(run and run['config'].get('version') in ('A02.historical_collection.1','A02.system_normalization.4'))
+        normalization_info = normalization_context(workflow, real, result, self.kernel.settings, bool(self.tasks.active_for(study_id))) if module_id == "A02" and not historical and not historical_source_result else None
         preview_ready = bool(normalization_info and normalization_info["preview"])
         if preview_ready and state["handoff_blocked"] and state["code"] == "waiting":
             state["reason_zh"] = "身份预览已完成，尚未生成待复核结果。请核对身份例外，在“确认身份处理”区填写依据并点击“确认处理并生成待复核结果”，完成后再整体复核。"
@@ -460,10 +461,10 @@ class Views:
             "plan_scoring": workflow.analysis_plan_a06_scoring_info(study_id) if module_id in ('A06_PREP', 'A06') and not historical and not preparation_page else None,
             "trial_handoff": handoff,
             "docking_preparation": preparation_context(workflow,real,historical,bool(self.tasks.active_for(study_id))) if module_id=="A06_PREP" and not coverage_info and not preparation_page else None,
-            "source_uploads": upload_context(workflow, real, module_id, result, historical, bool(self.tasks.active_for(study_id))) if not historical else None,
-            "disease_scope": scope_context(workflow, real, result, not real.get("trashed") and bool(run) and workflow.active(real, run["run_id"]) and not bool(self.tasks.active_for(study_id)), "历史/失效/回收站或后台任务进行中，当前不可提交") if module_id == "A02" and not historical else None,
+            "source_uploads": upload_context(workflow, real, module_id, result, historical, bool(self.tasks.active_for(study_id))) if not historical and not historical_source_result else None,
+            "disease_scope": scope_context(workflow, real, result, not real.get("trashed") and bool(run) and workflow.active(real, run["run_id"]) and not bool(self.tasks.active_for(study_id)), "历史/失效/回收站或后台任务进行中，当前不可提交") if module_id == "A02" and not historical and not historical_source_result else None,
             "normalization": normalization_info,
-            "disease_workflow": disease_navigation(workflow, real, result, normalization_info, state) if module_id == "A02" and not historical else None,
+            "disease_workflow": disease_navigation(workflow, real, result, normalization_info, state) if module_id == "A02" and not historical and not historical_source_result else None,
         }
         preparation = view.get("trial_preparation") if module_id == "A06_PREP" and not historical else None
         if preparation:
