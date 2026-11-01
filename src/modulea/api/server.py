@@ -55,6 +55,9 @@ class App:
         self.plan_creation = PlanCreation(self.kernel)
         self.token = secrets.token_urlsafe(32)
         self.routes = [
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/component-identity-evidence", self.get_component_identity_evidence),
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/component-identity-evidence/export", self.export_component_identity_evidence),
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/component-identity-evidence/files/([0-9]+)", self.file_component_identity_evidence),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/disease-acquisition", self.get_system_disease_acquisition),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/disease-acquisition/execute", self.post_system_disease_acquisition),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/disease-acquisition/publish", self.post_system_disease_publication),
@@ -523,7 +526,7 @@ class App:
 
     def session(self, req):
         return {"token": self.token, "version": __version__, "platform": sys.platform,
-                "capabilities": {"review": True, "batch_review": True, "tasks": True, "trash": True, "module_actions": False, "source_upload": True, "ppi_compute": True, "create_study": True, "system_pipeline": True, "system_acquisition": True, "system_source_binding": True, "system_disease_acquisition": True, "system_disease_publication": True, "system_preparation_recovery": True, "system_disease_manual_sources": True},
+                "capabilities": {"review": True, "batch_review": True, "tasks": True, "trash": True, "module_actions": False, "source_upload": True, "ppi_compute": True, "create_study": True, "system_pipeline": True, "system_acquisition": True, "system_source_binding": True, "system_disease_acquisition": True, "system_disease_publication": True, "system_preparation_recovery": True, "system_disease_manual_sources": True, "component_identity_evidence": True},
                 "decisions_zh": {"approved": "通过，允许下游使用", "rejected": "退回修改", "pending": "暂存待定"}}
 
     def post_create_study(self, req):
@@ -572,6 +575,21 @@ class App:
         """只读三库原件获取条件、实际失败和逐库恢复进度。"""
         from .system_acquisition import info
         return info(self,req,study_id)
+
+    def get_component_identity_evidence(self,req,study_id):
+        """本版系统A01原件与原官方响应只读核对。"""
+        from .component_identity_evidence import info
+        return info(self,req,study_id)
+
+    def export_component_identity_evidence(self,req,study_id):
+        """导出必须保持读到的研究和版本绑定。"""
+        from .component_identity_evidence import export
+        return export(self,req,study_id)
+
+    def file_component_identity_evidence(self,req,study_id,index):
+        """附件由服务端编号选择，客户端不能指定路径。"""
+        from .component_identity_evidence import file
+        return file(self,req,study_id,index)
 
     def get_system_disease_acquisition(self,req,study_id):
         """只读疾病五库原件及恢复资格，不解析来源、不联网。"""

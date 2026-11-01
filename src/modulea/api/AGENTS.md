@@ -1,5 +1,11 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-11-01 系统A01待核原件只读核对
+
+GET `/studies/{sid}/analysis-plan/component-identity-evidence`返回`A01.identity_evidence_view.1`。仅当前`A01.system_publication.1`及其已登记三库绑定支持，旧版本返回supported=false。按已归档identity_decisions和TCMSP原表行整理核对组，展示原名/原编号/原决定及对应原UniProt请求和响应，不重新科学映射、不联网、不写研究。重复关系共享原查询组但保留全部issue_key和原表行，无靶点的源行单列，不能当作已检索零结果。原JSON响应条目数仅为原返回量，不代表可采用身份数。
+
+返回`expected_a01/expected_input_hash/stats/units/files/read_only/message_zh`及JSON/CSV导出链接。导出`.../export?format=json|csv&expected_a01=...&expected_input_hash=...`；附件`.../files/{index}?expected_a01=...&expected_input_hash=...`。版本变化拒绝，附件只能从本A01及其绑定原件索引选择，逐件核SHA，不接收路径/URL/批准参数；下载不触发重算或写入。文件损坏明确失败，不显示为缺查询或零结果。session.capabilities.component_identity_evidence=true才显示网页入口，旧服务缺能力不请求。页面由用户明确载入只读清单，可下载同批CSV/JSON及原文，不提供默认通过、自动排除或身份替换。
+
 ## 2026-10-31 新登记的疾病手动原件预上传
 
 GET `/studies/{sid}/analysis-plan/disease-manual-sources`只读返回A02.system_manual_source.1支持与资格、expected_a00/expected_plan_id/expected_input_hash、疾病首选词和GeneCards/OMIM当前暂存原件元信息；不解析原文或启动科学任务。仅支持新方案、有效且未人工批准的A00；人工暂存/退回、回收站、忙碌或版本改变阻断。旧已批准登记仍沿原A02来源入口。

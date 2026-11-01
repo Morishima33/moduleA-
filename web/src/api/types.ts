@@ -442,6 +442,17 @@ export interface Special {
   report_files?: ReportFile[];
 }
 
+/** 本版待核原件只读整理；原查询返回量不等于可采用身份数。 */
+export interface ComponentIdentityEvidence {
+ schema_version:string;supported:boolean;read_only:true;study_id:string;expected_a01:string|null;expected_input_hash:string;message_zh:string;
+ stats:null|{source_rows:number;protein_query_groups:number;source_without_target_rows:number;other_identity_rows:number;display_groups:number};
+ units:{unit_id:string;database:string;kind:string;raw_name:string;raw_target_ids:string[];original_reason_zh:string;
+  records:Record<string,unknown>[];record_count:number;file_indices:number[];response_state:string;response_records:number|null;
+  original_url?:string;query?:string;protein_candidates:{accession:string;recommended_name:string;alternative_names:string[];taxid:number|null;genes:string[]}[]}[];
+ files:{index:number;label_zh:string;file:{path:string;bytes:number;sha256:string;role:string};url?:string}[];
+ export_json_url?:string;export_csv_url?:string;
+}
+
 /** 模块页 */
 export interface DiseaseScopeInfo {
   enabled: boolean; disabled_reason_zh: string; expected_a00: string; expected_run: string; expected_staging: string;

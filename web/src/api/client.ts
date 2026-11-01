@@ -103,6 +103,7 @@ function qs(params: Record<string, string | number | undefined | null>): string 
 
 // 各端点的薄封装；路径与契约第 3 节一致
 export const api = {
+  componentIdentityEvidence:(sid:string)=>request<import('./types').ComponentIdentityEvidence>('GET',`/studies/${sid}/analysis-plan/component-identity-evidence`),
   /** 统一批次只读及明确执行，沿用令牌与过期保护。 */
   systemPipeline: (sid:string)=>request<import('./types').SystemPipelineInfo>('GET',`/studies/${sid}/analysis-plan/system-pipeline`),
   systemAcquisition: (sid:string)=>request<import('./types').SystemAcquisitionInfo>('GET',`/studies/${sid}/analysis-plan/system-acquisition`),
