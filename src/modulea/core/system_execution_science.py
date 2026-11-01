@@ -100,6 +100,10 @@ def a05(workflow,m,batch,plan,batch_ref):
 
 def a02(workflow,m,batch,plan,batch_ref):
     """消费授权时绑定的原始五库候选，同本批三库映射重新标准化。"""
+    if batch.get('identity_exception_file'):
+        require(batch.get('disease_source_protocol')=='A02.system_source_reuse.3','身份例外只支持明确历史五库来源')
+        from science_modules.a02.system_normalization_identity import compute
+        return compute(workflow,m,batch,plan,batch_ref)
     if batch.get('disease_source_protocol')=='A02.system_source_reuse.3':
         from science_modules.a02.system_normalization_historical import compute
         return compute(workflow,m,batch,plan,batch_ref)
@@ -134,9 +138,10 @@ def a02_validator(root,fallback):
     from science_modules.a02.system_normalization_reuse import validator as reuse_validator,VERSION as REUSE_VERSION
     from science_modules.a02.system_normalization_collection import validator as collection_validator,VERSION as COLLECTION_VERSION
     from science_modules.a02.system_normalization_historical import validator as historical_validator,VERSION as HISTORICAL_VERSION
-    science=historical_validator(root,collection_validator(root,reuse_validator(root,validator(root,fallback))))
+    from science_modules.a02.system_normalization_identity import validator as identity_validator,VERSION as IDENTITY_VERSION
+    science=identity_validator(root,historical_validator(root,collection_validator(root,reuse_validator(root,validator(root,fallback)))))
     def check(run,*args):
-        if run['config'].get('version') in (VERSION,REUSE_VERSION,COLLECTION_VERSION,HISTORICAL_VERSION):
+        if run['config'].get('version') in (VERSION,REUSE_VERSION,COLLECTION_VERSION,HISTORICAL_VERSION,IDENTITY_VERSION):
             from pathlib import Path
             from .analysis_plans import AnalysisPlanWorkflow
             from .system_execution import is_active
@@ -164,9 +169,14 @@ def a01(workflow,m,batch,plan):
     if batch.get('component_source_protocol')=='A01.system_source_binding.1':
         from science_modules.a01 import system_source_binding as system_sources
         inputs['system_source_binding']=deepcopy(batch['staging_file'])
-        summary,tables,anomalies=system_sources.facts(home,inputs);config=system_sources.configuration(plan['plan'])
+        if batch.get('identity_exception_file'):
+            from science_modules.a01 import identity_exception
+            inputs['identity_exception_file']=deepcopy(batch['identity_exception_file'])
+            summary,tables,anomalies=identity_exception.facts(home,inputs);config=identity_exception.configuration(plan['plan'])
+        else:summary,tables,anomalies=system_sources.facts(home,inputs);config=system_sources.configuration(plan['plan'])
     else:summary,tables,anomalies=facts(home,inputs);config=configuration(plan['plan'])
     sources=[batch['plan_file'],batch['staging_file'],inputs['mapping']['mapping_file'],*inputs['mapping']['identity_evidence_files']]
+    if batch.get('identity_exception_file'):sources.append(batch['identity_exception_file'])
     for slot in source['datasets']:sources.extend([slot['source_record'],*slot['files']])
     return inputs,config,summary,tables,anomalies,sources
 

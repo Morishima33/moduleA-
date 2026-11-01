@@ -18,6 +18,10 @@ FIELDS={'request_id','expected_a00','expected_plan_id','expected_input_hash','au
 
 def scientific_version(module,config):
     """新资格修订仍属PREP，显式列出科学版本，不修改旧人工协议。"""
+    if module=='A01' and config.get('version')=='A01.system_publication.2':
+        return config.get('identity_exception_protocol')=='ModuleA.identity_exception.1'
+    if module=='A02' and config.get('version')=='A02.system_normalization.5':
+        return config.get('identity_policy')=='explicit_bound_test_exception'
     if module=='A06_PREP' and config.get('version') in ('A06.system_preparation.2','A06.system_qualification.2'):
         return config.get('object_checkpoint_protocol')=='A06.system_preparation_checkpoints.1'
     if module=='A06' and config.get('version')=='A06.system_scoring.2':return True
@@ -34,6 +38,7 @@ def snapshot(workflow,m):
         'plan_records':deepcopy(m.get('analysis_plan_records',[])),
         'staging_file':deepcopy(m.get('current_component_uploads')),'reviews':deepcopy(m.get('reviews',[])),'trashed':bool(m.get('trashed'))}
     if m.get('current_system_component_sources'):value['system_component_source_file']=deepcopy(m['current_system_component_sources'])
+    if m.get('current_analysis_plan_identity_exception'):value['identity_exception_file']=deepcopy(m['current_analysis_plan_identity_exception'])
     return value
 
 
@@ -90,6 +95,13 @@ def read_batch(workflow,m,reference):
         require(source['plan_file']==value['plan_file'] and source['a00_run_id']==value['request']['expected_a00'],'系统批次来源不是原方案和登记')
     else:require(value['staging_file']==value['initial_binding']['staging_file'],'系统执行原始三库输入不同')
     for ref in (value['staging_file'],value['mapping']['mapping_file'],*value['mapping']['identity_evidence_files']):verified_file(home,ref)
+    if value.get('identity_exception_file'):
+        from . import identity_exceptions
+        exception=identity_exceptions.read_record(workflow,m,value['identity_exception_file'])
+        require(value['initial_binding'].get('identity_exception_file')==value['identity_exception_file']
+            and value['mapping']==exception['mapping'] and value['plan_file']==exception['binding']['plan_file']
+            and {key:value['initial_binding']['current'].get(key) for key in ('A00','A01','A02')}==exception['binding']['current'],
+            '系统批次身份例外不是原明确两侧、方案及共同映射')
     if value.get('disease_source_file') or value.get('disease_source_protocol'):
         from . import system_disease_sources
         system_disease_sources.read(workflow,m,value,check_reviews=False)
@@ -120,6 +132,12 @@ def start(workflow,sid,body,*,preparation_protocol=None):
         protocol=source_for(workflow,m,body['expected_plan_id'])[1]
         if preparation_protocol:record['preparation_protocol']=preparation_protocol
         if protocol:record['component_source_protocol']=protocol
+        if m.get('current_analysis_plan_identity_exception'):
+            from . import identity_exceptions
+            identity_ref=m[identity_exceptions.CURRENT];exception=identity_exceptions.read_record(workflow,m,identity_ref)
+            require(identity_exceptions.context(workflow,m)==exception['binding'],'原身份例外不适用于新输入或方案')
+            identity_exceptions.guard(workflow,m,exception['binding'])
+            record['identity_exception_file']=deepcopy(identity_ref);record['mapping']=deepcopy(exception['mapping'])
         a02=m['current'].get('A02')
         from . import system_disease_sources
         if a02 and workflow.run(m,a02)['config'].get('version') in (system_disease_sources.NORMALIZED|{system_disease_sources.COLLECTION_VERSION,system_disease_sources.HISTORICAL_COLLECTION}):
@@ -140,6 +158,9 @@ def require_batch(workflow,m,ref):
     if batch.get('component_source_protocol'):
         require(m.get('current_system_component_sources')==batch['staging_file'],'批次系统三库原件已替换，请明确启动新批次')
     else:require(m.get('current_component_uploads')==batch['staging_file'],'批次三库原件已替换，请明确启动新批次')
+    if batch.get('identity_exception_file'):
+        from .identity_exceptions import for_batch
+        for_batch(workflow,m,batch)
     return batch,plan
 
 
@@ -184,7 +205,7 @@ def is_active(workflow,m,run):
             base=read_json(verified_file(workflow.location(m['study_id']),run['inputs']['base_run']))
             review=workflow.latest_review(m,base['artifact_id'])
             require(not review or review['decision']=='approved','疾病原候选已被明确暂存或退回')
-            if run['config'].get('version') in ('A02.system_normalization.2','A02.system_normalization.3','A02.system_normalization.4'):
+            if run['config'].get('version') in ('A02.system_normalization.2','A02.system_normalization.3','A02.system_normalization.4','A02.system_normalization.5'):
                 from . import system_disease_sources
                 batch,_=read_batch(workflow,m,run['batch_file']);source=system_disease_sources.read(workflow,m,batch)
                 require(run['inputs']['disease_source_binding']==batch['disease_source_file']
@@ -314,7 +335,7 @@ def _execute(workflow,sid,body,*,tools=None,progress=None):
             base=read_json(verified_file(home,computed[0]['base_run']))
             reviews=[r for r in m.get('reviews',[]) if read_json(verified_file(home,r))['artifact_id']==base['artifact_id']]
             require(reviews==computed[0]['base_reviews'],'疾病标准化期间原候选人工决定已改变')
-            if computed[1]['version'] in ('A02.system_normalization.2','A02.system_normalization.3','A02.system_normalization.4'):
+            if computed[1]['version'] in ('A02.system_normalization.2','A02.system_normalization.3','A02.system_normalization.4','A02.system_normalization.5'):
                 source=read_json(verified_file(home,computed[0]['source_current_run']))
                 reviews=[r for r in m.get('reviews',[]) if read_json(verified_file(home,r))['artifact_id']==source['artifact_id']]
                 require(reviews==computed[0]['source_current_reviews'],'疾病原件复用期间原标准化人工决定已改变')

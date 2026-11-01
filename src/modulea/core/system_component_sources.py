@@ -25,9 +25,10 @@ def read_record(workflow,m,ref):
     require(value['request']['expected_input_hash']==fingerprint(request['binding']),
         '三库来源绑定并非原获取确认的实际输入')
     require([r['database'] for r in value['datasets']]==['TCMSP','HERB','BATMAN'],'系统三库绑定不能缺库或重复')
+    from .read_archive import verify_records
     for slot,row in zip(value['datasets'],original['sources']):
         require(slot['source_record']==row['archive'],'系统三库原ZIP被替换')
-        for item in [slot['source_record'],*slot['files']]:verified_file(home,item)
+        verify_records(workflow,home,[slot['source_record'],*slot['files']])
     for item in value['implementation_files']:verified_file(home,item)
     return value
 

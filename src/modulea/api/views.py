@@ -352,7 +352,8 @@ class Views:
             run, result, review = raw["run"], raw["result"], raw["review"]
 
         state = dict(states[module_id])
-        historical_source_result=bool(run and run['config'].get('version') in ('A02.historical_collection.1','A02.system_normalization.4'))
+        system_execution_result=bool(run and run.get('execution_protocol')=='ModuleA.system_execution.1' and not historical)
+        historical_source_result=bool(run and run['config'].get('version') in ('A02.historical_collection.1','A02.system_normalization.4','A02.system_normalization.5'))
         normalization_info = normalization_context(workflow, real, result, self.kernel.settings, bool(self.tasks.active_for(study_id))) if module_id == "A02" and not historical and not historical_source_result else None
         preview_ready = bool(normalization_info and normalization_info["preview"])
         if preview_ready and state["handoff_blocked"] and state["code"] == "waiting":
@@ -518,7 +519,7 @@ class Views:
                 response['compound_selection']=None
                 response['docking_review']=None
                 response['review']['continue'].update(available=False,note_zh='请仅保存名单的独立复核决定；本方案下游从对应新版入口明确执行。')
-        if module_id in ('A00','A02','A03','A04') and not historical:
+        if module_id in ('A00','A02','A03','A04') and not historical and not system_execution_result:
             from science_modules.plan_stages_contract import info as stages_info
             value=stages_info(workflow,study_id)
             if value['supported']:
@@ -606,7 +607,11 @@ class Views:
         if system_structure and result:
             from .system_docking_view import apply as apply_system_docking
             apply_system_docking(workflow,real,run,result,response)
-        response["operation_guide"] = None if plan_preparation or plan_result or system_structure else operation_navigation(response, result)
+        response["operation_guide"] = None if plan_preparation or plan_result or system_structure or system_execution_result else operation_navigation(response, result)
+        if system_execution_result and module_id in ('A01','A02','A03','A04'):
+            from ..presenters.base import focus
+            response['focus'].append(focus('本版由统一批次接续',
+                '请在项目的“统一执行与续做”中查看本批进度并明确续做；此处保留结果和独立复核，不使用旧逐阶段执行表单。系统校验不代表人工复核通过。',tier='should_know'))
         response["input_audit"] = input_audit_context(workflow, real, module_id, run, result, stale=not historical and state["code"] == "stale")
         if literature_input and module_id in ('A01', 'A02'):
             response['input_audit'] = None  # 两侧文献数量已由同源结果数量链展示，避免重复常规范围表。

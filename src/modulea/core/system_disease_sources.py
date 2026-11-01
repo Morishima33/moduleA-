@@ -8,7 +8,7 @@ COLLECTION_VERSION='A02.system_collection.1'
 COLLECTION_REUSE_VERSION='A02.system_source_reuse.2'
 HISTORICAL_COLLECTION='A02.historical_collection.1'
 HISTORICAL_REUSE='A02.system_source_reuse.3'
-NORMALIZED={'A02.system_normalization.1','A02.system_normalization.2','A02.system_normalization.3','A02.system_normalization.4'}
+NORMALIZED={'A02.system_normalization.1','A02.system_normalization.2','A02.system_normalization.3','A02.system_normalization.4','A02.system_normalization.5'}
 
 
 def resolve(workflow,m,initial=None,*,check_reviews=True):

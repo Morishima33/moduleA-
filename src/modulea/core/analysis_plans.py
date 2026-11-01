@@ -18,6 +18,11 @@ class AnalysisPlanConflict(ContractError):
 class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
     """旧研究继承原行为；只有显式新方案登记支持草稿写入。"""
 
+    def register_analysis_plan_identity_exception(self,study_id,payload,evidence_bytes):
+        """仅登记当前流程测试精确身份清单及共同补充原文，不签复核或发布结果。"""
+        from .identity_exceptions import register
+        return register(self,study_id,payload,evidence_bytes)
+
     def publish_analysis_plan_historical_disease_candidates(self,study_id,payload):
         """仅本研究明确未知版本例外整理五库候选，原字段保持，不签科研复核。"""
         from .historical_disease_sources import publish

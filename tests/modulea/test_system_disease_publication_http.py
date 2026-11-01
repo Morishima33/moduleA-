@@ -14,8 +14,16 @@ from tests.modulea import test_system_disease_acquisition as fixture,test_system
 
 class SystemDiseasePublicationHttpTests(unittest.TestCase):
     call=http_fixture.SystemAcquisitionHttpTests.call
-    close=http_fixture.SystemAcquisitionHttpTests.close
     wait_task=http_fixture.SystemAcquisitionHttpTests.wait_task
+
+    def close(self):
+        """只等待本测试的启动器释放日志，任务终态不代表进程已退出。"""
+        self.server.shutdown();self.server.server_close();self.thread.join()
+        names={'modulea-reap-'+task['task_id'] for task in self.app.tasks.list(self.sid)}
+        for thread in threading.enumerate():
+            if thread.name in names:
+                thread.join(30)
+                self.assertFalse(thread.is_alive(),'本测试科学启动器未退出，不能清理仍使用的临时目录')
 
     @classmethod
     def setUpClass(cls):

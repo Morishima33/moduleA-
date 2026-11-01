@@ -10,7 +10,7 @@ def info(app,req,sid):
     intake=w.result(m,m['current']['A00'])['summary'] if m['current'].get('A00') else {}
     value['disease_identity_zh']=intake.get('mesh_verification',{}).get('preferred_term','')
     rid=m['current'].get('A02')
-    if rid and w.run(m,rid)['config'].get('version') in ('A02.historical_collection.1','A02.system_normalization.4'):
+    if rid and w.run(m,rid)['config'].get('version') in ('A02.historical_collection.1','A02.system_normalization.4','A02.system_normalization.5'):
         summary=w.result(m,rid)['summary'];value['enabled']=False
         value['historical_candidate']={'run_id':rid,'candidate_records':summary.get('候选记录数'),
             'source_limitations_zh':summary['source_limitations_zh'],

@@ -1,5 +1,11 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-11-01 已明确精确身份清单例外的结果展示
+
+`ModuleA.identity_exception.1`本阶段仅通过后台公开Workflow登记，无新增HTTP写入口或网页上传表单。`A01.system_publication.2`与`A02.system_normalization.5`的已归档结果携带`identity_exception_protocol/identity_limitations_zh`及`tables.identity_exception_scope`，重点核对区显示“本批明确身份例外（仅流程测试）”。原未决身份状态仍保留，明确不采用不是身份已解决，也不是人工复核通过。A02第五版继续沿用special.historical_disease_source隐藏不适用旧表单；历史版本说明和旧获取记录保留。完整追溯追加`plan_decisions.identity_exceptions`及实际原文、共同映射、精确范围和实现文件，不接受路径下载或客户端通过结论。两份报告来源段同步身份与版本限制。
+
+当前运行明确为`ModuleA.system_execution.1`时，A01/A02/A03/A04的已归档页面不再生成旧`plan_stages`人工阶段执行表单和旧`operation_guide`，需要知悉区指向“统一执行与续做”。原结果、状态、人工复核资格和后端写入门控保持；普通人工版本及历史页面沿原行为，不用科学版本号推断用户已批准。
+
 ## 2026-11-01 单研究历史疾病版本例外
 
 GET `/studies/{sid}/analysis-plan/historical-disease-sources`只读返回`A02.historical_sources.1`资格、原五库文件元信息、精确expected_a00/expected_plan_id/expected_input_hash/expected_source_hashes及历史明确例外。仅新版workflow_test首次疾病候选支持；GeneCards和OMIM须均为当前登记已上传的未知发布版本原件，其他三库须有同登记成功且满足原版本说明或响应快照规则的系统原文。不联网、不自动决定。正式研究、缺库、版本或文件改变、人工暂停和回收站拒绝。

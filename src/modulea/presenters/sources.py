@@ -66,7 +66,7 @@ def present_a01_multisource(result: dict, ctx: dict) -> Parts:
     s = result.get("summary") or {}
     t = tables_of(result)
     parts = Parts()
-    if s.get('component_source_profile') == 'A01.system_publication.1' and s.get('source_binding_protocol') == 'A01.system_source_binding.1':
+    if s.get('component_source_profile') in ('A01.system_publication.1','A01.system_publication.2') and s.get('source_binding_protocol') == 'A01.system_source_binding.1':
         parts.special['system_component_publication'] = {
             'source_binding_protocol': s['source_binding_protocol'],
             'message_zh': '本版结果来自本研究系统绑定的三库原件；候选身份与结构待核仍保留。当前获取资格、来源版本及后续接续请在统一执行页核对，不以旧人工上传清单判断缺库。',
@@ -104,11 +104,13 @@ def present_a01_multisource(result: dict, ctx: dict) -> Parts:
     excluded = pick(s, "身份例外处理")
     if excluded:
         parts.focus.append(focus("本研究身份例外决定", str(excluded) + "；该决定仅适用于当前研究及绑定版本。", tier="should_know"))
+    for notice in s.get('identity_limitations_zh',[]):
+        parts.focus.append(focus('本批明确身份例外（仅流程测试）',notice,tier='should_know'))
     parts.focus.append(focus("已有关系的证据范围", "数据库已有关系及人类HGNC身份不等于人体直接结合实验证据；本方案未增加新的靶点预测。", tier="should_know"))
     if s.get("handoff_blocked"):
         detail = (f"三库完整性待核 {s.get('完整性待核项数', 0)} 项，身份未决 {s.get('未决身份组数', 0)} 组。请在本页资料区核对并保存处理；当前A02保持。"
                   if s.get('component_source_profile') == 'A01.multisource.collect.1' else "当前仍有未处理的资料或身份问题；历史病例决定不会自动应用。")
-        if s.get('component_source_profile') in ('A01.plan_publication.1', 'A01.system_publication.1'):
+        if s.get('component_source_profile') in ('A01.plan_publication.1', 'A01.system_publication.1','A01.system_publication.2'):
             counts = []
             if s.get('完整性待核项数') is not None:
                 counts.append(f"三库完整性待核 {s['完整性待核项数']} 项")
@@ -127,10 +129,12 @@ def present_a02(result: dict, ctx: dict) -> Parts:
     t = tables_of(result)
     sources = source_display_rows(t.get("source_summary") or [])
     parts = Parts()
-    if s.get('protocol_version') in ('A02.historical_collection.1','A02.system_normalization.4'):
+    if s.get('protocol_version') in ('A02.historical_collection.1','A02.system_normalization.4','A02.system_normalization.5'):
         parts.special['historical_disease_source']={'message_zh':'本版采用已明确限定的历史原件；版本说明保持，后续从统一执行与续做核对条件，不使用旧分步表单。'}
         for notice in s.get('source_limitations_zh',[]):parts.focus.append(focus('历史数据库版本例外（仅流程测试）',notice,tier='should_know'))
         if s.get('handoff_blocked'):parts.focus.append(focus('历史候选尚不能交给下游','本版仅整理原五库候选；后续由统一批次按原身份、范围和质控规则处理，版本例外不代替科研复核。',blocks=['A03']))
+    for notice in s.get('identity_limitations_zh',[]):
+        parts.focus.append(focus('本批明确身份例外（仅流程测试）',notice,tier='should_know'))
     expected = len(s.get("databases") or []) or len(sources) or None
     parts.kpis = clean([
         kpi("疾病标准化靶点", pick(s, "标准化基因数"), "多库并集"),
@@ -152,7 +156,9 @@ def present_a02(result: dict, ctx: dict) -> Parts:
         parts.focus.append(focus("有数据库查询失败", f"{failed} 个来源查询失败；这是执行失败，不是 0 条结果。", blocks=["A03"]))
     pending = pick(s, "待范围复核条目数", "待定范围组数", default=0)
     if pending:
-        if s.get('protocol_version')=='A02.historical_collection.1':
+        if s.get('protocol_version') in ('A02.system_normalization.4','A02.system_normalization.5') and s.get('scope_authority')=='system_validation' and not s.get('handoff_blocked'):
+            parts.focus.append(focus('本批暂缓的疾病范围',f'{pending} 个原范围组仍未明确，留因暂缓且未进入本批疾病集合；本版已按原批规则生成直接范围集合，不表示这些范围已获人工确认。',tier='should_know'))
+        elif s.get('protocol_version')=='A02.historical_collection.1':
             parts.focus.append(focus('疾病范围待处理',f'{pending} 个原范围组待核验；后续仅按本批已确认规则处理本病直接范围，未明确范围留因暂缓，不进入疾病主集合。',blocks=['A03']))
         else:parts.focus.append(focus("疾病范围尚待复核", f"{pending} 个条目尚未判断是否属于本病；范围未定的记录不进入疾病主集合。", blocks=["A03"]))
     if pick(s, "身份问题组数"):

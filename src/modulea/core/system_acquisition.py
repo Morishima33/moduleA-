@@ -97,7 +97,8 @@ def read_record(workflow,m,reference,*,kind):
                 if row['state']=='ready':verified_file(home,row['archive'])
             require(value['state']==('complete' if all(r['state']=='ready' for r in value['sources']) else 'partial_failure'),
                 '原件获取总体状态不同于逐库事实')
-        for ref in value['files']:verified_file(home,ref)
+        from .read_archive import verify_records
+        verify_records(workflow,home,value['files'])
     return value
 
 

@@ -15,6 +15,17 @@ from pathlib import Path
 from contracts import ContractError, require, safe_id
 
 
+def verify_records(workflow, root, records):
+    """只读实例复用既有完整SHA批量核验；科学/写入实例仍逐件原校验，不跳过文件。"""
+    bulk = getattr(workflow, 'verify_archives', None)
+    if callable(bulk):
+        bulk(root, list(records))
+    else:
+        from storage import verified_file
+        for record in records:
+            verified_file(root, record)
+
+
 class ReadArchive:
     """复用同一请求中已解析的目录，避免Windows为每个文件反复展开相同路径。"""
 
