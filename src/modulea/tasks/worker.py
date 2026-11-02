@@ -648,6 +648,49 @@ def run_historical_disease_sources(settings,task,manager):
 
 
 HANDLERS['plan_historical_disease_sources']=run_historical_disease_sources
+
+
+def run_a05_text_revision(settings,task,manager):
+    """离线科学worker经公开Workflow实际R复算，资源预算/取消/失败诊断沿原管理器。"""
+    manager.update(task['task_id'],progress={'step_zh':'离线核验原A05并复算Unicode输出','done':0,'total':1})
+    result=full_workflow(settings.data_root).revise_analysis_plan_a05_text(task['study_id'],json.loads(task['payload']))
+    manager.update(task['task_id'],progress={'step_zh':'新A05中文原因已归档，原统计和独立复核保持','done':1,'total':1})
+    return 'A05中文修订已归档：'+result['run_id']+'；未联网、未改变统计或签署人工复核。'
+
+
+HANDLERS['plan_a05_text_revision']=run_a05_text_revision
+
+
+def run_ppi_identity_probe(settings, task, manager):
+    """科学worker沿既有预算获取精确原件；部分失败如实失败，保留成功断点。"""
+    result = full_workflow(settings.data_root).probe_analysis_plan_ppi_identities(task['study_id'], json.loads(task['payload']),
+        progress=lambda value: manager.update(task['task_id'], progress=value))
+    if result['state'] != 'complete': raise ValueError('PPI精确编号补查部分失败；原文及失败原因已保存，可明确重试失败项')
+    manager.update(task['task_id'], progress={'step_zh': '原稳定编号补查完整归档，尚未采用身份或发布新网络', 'done': 1, 'total': 1})
+    return 'PPI官方原件已归档：' + result['probe_id'] + '；尚未发布新PPI或签署人工复核。'
+
+
+def run_ppi_identity_revision(settings, task, manager):
+    """科学worker只经公开修订入口发布新网络，不触发A03/A05或签署复核。"""
+    manager.update(task['task_id'], progress={'step_zh': '核对原批准及完整补查，按原参数复算全网络', 'done': 0, 'total': 1})
+    result = full_workflow(settings.data_root).revise_analysis_plan_ppi_identities(task['study_id'], json.loads(task['payload']))
+    manager.update(task['task_id'], progress={'step_zh': 'PPI独立新版本已归档，原交集、富集及人工复核保持', 'done': 1, 'total': 1})
+    return 'PPI清单修订已归档：' + result['run_id'] + '；仅本批流程测试，仍保留身份未决及结构质控限制。'
+
+
+HANDLERS['plan_ppi_identity_probe'] = run_ppi_identity_probe
+HANDLERS['plan_ppi_identity_revision'] = run_ppi_identity_revision
+
+
+def run_system_exports(settings, task, manager):
+    """既有重任务预算下派生导出文件，不调用Vina或更换科学运行。"""
+    manager.update(task['task_id'], progress={'step_zh': '核对本批原结果并生成Excel、CSV和图', 'done': 0, 'total': 1})
+    result = full_workflow(settings.data_root).export_analysis_plan_system_results(task['study_id'], json.loads(task['payload']))
+    manager.update(task['task_id'], progress={'step_zh': '六件同批导出已归档，原评分与复核保持', 'done': 1, 'total': 1})
+    return '同批导出已归档：' + result['export_id'] + '；未重算评分或改变科学状态。'
+
+
+HANDLERS['plan_system_exports'] = run_system_exports
 from .system_disease_manual_sources import run as run_system_disease_manual_source
 HANDLERS['plan_system_disease_manual_source']=run_system_disease_manual_source
 

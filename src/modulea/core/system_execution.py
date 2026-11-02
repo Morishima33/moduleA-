@@ -18,6 +18,10 @@ FIELDS={'request_id','expected_a00','expected_plan_id','expected_input_hash','au
 
 def scientific_version(module,config):
     """新资格修订仍属PREP，显式列出科学版本，不修改旧人工协议。"""
+    if module=='A04' and config.get('version')=='A04.plan_network.2':
+        return config.get('identity_protocol')=='A04.plan_identity.1' and config.get('identity_scope_protocol')=='A04.plan_identity_scope.1'
+    if module=='A05' and config.get('version')=='A05.plan_enrichment.2':
+        return config.get('text_encoding_rule')=='R.unicode_literals.1'
     if module=='A01' and config.get('version')=='A01.system_publication.2':
         return config.get('identity_exception_protocol')=='ModuleA.identity_exception.1'
     if module=='A02' and config.get('version')=='A02.system_normalization.5':
@@ -78,6 +82,7 @@ def read_batch(workflow,m,reference):
         and value.get('human_review_written') is False and value['request']['confirmed'] is True
         and value['request_hash']==fingerprint(value['request']),'系统执行授权归属或明确确认无效')
     require(value.get('preparation_protocol') in (None,'A06.system_preparation.2'),'系统批次结构准备协议未知')
+    require(value.get('enrichment_protocol') in (None,'A05.plan_enrichment.2'),'系统批次富集输出协议未知')
     safe_id(value['batch_id'],'systembatch');safe_id(value['request']['request_id'],'systembatchreq')
     require(value['plan_file'] in m.get('analysis_plan_records',[]),'批次方案未登记')
     plan=read_json(verified_file(home,value['plan_file']))
@@ -108,10 +113,11 @@ def read_batch(workflow,m,reference):
     return value,plan
 
 
-def start(workflow,sid,body,*,preparation_protocol=None):
+def start(workflow,sid,body,*,preparation_protocol=None,enrichment_protocol=None):
     """公开Workflow一次登记明确批次；不写人工reviews，不启动隐含科学计算。"""
     require(isinstance(body,dict) and set(body)==FIELDS,'系统批次请求字段错误，不接受通过标记、参数或路径覆盖')
     require(preparation_protocol in (None,'A06.system_preparation.2'),'尚未接通该准备恢复协议')
+    require(enrichment_protocol in (None,'A05.plan_enrichment.2'),'尚未接通该富集输出协议')
     safe_id(body['request_id'],'systembatchreq');safe_id(body['expected_a00'],'run');safe_id(body['expected_plan_id'],'plan')
     require(body['confirmed'] is True and all(isinstance(body[k],str) and 0<len(body[k].strip())<=2000 for k in ('author','note')),
         '请填写执行人、依据并明确确认本批次')
@@ -131,6 +137,7 @@ def start(workflow,sid,body,*,preparation_protocol=None):
             'human_review_written':False,'created_at':now()}
         protocol=source_for(workflow,m,body['expected_plan_id'])[1]
         if preparation_protocol:record['preparation_protocol']=preparation_protocol
+        if enrichment_protocol:record['enrichment_protocol']=enrichment_protocol
         if protocol:record['component_source_protocol']=protocol
         if m.get('current_analysis_plan_identity_exception'):
             from . import identity_exceptions

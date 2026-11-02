@@ -503,7 +503,22 @@ export interface AutomaticDockingInfo {
     objects: {id: string; name: string; state: string; cid?: number; reason_zh: string; structures: {pdb_id?: string; model_id?: string; source_type?: string; chains: string[]; pocket: string; altloc?: string | null}[]}[]; files: AutomaticFile[]; reference_candidates?:ReferenceCandidate[]} | null;
   latest: {id: string; state: string; run_id: string | null; summary: Record<string, unknown> | null; error_zh?: string; pairs: AutomaticPair[]; files: AutomaticFile[];file_count?:number;display_id?:string|null} | null;
 }
+/** 后台仅从本批原始矩阵派生文件，不代表科学复核。 */
+export interface SystemExportRequest {
+  request_id:string;expected_module:'A06'|'A06_PREP';expected_run_id:string;
+  expected_input_hash:string;author:string;note:string;confirmed:true;
+}
+export interface SystemExportRecord {
+  export_id:string;source_module:'A06'|'A06_PREP';source_run_id:string;created_at:string;
+  files:{path:string;bytes:number;sha256:string;name:string;download_url:string}[];
+}
+export interface SystemExportsInfo {
+  schema_version:string;enabled:boolean;blockers:string[];message_zh:string;
+  expected_module:'A06'|'A06_PREP'|null;expected_run_id:string|null;expected_input_hash:string|null;
+  current:SystemExportRecord|null;history:SystemExportRecord[];
+}
 export interface ModuleView {
+  system_exports?: SystemExportsInfo | null;
   automatic_docking?: AutomaticDockingInfo | null;
   input_audit?: {formula: {run_id: string; sources: string[]; missing_sources: string[]; component_label_zh: string; component_count: number | null; target_count: number | null; relationship_count: number | null} | null;
     disease: {run_id: string; candidate_count: number | null; target_count: number | null; scope_counts: {value: string; label_zh: string; count: number; records: number}[]; empty_reason_zh: string} | null;
@@ -622,7 +637,7 @@ export interface PpiRunInfo { enabled: boolean; disabled_reason_zh: string; expe
 
 // 只读待核验身份，显示归档原值；不提供代签或自动身份替换。
 export interface PpiIdentityRow { target_id: string; symbol: string; returned: string; reason_zh: string }
-export interface PpiIdentity { total: number; source_table: string; note_zh: string; rows: PpiIdentityRow[] }
+export interface PpiIdentity { total: number; source_table: string; note_zh: string; rows: PpiIdentityRow[]; scope_kind?: 'explicit_bound_test_decision'; handoff_blocked?: boolean }
 
 // 保存的是人工补查方案；身份与模块是否可通过仍由科学归档和Workflow决定。
 export interface IdentityPlanInfo { enabled: boolean; disabled_reason_zh: string; expected_a03: string; expected_a04: string; expected_decision_id: string | null; latest: { decision_id: string; reviewer: string; note_zh: string; created_at: string; check_ids: string[]; omit_ids: string[]; applied_run_id: string | null; pending_count: number | null; evidence_url?: string | null; error_zh?: string; status_zh: string } | null }

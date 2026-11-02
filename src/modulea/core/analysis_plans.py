@@ -18,6 +18,36 @@ class AnalysisPlanConflict(ContractError):
 class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
     """旧研究继承原行为；只有显式新方案登记支持草稿写入。"""
 
+    def analysis_plan_system_exports_info(self, study_id):
+        """只读本批Excel/CSV/图的资格及已有档案，不生成文件或计算。"""
+        from .system_exports_v2 import info
+        return info(self, study_id)
+
+    def export_analysis_plan_system_results(self, study_id, payload):
+        """明确派生本批导出文件，不改评分、科学运行、报告或人工复核。"""
+        from .system_exports_v2 import execute
+        return execute(self, study_id, payload)
+
+    def register_analysis_plan_ppi_identity_scope(self, study_id, payload, proposal_bytes):
+        """仅登记实际获准的同批PPI精确清单，不联网、不签复核或发布新网络。"""
+        from .ppi_identity_scope import register
+        return register(self, study_id, payload, proposal_bytes)
+
+    def probe_analysis_plan_ppi_identities(self, study_id, payload, *, opener=None, progress=None):
+        """逐请求归档获准原HGNC稳定编号；失败可显式恢复，不隐式采用或遗漏。"""
+        from .ppi_identity_probes import execute
+        return execute(self, study_id, payload, opener=opener, progress=progress)
+
+    def revise_analysis_plan_ppi_identities(self, study_id, payload, *, opener=None):
+        """完整获准补查后按原参数新取全网络并发布独立版本；不签复核、不改A03/A05。"""
+        from .ppi_identity_revision import publish
+        return publish(self, study_id, payload, opener=opener)
+
+    def revise_analysis_plan_a05_text(self,study_id,payload):
+        """明确修订本批A05中文原因，统计完整复算不变，原版本和人工复核保持。"""
+        from .plan_a05_text import publish
+        return publish(self,study_id,payload)
+
     def register_analysis_plan_identity_exception(self,study_id,payload,evidence_bytes):
         """仅登记当前流程测试精确身份清单及共同补充原文，不签复核或发布结果。"""
         from .identity_exceptions import register
@@ -69,9 +99,9 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
         return start(self,study_id,payload)
 
     def start_analysis_plan_recoverable_system_batch(self,study_id,payload):
-        """明确新批使用逐对象准备恢复；旧批和原开始入口继续原版本。"""
+        """明确新批使用逐对象准备恢复及Unicode富集输出；旧请求重试仍返回原批。"""
         from .system_execution import start
-        return start(self,study_id,payload,preparation_protocol='A06.system_preparation.2')
+        return start(self,study_id,payload,preparation_protocol='A06.system_preparation.2',enrichment_protocol='A05.plan_enrichment.2')
 
     def execute_analysis_plan_system_decision(self,study_id,payload):
         """同批系统受体选择及固定准备输入，不生成选择人工审核。"""

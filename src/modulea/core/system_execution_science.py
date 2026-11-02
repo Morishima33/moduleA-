@@ -78,13 +78,15 @@ def a05(workflow,m,batch,plan,batch_ref):
     """锁外原R来源、ORA及独立BH；输入固定到批次原方案，不调用旧人工资格门控。"""
     import hashlib
     from science_modules.a05 import plan_flow as science
+    if batch.get('enrichment_protocol')=='A05.plan_enrichment.2':
+        from science_modules.a05 import plan_flow_utf8 as science
     from science_modules.a05.flow import mapping_record
     sid=m['study_id'];home=workflow.location(sid);a03=m['current']['A03'];mapping=mapping_record(workflow,m,a03)
     source_ref=science.source_snapshot(workflow.root,plan['plan']);source=verified_file(workflow.root,source_ref)
     folder=home/'decisions/analysis_plans/system_batches'/batch['batch_id']/'acquisition/A05'/new_id('attempt')
     folder.mkdir(parents=True);archived=folder/source.name;archived.write_bytes(source.read_bytes())
     require(hashlib.sha256(archived.read_bytes()).hexdigest()==source_ref['sha256'],'本批富集原件归档指纹不一致')
-    script=folder/'plan_enrichment.R';script.write_bytes(science.SCRIPT.read_bytes())
+    script=folder/science.SCRIPT.name;script.write_bytes(science.SCRIPT.read_bytes())
     inputs={'study_id':sid,'expected_a00':batch['request']['expected_a00'],'analysis_plan_id':plan['plan_id'],
         'analysis_plan_file':deepcopy(batch['plan_file']),'analysis_parameter_hash':plan['plan']['parameter_hash'],
         'parent_result':deepcopy(m['runs'][a03]['result_file']),'mapping_file':mapping,

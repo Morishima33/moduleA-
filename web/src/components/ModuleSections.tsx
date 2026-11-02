@@ -39,7 +39,7 @@ export function FocusSection({ items, evidence }: { items: FocusItem[]; evidence
 }
 
 /** “需要知悉”：随总体复核知悉，不逐条确认 */
-export function KnowSection({ items }: { items: FocusItem[] }) {
+export function KnowSection({ items, evidence }: { items: FocusItem[]; evidence?: ReactNode }) {
   const know = items.filter((f) => f.tier !== 'must_handle'); // 需要知悉项
   if (!know.length) return null; // 没有就不显示
   return (
@@ -52,6 +52,7 @@ export function KnowSection({ items }: { items: FocusItem[] }) {
             <strong style={{ fontSize: 14 }}>{f.title_zh}</strong>
             {f.body_zh && <span style={{ fontSize: 14, color: '#3A4651' }}>{f.body_zh}</span>}
             {f.impact_zh && <span style={{ fontSize: 13, color: '#7A4100' }}>{f.impact_zh}</span>}
+            {f.source_table === 'identity_issues' && evidence}
           </div>
         ))}
       </div>

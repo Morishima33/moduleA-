@@ -206,6 +206,8 @@ def archive_enrichment(workflow,m,folder):
     if not rid or not (plan['parameters']['a05.include_go'] or plan['parameters']['a05.include_kegg']):return None
     from science_modules.a05 import plan_display as model
     home=workflow.location(m['study_id']);base=workflow.result(m,rid);intake=workflow.result(m,m['current']['A00'])['summary']
+    if base['summary'].get('protocol_version')=='A05.plan_enrichment.2':
+        from science_modules.a05 import plan_display_utf8 as model
     source=model.make_source(base,plan,intake);folder=folder/'a05_source';folder.mkdir(parents=True,exist_ok=False)
     values={}
     for key,path in (('catalog',model.screening.CATALOG),('lexicon',model.LEXICON)):

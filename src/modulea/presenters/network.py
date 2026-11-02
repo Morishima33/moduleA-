@@ -70,9 +70,11 @@ def present_a04(result: dict, ctx: dict) -> Parts:
         ]
     )
     add_identity_review(parts, s, t)
+    if s.get('identity_protocol') == 'A04.plan_identity.1':
+        parts.focus.append(focus('本批PPI身份处理限制', s['identity_notice_zh'], tier='should_know'))
     if excluded:
         names = "、".join(
-            str(r.get("symbol") or r.get("target")) for r in (t.get("ppi_exclusions") or [])[:10]
+            str(r.get("symbol") or r.get("target")) for r in (t.get("identity_temporarily_omitted") or t.get("ppi_exclusions") or [])[:10]
         )
         parts.focus.append(
             focus(
@@ -176,6 +178,20 @@ def add_identity_review(parts, summary, tables):
     count = summary.get("身份待核验数")
     if not count:
         return  # 已解决或已批准的历史问题不重新制造待办。
+    if summary.get('identity_protocol') == 'A04.plan_identity.1':
+        decisions = {row['target_id']: row for row in tables['identity_decisions']}
+        unresolved = summary['未获准身份阻断数']
+        item = focus('PPI身份未决清单保留',
+            f"{count}项身份仍未解决，其中本批明确暂不采用{summary['本次PPI暂不采用数']}项；未获准且仍阻断{unresolved}项。",
+            tier='must_handle' if unresolved else 'should_know', blocks=['A06_PREP'] if unresolved else [])
+        item['source_table'] = 'identity_issues'; parts.focus.append(item)
+        parts.special['ppi_identity'] = {'total': len(rows), 'source_table': 'identity_issues',
+            'scope_kind': 'explicit_bound_test_decision', 'handoff_blocked': bool(summary['handoff_blocked']),
+            'note_zh': summary['identity_notice_zh'],
+            'rows': [{'target_id': row['target_id'], 'symbol': row['symbol'], 'returned': row.get('returned', ''),
+                      'reason_zh': decisions[row['target_id']]['reason_zh'] + ('；仅本批PPI暂不采用' if decisions[row['target_id']]['action'] == 'temporarily_omitted' else '；仍阻断后续')}
+                     for row in rows]}
+        return
     item = focus(
         "请先核验STRING基因身份",
         f"{count if count is not None else len(rows)}个靶点身份待核验。下方直接展示清单，点击基因名或“查看证据”查看原始证据。"

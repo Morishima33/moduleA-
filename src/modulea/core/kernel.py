@@ -105,8 +105,10 @@ def full_workflow(data_root: Path) -> Workflow:
     from .system_execution_science import a02_validator as system_a02_validator
     from ppi_dispatch import validator as ppi_validator, docking_validator
     from science_modules.a04.plan_flow import validator as plan_ppi_validator
+    from science_modules.a04.plan_identity_network import validator as identity_ppi_validator
     from science_modules.a05.compact_flow import validator as enrichment_validator
     from science_modules.a05.plan_flow import validator as plan_enrichment_validator
+    from science_modules.a05.plan_flow_utf8 import validator as plan_enrichment_utf8_validator
     from docking_formal import prep_validator, formal_validator
     from report_dispatch import validator as report_validator
     from science_modules.a07.plan_report_flow import validator as plan_report_validator
@@ -137,8 +139,8 @@ def full_workflow(data_root: Path) -> Workflow:
         "A02": historical_collection_validator(root,system_collection_validator(root,system_a02_validator(root,stage_a02_validator(root, literature_validator(root, "A02", normalization_validator(root, validate_disease)))))),
         "A03": stage_a03_validator(root, validate_intersection),
         "A03_SELECT": system_compound_validator(root,plan_compound_validator(root,validate_selection)),
-        "A04": plan_ppi_validator(root, ppi_validator(root)),
-        "A05": plan_enrichment_validator(root, enrichment_validator(root)),
+        "A04": identity_ppi_validator(root, plan_ppi_validator(root, ppi_validator(root))),
+        "A05": plan_enrichment_utf8_validator(root,plan_enrichment_validator(root, enrichment_validator(root))),
         "A06_PREP": incremental_qualification_validator(root,incremental_preparation_validator(root,system_qualification_validator(root,system_preparation_validator(root,reviewable_preparation_validator(root, reference_qualification_v2_validator(root, reference_preparation_validator(root, plan_pocket_validator(root, plan_preparation_v2_validator(root, plan_preparation_validator(root, coverage_validator(root, quality_validator(root, docking_validator(root, prep_validator(root)))))))))))))),
         "A06": incremental_scoring_validator(root,system_scoring_validator(root,plan_scoring_validator(root, reference_validator(root, rescue_validator(root, automatic_validator(root, trial_handoff_validator(root, formal_validator(root)))))))),
         "A07": plan_report_validator(root, report_validator(root)),

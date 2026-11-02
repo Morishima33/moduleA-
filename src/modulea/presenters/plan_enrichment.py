@@ -10,7 +10,8 @@ def present(result, ctx):
         parts.kpis.append(kpi(row['group'], row.get('significant_count') if row['included'] else '未纳入',
                               '显著条目' if row['included'] else '本方案不执行此类别'))
     parts.params = [param('显著性', summary['主显著性']), param('参数指纹', summary['analysis_parameter_hash'])]
-    parts.flow_note_zh = '输入为本研究已批准A03交集；GO三类及KEGG分别BH校正，分母按各类实际注释背景。'
+    parts.flow_note_zh = ('输入为本研究本批A03交集；系统校验不表示人工批准；' if ctx.get('execution_protocol')=='ModuleA.system_execution.1'
+                          else '输入为本研究已批准A03交集；')+'GO三类及KEGG分别BH校正，分母按各类实际注释背景。'
     parts.table = table([('group','类别'),('state_zh','本方案状态'),('background_count','背景基因'),
                          ('effective_count','有效输入'),('tested_count','实际检验'),('significant_count','显著条目')],
                         tables['group_summary'], 'group_summary')

@@ -120,6 +120,9 @@ class App:
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a06-scoring", self.get_analysis_a06_scoring),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a06-scoring", self.post_analysis_a06_scoring),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a06-scoring/export.csv", self.export_analysis_a06_scoring),
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/system-exports", self.get_system_exports),
+            ("POST", rf"/api/v1/studies/{ID}/analysis-plan/system-exports", self.post_system_exports),
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/system-exports/{ID}/files/([0-9]+)", self.download_system_export),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a06-reviewable-preparation", self.get_analysis_a06_reviewable),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a06-reviewable-preparation", self.post_analysis_a06_reviewable),
             ("GET", rf"/api/v1/studies/{ID}/trace", self.get_study_trace),
@@ -444,6 +447,21 @@ class App:
         from .reviewable_preparation_view import publish
         return publish(self, req, study_id)
 
+    def get_system_exports(self, req, study_id):
+        """只读系统评分同批导出资格和既有文件。"""
+        from .system_exports import info
+        return info(self, req, study_id)
+
+    def post_system_exports(self, req, study_id):
+        """明确派生Excel/CSV/图，不计算科学评分。"""
+        from .system_exports import submit
+        return submit(self, req, study_id)
+
+    def download_system_export(self, req, study_id, export_id, index):
+        """核指纹后读取本研究已登记导出。"""
+        from .system_exports import download
+        return download(self, req, study_id, export_id, index)
+
     def get_study_trace(self, req, study_id):
         """返回当前研究的只读追溯摘要；详细数据通过显式导出下载。"""
         from .trace_actions import trace_summary
@@ -531,7 +549,7 @@ class App:
 
     def session(self, req):
         return {"token": self.token, "version": __version__, "platform": sys.platform,
-                "capabilities": {"review": True, "batch_review": True, "tasks": True, "trash": True, "module_actions": False, "source_upload": True, "ppi_compute": True, "create_study": True, "system_pipeline": True, "system_acquisition": True, "system_source_binding": True, "system_disease_acquisition": True, "system_disease_publication": True, "system_preparation_recovery": True, "system_disease_manual_sources": True, "component_identity_evidence": True, "component_identity_probes": True, "historical_disease_sources": True},
+                "capabilities": {"review": True, "batch_review": True, "tasks": True, "trash": True, "module_actions": False, "source_upload": True, "ppi_compute": True, "create_study": True, "system_pipeline": True, "system_acquisition": True, "system_source_binding": True, "system_disease_acquisition": True, "system_disease_publication": True, "system_preparation_recovery": True, "system_disease_manual_sources": True, "component_identity_evidence": True, "component_identity_probes": True, "historical_disease_sources": True, "system_exports": True},
                 "decisions_zh": {"approved": "通过，允许下游使用", "rejected": "退回修改", "pending": "暂存待定"}}
 
     def post_create_study(self, req):

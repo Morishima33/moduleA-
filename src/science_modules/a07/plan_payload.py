@@ -35,6 +35,11 @@ def enrichment_source(home,evidence,result,plan,intake):
             and all(value==lexicon.get(key,{}) for key,value in source['translations'].items()),'报告分类、译名与原件不一致')
     from science_modules.a05.screening import disease_identity
     require(source['identity']==disease_identity(intake),'报告范围身份不属于当前研究')
+    if result['summary'].get('protocol_version')=='A05.plan_enrichment.2':
+        from types import FunctionType
+        from science_modules.a05.plan_display_utf8 import check_source
+        calculate=FunctionType(model.automatic_enrichment.__code__,dict(vars(model),check_source=check_source),model.automatic_enrichment.__name__)
+        return calculate(result,plan,source)
     return model.automatic_enrichment(result,plan,source)
 
 
@@ -92,7 +97,7 @@ def _build(workflow,sid,*,source_evidence=None):
     def bound(module,version):
         """不同草稿即使研究相同也不能混用；只读取原运行绑定的真实方案。"""
         result=add(module);run=runs[module]
-        require(run['config'].get('version')==version and run['inputs'].get('analysis_plan_file')==reference
+        require(run['config'].get('version') in (version if isinstance(version,tuple) else (version,)) and run['inputs'].get('analysis_plan_file')==reference
                 and result['summary'].get('analysis_parameter_hash')==plan['parameter_hash'],
                 module+'结果不属于本批新方案，不能拼接报告')
         return result
@@ -103,7 +108,7 @@ def _build(workflow,sid,*,source_evidence=None):
         require(source_evidence is None,'空交集报告不能混入另一批富集来源')
     else:
         if m['current'].get('A04') and m['runs'][m['current']['A04']].get('result_file'):
-            ppi=bound('A04','A04.plan_network.1')
+            ppi=bound('A04',('A04.plan_network.1','A04.plan_network.2'))
             state='technical_blocked' if ppi['outcome']=='failed' or ppi['summary'].get('handoff_blocked') else 'valid_empty' if ppi['outcome']=='empty' else 'completed'
             branch('PPI网络',state,'本批实际PPI已归档；状态按原科学输出，未以网络节点或文件存在推断成功')
         else:branch('PPI网络','waiting','适用PPI分支尚未完整归档')
@@ -113,7 +118,7 @@ def _build(workflow,sid,*,source_evidence=None):
             reasons['enrichment']='本方案未纳入GO及KEGG，不表示已计算后的零显著。'
             require(source_evidence is None,'未纳入富集的方案不能混入统计来源')
         elif m['current'].get('A05') and m['runs'][m['current']['A05']].get('result_file'):
-            result=bound('A05','A05.plan_enrichment.1');enrichment=enrichment_source(home,source_evidence,result,plan,intake)
+            result=bound('A05',('A05.plan_enrichment.1','A05.plan_enrichment.2'));enrichment=enrichment_source(home,source_evidence,result,plan,intake)
             state='technical_blocked' if result['outcome']=='failed' or result['summary'].get('handoff_blocked') else 'valid_empty' if result['outcome']=='empty' else 'completed'
             branch('GO与KEGG富集',state,'实际R统计按各自检验族及背景生成；未改变BH、显著阈值和完整原统计')
         else:
@@ -180,6 +185,13 @@ def _build(workflow,sid,*,source_evidence=None):
             require(intake['analysis_purpose']=='workflow_test','身份例外不能进入正式研究报告')
             for notice in results[module]['summary']['identity_limitations_zh']:
                 sources.append({'label':module+'本批身份例外','description':notice+' 明确不采用问题组数：'+str(len(results[module]['tables']['identity_exception_scope']))+'；清单和原始身份问题保留。'})
+    if 'A04' in runs and runs['A04']['config'].get('version')=='A04.plan_network.2':
+        require(intake['analysis_purpose']=='workflow_test', 'PPI清单例外不能用于正式研究报告')
+        ppi=results['A04'];notice=ppi['summary']['identity_notice_zh']
+        omitted=ppi['tables']['identity_temporarily_omitted']
+        sources.append({'label':'本批PPI身份清单限制','description':notice+' 本批暂不采用'+str(len(omitted))+'项：'+
+            '、'.join(row['symbol']+'（'+row['target_id']+'；'+row['reason_zh']+'）' for row in omitted)+
+            '；原运行、完整精确清单、用户决定和全部查询原文见同批追溯。'})
     return {'schema_version':VERSION,'study_id':sid,'intake':intake,'plan':plan,'plan_source':deepcopy(reference),
             'counts':{'a01_genes':counts['A01'],'a02_genes':counts['A02'],'intersection':count},
             'run_ids':run_ids,'completion':state,'enrichment':enrichment,'docking':docking,'branch_reasons':reasons,

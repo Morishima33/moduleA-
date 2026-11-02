@@ -45,7 +45,7 @@ def present(module_id: str, result: dict, ctx: dict) -> dict:
     function = PRESENTERS.get(module_id, present_generic)
     if module_id == 'A06' and result.get('summary', {}).get('science_version') == 'A06.plan_scoring.1':
         function = present_plan_scoring
-    if module_id == 'A05' and result.get('summary', {}).get('protocol_version') == 'A05.plan_enrichment.1':
+    if module_id == 'A05' and result.get('summary', {}).get('protocol_version') in ('A05.plan_enrichment.1','A05.plan_enrichment.2'):
         function = present_plan_enrichment
     try:
         return function(result, ctx).as_dict()

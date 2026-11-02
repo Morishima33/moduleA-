@@ -13,12 +13,21 @@ FIELDS={'request_id','expected_a05','expected_display_id','expected_input_hash',
 DECISION={'excluded_ids','uncertain_decisions','translations'}
 
 
+def model_for(result):
+    """按实际统计版本分派独立展示协议，不升级旧资料或修改第一版科学实现。"""
+    if result['summary'].get('protocol_version')=='A05.plan_enrichment.2':
+        from science_modules.a05 import plan_display_utf8 as model
+    else:
+        from science_modules.a05 import plan_display as model
+    return model
+
+
 def context(workflow,sid):
     """展示消费实际A05绑定方案，不把后来保存的新草稿偷换到旧统计批次。"""
     m=workflow.load(sid);rid=m['current'].get('A05');home=workflow.location(sid)
     if not rid:return m,None,None,None,None
     run=workflow.run(m,rid)
-    if run['config'].get('version')!='A05.plan_enrichment.1':return m,None,None,None,None
+    if run['config'].get('version') not in ('A05.plan_enrichment.1','A05.plan_enrichment.2'):return m,None,None,None,None
     result=workflow.result(m,rid)
     if result is None:return m,None,None,None,None  # 科学任务未finish时仅读任务，不把它当完整统计。
     record=read_json(verified_file(home,run['inputs']['analysis_plan_file']))
@@ -32,18 +41,19 @@ def context(workflow,sid):
 def read_record(workflow,m,reference):
     """逐件核验展示原件、统计来源及请求归属，不用研究外资料补齐缺口。"""
     home=workflow.location(m['study_id']);value=read_json(verified_file(home,reference))
-    require(value.get('schema_version')==VERSION and value.get('study_id')==m['study_id'],'A05展示资料归属不一致')
+    require(value.get('schema_version') in (VERSION,'A05.plan_display.2') and value.get('study_id')==m['study_id'],'A05展示资料归属不一致')
     rid=value['a05_run_id'];require(workflow.run(m,rid)['module_id']=='A05','展示未绑定实际A05')
     require(value['statistical_result']==m['runs'][rid]['result_file'],'展示统计来源与实际运行不一致')
     request=read_json(verified_file(home,value['request']))
     require(value['request'] in m.get(REQUESTS,[]),'A05展示请求未登记到本研究')
-    require(request['schema_version']==VERSION and request['study_id']==m['study_id']
+    require(request['schema_version']==value['schema_version'] and request['study_id']==m['study_id']
             and request['request_hash']==fingerprint(request['request']) and request['request']['confirmed'] is True,
             'A05展示明确请求或归属无效')
     require(request['request']['expected_a05']==rid and request['request']['expected_input_hash']==fingerprint(request['binding']),
             'A05展示请求与固定输入不一致')
     for ref in [value['source'],*value['source_files'],*value['figures'],*value['implementation_files']]:verified_file(home,ref)
-    from science_modules.a05 import plan_display as model
+    model=model_for(workflow.result(m,rid))
+    require(value['schema_version']==model.VERSION,'A05展示协议与实际统计版本不同')
     source=read_json(verified_file(home,value['source']))
     originals={ref['path'].rsplit('/',1)[-1]:ref for ref in value['source_files']}
     require(set(originals)=={'kegg_classification.json','term_translations.json'} and len(value['source_files'])==2,'展示分类或译名原件不完整')
@@ -114,10 +124,9 @@ def validate(workflow,sid,body,action):
     require((action=='prepare' and value['current'] is None) or (action=='confirm' and value['current'] is not None),
             '已有展示请保存明确决定，尚未准备则先创建分类与核译资料')
     if action=='confirm':
-        from science_modules.a05.plan_display import build
         m,_,result,_,plan=context(workflow,sid)
         source=read_json(verified_file(workflow.location(sid),value['current']['source']))
-        build(result,plan,source,{key:body[key] for key in DECISION|{'confirmed'}})
+        model_for(result).build(result,plan,source,{key:body[key] for key in DECISION|{'confirmed'}})
     return value
 
 
@@ -136,8 +145,9 @@ def publish(workflow,sid,body,action):
                 require(m['current'].get('A05')==previous['a05_run_id'] and workflow.active(m,previous['a05_run_id']),'原展示所属A05已改变')
                 return previous
         validate(workflow,sid,body,action);m,run,result,_,plan=context(workflow,sid)
+        model=model_for(result)
         snapshot,current=binding(workflow,m,run)
-        request={'schema_version':VERSION,'study_id':sid,'created_at':now(),'action':action,'request':deepcopy(body),
+        request={'schema_version':model.VERSION,'study_id':sid,'created_at':now(),'action':action,'request':deepcopy(body),
                  'request_hash':fingerprint(body),'binding':snapshot}
         request_ref=None
         for ref in m.get(REQUESTS,[]):
@@ -167,11 +177,12 @@ def publish(workflow,sid,body,action):
     from science_modules.a05 import plan_display_figures,plan_figures,display
     figures=[file_record(home,path,'figure') for path in plan_display_figures.draw(presentation,plan,folder/'figures').values()]
     implementation=[]
-    for module in (model,plan_display_figures,plan_figures,display,screening):
+    modules=(model,model.original,plan_display_figures,plan_figures,display,screening) if model.VERSION=='A05.plan_display.2' else (model,plan_display_figures,plan_figures,display,screening)
+    for module in modules:
         path=Path(module.__file__);target=folder/'implementation'/path.name
         target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(path.read_bytes())
         implementation.append(file_record(home,target,'a05_display_implementation'))
-    value={'schema_version':VERSION,'study_id':sid,'display_id':display_id,'created_at':now(),'a05_run_id':run['run_id'],
+    value={'schema_version':model.VERSION,'study_id':sid,'display_id':display_id,'created_at':now(),'a05_run_id':run['run_id'],
            'request':request_ref,'statistical_result':snapshot['a05_result'],'source':file_record(home,source_path,'a05_display_source'),
            'source_files':sources,'implementation_files':implementation,'figures':figures,'decision':decision,'presentation':presentation}
     with write_lock(workflow.root):

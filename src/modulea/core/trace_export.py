@@ -110,6 +110,19 @@ def _plan_decisions(workflow, manifest, all_files):
             ('component_identity_probes','analysis_plan_component_identity_probes','A01.identity_probe.1'),
             ('historical_disease_sources','analysis_plan_historical_disease_sources','A02.historical_sources.1'),
             ('identity_exceptions','analysis_plan_identity_exceptions','ModuleA.identity_exception.1'),
+            ('ppi_identity_scopes','analysis_plan_ppi_identity_scopes','A04.plan_identity_scope.1'),
+            ('ppi_identity_probe_requests','analysis_plan_ppi_identity_probe_requests','A04.plan_identity_probes.1'),
+            ('ppi_identity_probes','analysis_plan_ppi_identity_probe_records','A04.plan_identity_probes.1'),
+            ('ppi_identity_revision_requests','analysis_plan_ppi_identity_revision_requests','A04.plan_identity_revision.1'),
+            ('ppi_identity_revision_receipts','analysis_plan_ppi_identity_revision_receipts','A04.plan_identity_revision.1'),
+            ('ppi_identity_revision_failures','analysis_plan_ppi_identity_revision_failures','A04.plan_identity_revision.1'),
+            ('system_export_requests','analysis_plan_system_export_requests','A06.system_exports.1'),
+            ('system_export_candidates','analysis_plan_system_export_candidates','A06.system_exports.1'),
+            ('system_exports','analysis_plan_system_export_records','A06.system_exports.1'),
+            ('system_export_failures','analysis_plan_system_export_failures','A06.system_exports.1'),
+            ('a05_text_requests','analysis_plan_a05_text_requests','A05.plan_text_revision.1'),
+            ('a05_text_receipts','analysis_plan_a05_text_receipts','A05.plan_text_revision.1'),
+            ('a05_text_failures','analysis_plan_a05_text_failures','A05.plan_text_revision.1'),
             ('disease_manual_sources','analysis_plan_system_manual_source_records','A02.system_manual_source.1'),
             ('preparation_sessions','analysis_plan_system_preparation_sessions','A06.system_preparation_checkpoints.1'),
             ('preparation_objects','analysis_plan_system_preparation_objects','A06.system_preparation_checkpoints.1'),
@@ -124,7 +137,10 @@ def _plan_decisions(workflow, manifest, all_files):
         output[key]=[]
         for reference in manifest.get(index,[]):
             value=read_json(verified_file(root,reference))
-            accepted={'system_qualifications':('A06.system_qualification.1','A06.system_qualification.2'),
+            accepted={'system_export_requests':('A06.system_exports.1','A06.system_exports.2'),'system_export_candidates':('A06.system_exports.1','A06.system_exports.2'),'system_exports':('A06.system_exports.1','A06.system_exports.2'),'system_export_failures':('A06.system_exports.1','A06.system_exports.2'),
+                'a05_display_records':('A05.plan_display.1','A05.plan_display.2'),
+                'a05_display_requests':('A05.plan_display.1','A05.plan_display.2'),
+                'system_qualifications':('A06.system_qualification.1','A06.system_qualification.2'),
                 'system_qualification_failures':('A06.system_qualification.1','A06.system_qualification.2'),
                 'system_scores':('A06.system_scoring.1','A06.system_scoring.2'),
                 'system_scoring_failures':('A06.system_scoring.1','A06.system_scoring.2')}.get(key,(version,))
@@ -192,6 +208,38 @@ def _plan_decisions(workflow, manifest, all_files):
             if key=='identity_exceptions':
                 from .identity_exceptions import read_record
                 value=read_record(workflow,manifest,reference)
+            if key=='ppi_identity_scopes':
+                from .ppi_identity_scope import read_record
+                value=read_record(workflow,manifest,reference)
+            if key=='ppi_identity_probe_requests':
+                from .ppi_identity_probes import read_request
+                value=read_request(workflow,manifest,reference)
+            if key=='ppi_identity_probes':
+                from .ppi_identity_probes import read_record
+                value=read_record(workflow,manifest,reference)
+            if key=='ppi_identity_revision_requests':
+                from .ppi_identity_revision import read_request
+                value=read_request(workflow,manifest,reference)
+            if key=='ppi_identity_revision_receipts':
+                from .ppi_identity_revision import read_receipt
+                value=read_receipt(workflow,manifest,reference)
+            if key=='ppi_identity_revision_failures':
+                require(value['human_review_written'] is False and value['state']=='failed'
+                    and value['request_file'] in manifest.get('analysis_plan_ppi_identity_revision_requests',[])
+                    and value['error_type'] and value['error_zh'], 'PPI修订失败不能作已发布运行')
+            if key in ('system_export_requests','system_export_candidates','system_exports'):
+                from .system_exports_v2 import read_request, read_candidate, read_record
+                value={'system_export_requests':read_request,'system_export_candidates':read_candidate,'system_exports':read_record}[key](workflow,manifest,reference)
+            if key=='system_export_failures':
+                require(value['human_review_written'] is False and value['state']=='failed'
+                    and value['request_file'] in manifest.get('analysis_plan_system_export_requests',[])
+                    and value['error_type'] and value['error_zh'], '导出失败不能标为已完成或科研批准')
+            if key=='a05_text_requests':
+                from .plan_a05_text import read_request
+                value=read_request(workflow,manifest,reference)
+            if key=='a05_text_receipts':
+                from .plan_a05_text import read_receipt
+                value=read_receipt(workflow,manifest,reference)
             if key in ('disease_acquisition_requests','disease_acquisitions','disease_acquisition_sources','disease_acquisition_failures'):
                 from .system_disease_acquisition import read_record
                 kind={'disease_acquisition_requests':'request','disease_acquisitions':'record',

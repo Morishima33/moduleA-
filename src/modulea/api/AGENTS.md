@@ -1,5 +1,23 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-11-02 系统结果同批Excel与图表导出
+
+补充排版版本`A06.system_exports.2`：新明确请求使用第二版，只调整Excel列宽、换行、行高和说明区布局，科学来源、原值、六件附件范围及接口七字段不变。第一版已归档实现与原件保持；旧请求号按原协议复用，不能重新生成或静默升级。info/下载/追溯兼容两版，current优先本批第二版，第一版仍列历史供读取；没有第二版时允许用户明确生成新版，不自动生成。
+
+GET `/studies/{sid}/analysis-plan/system-exports`仅返回`A06.system_exports.1`当前资格、源模块/运行、输入指纹、已归档六件导出及历史；不生成、不联网、不执行Vina。只支持有效的系统评分1/2，或没有可评分组合的全NA系统准备/资格1/2。ready尚未评分、旧批、失效、明确人工暂停或回收站不得生成。全NA不画虚假色标、不填零，原完整固定名单与顺序保持。
+
+POST同址严格七字段`{request_id:sysexportreq_<32hex>,expected_module:A06|A06_PREP,expected_run_id,expected_input_hash,author,note,confirmed:true}`，预检后排队重任务`plan_system_exports`。worker经公开Workflow复用已验收的动态导出排版，生成完整/重点PNG/SVG、完整CSV及Excel；真实科学版本保留，原始精度、NA/失败原因、A/B和≤−8的原标记保持，不改科学运行、评分、报告或reviews。完整成功检查点可在同请求重试时复用；未登记或损坏文件不得用重生成掩盖。源码/输入在生成前后重核，失败保留原件和诊断。
+
+GET `/studies/{sid}/analysis-plan/system-exports/{export_id}/files/{index}`按本研究已登记回执及0—5文件索引下载，核对指纹；不接受裸路径。历史及回收站仅允许读取既有档案。info中每件文件提供`download_url`，完成后页面刷新展示下载；GET/重启不自动生成。当前系统A06页或全NA系统PREP页增加只读资格及明确生成按钮，来源未接通不显示空入口。新`system_exports`字段和能力标记为可选，旧服务隐藏，不在前端推算资格或评分。
+
+## 2026-11-02 同批PPI精确身份清单与结果限制
+
+本阶段仅新增后台公开Workflow范围登记、逐查询原件恢复与独立新网络发布，不新增HTTP写路由、网页上传或默认授权。`A04.plan_network.2`保留原`identity_issues`，另携带`identity_decisions/identity_adjustments/identity_temporarily_omitted/identity_unresolved/original_identity_scope`。摘要`身份待核验数`仍按真实未决统计，`本次PPI暂不采用数`与`未获准身份阻断数`分别展示；只有后者实际为0才解除handoff_blocked。未决暂不采用不是身份已解决，原A03与A05输入保持。
+
+沿既有`focus`和`special.ppi_identity`字段展示本批限制、原身份、返回名和逐项原因，不新增状态码；明确获准暂不采用仅should_know，未获准未决继续must_handle并阻断A06_PREP。当前系统执行版A04隐藏不适用的旧ppi_run/identity_plan逐步表单，保留归档结果、真实证据、统一续做和独立复核；普通人工及历史页面保持。完整追溯含ppi_identity_scopes、ppi_identity_probe_requests/probes与ppi_identity_revision_requests/receipts/failures及原字节，成功空列表与失败分列。报告来源段保留本次PPI例外、数量、名单及原因；不能声称完整网络或正式研究结论。当前真实补查与新网络是否已执行须以研究归档为准，代码支持不等于已执行。
+
+新协议的`special.ppi_identity`另给可选`scope_kind:explicit_bound_test_decision`及真实`handoff_blocked:boolean`。需要知悉区同样展开身份明细，复核区只在真实阻断时提示先处理身份；已获准暂不采用用信息提示保留限制，不伪造解决状态。没有identity_plan的当前系统版身份表只读，不展示旧补查按钮或操作说明；可下载本轮新网络、原名称请求、范围和补查回执。当前系统A04同时隐藏旧plan_selection_ui及docking_candidates表单，名单采用/固定仍由同批统一接续处理。复核资格继续仅由Workflow状态及review字段决定，前端不得凭scope_kind启用通过。
+
 ## 2026-11-01 已明确精确身份清单例外的结果展示
 
 `ModuleA.identity_exception.1`本阶段仅通过后台公开Workflow登记，无新增HTTP写入口或网页上传表单。`A01.system_publication.2`与`A02.system_normalization.5`的已归档结果携带`identity_exception_protocol/identity_limitations_zh`及`tables.identity_exception_scope`，重点核对区显示“本批明确身份例外（仅流程测试）”。原未决身份状态仍保留，明确不采用不是身份已解决，也不是人工复核通过。A02第五版继续沿用special.historical_disease_source隐藏不适用旧表单；历史版本说明和旧获取记录保留。完整追溯追加`plan_decisions.identity_exceptions`及实际原文、共同映射、精确范围和实现文件，不接受路径下载或客户端通过结论。两份报告来源段同步身份与版本限制。
@@ -679,3 +697,8 @@ POST同路径`/acquire`严格接受 `{expected_a00,expected_a01,expected_plan_id
 POST `/api/v1/analysis-plans/creation/preflight` 严格接受 `{intake,specification}`。intake仅含formula/herbs/disease/mesh_term/mesh_id/operator/analysis_purpose；specification沿用统一方案编译契约。先验证字段再向NLM官方核对身份，核验本机共享资料原件/清单，明确研究专属来源尚未提供。不创建研究或任务；运行目录保存30分钟预检凭证。返回schema_version=ModuleA.plan_creation.1、preflight_id/input_hash/plan/mesh_verification/materials/expires_at/can_create:true/execution_available:false/message_zh。共享资料缺失允许建档，但不能作为执行就绪；客户端不能上传“已通过”状态或覆盖目录/物种/保护规则。
 POST `/api/v1/analysis-plans/creation` 严格接受 `{request_id,preflight_id,expected_input_hash,confirmed:true}`；request_id前缀plancreate，preflight_id前缀creationcheck。重新核对凭证时效、内容指纹和资料变化。通过后由Workflow同一写锁发布A00及初始方案、登记实际预检记录；无reviews、无后台任务。返回201 `{study_id,run_id,plan_id,created:true,mode,parameter_hash,directory,execution_available:false,message_zh}`，相同请求已建档返回200原研究/初始方案；换凭证或输入返回409 CREATE_CONFLICT。重启、运行目录丢失或研究后续方案变更均不重复建档或覆盖旧版本。
 GET `/api/v1/studies/{sid}/analysis-plan/creation` 返回本协议建档的初始/当前方案及创建时资料预检；旧研究返回null。GET同地址`/export.json`返回下载JSON（只读原研究索引及指纹）。ModuleView可选creation_plan仅在当前A00提供。旧POST /studies及参数预览保持原行为。新研究A00复核、手动continue、批量复核接续和后台continue均不自动调用旧固定参数编排；A01/A04必须采用新方案协议，A05新适配未完成时拒绝旧协议。新研究A01上传原件仍可用，旧获取/整理控件禁用，相关API及后台拒绝旧固定OB/DL操作。页面明确只建档，自动全流程另行实施。
+## 2026-11-01 A05独立Unicode输出与展示协议
+
+新明确可恢复批次将enrichment_protocol=A05.plan_enrichment.2固定到批次；原批无此字段继续第一版，同请求重试不升级。第二版只用R的Unicode字符串常量修复skipped原因，原科学R/第一版契约不改。A05模块展示识别两版统计；第二版按独立A05.plan_display.2及A05.plan_display_source.2消费原分类、词典和相同字段形状，第一版展示规则和已归档结果保持。现有展示准备/确认与只读追溯按实际统计分派，人工决定不自动确认。系统A05不显示不适用的独立plan_a05旧人工执行表单，后续指向统一执行；分类展示资料与独立复核保留。数量说明按实际系统权限明确“系统校验不表示人工批准”，不把未签署的A03称为已人工批准；普通人工流程文字和操作保持。
+
+后台新增公开Workflow.revise_analysis_plan_a05_text与plan_a05_text_revision任务，可明确离线修订已有第一版系统结果；尚无新增HTTP写入口或专用网页按钮。完整追溯追加plan_decisions.a05_text_requests/a05_text_receipts/a05_text_failures，保留原统计、请求、实现及各次失败。独立新A07报告按真实第二版统计及对应来源快照生成，不将文字修订视为人工科研复核。

@@ -49,6 +49,7 @@ import PlanA05Display from './PlanA05Display';
 import PlanStages from './PlanStages';
 import PlanSystemValidations from './PlanSystemValidations';
 import PlanReports from './PlanReports';
+import SystemExports from './SystemExports';
 import PlanCompounds from './PlanCompounds';
 import PlanSelection from './PlanSelection';
 import PlanPreparation from './PlanPreparation';
@@ -124,6 +125,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
         <Button href={hrefFor({page:'system-pipeline',studyId})}>打开统一执行与续做</Button></section>}
       {view.plan_system_validations&&<PlanSystemValidations key={JSON.stringify(view.plan_system_validations.items.map(row=>[row.request,row.current?.validation_id,row.enabled]))} studyId={studyId} info={view.plan_system_validations}/>}
       {view.plan_reports&&<PlanReports key={[view.plan_reports.expected_input_hash,view.plan_reports.expected_report_run_id].join(':')} studyId={studyId} info={view.plan_reports}/>}
+      {view.system_exports&&<SystemExports key={view.system_exports.expected_input_hash} studyId={studyId} info={view.system_exports}/>}
       {view.plan_stages&&<PlanStages key={view.plan_stages.expected_input_hash} studyId={studyId} info={view.plan_stages}/>}
       {view.plan_compounds&&<PlanCompounds key={view.plan_compounds.expected_input_hash} studyId={studyId} info={view.plan_compounds}/>}
       {view.plan_preparation_ui&&<PlanPreparation key={view.plan_preparation_ui.input_hash} studyId={studyId} info={view.plan_preparation_ui}/>}
@@ -207,7 +209,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       {view.source_uploads && !systemA01 && (m.module_id !== 'A02' || view.historical) && <div id="module-source-inputs"><SourceUploads studyId={studyId} moduleId={m.module_id} info={view.source_uploads} /></div>}
 
       {/* 需要知悉 */}
-      {!oldIntersection && <KnowSection items={view.focus} />}
+      {!oldIntersection && <KnowSection items={view.focus} evidence={!view.historical && sp.ppi_identity ? <IdentityReview studyId={studyId} view={view} data={sp.ppi_identity} /> : undefined} />}
       <div id="module-results" className="stack">
       <PreviousIntersection collapsed={oldIntersection}>
       {oldIntersection && <KnowSection items={view.focus} />}

@@ -359,7 +359,8 @@ class Views:
         if preview_ready and state["handoff_blocked"] and state["code"] == "waiting":
             state["reason_zh"] = "身份预览已完成，尚未生成待复核结果。请核对身份例外，在“确认身份处理”区填写依据并点击“确认处理并生成待复核结果”，完成后再整体复核。"
         results = {m["module_id"]: m["result"] for m in view["modules"] if m.get("result")}
-        ctx = {"workflow_profile": manifest.get("workflow_profile"), "state_code": state["code"], "results": results, "study_id": study_id, "normalization_preview_ready": preview_ready}
+        ctx = {"workflow_profile": manifest.get("workflow_profile"), "state_code": state["code"], "results": results, "study_id": study_id, "normalization_preview_ready": preview_ready,
+               "execution_protocol": (run or {}).get("execution_protocol")}
         parts = present(module_id, result, ctx) if result and not preparation_page else {"kpis": [], "flow": [], "flow_note_zh": "", "focus": [], "params": [], "table": None, "special": {}}
         if module_id == "A06" and result and result.get("summary", {}).get("science_version") in ("A06.automatic.1", "A06.automatic.2", "A06.automatic.3"):
             from ..presenters.automatic_docking import present as present_automatic
@@ -539,7 +540,7 @@ class Views:
             from ..core.plan_a05 import info as a05_info
             from .plan_a05_view import execution_blocker as a05_blocker
             value = a05_info(workflow, study_id)
-            if value['supported']:
+            if value['supported'] and not system_execution_result:
                 reason = a05_blocker(self.kernel.settings, self.tasks.active_for(study_id))
                 if reason:
                     value['enabled'] = False
@@ -607,11 +608,28 @@ class Views:
         if system_structure and result:
             from .system_docking_view import apply as apply_system_docking
             apply_system_docking(workflow,real,run,result,response)
+        response['system_exports'] = None
+        if system_structure and result and not historical:
+            # 只读资格来自本批归档，不在页面请求里生成图表或Excel。
+            from ..core.system_exports_v2 import info as export_info
+            from .system_exports import downloads
+            exports = export_info(workflow, study_id)
+            exports['current'] = downloads(study_id, exports['current'])
+            exports['history'] = [downloads(study_id, row) for row in exports['history']]
+            if self.tasks.active_for(study_id):
+                exports['enabled'] = False
+                exports['blockers'].append('请等待本研究当前任务结束')
+            response['system_exports'] = exports
         response["operation_guide"] = None if plan_preparation or plan_result or system_structure or system_execution_result else operation_navigation(response, result)
-        if system_execution_result and module_id in ('A01','A02','A03','A04'):
+        if system_execution_result and module_id in ('A01','A02','A03','A04','A05'):
             from ..presenters.base import focus
             response['focus'].append(focus('本版由统一批次接续',
                 '请在项目的“统一执行与续做”中查看本批进度并明确续做；此处保留结果和独立复核，不使用旧逐阶段执行表单。系统校验不代表人工复核通过。',tier='should_know'))
+        if system_execution_result and module_id == 'A04':
+            response['ppi_run'] = None
+            response['identity_plan'] = None
+            response['plan_selection_ui'] = None
+            response['docking_candidates'] = None
         response["input_audit"] = input_audit_context(workflow, real, module_id, run, result, stale=not historical and state["code"] == "stale")
         if literature_input and module_id in ('A01', 'A02'):
             response['input_audit'] = None  # 两侧文献数量已由同源结果数量链展示，避免重复常规范围表。
