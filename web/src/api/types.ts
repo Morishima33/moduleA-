@@ -517,7 +517,19 @@ export interface SystemExportsInfo {
   expected_module:'A06'|'A06_PREP'|null;expected_run_id:string|null;expected_input_hash:string|null;
   current:SystemExportRecord|null;history:SystemExportRecord[];
 }
+export interface SystemReceptorSelectionInfo {
+  schema_version: string; read_only: true;
+  archive_state: 'pending' | 'archived' | 'source_changed';
+  selection_id: string | null; input_id: string | null;
+  mode: 'degree' | 'bc_cc' | 'dual_ab' | null;
+  requested_count: number | null; actual_count: number | null; boundary_ties_retained: boolean | null;
+  compound_count: number | null; pair_count: number | null;
+  selected: {target_id: string; symbol: string; selection_order: number; candidate_grade?: string | null;
+    degree: number; bc?: number; cc?: number; mean_rank?: number}[];
+  message_zh: string; scope_note_zh: string;
+}
 export interface ModuleView {
+  system_receptor_selection?: SystemReceptorSelectionInfo | null;
   system_exports?: SystemExportsInfo | null;
   automatic_docking?: AutomaticDockingInfo | null;
   input_audit?: {formula: {run_id: string; sources: string[]; missing_sources: string[]; component_label_zh: string; component_count: number | null; target_count: number | null; relationship_count: number | null} | null;

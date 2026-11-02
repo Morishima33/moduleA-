@@ -353,6 +353,8 @@ class Views:
 
         state = dict(states[module_id])
         system_execution_result=bool(run and run.get('execution_protocol')=='ModuleA.system_execution.1' and not historical)
+        # 当前系统A04只展示归档和独立复核，不构建最终会隐藏的旧人工操作表单。
+        system_a04 = system_execution_result and module_id == 'A04'
         historical_source_result=bool(run and run['config'].get('version') in ('A02.historical_collection.1','A02.system_normalization.4','A02.system_normalization.5'))
         normalization_info = normalization_context(workflow, real, result, self.kernel.settings, bool(self.tasks.active_for(study_id))) if module_id == "A02" and not historical and not historical_source_result else None
         preview_ready = bool(normalization_info and normalization_info["preview"])
@@ -388,11 +390,11 @@ class Views:
                     parts["special"]["enrichment_graphs"][row["group"]] = {"url":f"/api/v1/studies/{study_id}/files/{key}?inline=1","caption_zh":"GO三类各前八；中英文名称，柱长与深浅表示Count。" if row["group"]=="go" else "KEGG统计显著性前十五；横轴RichFactor，面积Count，颜色为−log10(BH校正后P值)。"}
         enrichment_info = display_context(workflow, real, run, result, historical, bool(self.tasks.active_for(study_id))) if module_id == "A05" else None
         hide_pending_kegg(parts["special"],enrichment_info)
-        candidates_info = candidate_context(workflow,real,historical,bool(self.tasks.active_for(study_id))) if module_id in ("A04","A06_PREP","A06") and not preparation_page else None
+        candidates_info = candidate_context(workflow,real,historical,bool(self.tasks.active_for(study_id))) if module_id in ("A04","A06_PREP","A06") and not preparation_page and not system_a04 else None
         if module_id == "A04":
             apply_candidate_context(parts,candidates_info)
         a03_id = real.get("current", {}).get("A03", "")
-        ppi_enabled = bool(module_id == "A04" and a03_id and not historical and not real.get("trashed") and workflow.active(real, a03_id) and workflow.approved(real, a03_id) and not self.tasks.active_for(study_id))
+        ppi_enabled = bool(module_id == "A04" and not system_a04 and a03_id and not historical and not real.get("trashed") and workflow.active(real, a03_id) and workflow.approved(real, a03_id) and not self.tasks.active_for(study_id))
         if run:
             parts["params"] = parts["params"] + self._config_params(run, parts["params"])
         coverage_info = workflow.coverage_info(real, bool(self.tasks.active_for(study_id))) if module_id == "A06_PREP" and not historical and not preparation_page else None
@@ -448,7 +450,7 @@ class Views:
             "tasks": self.tasks.list(study_id, active_only=True),
             "historical": historical,
             "ppi_run": {"enabled": ppi_enabled, "disabled_reason_zh": "" if ppi_enabled else "请先通过当前A03，并等待本研究活动任务结束；历史及回收站只读。", "expected_a03": a03_id, "expected_a04": real.get("current", {}).get("A04", "")} if module_id == "A04" and not historical else None,
-            "identity_plan": plan_view(workflow, real, run, result, ppi_enabled and bool(run) and workflow.active(real, run["run_id"]), historical) if module_id == "A04" else None,
+            "identity_plan": plan_view(workflow, real, run, result, ppi_enabled and bool(run) and workflow.active(real, run["run_id"]), historical) if module_id == "A04" and not system_a04 else None,
             "enrichment_display": enrichment_info,
             "docking_candidates": candidates_info,
             "docking_review": review_context(workflow,real,historical) if module_id in ("A03_SELECT","A06_PREP","A06") and not preparation_page else None,
@@ -503,7 +505,7 @@ class Views:
             from .plan_preparation_ui import info as preparation_ui_info
             value=preparation_ui_info(self,None,study_id)
             if value['supported']:response['plan_preparation_ui']=value
-        if module_id in ('A04','A06_PREP') and not historical:
+        if module_id in ('A04','A06_PREP') and not historical and not system_a04:
             from .plan_selection_ui import info as selection_ui_info
             value=selection_ui_info(self,None,study_id)
             if value['supported']:
@@ -625,7 +627,10 @@ class Views:
             from ..presenters.base import focus
             response['focus'].append(focus('本版由统一批次接续',
                 '请在项目的“统一执行与续做”中查看本批进度并明确续做；此处保留结果和独立复核，不使用旧逐阶段执行表单。系统校验不代表人工复核通过。',tier='should_know'))
+        response['system_receptor_selection'] = None
         if system_execution_result and module_id == 'A04':
+            from .system_selection_view import context as system_selection_context
+            response['system_receptor_selection'] = system_selection_context(workflow, real, run)
             response['ppi_run'] = None
             response['identity_plan'] = None
             response['plan_selection_ui'] = None

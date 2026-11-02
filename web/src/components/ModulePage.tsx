@@ -50,6 +50,7 @@ import PlanStages from './PlanStages';
 import PlanSystemValidations from './PlanSystemValidations';
 import PlanReports from './PlanReports';
 import SystemExports from './SystemExports';
+import SystemReceptorSelection from './SystemReceptorSelection';
 import PlanCompounds from './PlanCompounds';
 import PlanSelection from './PlanSelection';
 import PlanPreparation from './PlanPreparation';
@@ -211,6 +212,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       {/* 需要知悉 */}
       {!oldIntersection && <KnowSection items={view.focus} evidence={!view.historical && sp.ppi_identity ? <IdentityReview studyId={studyId} view={view} data={sp.ppi_identity} /> : undefined} />}
       <div id="module-results" className="stack">
+      {view.system_receptor_selection&&<SystemReceptorSelection studyId={studyId} info={view.system_receptor_selection}/>}
       <PreviousIntersection collapsed={oldIntersection}>
       {oldIntersection && <KnowSection items={view.focus} />}
       {/* 关键数字 */}

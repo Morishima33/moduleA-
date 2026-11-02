@@ -171,7 +171,12 @@ class PlanPpiIdentityRevisionTests(PpiIdentityFixture):
 
     def test_current_api_preserves_scoped_identity_and_hides_legacy_forms_and_history_is_read_only(self):
         body = self.revision_body(empty=True); result = self.w.revise_analysis_plan_ppi_identities(self.sid, body, opener=self.network_opener)
-        manifest = (self.home / 'manifest.json').read_bytes(); value = self.api_view()
+        manifest = (self.home / 'manifest.json').read_bytes()
+        # 当前系统版已隐藏旧人工表单，不应先执行其昂贵读取再丢弃结果。
+        with patch('modulea.api.views.candidate_context', side_effect=AssertionError('当前系统A04不读取旧候选表单')), \
+             patch('modulea.api.views.plan_view', side_effect=AssertionError('当前系统A04不读取旧补查表单')), \
+             patch('modulea.api.plan_selection_ui.info', side_effect=AssertionError('当前系统A04不读取旧名单表单')):
+            value = self.api_view()
         self.assertEqual(value['run']['run_id'], result['run_id'])
         for field in ('ppi_run', 'identity_plan', 'plan_selection_ui', 'docking_candidates'): self.assertIsNone(value[field])
         identity = value['special']['ppi_identity']; self.assertEqual(identity['scope_kind'], 'explicit_bound_test_decision')
