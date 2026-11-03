@@ -1,7 +1,7 @@
 """系统结构结果页读取本运行固定范围；不调用旧执行器或改动研究事实。"""
 from contracts import require
 from storage import read_json,verified_file
-from ..presenters.system_docking import VERSIONS,present
+from ..presenters.system_docking import PATH_REPAIR,VERSIONS,present
 
 
 def apply(workflow,manifest,run,result,response):
@@ -17,4 +17,6 @@ def apply(workflow,manifest,run,result,response):
         'docking_review','docking_artifacts','reference_qualification','scoring_readiness','review_packet',
         'review_gate','reviewable_preparation','plan_scoring','plan_selection_ui','plan_preparation_ui'):
         response[key]=None
-    response['review']['continue'].update(available=False,note_zh='本批科学计算从统一执行与续做入口接续，人工复核决定单独保存。')
+    note = ('本批修订通过独立后台任务接续，人工复核决定单独保存。' if run['config']['version'] in PATH_REPAIR
+            else '本批科学计算从统一执行与续做入口接续，人工复核决定单独保存。')
+    response['review']['continue'].update(available=False,note_zh=note)

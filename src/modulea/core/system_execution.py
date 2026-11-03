@@ -28,7 +28,10 @@ def scientific_version(module,config):
         return config.get('identity_policy')=='explicit_bound_test_exception'
     if module=='A06_PREP' and config.get('version') in ('A06.system_preparation.2','A06.system_qualification.2'):
         return config.get('object_checkpoint_protocol')=='A06.system_preparation_checkpoints.1'
-    if module=='A06' and config.get('version')=='A06.system_scoring.2':return True
+    if module=='A06_PREP' and config.get('version')=='A06.system_qualification_paths.1':
+        return (config.get('object_checkpoint_protocol')=='A06.system_preparation_checkpoints.1'
+                and config.get('receptor_path_repair_protocol')=='A06.receptor_path_repair.1')
+    if module=='A06' and config.get('version') in ('A06.system_scoring.2','A06.system_scoring_paths.1'):return True
     return config.get('version')==SCIENTIFIC_VERSIONS[module] or (module=='A01' and config.get('version')=='A01.system_publication.1'
         and config.get('source_binding_protocol')=='A01.system_source_binding.1') or (module=='A06_PREP' and config.get('version')=='A06.system_qualification.1') or (
         module=='A02' and (config.get('version'),config.get('source_binding_protocol')) in (
@@ -206,7 +209,7 @@ def is_active(workflow,m,run):
         require(set(run['parent_runs'])==DEPENDENCIES[run['module_id']]
             and scientific_version(run['module_id'],run['config']), '系统执行科学版本或完整依赖错误')
         bound_batch,_=require_batch(workflow,m,run['batch_file'])
-        if run['config'].get('version') in ('A06.system_preparation.2','A06.system_qualification.2','A06.system_scoring.2'):
+        if run['config'].get('version') in ('A06.system_preparation.2','A06.system_qualification.2','A06.system_scoring.2','A06.system_qualification_paths.1','A06.system_scoring_paths.1'):
             require(bound_batch.get('preparation_protocol')=='A06.system_preparation.2','新恢复版本缺少原批明确协议')
         if run['module_id']=='A02':
             base=read_json(verified_file(workflow.location(m['study_id']),run['inputs']['base_run']))
@@ -228,6 +231,16 @@ def is_active(workflow,m,run):
                 review=workflow.latest_review(m,source['artifact_id'])
                 require(not review or review['decision']=='approved','资格来源准备已有明确暂存或退回')
                 require(request['binding']['source_run']==run['inputs']['source_preparation_run'],'系统资格来源运行不同')
+            if run['config'].get('version')=='A06.system_qualification_paths.1':
+                home=workflow.location(m['study_id']);inputs=run['inputs']
+                request=read_json(verified_file(home,inputs['path_repair_request']))
+                require(request['source_qualification_run']==inputs['source_qualification_run']
+                    and request['source_qualification_result']==inputs['source_qualification_result']
+                    and request['batch_file']==run['batch_file'],'路径技术修订来源不同')
+                for name in ('source_qualification_run','source_preparation_run'):
+                    source=read_json(verified_file(home,inputs[name]))
+                    review=workflow.latest_review(m,source['artifact_id'])
+                    require(not review or review['decision']=='approved','路径技术修订来源已明确暂存或退回')
         require(run['execution_authority']=='system_validation' and run['parent_review_ids']=={}
             and bound_parent_records(workflow,m,run),'系统执行依赖与真实回执不一致')
         require(run['config_hash']==fingerprint(run['config'])
@@ -241,7 +254,7 @@ def is_active(workflow,m,run):
 def bound_parent_records(workflow,m,run):
     """新评分保留实际采用回执；同输入再次通过不废弃原评分，最新失败仍否决。"""
     latest=parent_records(workflow,m,run['parent_runs']);bound=run['parent_validation_records']
-    if run['config'].get('version') not in ('A06.system_scoring.1','A06.system_scoring.2'):return bound==latest
+    if run['config'].get('version') not in ('A06.system_scoring.1','A06.system_scoring.2','A06.system_scoring_paths.1'):return bound==latest
     require(set(bound)==set(latest),'系统评分原依赖回执不完整')
     for module,reference in bound.items():
         require(reference in m.get(validation.INDEX,[]),'系统评分原采用回执未登记')

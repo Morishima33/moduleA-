@@ -120,7 +120,9 @@ def full_workflow(data_root: Path) -> Workflow:
     from science_modules.a06.system_scoring import validator as system_scoring_validator
     from science_modules.a06.system_preparation_incremental import validator as incremental_preparation_validator
     from science_modules.a06.system_qualification_incremental import validator as incremental_qualification_validator
+    from science_modules.a06.system_qualification_paths import validator as path_qualification_validator
     from science_modules.a06.system_scoring_incremental import validator as incremental_scoring_validator
+    from science_modules.a06.system_scoring_paths import validator as path_scoring_validator
     from science_modules.a06.plan_pocket_review import validator as plan_pocket_validator
     from science_modules.a06.reference_preparation import validator as reference_preparation_validator
     from science_modules.a06.plan_reference_publication_v2 import validator as reference_qualification_v2_validator
@@ -134,7 +136,7 @@ def full_workflow(data_root: Path) -> Workflow:
     from science_modules.literature_input import validator as literature_validator
 
     root = data_root
-    return DockingWorkflow(root, {
+    validators = {
         "A01": identity_a01_validator(root,system_a01_validator(root,plan_a01_validator(root, literature_validator(root, "A01", collection_validator(root, upload_validator(root, multisource_validator(root, normalization_validator(root, validate_components)))))))),
         "A02": historical_collection_validator(root,system_collection_validator(root,system_a02_validator(root,stage_a02_validator(root, literature_validator(root, "A02", normalization_validator(root, validate_disease)))))),
         "A03": stage_a03_validator(root, validate_intersection),
@@ -144,4 +146,7 @@ def full_workflow(data_root: Path) -> Workflow:
         "A06_PREP": incremental_qualification_validator(root,incremental_preparation_validator(root,system_qualification_validator(root,system_preparation_validator(root,reviewable_preparation_validator(root, reference_qualification_v2_validator(root, reference_preparation_validator(root, plan_pocket_validator(root, plan_preparation_v2_validator(root, plan_preparation_validator(root, coverage_validator(root, quality_validator(root, docking_validator(root, prep_validator(root)))))))))))))),
         "A06": incremental_scoring_validator(root,system_scoring_validator(root,plan_scoring_validator(root, reference_validator(root, rescue_validator(root, automatic_validator(root, trial_handoff_validator(root, formal_validator(root)))))))),
         "A07": plan_report_validator(root, report_validator(root)),
-    })
+    }
+    validators["A06_PREP"] = path_qualification_validator(root, validators["A06_PREP"])
+    validators["A06"] = path_scoring_validator(root, validators["A06"])
+    return DockingWorkflow(root, validators)

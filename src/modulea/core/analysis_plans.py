@@ -118,6 +118,11 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
         from .system_scoring import execute
         return execute(self,study_id,payload,tools,progress or (lambda message:None))
 
+    def repair_analysis_plan_system_receptor_paths(self, study_id, payload, *, tools, progress=None):
+        """明确补执行本批已确认的受体目录启动错误并发表独立资格，尚不评分。"""
+        from .system_qualification_paths import execute
+        return execute(self, study_id, payload, tools=tools, progress=progress)
+
     def execute_analysis_plan_system_stage(self,study_id,payload,*,tools=None,progress=None):
         """内部真实系统证据阶段入口，完整自动调度另行接通。"""
         from .system_execution import execute

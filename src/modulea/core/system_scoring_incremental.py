@@ -11,16 +11,23 @@ FAILURES='analysis_plan_system_scoring_failures'
 
 def execute(workflow,sid,body,tools,progress):
     """内部公开入口只绑定当前批次/准备；工具及参数不由客户端提供。"""
+    from science_modules.a06 import system_scoring_incremental as science
+    return execute_protocol(workflow,sid,body,tools,progress,science=science,
+                            qualification_version='A06.system_qualification.2')
+
+
+def execute_protocol(workflow,sid,body,tools,progress,*,science,qualification_version):
+    """只供明确内部协议复用原评分调度；请求不接受协议、参数或路径覆盖。"""
+    version=science.VERSION
     require(isinstance(body,dict) and set(body)=={'batch_id','expected_preparation_run_id','expected_scoring_run_id'},'系统评分请求字段错误')
     safe_id(body['batch_id'],'systembatch');safe_id(body['expected_preparation_run_id'],'run')
     if body['expected_scoring_run_id'] is not None:safe_id(body['expected_scoring_run_id'],'run')
-    from science_modules.a06 import system_scoring_incremental as science
     science.check_tools(tools)
     with write_lock(workflow.root):
         m=workflow.load(sid);home=workflow.location(sid);current=m['current'].get('A06');run=None
         if current:
             candidate=workflow.run(m,current)
-            if candidate['config'].get('version')==VERSION:
+            if candidate['config'].get('version')==version:
                 request=read_json(verified_file(home,candidate['inputs']['scoring_request']))
                 require(request['request']==body and workflow.active(m,current),'系统评分已有不同请求或准备已失效')
                 if m['runs'][current]['result_file']:return workflow.result(m,current)
@@ -28,7 +35,7 @@ def execute(workflow,sid,body,tools,progress):
         if run is None:require(current==body['expected_scoring_run_id'],'当前评分版本已改变')
     if run is None:
         m=workflow.load(sid);prep=workflow.run(m,body['expected_preparation_run_id'])
-        require(m['current'].get('A06_PREP')==prep['run_id'] and prep['config'].get('version')=='A06.system_qualification.2',
+        require(m['current'].get('A06_PREP')==prep['run_id'] and prep['config'].get('version')==qualification_version,
             '系统评分要求当前实际系统资格准备')
         batch_ref=prep['batch_file'];batch,plan=execution.require_batch(workflow,m,batch_ref)
         require(batch['batch_id']==body['batch_id'],'评分准备不属于本批')
@@ -38,7 +45,7 @@ def execute(workflow,sid,body,tools,progress):
             require(m['current'].get('A06')==body['expected_scoring_run_id'] and m['current'].get('A06_PREP')==prep['run_id'],
                 '评分准备或当前版本已改变')
             require(workflow.result(m,prep['run_id'])['summary']['ready_pairs']>0,'本批无可用组合，评分不适用，不启动Vina')
-            request={'schema_version':VERSION,'study_id':sid,'request':deepcopy(body),'request_hash':fingerprint(body),
+            request={'schema_version':version,'study_id':sid,'request':deepcopy(body),'request_hash':fingerprint(body),
                 'batch_file':batch_ref,'parent_validation_records':execution.parent_records(workflow,m,parents),
                 'human_review_written':False,'created_at':now()}
             path=home/'decisions/analysis_plans/system_batches'/batch['batch_id']/'scoring_requests'/(new_id('scorerequest')+'.json')
@@ -57,7 +64,7 @@ def execute(workflow,sid,body,tools,progress):
             checker=execution.validation.canonical_validator(workflow.root,'A06')
             outcome='success' if summary['scored_pairs'] else 'failed';checker(run,summary,tables,[],outcome)
             result=workflow._finish(m,run['run_id'],summary,tables,[],outcome,sources=sources)
-            record={'schema_version':VERSION,'study_id':sid,'run_id':run['run_id'],'batch_file':run['batch_file'],
+            record={'schema_version':version,'study_id':sid,'run_id':run['run_id'],'batch_file':run['batch_file'],
                 'request_file':run['inputs']['scoring_request'],'result_file':deepcopy(m['runs'][run['run_id']]['result_file']),
                 'human_review_written':False,'created_at':now()}
             path=home/'decisions/analysis_plans/system_batches'/body['batch_id']/'scoring_receipts'/(new_id('scorereceipt')+'.json')
@@ -66,7 +73,7 @@ def execute(workflow,sid,body,tools,progress):
     except Exception as error:
         with write_lock(workflow.root):
             m=workflow.load(sid);home=workflow.location(sid);folder=home/'runs/A06'/run['run_id']/'system_scoring'
-            value={'schema_version':VERSION,'study_id':sid,'run_id':run['run_id'],'batch_file':run['batch_file'],
+            value={'schema_version':version,'study_id':sid,'run_id':run['run_id'],'batch_file':run['batch_file'],
                 'state':'failed','error_type':type(error).__name__,'error_zh':str(error),'human_review_written':False,
                 'files':[file_record(home,p,'system_scoring_diagnostic') for p in folder.rglob('*') if p.is_file()],'created_at':now()}
             path=home/'decisions/analysis_plans/system_batches'/body['batch_id']/'scoring_failures'/(new_id('attempt')+'.json')

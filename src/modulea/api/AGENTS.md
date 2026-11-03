@@ -70,6 +70,8 @@ session.capabilities.system_disease_manual_sources=true仅新服务声明。统�
 
 系统准备/资格/评分1及2的A06_PREP/A06模块页只读展示同运行摘要、固定对象和完整NA组合，名称来自本运行system_input_ref，科学状态来自归档表。评分复用现有heatmap字段，包含全部固定行列，不丢弃全NA对象；有效评分不存在时不生成空热图。隐藏旧连接/评分执行区，明确续做仍从统一批次入口；不改变复核资格或归档。新展示不导入科学计算、读取最新草稿或其他研究名单。
 
+独立受体目录修订资格及其评分继续用上述同一只读表/热图结构，没有新字段或网页操作。只读本运行固定输入和原值；修订版续做使用已登记后台任务，页面不建议通过旧统一执行重跑。原复核权限和历史保持。
+
 统一执行POST `/studies/{sid}/analysis-plan/system-pipeline/start`仍接原七字段明确确认；新确认调用公开start_analysis_plan_recoverable_system_batch，批次固定preparation_protocol=A06.system_preparation.2。原同request_id重试返回原批，已有旧批不升级；原Workflow开始入口继续旧版本，旧来源和历史复算保持。客户端不能传结构协议、工具路径、对象替换或通过标记。
 
 新批在独立科学worker逐对象保存来源、准备和原顺序受体候选尝试，schema=A06.system_preparation_checkpoints.1。明确续做只复验复用成功对象，未完成目录保留另名处理；损坏、名单、工具字节、参数或实现变化拒绝，不重新下载掩盖。资格及评分显式新二版，原科学阈值、HGNC身份、Meeko/P2Rank/Top1/RMSD和NA规则不改。GET/重启不自动恢复；沿用同研究单写任务、资源预算、取消进程树和已有明确续做按钮。session.capabilities.system_preparation_recovery=true仅新服务声明，不代表科研批准或全部对象可计算。

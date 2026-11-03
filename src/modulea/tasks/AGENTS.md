@@ -1,5 +1,11 @@
 # tasks/ — 后台任务
 
+## 2026-11-03 受体目录错误的独立技术修订
+
+plan_system_receptor_path_repair沿既有重任务预算和同研究单任务。明确四字段batch_id、expected_preparation_run_id、expected_result_sha256、request_id；工具目录仅来自服务器配置。核验同批已完成原资格，仅对已满足原口袋与环境检查的WinError 267候选，以相同输入和参数补执行Meeko；其他失败、原受体与成分顺序、原下载/预测均保持。新资格不写人工复核、不评分；重试复用完整已核验尝试。无HTTP入口，GET与重启不启动。
+
+plan_system_receptor_path_scoring是独立重任务，严格接受batch_id、expected_preparation_run_id、expected_scoring_run_id，必须绑定当前真实技术修订资格。沿用冻结Vina工具、参数、第一姿势复验及逐组合恢复；全NA不评分，零成功保留真实失败且任务失败。不写人工复核或启动报告。
+
 ## 2026-11-02 系统同批导出
 
 新明确导出调用独立A06.system_exports.2；只有Excel列宽/行高/换行和说明区排版改变。旧请求按原版本精确复用，原实施字节和文件不得回写；科学来源、七字段、重任务资源和人工暂停规则保持。

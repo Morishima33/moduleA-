@@ -691,6 +691,52 @@ def run_system_exports(settings, task, manager):
 
 
 HANDLERS['plan_system_exports'] = run_system_exports
+
+
+def _run_system_receptor_paths(settings, task, manager, mode):
+    """预算内按固定隔离解释器运行，不在外壳加载Meeko或Vina依赖。"""
+    import subprocess
+    if settings.science_tools_root is None:
+        raise ValueError('本机未配置固定科学工具目录')
+    folder = settings.runtime_dir / 'system_receptor_path_requests' / task['task_id']
+    folder.mkdir(parents=True, exist_ok=False)
+    request, output = folder / 'request.json', folder / 'result.json'
+    request.write_text(task.get('payload') or '{}', encoding='utf-8')
+    command = [settings.science_python, '-I', '-S', '-B',
+               str(settings.project_root / 'tools/run_system_receptor_paths.py'),
+               '--mode', mode, '--request-file', str(request), '--result-file', str(output),
+               '--data-root', str(settings.data_root), '--tools-root', str(settings.science_tools_root),
+               '--study', task['study_id']]
+    manager.update(task['task_id'], progress={'step_zh': '核对原批次与实际固定输入', 'done': 0, 'total': 1})
+    with subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8',
+                          errors='replace', env=dict(os.environ, TEMP=str(folder), TMP=str(folder),
+                                                     PYTHONDONTWRITEBYTECODE='1', PYTHONUTF8='1')) as process:
+        for line in process.stdout:
+            print(line, end='', flush=True)
+            if line.startswith('PROGRESS '):
+                manager.update(task['task_id'], progress={'step_zh': line[9:].strip(), 'done': 0, 'total': 1})
+        if process.wait() != 0 or not output.is_file():
+            raise ValueError('受体路径任务未完成；保留原记录和实际失败日志')
+    result = json.loads(output.read_text('utf-8'))
+    message = '技术修订及真实资格已归档，未评分' if mode == 'repair' else '同批实际评分已归档，尚未人工复核'
+    manager.update(task['task_id'], progress={'step_zh': message, 'done': 1, 'total': 1})
+    return message + '：' + result['run_id']
+
+
+def run_system_receptor_path_repair(settings, task, manager):
+    """明确修订只生成新资格，不启动评分。"""
+    return _run_system_receptor_paths(settings, task, manager, 'repair')
+
+
+HANDLERS['plan_system_receptor_path_repair'] = run_system_receptor_path_repair
+
+
+def run_system_receptor_path_scoring(settings, task, manager):
+    """只接受当前明确修订资格，预算内复用原评分与续算规则。"""
+    return _run_system_receptor_paths(settings, task, manager, 'score')
+
+
+HANDLERS['plan_system_receptor_path_scoring'] = run_system_receptor_path_scoring
 from .system_disease_manual_sources import run as run_system_disease_manual_source
 HANDLERS['plan_system_disease_manual_source']=run_system_disease_manual_source
 

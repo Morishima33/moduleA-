@@ -142,8 +142,8 @@ def _plan_decisions(workflow, manifest, all_files):
                 'a05_display_requests':('A05.plan_display.1','A05.plan_display.2'),
                 'system_qualifications':('A06.system_qualification.1','A06.system_qualification.2'),
                 'system_qualification_failures':('A06.system_qualification.1','A06.system_qualification.2'),
-                'system_scores':('A06.system_scoring.1','A06.system_scoring.2'),
-                'system_scoring_failures':('A06.system_scoring.1','A06.system_scoring.2')}.get(key,(version,))
+                'system_scores':('A06.system_scoring.1','A06.system_scoring.2','A06.system_scoring_paths.1'),
+                'system_scoring_failures':('A06.system_scoring.1','A06.system_scoring.2','A06.system_scoring_paths.1')}.get(key,(version,))
             require(value.get('schema_version') in accepted and value.get('study_id')==manifest['study_id'],
                     '方案选择或固定输入归属不一致')
             if key in ('preparation_sessions','preparation_objects','preparation_packets'):
