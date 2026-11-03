@@ -14,6 +14,8 @@
 
 补充排版版本`A06.system_exports.2`：新明确请求使用第二版，只调整Excel列宽、换行、行高和说明区布局，科学来源、原值、六件附件范围及接口七字段不变。第一版已归档实现与原件保持；旧请求号按原协议复用，不能重新生成或静默升级。info/下载/追溯兼容两版，current优先本批第二版，第一版仍列历史供读取；没有第二版时允许用户明确生成新版，不自动生成。
 
+当前受体目录修订资格或评分使用独立归档协议 `A06.system_exports.3`，沿用第二版排版与原值规则。请求、成功检查点及失败记录分开保存。统一历史、下载及追溯可读取三版，接口字段保持原合同。
+
 GET `/studies/{sid}/analysis-plan/system-exports`仅返回`A06.system_exports.1`当前资格、源模块/运行、输入指纹、已归档六件导出及历史；不生成、不联网、不执行Vina。只支持有效的系统评分1/2，或没有可评分组合的全NA系统准备/资格1/2。ready尚未评分、旧批、失效、明确人工暂停或回收站不得生成。全NA不画虚假色标、不填零，原完整固定名单与顺序保持。
 
 POST同址严格七字段`{request_id:sysexportreq_<32hex>,expected_module:A06|A06_PREP,expected_run_id,expected_input_hash,author,note,confirmed:true}`，预检后排队重任务`plan_system_exports`。worker经公开Workflow复用已验收的动态导出排版，生成完整/重点PNG/SVG、完整CSV及Excel；真实科学版本保留，原始精度、NA/失败原因、A/B和≤−8的原标记保持，不改科学运行、评分、报告或reviews。完整成功检查点可在同请求重试时复用；未登记或损坏文件不得用重生成掩盖。源码/输入在生成前后重核，失败保留原件和诊断。

@@ -20,12 +20,12 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
 
     def analysis_plan_system_exports_info(self, study_id):
         """只读本批Excel/CSV/图的资格及已有档案，不生成文件或计算。"""
-        from .system_exports_v2 import info
+        from .system_export_registry import info
         return info(self, study_id)
 
     def export_analysis_plan_system_results(self, study_id, payload):
         """明确派生本批导出文件，不改评分、科学运行、报告或人工复核。"""
-        from .system_exports_v2 import execute
+        from .system_export_registry import execute
         return execute(self, study_id, payload)
 
     def register_analysis_plan_ppi_identity_scope(self, study_id, payload, proposal_bytes):

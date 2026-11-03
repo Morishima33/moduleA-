@@ -613,7 +613,7 @@ class Views:
         response['system_exports'] = None
         if system_structure and result and not historical:
             # 只读资格来自本批归档，不在页面请求里生成图表或Excel。
-            from ..core.system_exports_v2 import info as export_info
+            from ..core.system_export_registry import info as export_info
             from .system_exports import downloads
             exports = export_info(workflow, study_id)
             exports['current'] = downloads(study_id, exports['current'])

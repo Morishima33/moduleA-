@@ -4,7 +4,7 @@ from pathlib import Path
 
 from contracts import ContractError, require
 from storage import verified_file
-from ..core import system_exports_v2 as registry
+from ..core import system_export_registry as registry
 from .errors import ApiError, from_contract, not_found
 
 
@@ -41,7 +41,7 @@ def download(app, req, sid, export_id, index):
     """历史只读也逐件核验；返回的同一缓冲区再次核SHA，避免读后换字节。"""
     w = app.kernel.read_workflow(); m = w.load(sid); home = w.location(sid)
     try:
-        records = [registry.read_record(w, m, ref) for ref in m.get(registry.INDEX, [])]
+        records = registry.records(w, m)
         value = next((row for row in records if row['export_id'] == export_id), None)
         if value is None or not 0 <= int(index) < len(value['files']): raise not_found('本研究的导出文件')
         ref = value['files'][int(index)]; path = verified_file(home, ref); raw = path.read_bytes()

@@ -120,6 +120,10 @@ def _plan_decisions(workflow, manifest, all_files):
             ('system_export_candidates','analysis_plan_system_export_candidates','A06.system_exports.1'),
             ('system_exports','analysis_plan_system_export_records','A06.system_exports.1'),
             ('system_export_failures','analysis_plan_system_export_failures','A06.system_exports.1'),
+            ('repaired_export_requests','analysis_plan_repaired_export_requests','A06.system_exports.3'),
+            ('repaired_export_candidates','analysis_plan_repaired_export_candidates','A06.system_exports.3'),
+            ('repaired_exports','analysis_plan_repaired_export_records','A06.system_exports.3'),
+            ('repaired_export_failures','analysis_plan_repaired_export_failures','A06.system_exports.3'),
             ('a05_text_requests','analysis_plan_a05_text_requests','A05.plan_text_revision.1'),
             ('a05_text_receipts','analysis_plan_a05_text_receipts','A05.plan_text_revision.1'),
             ('a05_text_failures','analysis_plan_a05_text_failures','A05.plan_text_revision.1'),
@@ -230,9 +234,17 @@ def _plan_decisions(workflow, manifest, all_files):
             if key in ('system_export_requests','system_export_candidates','system_exports'):
                 from .system_exports_v2 import read_request, read_candidate, read_record
                 value={'system_export_requests':read_request,'system_export_candidates':read_candidate,'system_exports':read_record}[key](workflow,manifest,reference)
-            if key=='system_export_failures':
+            if key in ('repaired_export_requests','repaired_export_candidates','repaired_exports'):
+                from . import system_exports_paths as repaired
+                reader={'repaired_export_requests':repaired.read_request,
+                        'repaired_export_candidates':repaired.read_candidate,
+                        'repaired_exports':repaired.read_record}[key]
+                value=reader(workflow,manifest,reference)
+            if key in ('system_export_failures','repaired_export_failures'):
+                requests=('analysis_plan_repaired_export_requests' if key=='repaired_export_failures'
+                          else 'analysis_plan_system_export_requests')
                 require(value['human_review_written'] is False and value['state']=='failed'
-                    and value['request_file'] in manifest.get('analysis_plan_system_export_requests',[])
+                    and value['request_file'] in manifest.get(requests,[])
                     and value['error_type'] and value['error_zh'], '导出失败不能标为已完成或科研批准')
             if key=='a05_text_requests':
                 from .plan_a05_text import read_request

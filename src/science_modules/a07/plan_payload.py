@@ -129,8 +129,9 @@ def _build(workflow,sid,*,source_evidence=None):
         if module and m['runs'][m['current'][module]].get('result_file'):
             result=add(module);run=runs[module];preparation_only=module=='A06_PREP'
             if not preparation_only:
-                require(run['config'].get('version') in ('A06.plan_scoring.1','A06.system_scoring.1','A06.system_scoring.2'),'当前评分不属于新方案评分协议')
-                if run['config'].get('version') in ('A06.system_scoring.1','A06.system_scoring.2'):
+                system_scores = ('A06.system_scoring.1', 'A06.system_scoring.2', 'A06.system_scoring_paths.1')
+                require(run['config'].get('version') in ('A06.plan_scoring.1', *system_scores),'当前评分不属于新方案评分协议')
+                if run['config'].get('version') in system_scores:
                     require(run.get('execution_protocol')=='ModuleA.system_execution.1' and run['parent_review_ids']=={}
                         and run['inputs'].get('system_input_ref'),'报告系统评分缺少真实系统执行绑定')
             fixed_ref=input_reference(workflow,m,run);fixed=read_json(verified_file(home,fixed_ref))
