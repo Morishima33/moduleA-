@@ -18,6 +18,11 @@ class AnalysisPlanConflict(ContractError):
 class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
     """旧研究继承原行为；只有显式新方案登记支持草稿写入。"""
 
+    def verify_archives(self, root, records):
+        """一次来源核验复用目录解析，每件仍完整读取字节并检查SHA。"""
+        from .read_archive import ReadArchive
+        ReadArchive().verify_all(root, list(records))
+
     def analysis_plan_system_exports_info(self, study_id):
         """只读本批Excel/CSV/图的资格及已有档案，不生成文件或计算。"""
         from .system_export_registry import info
