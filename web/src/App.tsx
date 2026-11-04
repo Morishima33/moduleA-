@@ -13,6 +13,7 @@ import InboxDrawer from './components/InboxDrawer';
 import NewStudyModal from './components/NewStudyModal';
 import AnalysisPlanPreviewPage from './pages/AnalysisPlanPreviewPage';
 import PlanStudyCreationPage from './pages/PlanStudyCreationPage';
+import CreationSourceWorkspace from './components/CreationSourceWorkspace';
 import PlanPocketPage from './pages/PlanPocketPage';
 import SystemPipelinePage from './pages/SystemPipelinePage';
 
@@ -193,6 +194,8 @@ export default function App() {
         <AnalysisPlanPreviewPage />
       ) : route.page === 'new-plan-study' ? (
         <PlanStudyCreationPage />
+      ) : route.page === 'creation-sources' && route.studyId ? (
+        <CreationSourceWorkspace key={route.studyId} studyId={route.studyId} initialTarget={route.sourceSection??'disease'}/>
       ) : route.page === 'system-pipeline' && route.studyId ? (
         <SystemPipelinePage key={route.studyId} studyId={route.studyId} />
       ) : route.page === 'plan-pockets' && route.studyId ? (

@@ -7,6 +7,7 @@ import { hrefFor, navigate } from '../lib/route';
 import { useApp } from '../lib/appContext';
 import PlanCreationFields from '../components/PlanCreationFields';
 import CreationMaterials from '../components/CreationMaterials';
+import type {CreationSourceTarget} from '../components/CreationSourceWorkspace';
 
 type Intake=Omit<NewStudyInput,'request_id'>;
 
@@ -19,6 +20,7 @@ export default function PlanStudyCreationPage() {
   const [preview,setPreview]=useState<PlanCreationPreflight|null>(null);
   const [confirmed,setConfirmed]=useState(false); const [busy,setBusy]=useState<'preflight'|'create'|null>(null);
   const [error,setError]=useState(''); const [reload,setReload]=useState(0);
+  const [sourceTarget,setSourceTarget]=useState<CreationSourceTarget|null>(null);
   const sequence=useRef(0); const submitting=useRef(false);
   const requestId=useRef('plancreate_'+crypto.randomUUID().replace(/-/g,''));
   useEffect(()=>{
@@ -52,17 +54,26 @@ export default function PlanStudyCreationPage() {
     submitting.current=true;const call=++sequence.current;setBusy('create');setError('');
     try{
       const result=await api.createPlanStudy({request_id:requestId.current,preflight_id:preview.preflight_id,expected_input_hash:preview.input_hash,confirmed:true});
-      if(call===sequence.current){app.bumpRefresh();navigate({page:'study',studyId:result.study_id,moduleId:'A00'});}
+      if(call===sequence.current){
+        app.bumpRefresh();
+        if(sourceTarget)navigate({page:'creation-sources',studyId:result.study_id,sourceSection:sourceTarget});
+        else navigate({page:'study',studyId:result.study_id,moduleId:'A00'});
+      }
     }catch(e){if(call===sequence.current){setError(errorText(e));setConfirmed(false);}}
     finally{submitting.current=false;if(call===sequence.current)setBusy(null);}
   }
   const defaults=catalog?Object.fromEntries(Object.entries(catalog.parameters).map(([k,v])=>[k,v.default])):{};
   const displayed=mode==='standard'?defaults:values;
   const required=[{required:true,whitespace:true,message:'请填写此项'}];
+  /** 补充按钮选定资料类别，沿用登记预检与明确建档确认，随后在原页打开真实表单。 */
+  function chooseSources(target:CreationSourceTarget) {
+    setSourceTarget(target);
+    document.getElementById('plan-creation-confirmation')?.scrollIntoView({block:'start',behavior:'smooth'});
+  }
   return <main className="home plan-preview-page" id="plan-study-creation">
     <div className="plan-page-heading"><div><Tag color="cyan">新版建档</Tag><h1>新建研究 · 标准版／个性化版</h1>
       <p className="muted">先核对登记、方案和资料，再一次确认独立建档。</p></div><Button disabled={!!busy} href={hrefFor({page:'home'})}>返回研究列表</Button></div>
-    <Alert type="info" showIcon message="本次只建档并固定初始方案，不自动批准或启动分析。新方案自动接续仍在接入。"/>
+    <Alert type="info" showIcon message="先保存研究登记与初始方案，再补充资料。资料齐备后可进入统一执行与续做。"/>
     <section className="card"><h2>1. 填写本研究登记</h2>
       <Form form={form} layout="vertical" requiredMark={false} disabled={!!busy} onValuesChange={invalidate}>
         <Row gutter={16}><Col xs={24} sm={12}><Form.Item name="formula" label="方剂名称" rules={required}><Input maxLength={2000}/></Form.Item></Col>
@@ -74,6 +85,18 @@ export default function PlanStudyCreationPage() {
           <Radio.Group options={[{label:'正式研究',value:'formal_research'},{label:'流程测试',value:'workflow_test'}]}/></Form.Item></Col>
           <Col xs={24} sm={10}><Form.Item name="operator" label="登记人" rules={required}><Input maxLength={2000}/></Form.Item></Col></Row>
       </Form><div className="small muted">物种：人类9606；范围：仅本病，不纳入亚型。MeSH身份由服务端向NLM官方核对。</div>
+      <Row gutter={[16,16]} style={{marginTop:16}} id="creation-source-entry">
+        <Col xs={24} md={12}><section className="card stack" id="creation-formula-sources">
+          <h3>方剂资料</h3>
+          <p>TCMSP、HERB、BATMAN 三库原件。建档后在本页按当前药味和方案获取、查看状态或补取缺失资料。</p>
+          <Button disabled={!!busy} onClick={()=>chooseSources('formula')}>补充方剂资料</Button>
+        </section></Col>
+        <Col xs={24} md={12}><section className="card stack" id="creation-disease-sources">
+          <h3>疾病资料</h3>
+          <p>GeneCards、OMIM 原件上传，以及 TTD、PharmGKB、OTP 来源获取。请保留原检索词、获取日期和数据库版本。</p>
+          <Button disabled={!!busy} onClick={()=>chooseSources('disease')}>补充疾病资料</Button>
+        </section></Col>
+      </Row>
     </section>
     <section className="card"><h2>2. 选择方式与参数</h2>
       <Radio.Group aria-label="新研究分析方式" value={mode} disabled={!!busy} onChange={e=>{invalidate();setMode(e.target.value);}}>
@@ -85,6 +108,9 @@ export default function PlanStudyCreationPage() {
       </>}
     </section>
     <section className="card stack" id="plan-creation-confirmation"><h2>3. 预检资料并确认建档</h2>
+      {sourceTarget&&<Alert type="info" showIcon message={`已选择补充${sourceTarget==='formula'?'方剂':'疾病'}资料`}
+        description="先核对下方登记并确认建档，随后在本页显示资料获取与上传表单。上传的文件会绑定本项研究。"
+        action={<Button disabled={!!busy} onClick={()=>setSourceTarget(null)}>返回普通建档</Button>}/>}
       <Button disabled={!catalog||!!busy} loading={busy==='preflight'} onClick={()=>void preflight()}>核对登记、方案与资料</Button>
       {preview&&<div className="stack" id="plan-creation-preflight-result">
         <Alert type="success" showIcon message={preview.message_zh} description={`NLM已核对：${preview.mesh_verification.preferred_term}（${preview.mesh_verification.mesh_id}）`}/>
@@ -93,7 +119,8 @@ export default function PlanStudyCreationPage() {
         <div className="small mono" style={{overflowWrap:'anywhere'}}>初始方案指纹：{preview.plan.parameter_hash}</div>
         <Checkbox disabled={!!busy} checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}>我已核对本研究登记、方案及资料缺口，确认只建档，不启动分析</Checkbox>
       </div>}
-      <Button type="primary" size="large" loading={busy==='create'} disabled={!!busy||!preview?.can_create||!confirmed} onClick={()=>void create()}>确认建档并固定初始方案</Button>
+      <Button type="primary" size="large" loading={busy==='create'} disabled={!!busy||!preview?.can_create||!confirmed} onClick={()=>void create()}>
+        {sourceTarget?'确认建档并补充资料':'确认建档并固定初始方案'}</Button>
       {error&&<Alert type="error" showIcon message={error}/>}
     </section>
   </main>;
