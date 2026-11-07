@@ -723,6 +723,10 @@ GET `/api/v1/studies/{sid}/analysis-plan/creation` 返回本协议建档的初�
 
 报告history.downloads在原双Word之外追加已登记“用户批注版（保留N条批注）”。GET `/api/v1/studies/{sid}/analysis-plan/reports/{rid}/annotations/{repair_id}`只返回本研究完成恢复回执对应的批注原字节，逐件核对原报告/备份/批注及锚点指纹；错运行/未登记404，损坏沿现有503 ARCHIVE_UNAVAILABLE，原Host和只读下载规则保持。完整追溯追加report_archive_repair_requests/report_archive_repairs；恢复和保留批注不是科研复核通过。
 
+报告目录与系统校验目录的GET使用原`kernel.read_workflow()`及`handoff_read_cache()`，只在本次请求内复用已完整核验的运行/结果/依赖，离开即清除。每次GET新建实例，不用TTL、文件时间或旧页面状态替代SHA；回收站标记保留真实值。POST和科学校验执行仍走原完整写入实例，状态与存储内核、原协议实现字节不改。
+
+冻结旧报告校验内部只传root创建`AnalysisPlanWorkflow`时，明确只读作用域可构造`ReadPlanWorkflow(ReadResultMixin, AnalysisPlanWorkflow)`。作用域以ContextVar保存实际根和线程号并在finally退出；仅确切类、同根、同线程、无额外构造字段时适配，显式validators（包括None）、写入实例及其他线程/根不适配。继续运行原payload事实重建和全部图件/指纹判断，不替换全局函数或伪造校验结果。
+
 报告GET/generate/files沿原地址兼容两版：当前第三版结构或已有A07.plan_report.2选择二版生成资格，history合并两版原回执，files各按原协议逐件核验。浏览器仍只提交原严格报告字段；服务端给新plan_report队列payload绑定{report_protocol:A07.plan_report.2,request:原请求}，worker按该协议消费，排队后不改版。旧扁平任务payload仍一版；无GET自动生成或历史报告静默升级。
 
 系统评分热图receptors可选display_name来自本批固定受体symbol；name仍为原稳定编号，与cells.receptor关联。表头、转置和格子详情优先显示display_name，缺失时沿用name；不改变查值键、对象顺序或评分。

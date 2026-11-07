@@ -166,3 +166,82 @@ class ReportArchiveRepairTests(TestCase):
         (self.home/value['annotation_file']['path']).write_bytes(b'corrupted comment file')
         status,raw=get(url);self.assertEqual(status,503)
         self.assertEqual(json.loads(raw)['error']['code'],'ARCHIVE_UNAVAILABLE')
+
+    def test_read_only_gets_recheck_scientific_source_after_previous_success(self):
+        self.execute()
+        from modulea.api.server import create_server
+        from modulea.config import Settings
+        server,app=create_server(Settings(data_root=self.data,runtime_dir=self.data/'rt'),0)
+        Thread(target=server.serve_forever,daemon=True).start();self.addCleanup(server.server_close);self.addCleanup(server.shutdown)
+        def get(url):
+            c=http.client.HTTPConnection('127.0.0.1',server.server_port,timeout=60);c.request('GET',url)
+            r=c.getresponse();raw=r.read();status=r.status;c.close();return status,raw
+        base='/api/v1/studies/'+self.sid+'/analysis-plan/'
+        urls=[base+'reports',base+'system-validations']
+        manifest_before=self.w.load(self.sid)
+        for url in urls:self.assertEqual(get(url)[0],200)
+        source=manifest_before['runs'][manifest_before['current']['A03']]['result_file']
+        target=self.home/source['path'];saved=target.stat();target.write_bytes(target.read_bytes()+b' ')
+        import os
+        os.utime(target,ns=(saved.st_atime_ns,saved.st_mtime_ns))
+        for url in urls:
+            status,raw=get(url);self.assertEqual(status,503)
+            self.assertEqual(json.loads(raw)['error']['code'],'ARCHIVE_UNAVAILABLE')
+        self.assertEqual(self.w.load(self.sid),manifest_before);self.assertEqual(app.tasks.list(),[])
+
+    def test_nested_report_read_adapter_preserves_validation_and_rejects_changed_payload(self):
+        self.execute()
+        from modulea.core.analysis_plans import AnalysisPlanWorkflow
+        from modulea.core.kernel import Kernel
+        from modulea.config import Settings
+        from science_modules.a07.plan_payload import validate
+        manifest=self.w.load(self.sid);run=self.w.run(manifest,self.rid)
+        payload=json.loads(verified_file(self.home,run['inputs']['payload_file']).read_text('utf-8'))
+        expected=validate(payload,self.home,require_figures=True)
+        reader=Kernel(Settings(data_root=self.data)).read_workflow()
+        with reader.handoff_read_cache():
+            self.assertEqual(validate(payload,self.home,require_figures=True),expected)
+            bad=deepcopy(payload);bad['counts']['intersection']+=1
+            with self.assertRaises(ContractError):validate(bad,self.home,require_figures=True)
+        with self.assertRaises(ContractError):validate(bad,self.home,require_figures=True)
+        self.assertIs(type(AnalysisPlanWorkflow(self.data)),AnalysisPlanWorkflow)
+        self.stable_science()
+
+    def test_read_adapter_scope_never_changes_other_roots_threads_or_write_subclasses(self):
+        from concurrent.futures import ThreadPoolExecutor
+        from contextvars import copy_context
+        from modulea.core.analysis_plans import AnalysisPlanWorkflow
+        from modulea.core.kernel import Kernel
+        from modulea.core.read_archive import ReadResultMixin
+        from modulea.config import Settings
+        reader=Kernel(Settings(data_root=self.data)).read_workflow()
+        original=AnalysisPlanWorkflow(self.data)
+        with self.assertRaisesRegex(RuntimeError,'明确测试中断'):
+            with reader.handoff_read_cache():
+                self.assertIsInstance(AnalysisPlanWorkflow(self.data),ReadResultMixin)
+                self.assertIs(type(AnalysisPlanWorkflow(self.data/'another')),AnalysisPlanWorkflow)
+                self.assertNotIsInstance(full_workflow(self.data),ReadResultMixin)
+                self.assertIs(type(AnalysisPlanWorkflow(self.data,validators={})),AnalysisPlanWorkflow)
+                self.assertIs(type(Kernel(Settings(data_root=self.data)).workflow()),AnalysisPlanWorkflow)
+                self.assertIs(type(deepcopy(original)),AnalysisPlanWorkflow)
+                context=copy_context()
+                with ThreadPoolExecutor(max_workers=1) as pool:
+                    other=pool.submit(context.run,AnalysisPlanWorkflow,self.data).result()
+                self.assertIs(type(other),AnalysisPlanWorkflow)
+                raise RuntimeError('明确测试中断')
+        self.assertIs(type(AnalysisPlanWorkflow(self.data)),AnalysisPlanWorkflow)
+
+    def test_status_after_view_scope_keeps_full_legacy_report_validation_read_only(self):
+        self.execute()
+        from modulea.core.kernel import Kernel
+        from modulea.core import read_archive
+        from modulea.config import Settings
+        reader=Kernel(Settings(data_root=self.data)).read_workflow();manifest=reader.load(self.sid)
+        construct=read_archive.legacy_report_read_instance;adapted=[]
+        def observed(root):
+            instance=construct(root);adapted.append(instance is not None);return instance
+        expected=self.w.active(manifest,self.rid)
+        with patch.object(read_archive,'legacy_report_read_instance',side_effect=observed):
+            self.assertEqual(reader.active(manifest,self.rid),expected)
+        self.assertTrue(any(adapted),'页面在view作用域之后核对A07时，冻结报告核验仍须使用只读I/O')
+        self.stable_science()

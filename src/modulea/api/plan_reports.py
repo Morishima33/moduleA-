@@ -8,7 +8,14 @@ from .errors import ApiError,from_contract
 
 def info(app,req,sid):
     """下载链接只取真实归档文件，不能由浏览器提供路径。"""
-    workflow=app.kernel.workflow();value=core.info(workflow,sid);m=workflow.load(sid)
+    workflow=app.kernel.read_workflow()
+    with workflow.handoff_read_cache():
+        return _info(app,sid,workflow)
+
+
+def _info(app,sid,workflow):
+    """仅本次GET复用完整核验结果；下次请求建立全新读取实例。"""
+    value=core.info(workflow,sid);m=workflow.load(sid)
     if app.tasks.active_for(sid):value['enabled']=False;value['blockers'].append('请等待当前研究后台任务结束')
     for item in value['history']:
         result=workflow.result(m,item['run_id']);item['downloads']=[{'label_zh':'主报告' if index==0 else '简略版',

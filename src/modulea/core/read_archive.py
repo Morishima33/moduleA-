@@ -8,11 +8,35 @@ import marshal
 import os
 import stat
 import threading
+from contextlib import contextmanager
+from contextvars import ContextVar
 from concurrent.futures import Future, ThreadPoolExecutor
 from copy import deepcopy
 from pathlib import Path
 
 from contracts import ContractError, require, safe_id
+
+
+_legacy_report_scope = ContextVar('modulea_legacy_report_read_scope', default=None)
+
+
+@contextmanager
+def legacy_report_read_scope(root):
+    """只有本线程、本数据根的只读请求可向嵌套报告核验传递读取适配。"""
+    token = _legacy_report_scope.set((Path(root).resolve(), threading.get_ident()))
+    try:
+        yield
+    finally:
+        _legacy_report_scope.reset(token)
+
+
+def legacy_report_read_instance(root):
+    """冻结报告核验创建原Workflow时，仅在明确只读作用域中采用同类I/O适配。"""
+    scope = _legacy_report_scope.get()
+    if scope is not None and scope[1] == threading.get_ident() and Path(root).resolve() == scope[0]:
+        from .read_plan_workflow import ReadPlanWorkflow
+        return object.__new__(ReadPlanWorkflow)
+    return None
 
 
 def verify_records(workflow, root, records):
@@ -125,6 +149,17 @@ class ReadResultMixin:
             self._read_archive = ReadArchive()
         return self._read_archive
 
+    @contextmanager
+    def handoff_read_cache(self):
+        """原单次缓存与嵌套报告读取同进退，不跨请求、根目录或线程传播。"""
+        with legacy_report_read_scope(self.root), super().handoff_read_cache():
+            yield
+
+    def active(self, manifest, run_id):
+        """页面组装在view返回后仍会核对有效性，嵌套核验继续使用同一读取适配。"""
+        with legacy_report_read_scope(self.root):
+            return super().active(manifest, run_id)
+
     def verify_archive(self, root, record):
         """给只读展示适配提供同一套完整文件核验，不影响写入实例。"""
         return self._reader().verify(root, record)
@@ -188,7 +223,8 @@ class ReadResultMixin:
     def view(self, study_id):
         """每次独立状态读取重新核验；不保留上一请求的目录或文件缓存。"""
         self._read_archive = ReadArchive()
-        return super().view(study_id)
+        with legacy_report_read_scope(self.root):
+            return super().view(study_id)
 
 
 class SnapshotFlight:

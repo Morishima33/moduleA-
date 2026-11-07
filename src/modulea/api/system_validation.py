@@ -6,7 +6,9 @@ from .errors import ApiError,from_contract
 
 def info(app,req,sid):
     """当前任务占用时保留只读历史，禁止同时提交同研究校验。"""
-    value=core.info(app.kernel.workflow(),sid)
+    workflow=app.kernel.read_workflow()
+    with workflow.handoff_read_cache():
+        value=core.info(workflow,sid)
     if app.tasks.active_for(sid):
         for item in value['items']:
             item['enabled']=False;item['blockers'].append('请等待当前研究后台任务结束')

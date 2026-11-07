@@ -18,6 +18,16 @@ class AnalysisPlanConflict(ContractError):
 class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
     """旧研究继承原行为；只有显式新方案登记支持草稿写入。"""
 
+    def __new__(cls, root=None, *args, **kwargs):
+        # 旧科学报告校验内部构造此确切类。只读请求仅替换其I/O适配，
+        # 普通构造、写入子类、其他根及其他线程仍保持原实例和原规则。
+        if cls is AnalysisPlanWorkflow and root is not None and not args and not kwargs:
+            from .read_archive import legacy_report_read_instance
+            instance = legacy_report_read_instance(root)
+            if instance is not None:
+                return instance
+        return super().__new__(cls)
+
     def verify_archives(self, root, records):
         """一次来源核验复用目录解析，每件仍完整读取字节并检查SHA。"""
         from .read_archive import ReadArchive
