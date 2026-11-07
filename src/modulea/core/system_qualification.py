@@ -53,6 +53,9 @@ def _execute(workflow,sid,body):
 def execute(workflow,sid,body):
     """失败保存实际请求与已生成文件，不以资格失败覆盖原准备。"""
     m=workflow.load(sid);current=m['current'].get('A06_PREP')
+    if current and workflow.run(m,current)['config'].get('version') in ('A06.system_preparation.3','A06.system_qualification.3'):
+        from .system_qualification_sources import execute as execute_sources
+        return execute_sources(workflow,sid,body)
     if current and workflow.run(m,current)['config'].get('version') in ('A06.system_preparation.2','A06.system_qualification.2'):
         from .system_qualification_incremental import execute as execute_incremental
         return execute_incremental(workflow,sid,body)

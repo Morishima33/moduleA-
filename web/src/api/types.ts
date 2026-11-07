@@ -383,7 +383,7 @@ export interface Heatmap {
   color_rule_zh: string;
   min: number;
   max: number;
-  receptors: { name: string; order: number; pdb: string | null; rmsd: number | null; status_zh: string; role_zh: string }[];
+  receptors: { name: string; display_name?: string; order: number; pdb: string | null; rmsd: number | null; status_zh: string; role_zh: string }[];
   rows: { compound_id: string; compound_name: string; cells: { receptor: string; value: number | null }[] }[];
   omitted: { kind: string; name: string; reason_zh: string }[];
 }
@@ -422,7 +422,25 @@ export interface SourceUploadItem {
 }
 
 /** 模块专属数据（第 6 节）；各模块只有其中一部分键 */
+/** 已归档准备依据和原始Top-1只读关联；不提供科研采用或确认操作。 */
+export interface FoundationEvidence {
+  schema_version:string;read_only:true;integrity:'verified'|'failed';message_zh:string;error_zh:string;
+  study_id?:string;run_id?:string;input_key?:string;
+  preparation:{target_id:string;symbol:string;attempt:number;structure_id:string|null;state:string;state_zh:string;
+    quality:string|null;reason_zh:string;attempt_reason_zh:string;chains:string[]|null;uniprot:string|null;
+    reference:Record<string,string>|null;pocket_method:string|null;top1_rmsd:number|null;
+    pocket_complete_zh:string;environment_resolved_zh:string;environment_note_zh:string;
+    missing_atoms_zh:string[]|null;unobserved_residues_zh:string[]|null;environment_components_zh:string[]|null;
+    box:{center:number[];size:number[]}|null;downloads:{label_zh:string;name:string;url:string;sha256:string}[]}[];
+  scores:{compound_id:string;compound_name:string;target_id:string;symbol:string;state:string;state_zh:string;score:number|null;
+    quality:string|null;reason_zh:string;top_mode:number|null;pose_sha256:string|null;
+    box:{center:number[];size:number[]}|null;top1_download_url?:string;context_download_url?:string;
+    downloads:{label_zh:string;name:string;url:string;sha256:string}[]}[];
+}
+
 export interface Special {
+  foundation_evidence?:FoundationEvidence;
+  source_diagnostics?:{object_type?:string;object_id?:string;failure_stage?:string;failure_code?:string;retryable?:boolean;reason_zh?:string}[];
   historical_disease_source?:{message_zh:string};
   system_component_publication?: {source_binding_protocol:string;message_zh:string};
   venn?: Venn;

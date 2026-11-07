@@ -55,6 +55,8 @@ class App:
         self.plan_creation = PlanCreation(self.kernel)
         self.token = secrets.token_urlsafe(32)
         self.routes = [
+            ("GET", rf"/api/v1/studies/{ID}/runs/{ID}/foundation/pairs/([0-9]+)/top1\.pdbqt", self.get_foundation_top1),
+            ("GET", rf"/api/v1/studies/{ID}/runs/{ID}/foundation/pairs/([0-9]+)/context\.json", self.get_foundation_context),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/historical-disease-sources", self.get_historical_disease_sources),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/historical-disease-sources/publish", self.post_historical_disease_sources),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/component-identity-probes", self.get_component_identity_probes),
@@ -197,6 +199,16 @@ class App:
         self.compiled = [(method, re.compile("^" + pattern + "$"), handler) for method, pattern, handler in self.routes]
 
     # ------------------------------------------------------------------ 读取
+    def get_foundation_top1(self, req, study_id, run_id, pair_number):
+        """只读提取本批原MODEL1，来源、评分与盒均由服务端逐件核验。"""
+        from .foundation_evidence import top1
+        return top1(self, req, study_id, run_id, pair_number)
+
+    def get_foundation_context(self, req, study_id, run_id, pair_number):
+        """下载同一Top1原件与提取字节指纹，不写研究或更改计算。"""
+        from .foundation_evidence import context
+        return context(self, req, study_id, run_id, pair_number)
+
     def get_environment(self, req):
         """仅用户按需请求，避免每个模块页面反复读取大参考快照。"""
         from ..preflight import inspect_environment

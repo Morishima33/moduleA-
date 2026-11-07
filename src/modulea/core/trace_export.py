@@ -128,6 +128,9 @@ def _plan_decisions(workflow, manifest, all_files):
             ('a05_text_receipts','analysis_plan_a05_text_receipts','A05.plan_text_revision.1'),
             ('a05_text_failures','analysis_plan_a05_text_failures','A05.plan_text_revision.1'),
             ('disease_manual_sources','analysis_plan_system_manual_source_records','A02.system_manual_source.1'),
+            ('preparation_sessions_v2','analysis_plan_system_preparation_sessions_v2','A06.system_preparation_checkpoints.2'),
+            ('preparation_objects_v2','analysis_plan_system_preparation_objects_v2','A06.system_preparation_checkpoints.2'),
+            ('preparation_packets_v2','analysis_plan_system_preparation_packets_v2','A06.system_preparation_checkpoints.2'),
             ('preparation_sessions','analysis_plan_system_preparation_sessions','A06.system_preparation_checkpoints.1'),
             ('preparation_objects','analysis_plan_system_preparation_objects','A06.system_preparation_checkpoints.1'),
             ('preparation_packets','analysis_plan_system_preparation_packets','A06.system_preparation_checkpoints.1'),
@@ -135,6 +138,13 @@ def _plan_decisions(workflow, manifest, all_files):
             ('disease_acquisitions','analysis_plan_disease_acquisition_records','A02.system_acquisition.1'),
             ('disease_acquisition_sources','analysis_plan_disease_acquisition_sources','A02.system_acquisition.1'),
             ('disease_acquisition_failures','analysis_plan_disease_acquisition_failures','A02.system_acquisition.1'),
+            ('source_export_requests','analysis_plan_source_export_requests','A06.system_exports.4'),
+            ('source_export_candidates','analysis_plan_source_export_candidates','A06.system_exports.4'),
+            ('source_exports','analysis_plan_source_export_records','A06.system_exports.4'),
+            ('source_export_failures','analysis_plan_source_export_failures','A06.system_exports.4'),
+            ('report_revision_requests','analysis_plan_report_revision_requests','A07.plan_report.2'),
+            ('report_revision_receipts','analysis_plan_report_revision_receipts','A07.plan_report.2'),
+            ('report_revision_failures','analysis_plan_report_revision_failures','A07.plan_report.2'),
             ('report_requests','analysis_plan_report_requests','A07.plan_report.1'),
             ('report_receipts','analysis_plan_report_receipts','A07.plan_report.1'),
             ('report_failures','analysis_plan_report_failures','A07.plan_report.1')):
@@ -144,12 +154,16 @@ def _plan_decisions(workflow, manifest, all_files):
             accepted={'system_export_requests':('A06.system_exports.1','A06.system_exports.2'),'system_export_candidates':('A06.system_exports.1','A06.system_exports.2'),'system_exports':('A06.system_exports.1','A06.system_exports.2'),'system_export_failures':('A06.system_exports.1','A06.system_exports.2'),
                 'a05_display_records':('A05.plan_display.1','A05.plan_display.2'),
                 'a05_display_requests':('A05.plan_display.1','A05.plan_display.2'),
-                'system_qualifications':('A06.system_qualification.1','A06.system_qualification.2'),
-                'system_qualification_failures':('A06.system_qualification.1','A06.system_qualification.2'),
-                'system_scores':('A06.system_scoring.1','A06.system_scoring.2','A06.system_scoring_paths.1'),
-                'system_scoring_failures':('A06.system_scoring.1','A06.system_scoring.2','A06.system_scoring_paths.1')}.get(key,(version,))
+                'system_qualifications':('A06.system_qualification.1','A06.system_qualification.2','A06.system_qualification.3'),
+                'system_qualification_failures':('A06.system_qualification.1','A06.system_qualification.2','A06.system_qualification.3'),
+                'system_scores':('A06.system_scoring.1','A06.system_scoring.2','A06.system_scoring.3','A06.system_scoring_paths.1'),
+                'system_scoring_failures':('A06.system_scoring.1','A06.system_scoring.2','A06.system_scoring.3','A06.system_scoring_paths.1')}.get(key,(version,))
             require(value.get('schema_version') in accepted and value.get('study_id')==manifest['study_id'],
                     '方案选择或固定输入归属不一致')
+            if key in ('preparation_sessions_v2','preparation_objects_v2','preparation_packets_v2'):
+                from . import system_preparation_checkpoints_v2 as checkpoints
+                value={'preparation_sessions_v2':checkpoints.read_session,'preparation_objects_v2':checkpoints.read_object,
+                    'preparation_packets_v2':checkpoints.read_packet}[key](workflow,manifest,reference)
             if key in ('preparation_sessions','preparation_objects','preparation_packets'):
                 from . import system_preparation_checkpoints as checkpoints
                 value={'preparation_sessions':checkpoints.read_session,'preparation_objects':checkpoints.read_object,
@@ -231,6 +245,12 @@ def _plan_decisions(workflow, manifest, all_files):
                 require(value['human_review_written'] is False and value['state']=='failed'
                     and value['request_file'] in manifest.get('analysis_plan_ppi_identity_revision_requests',[])
                     and value['error_type'] and value['error_zh'], 'PPI修订失败不能作已发布运行')
+            if key in ('source_export_requests','source_export_candidates','source_exports'):
+                from . import system_exports_sources as sources
+                reader={'source_export_requests':sources.read_request,
+                        'source_export_candidates':sources.read_candidate,
+                        'source_exports':sources.read_record}[key]
+                value=reader(workflow,manifest,reference)
             if key in ('system_export_requests','system_export_candidates','system_exports'):
                 from .system_exports_v2 import read_request, read_candidate, read_record
                 value={'system_export_requests':read_request,'system_export_candidates':read_candidate,'system_exports':read_record}[key](workflow,manifest,reference)
@@ -240,9 +260,9 @@ def _plan_decisions(workflow, manifest, all_files):
                         'repaired_export_candidates':repaired.read_candidate,
                         'repaired_exports':repaired.read_record}[key]
                 value=reader(workflow,manifest,reference)
-            if key in ('system_export_failures','repaired_export_failures'):
-                requests=('analysis_plan_repaired_export_requests' if key=='repaired_export_failures'
-                          else 'analysis_plan_system_export_requests')
+            if key in ('system_export_failures','repaired_export_failures','source_export_failures'):
+                requests={'repaired_export_failures':'analysis_plan_repaired_export_requests',
+                          'source_export_failures':'analysis_plan_source_export_requests'}.get(key,'analysis_plan_system_export_requests')
                 require(value['human_review_written'] is False and value['state']=='failed'
                     and value['request_file'] in manifest.get(requests,[])
                     and value['error_type'] and value['error_zh'], '导出失败不能标为已完成或科研批准')
@@ -260,7 +280,7 @@ def _plan_decisions(workflow, manifest, all_files):
             if key=='system_scoring_failures':
                 run=workflow.run(manifest,value['run_id'])
                 require(value['human_review_written'] is False and value['state']=='failed'
-                    and run['config'].get('version')==version and run['batch_file']==value['batch_file']
+                    and run['config'].get('version')==value['schema_version'] and run['batch_file']==value['batch_file']
                     and value['error_type'] and value['error_zh'],'系统评分失败诊断无效')
             if key=='system_batches':
                 from .system_execution import read_batch
@@ -279,15 +299,18 @@ def _plan_decisions(workflow, manifest, all_files):
                 else:
                     require(value['state']=='failed' and value['run_id'] is None and value['error_type'] and value['error_zh'],
                             '系统失败诊断不能伪造科学成功结果')
-            if key=='report_requests':
+            if key in ('report_requests','report_revision_requests'):
                 require(value['request_hash']==fingerprint(value['request']) and value['request']['confirmed'] is True
                         and value['input_hash']==fingerprint(value['binding']),'报告明确请求与实际上游指纹不一致')
-            if key=='report_receipts':
-                from .plan_reports import read_receipt
-                value=read_receipt(workflow,manifest,reference)
-            if key=='report_failures':
+            if key in ('report_receipts','report_revision_receipts'):
+                from . import plan_reports, plan_reports_v2
+                reader=plan_reports_v2 if key=='report_revision_receipts' else plan_reports
+                value=reader.read_receipt(workflow,manifest,reference)
+            if key in ('report_failures','report_revision_failures'):
+                report_requests=('analysis_plan_report_revision_requests' if key=='report_revision_failures'
+                                 else 'analysis_plan_report_requests')
                 require(value.get('authority_kind')=='execution_failure' and value.get('human_review_written') is False
-                        and value['request_file'] in manifest.get('analysis_plan_report_requests',[]),'报告失败诊断来源或类型错误')
+                        and value['request_file'] in manifest.get(report_requests,[]),'报告失败诊断来源或类型错误')
                 if value.get('run_id'):
                     run=workflow.run(manifest,value['run_id'])
                     require(run['module_id']=='A07' and run['inputs']['request_file']==value['request_file'],'报告失败诊断绑定其他运行')

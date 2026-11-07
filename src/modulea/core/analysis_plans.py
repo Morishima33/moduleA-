@@ -108,6 +108,12 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
         from .system_execution import start
         return start(self,study_id,payload,preparation_protocol='A06.system_preparation.2',enrichment_protocol='A05.plan_enrichment.2')
 
+    def start_analysis_plan_foundation_system_batch(self, study_id, payload):
+        """新明确批次使用精确来源补救；旧请求仍返回其原绑定协议。"""
+        from .system_execution import start
+        return start(self, study_id, payload, preparation_protocol='A06.system_preparation.3',
+                     enrichment_protocol='A05.plan_enrichment.2', report_protocol='A07.plan_report.2')
+
     def execute_analysis_plan_system_decision(self,study_id,payload):
         """同批系统受体选择及固定准备输入，不生成选择人工审核。"""
         from .system_decisions import execute
@@ -137,6 +143,16 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
         """按真实系统依赖生成新A07双报告，原人工复核关系保持。"""
         from .plan_reports import publish
         return publish(self,study_id,payload)
+
+    def report_revision_info(self, study_id):
+        """只读第二版展示资格与缺译门禁，不生成报告或修改历史结果。"""
+        from .plan_reports_v2 import info
+        return info(self, study_id)
+
+    def publish_analysis_plan_report_revision(self, study_id, payload):
+        """明确追加本批第二版展示，不重跑统计评分，不改变原报告或科研复核。"""
+        from .plan_reports_v2 import publish
+        return publish(self, study_id, payload)
 
     def _view_snapshot(self,study_id):
         """新报告就绪资格来自真实系统依赖，不把未签人工审核改为通过。"""
@@ -242,6 +258,9 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
         if run.get('execution_protocol')=='ModuleA.system_execution.1':
             from .system_execution import is_active
             return is_active(self,manifest,run)
+        if run['module_id']=='A07' and run['config'].get('version')=='A07.plan_report.2':
+            from .plan_reports_v2 import is_active
+            return is_active(self,manifest,run)
         if run['module_id']=='A07' and run['config'].get('version')=='A07.plan_report.1':
             from .plan_reports import is_active
             return is_active(self,manifest,run)
@@ -259,6 +278,9 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
 
     def _begin(self, manifest, module, inputs, config, reason):
         """保留旧协议保护；显式新报告使用真实系统依赖，其余版本继续原分派。"""
+        if module=='A07' and config.get('version')=='A07.plan_report.2':
+            from .plan_reports_v2 import begin
+            return begin(self,manifest,inputs,config,reason)
         if module=='A07' and config.get('version')=='A07.plan_report.1':
             from .plan_reports import begin
             return begin(self,manifest,inputs,config,reason)

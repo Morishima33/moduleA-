@@ -51,6 +51,8 @@ import PlanSystemValidations from './PlanSystemValidations';
 import PlanReports from './PlanReports';
 import SystemExports from './SystemExports';
 import SystemReceptorSelection from './SystemReceptorSelection';
+import FoundationEvidence from './FoundationEvidence';
+import SourceDiagnostics from './SourceDiagnostics';
 import PlanCompounds from './PlanCompounds';
 import PlanSelection from './PlanSelection';
 import PlanPreparation from './PlanPreparation';
@@ -228,6 +230,8 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       {sp.enrichment_display_tables && <EnrichmentDisplay special={sp} info={view.enrichment_display} pending={keggPending} rankedMaps={view.ranked_pathway_maps} studyId={studyId} />}
       {sp.enrichment_top && <EnrichmentTop data={sp.enrichment_top} />}
       {sp.heatmap && !view.docking_review && <Heatmap data={sp.heatmap} />}
+      {sp.foundation_evidence && <FoundationEvidence data={sp.foundation_evidence} />}
+      {sp.source_diagnostics && <SourceDiagnostics rows={sp.source_diagnostics} />}
       {(sp.conclusion_zh || sp.leads || sp.limits || sp.report_files) && <ReportSummary special={sp} studyId={studyId} />}
       {!view.run && <Alert type="info" message="本模块尚无运行结果，请先核对上游状态及本页提示。"/>}
       </PreviousIntersection>

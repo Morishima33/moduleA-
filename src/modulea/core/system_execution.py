@@ -26,6 +26,9 @@ def scientific_version(module,config):
         return config.get('identity_exception_protocol')=='ModuleA.identity_exception.1'
     if module=='A02' and config.get('version')=='A02.system_normalization.5':
         return config.get('identity_policy')=='explicit_bound_test_exception'
+    if module=='A06_PREP' and config.get('version') in ('A06.system_preparation.3','A06.system_qualification.3'):
+        return config.get('object_checkpoint_protocol')=='A06.system_preparation_checkpoints.2'
+    if module=='A06' and config.get('version')=='A06.system_scoring.3':return True
     if module=='A06_PREP' and config.get('version') in ('A06.system_preparation.2','A06.system_qualification.2'):
         return config.get('object_checkpoint_protocol')=='A06.system_preparation_checkpoints.1'
     if module=='A06_PREP' and config.get('version')=='A06.system_qualification_paths.1':
@@ -84,8 +87,9 @@ def read_batch(workflow,m,reference):
     require(value.get('schema_version')==VERSION and value.get('study_id')==m['study_id']
         and value.get('human_review_written') is False and value['request']['confirmed'] is True
         and value['request_hash']==fingerprint(value['request']),'系统执行授权归属或明确确认无效')
-    require(value.get('preparation_protocol') in (None,'A06.system_preparation.2'),'系统批次结构准备协议未知')
+    require(value.get('preparation_protocol') in (None,'A06.system_preparation.2','A06.system_preparation.3'),'系统批次结构准备协议未知')
     require(value.get('enrichment_protocol') in (None,'A05.plan_enrichment.2'),'系统批次富集输出协议未知')
+    require(value.get('report_protocol') in (None,'A07.plan_report.2'),'系统批次报告协议未知')
     safe_id(value['batch_id'],'systembatch');safe_id(value['request']['request_id'],'systembatchreq')
     require(value['plan_file'] in m.get('analysis_plan_records',[]),'批次方案未登记')
     plan=read_json(verified_file(home,value['plan_file']))
@@ -116,11 +120,12 @@ def read_batch(workflow,m,reference):
     return value,plan
 
 
-def start(workflow,sid,body,*,preparation_protocol=None,enrichment_protocol=None):
+def start(workflow,sid,body,*,preparation_protocol=None,enrichment_protocol=None,report_protocol=None):
     """公开Workflow一次登记明确批次；不写人工reviews，不启动隐含科学计算。"""
     require(isinstance(body,dict) and set(body)==FIELDS,'系统批次请求字段错误，不接受通过标记、参数或路径覆盖')
-    require(preparation_protocol in (None,'A06.system_preparation.2'),'尚未接通该准备恢复协议')
+    require(preparation_protocol in (None,'A06.system_preparation.2','A06.system_preparation.3'),'尚未接通该准备恢复协议')
     require(enrichment_protocol in (None,'A05.plan_enrichment.2'),'尚未接通该富集输出协议')
+    require(report_protocol in (None,'A07.plan_report.2'),'尚未接通该报告输出协议')
     safe_id(body['request_id'],'systembatchreq');safe_id(body['expected_a00'],'run');safe_id(body['expected_plan_id'],'plan')
     require(body['confirmed'] is True and all(isinstance(body[k],str) and 0<len(body[k].strip())<=2000 for k in ('author','note')),
         '请填写执行人、依据并明确确认本批次')
@@ -141,6 +146,7 @@ def start(workflow,sid,body,*,preparation_protocol=None,enrichment_protocol=None
         protocol=source_for(workflow,m,body['expected_plan_id'])[1]
         if preparation_protocol:record['preparation_protocol']=preparation_protocol
         if enrichment_protocol:record['enrichment_protocol']=enrichment_protocol
+        if report_protocol:record['report_protocol']=report_protocol
         if protocol:record['component_source_protocol']=protocol
         if m.get('current_analysis_plan_identity_exception'):
             from . import identity_exceptions
@@ -209,6 +215,8 @@ def is_active(workflow,m,run):
         require(set(run['parent_runs'])==DEPENDENCIES[run['module_id']]
             and scientific_version(run['module_id'],run['config']), '系统执行科学版本或完整依赖错误')
         bound_batch,_=require_batch(workflow,m,run['batch_file'])
+        if run['config'].get('version') in ('A06.system_preparation.3','A06.system_qualification.3','A06.system_scoring.3'):
+            require(bound_batch.get('preparation_protocol')=='A06.system_preparation.3','第三版来源缺少原批明确协议')
         if run['config'].get('version') in ('A06.system_preparation.2','A06.system_qualification.2','A06.system_scoring.2','A06.system_qualification_paths.1','A06.system_scoring_paths.1'):
             require(bound_batch.get('preparation_protocol')=='A06.system_preparation.2','新恢复版本缺少原批明确协议')
         if run['module_id']=='A02':
@@ -225,7 +233,7 @@ def is_active(workflow,m,run):
             fixed=system_decisions.read_record(workflow,m,run['inputs']['system_input_ref'])
             require(fixed['stage']=='A06_INPUT' and fixed['binding']['batch_file']==run['batch_file']
                 and system_decisions.active(workflow,m,fixed),'结构准备的系统固定范围已失效')
-            if run['config'].get('version') in ('A06.system_qualification.1','A06.system_qualification.2'):
+            if run['config'].get('version') in ('A06.system_qualification.1','A06.system_qualification.2','A06.system_qualification.3'):
                 request=read_json(verified_file(workflow.location(m['study_id']),run['inputs']['qualification_request']))
                 source=read_json(verified_file(workflow.location(m['study_id']),run['inputs']['source_preparation_run']))
                 review=workflow.latest_review(m,source['artifact_id'])
@@ -254,7 +262,7 @@ def is_active(workflow,m,run):
 def bound_parent_records(workflow,m,run):
     """新评分保留实际采用回执；同输入再次通过不废弃原评分，最新失败仍否决。"""
     latest=parent_records(workflow,m,run['parent_runs']);bound=run['parent_validation_records']
-    if run['config'].get('version') not in ('A06.system_scoring.1','A06.system_scoring.2','A06.system_scoring_paths.1'):return bound==latest
+    if run['config'].get('version') not in ('A06.system_scoring.1','A06.system_scoring.2','A06.system_scoring.3','A06.system_scoring_paths.1'):return bound==latest
     require(set(bound)==set(latest),'系统评分原依赖回执不完整')
     for module,reference in bound.items():
         require(reference in m.get(validation.INDEX,[]),'系统评分原采用回执未登记')
@@ -337,7 +345,9 @@ def _execute(workflow,sid,body,*,tools=None,progress=None):
         computed=getattr(science,module.lower())(workflow,m,batch,plan,ref)
     elif module=='A06_PREP':
         require(tools is not None,'系统准备尚未配置固定结构工具，不启动来源或计算')
-        if batch.get('preparation_protocol')=='A06.system_preparation.2':
+        if batch.get('preparation_protocol')=='A06.system_preparation.3':
+            from science_modules.a06.system_preparation_sources import compute
+        elif batch.get('preparation_protocol')=='A06.system_preparation.2':
             from science_modules.a06.system_preparation_incremental import compute
         else:
             from science_modules.a06.system_preparation import compute

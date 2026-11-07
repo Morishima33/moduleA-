@@ -52,7 +52,7 @@ def execute(app,req,sid,*,start=False):
                 if isinstance(body,dict) and candidate['request']['request_id']==body.get('request_id'):original=candidate;break
             # 新确认先查必需五库原件；原确认重试仍按原批绑定的原件核对。
             system_pipeline.required_inputs(w,m,original)
-            batch=w.start_analysis_plan_recoverable_system_batch(sid,body);m=w.load(sid)
+            batch=w.start_analysis_plan_foundation_system_batch(sid,body);m=w.load(sid)
             payload={'batch_id':batch['batch_id'],'expected_input_hash':system_pipeline.state_hash(w,m,batch['file'])}
         else:
             batch=system_pipeline.validate_request(w,sid,body);payload=body

@@ -716,3 +716,13 @@ GET `/api/v1/studies/{sid}/analysis-plan/creation` 返回本协议建档的初�
 新明确可恢复批次将enrichment_protocol=A05.plan_enrichment.2固定到批次；原批无此字段继续第一版，同请求重试不升级。第二版只用R的Unicode字符串常量修复skipped原因，原科学R/第一版契约不改。A05模块展示识别两版统计；第二版按独立A05.plan_display.2及A05.plan_display_source.2消费原分类、词典和相同字段形状，第一版展示规则和已归档结果保持。现有展示准备/确认与只读追溯按实际统计分派，人工决定不自动确认。系统A05不显示不适用的独立plan_a05旧人工执行表单，后续指向统一执行；分类展示资料与独立复核保留。数量说明按实际系统权限明确“系统校验不表示人工批准”，不把未签署的A03称为已人工批准；普通人工流程文字和操作保持。
 
 后台新增公开Workflow.revise_analysis_plan_a05_text与plan_a05_text_revision任务，可明确离线修订已有第一版系统结果；尚无新增HTTP写入口或专用网页按钮。完整追溯追加plan_decisions.a05_text_requests/a05_text_receipts/a05_text_failures，保留原统计、请求、实现及各次失败。独立新A07报告按真实第二版统计及对应来源快照生成，不将文字修订视为人工科研复核。
+
+## 2026-11-07 同批准备依据、来源口径与Top-1原字节下载
+
+系统评分热图receptors可选display_name来自本批固定受体symbol；name仍为原稳定编号，与cells.receptor关联。表头、转置和格子详情优先显示display_name，缺失时沿用name；不改变查值键、对象顺序或评分。
+
+系统准备/资格/评分模块只读兼容独立第三版及全部旧版。可选KPI分别读取原摘要source_record_count、verified_structure_count、verified_record_count、pending_structure_records；缺失省略，0保留，不按新去重重排固定对象。special.source_diagnostics保留原tables.source_diagnostics各行及object_type/object_id/failure_stage/failure_code/retryable/reason_zh，旧批缺分类时展示“未登记”，不从原因文本猜分类。
+
+special.foundation_evidence可选，schema_version=ModuleA.foundation_evidence.1，read_only=true，integrity=verified|failed。仅核对本运行system_input_ref、原A06_PREP登记、准备/评分packet、原execution命令、输入与工具指纹、搜索盒、MODEL 1评分/原子及坐标；不重新计算。preparation保留每次候选尝试、参考配体/链、原口袋及环境核查记录和原始原因；未执行的环境核查为null，不解释为通过。scores保留完整原序组合及NA/失败原因、原始评分、来源SHA与经核验下载链接。失配时返回明确只读错误区，无构象链接，不更改状态、复核资格或历史结果。
+
+GET `/api/v1/studies/{sid}/runs/{rid}/foundation/pairs/{number}/top1.pdbqt`及同路径`context.json`必须且仅接受expected_input_key和expected_pose_sha256两个单值查询字段。number为本批原序1基组合号；不接收路径、URL、姿势号或参数覆盖。下载前回读本研究原运行/准备/固定输入与所有评分证据，前后复核登记绑定，原pose缓冲区再次核验SHA。仅已完成且核验一致组合允许下载，NA/失败409、陈旧绑定409、未登记404、额外字段422。Top1为原Vina文件MODEL 1至ENDMDL原字节（保留换行），context含原pose和提取字节SHA、原评分/盒/参数/执行SHA；均内存派生、不落研究目录、不联网。历史运行按原登记读取，不用当前草稿替代。路由由server显式挂载后生效。

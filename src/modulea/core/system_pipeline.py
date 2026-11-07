@@ -10,6 +10,16 @@ INDEX='analysis_plan_system_pipeline_records'
 STAGES=('A01','A02','A03','A03_SELECT','A04','A05','A04_SELECTION','A06_INPUT','A06_PREP','A06_QUALIFY','A06','A07')
 
 
+def report_model(batch):
+    """报告实现由原明确批次固定；缺字段的历史批次继续第一版。"""
+    protocol = batch.get('report_protocol')
+    require(protocol in (None, 'A07.plan_report.2'), '系统批次报告协议未知')
+    if protocol == 'A07.plan_report.2':
+        from . import plan_reports_v2
+        return plan_reports_v2
+    return plan_reports
+
+
 def batch_for(workflow,m,batch_id):
     """只接受本研究已明确授权的实际批次，绑定原方案而非最新草稿。"""
     safe_id(batch_id,'systembatch')
@@ -70,7 +80,7 @@ def read_record(workflow,m,reference):
             require(selected['stage']==value['stage'] and selected['batch_id']==value['batch_id'],'系统编排名单来源不同')
     if value['event']=='finished':
         require(value['state']=='awaiting_report_review' and value['report_run_id'] in m['runs']
-            and workflow.run(m,value['report_run_id'])['config'].get('version')=='A07.plan_report.1',
+            and workflow.run(m,value['report_run_id'])['config'].get('version')==report_model(batch).VERSION,
             '系统编排完成不能冒充科研结论批准')
     if value['event']=='failed':require(value['error_type'] and value['error_zh'],'系统编排失败缺少实际原因')
     return value
@@ -154,7 +164,7 @@ def execute(workflow,sid,body,*,tools=None,progress=None):
             event=completed[-1];rid=event['run_id']
             if module=='A06_PREP' and latest['current'].get(module)!=rid:
                 candidate=workflow.run(latest,latest['current'][module])
-                require(candidate['config'].get('version') in ('A06.system_qualification.1','A06.system_qualification.2')
+                require(candidate['config'].get('version') in ('A06.system_qualification.1','A06.system_qualification.2','A06.system_qualification.3')
                     and candidate['inputs']['source_preparation_run']==latest['runs'][rid]['run_file'],
                     '本批准备已由其他来源替换')
                 usable(workflow,latest,candidate['run_id']);result=workflow.result(latest,rid)
@@ -187,7 +197,7 @@ def execute(workflow,sid,body,*,tools=None,progress=None):
             usable(workflow,workflow.load(sid),qualified['run_id']);record('A06_QUALIFY',qualified)
             if qualified['summary']['ready_pairs']:
                 current_stage='A06';notify('执行或恢复本批实际评分');latest=workflow.load(sid);score=latest['current'].get('A06')
-                if score and workflow.run(latest,score)['config'].get('version') in ('A06.system_scoring.1','A06.system_scoring.2'):
+                if score and workflow.run(latest,score)['config'].get('version') in ('A06.system_scoring.1','A06.system_scoring.2','A06.system_scoring.3'):
                     run=workflow.run(latest,score);request=read_json(verified_file(home,run['inputs']['scoring_request']))['request']
                     require(run['batch_file']==ref,'当前评分属于其他系统批次')
                 else:request={'batch_id':batch['batch_id'],'expected_preparation_run_id':qualified['run_id'],'expected_scoring_run_id':score}
@@ -202,11 +212,14 @@ def execute(workflow,sid,body,*,tools=None,progress=None):
             if plan['plan']['parameters']['a05.include_go'] or plan['plan']['parameters']['a05.include_kegg']:modules+=['A05']
             if qualified['summary']['ready_pairs']:modules+=['A06']
         for module in modules:execution.ensure_parents(workflow,sid,{module:workflow.load(sid)['current'][module]})
-        value=plan_reports.info(workflow,sid);require(value['enabled'],'本批报告仍有阻塞：'+'；'.join(value['blockers']))
+        model=report_model(batch)
+        value=model.info(workflow,sid);require(value['enabled'],'本批报告仍有阻塞：'+'；'.join(value['blockers']))
         existing=next((x for x in reversed(value['history']) if x['active']),None)
         if existing:report=workflow.result(workflow.load(sid),existing['run_id'])
         else:
-            report=workflow.publish_analysis_plan_report(sid,{key:value[key] for key in ('expected_report_run_id','expected_input_hash')}|
+            publish=(workflow.publish_analysis_plan_report_revision if model.VERSION=='A07.plan_report.2'
+                     else workflow.publish_analysis_plan_report)
+            report=publish(sid,{key:value[key] for key in ('expected_report_run_id','expected_input_hash')}|
                 {'request_id':'planreportreq_'+new_id('attempt').split('_',1)[1], 'author':batch['request']['author'],
                  'note':batch['request']['note']+'；报告请求来自原一次明确批次授权，不表示新的人工签署','confirmed':True})
         record('A07',report)

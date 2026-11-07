@@ -1,5 +1,5 @@
 """系统结构结果页读取本运行固定范围；不调用旧执行器或改动研究事实。"""
-from contracts import require
+from contracts import ContractError,require
 from storage import read_json,verified_file
 from ..presenters.system_docking import PATH_REPAIR,VERSIONS,present
 
@@ -13,6 +13,15 @@ def apply(workflow,manifest,run,result,response):
         and fixed['binding']['batch_file']==run['batch_file']
         and fixed['payload']['input_key']==result['summary']['input_key'],'系统结构展示固定范围不同')
     response.update(present(result,fixed['payload']))
+    from ..core.foundation_evidence import build as evidence_view
+    try:
+        evidence=evidence_view(workflow,manifest,run,result,fixed['payload'],response.get('files',[]))
+    except (ContractError,KeyError,TypeError,ValueError) as error:
+        # 只阻断证据及构象链接，原模块状态与人工复核资格不由展示层改写。
+        evidence={'schema_version':'ModuleA.foundation_evidence.1','read_only':True,'integrity':'failed',
+            'preparation':[],'scores':[],'error_zh':str(error),
+            'message_zh':'本批准备或构象关联核验未通过，不能展示可用构象链接；请核查原始归档。'}
+    if evidence:response.setdefault('special',{})['foundation_evidence']=evidence
     for key in ('automatic_docking','docking_trial','docking_coverage','docking_preparation','docking_candidates',
         'docking_review','docking_artifacts','reference_qualification','scoring_readiness','review_packet',
         'review_gate','reviewable_preparation','plan_scoring','plan_selection_ui','plan_preparation_ui'):

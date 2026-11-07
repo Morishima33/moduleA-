@@ -1,0 +1,110 @@
+{
+  "GO:0007204": {
+    "english": "positive regulation of cytosolic calcium ion concentration",
+    "zh": "胞质钙离子浓度的正调控",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0007204",
+    "translation_basis": "2026-11-06 按 QuickGO 官方英文名称与定义核译；非官方中文名，保留原统计稳定编号与归档英文，不改变原统计或筛选。",
+    "source_obsolete": false,
+    "official_name_at_check": "positive regulation of cytosolic calcium ion concentration",
+    "verified_at": "2026-11-06"
+  },
+  "GO:0010038": {
+    "english": "response to metal ion",
+    "zh": "对金属离子的响应",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0010038",
+    "translation_basis": "2026-11-06 按 QuickGO 官方英文名称与定义核译；非官方中文名，保留原统计稳定编号与归档英文，不改变原统计或筛选。",
+    "source_obsolete": false,
+    "official_name_at_check": "response to metal ion",
+    "verified_at": "2026-11-06"
+  },
+  "GO:0034702": {
+    "english": "monoatomic ion channel complex",
+    "zh": "单原子离子通道复合物",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0034702",
+    "translation_basis": "2026-11-06 按 QuickGO 官方英文名称与定义核译；非官方中文名，保留原统计稳定编号与归档英文，不改变原统计或筛选。",
+    "source_obsolete": false,
+    "official_name_at_check": "monoatomic ion channel complex",
+    "verified_at": "2026-11-06"
+  },
+  "GO:1902495": {
+    "english": "transmembrane transporter complex",
+    "zh": "跨膜转运蛋白复合物",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:1902495",
+    "translation_basis": "2026-11-06 按 QuickGO 官方英文名称与定义核译；非官方中文名，保留原统计稳定编号与归档英文，不改变原统计或筛选。",
+    "source_obsolete": false,
+    "official_name_at_check": "transmembrane transporter complex",
+    "verified_at": "2026-11-06"
+  },
+  "GO:0022824": {
+    "english": "transmitter-gated monoatomic ion channel activity",
+    "zh": "递质门控单原子离子通道活性",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0022824",
+    "translation_basis": "2026-11-06 按 QuickGO 官方英文名称与定义核译；非官方中文名，保留原统计稳定编号与归档英文，不改变原统计或筛选。",
+    "source_obsolete": false,
+    "official_name_at_check": "transmitter-gated monoatomic ion channel activity",
+    "verified_at": "2026-11-06"
+  },
+  "GO:0022835": {
+    "english": "transmitter-gated channel activity",
+    "zh": "递质门控通道活性",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0022835",
+    "translation_basis": "2026-11-06 按 QuickGO 官方英文名称与定义核译；非官方中文名，保留原统计稳定编号与归档英文，不改变原统计或筛选。",
+    "source_obsolete": false,
+    "official_name_at_check": "transmitter-gated channel activity",
+    "verified_at": "2026-11-06"
+  },
+  "GO:0005230": {
+    "english": "extracellular ligand-gated monoatomic ion channel activity",
+    "zh": "细胞外配体门控单原子离子通道活性",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0005230",
+    "translation_basis": "2026-11-06 按 QuickGO 官方英文名称与定义核译；非官方中文名，保留原统计稳定编号与归档英文，不改变原统计或筛选。",
+    "source_obsolete": false,
+    "official_name_at_check": "extracellular ligand-gated monoatomic ion channel activity",
+    "verified_at": "2026-11-06"
+  },
+  "GO:0099529": {
+    "english": "neurotransmitter receptor activity involved in regulation of postsynaptic membrane potential",
+    "zh": "参与突触后膜电位调控的神经递质受体活性（原注释条目，现已废弃）",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:0099529",
+    "translation_basis": "2026-11-06 按 QuickGO 官方英文名称与定义核译；非官方中文名，保留原统计稳定编号与归档英文，不改变原统计或筛选。",
+    "source_obsolete": true,
+    "official_name_at_check": "obsolete neurotransmitter receptor activity involved in regulation of postsynaptic membrane potential",
+    "verified_at": "2026-11-06"
+  },
+  "GO:1904315": {
+    "english": "transmitter-gated monoatomic ion channel activity involved in regulation of postsynaptic membrane potential",
+    "zh": "参与突触后膜电位调控的递质门控单原子离子通道活性",
+    "source": "https://www.ebi.ac.uk/QuickGO/term/GO:1904315",
+    "translation_basis": "2026-11-06 按 QuickGO 官方英文名称与定义核译；非官方中文名，保留原统计稳定编号与归档英文，不改变原统计或筛选。",
+    "source_obsolete": false,
+    "official_name_at_check": "transmitter-gated monoatomic ion channel activity involved in regulation of postsynaptic membrane potential",
+    "verified_at": "2026-11-06"
+  },
+  "hsa05110": {
+    "english": "Vibrio cholerae infection",
+    "zh": "霍乱弧菌感染",
+    "source": "https://www.kegg.jp/entry/hsa05110",
+    "translation_basis": "2026-11-07 按 KEGG 官方稳定编号、英文通路名称与说明核译；中文为本项目核译，原分类、范围和统计保持。",
+    "source_obsolete": false,
+    "official_name_at_check": "Vibrio cholerae infection",
+    "verified_at": "2026-11-07"
+  },
+  "hsa05340": {
+    "english": "Primary immunodeficiency",
+    "zh": "原发性免疫缺陷",
+    "source": "https://www.kegg.jp/entry/hsa05340",
+    "translation_basis": "2026-11-07 按 KEGG 官方稳定编号、英文通路名称与说明核译；中文为本项目核译，原分类、范围和统计保持。",
+    "source_obsolete": false,
+    "official_name_at_check": "Primary immunodeficiency",
+    "verified_at": "2026-11-07"
+  },
+  "hsa05414": {
+    "english": "Dilated cardiomyopathy",
+    "zh": "扩张型心肌病",
+    "source": "https://www.kegg.jp/entry/hsa05414",
+    "translation_basis": "2026-11-07 按 KEGG 官方稳定编号、英文通路名称与说明核译；中文为本项目核译，原分类、范围和统计保持。",
+    "source_obsolete": false,
+    "official_name_at_check": "Dilated cardiomyopathy",
+    "verified_at": "2026-11-07"
+  }
+}

@@ -26,6 +26,7 @@ export default function Heatmap({ data }: { data: HeatmapData }) {
   const compounds = data.rows; // 成分顺序按接口
   const recByName = useMemo(() => new Map(receptors.map((r) => [r.name, r])), [receptors]); // 受体信息索引
   const nameOf = (cid: string) => compounds.find((c) => c.compound_id === cid)?.compound_name || cid; // 成分名
+  const receptorName = (key: string) => recByName.get(key)?.display_name || key; // 显示名称不替换稳定查值键
 
   /** 取某格数值；接口未给出的格子视为 null */
   const valueOf = (cid: string, rec: string): number | null => {
@@ -37,7 +38,7 @@ export default function Heatmap({ data }: { data: HeatmapData }) {
   const cell = (cid: string, rec: string) => {
     const v = valueOf(cid, rec); // 该格数值
     const sel = picked?.compound === cid && picked?.receptor === rec; // 是否选中
-    const label = `${nameOf(cid)} × ${rec}：${v === null ? '无有效评分（NA）' : `${v.toFixed(3)} ${data.unit}`}`; // 无障碍说明
+    const label = `${nameOf(cid)} × ${receptorName(rec)}：${v === null ? '无有效评分（NA）' : `${v.toFixed(3)} ${data.unit}`}`; // 无障碍说明
     if (v === null) {
       // 缺失格：白底 NA，虚线边
       return (
@@ -62,7 +63,7 @@ export default function Heatmap({ data }: { data: HeatmapData }) {
     const rc = roleColor(r?.role_zh || ''); // 角色配色
     return (
       <>
-        <span className="mono" style={{ fontWeight: 500 }}>{name}</span>
+        <span className="mono" style={{ fontWeight: 500 }} title={name}>{receptorName(name)}</span>
         {r?.role_zh && <span className="pill" style={{ background: rc.bg, color: rc.fg, fontSize: 11, padding: '0 6px' }}>{r.role_zh}</span>}
       </>
     );
@@ -83,7 +84,7 @@ export default function Heatmap({ data }: { data: HeatmapData }) {
     return (
       <div style={{ padding: '14px 16px', border: '1px solid #A9C8EA', background: '#F3F7FC', borderRadius: 8, display: 'flex', flexDirection: 'column', gap: 4, fontSize: 14 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-          <strong>{nameOf(picked.compound)} × {picked.receptor}</strong>
+          <strong>{nameOf(picked.compound)} × {receptorName(picked.receptor)}</strong>
           <Button size="small" type="text" onClick={() => setPicked(null)}>关闭</Button>
         </div>
         <span>{v === null ? '无有效评分（NA）：按规则不补 0、不改选其他姿势；原因见受体限制表和运行记录。' : `Vina 评分 ${v.toFixed(3)} ${data.unit}`}</span>

@@ -12,6 +12,10 @@ FAILURES='analysis_plan_system_scoring_failures'
 def execute(workflow,sid,body,tools,progress):
     """内部公开入口只绑定当前批次/准备；工具及参数不由客户端提供。"""
     m=workflow.load(sid);current=m['current'].get('A06_PREP');score=m['current'].get('A06')
+    if ((current and workflow.run(m,current)['config'].get('version')=='A06.system_qualification.3')
+            or (score and workflow.run(m,score)['config'].get('version')=='A06.system_scoring.3')):
+        from .system_scoring_sources import execute as execute_sources
+        return execute_sources(workflow,sid,body,tools=tools,progress=progress)
     if current and workflow.run(m,current)['config'].get('version')=='A06.system_qualification_paths.1':
         from science_modules.a06 import system_scoring_paths as path_science
         from .system_scoring_incremental import execute_protocol

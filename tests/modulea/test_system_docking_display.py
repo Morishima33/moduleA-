@@ -2,7 +2,7 @@
 from copy import deepcopy
 import unittest
 from unittest.mock import patch
-from modulea.presenters.system_docking import present,VERSIONS
+from modulea.presenters.system_docking import present,VERSIONS,SCORING
 from modulea.api.system_docking_view import apply
 from contracts import ContractError
 
@@ -19,10 +19,12 @@ class SystemDockingDisplayTests(unittest.TestCase):
 
     def test_both_system_scoring_versions_keep_full_na_matrix_without_claiming_approval(self):
         before=deepcopy(self.result)
-        for version in VERSIONS[-2:]:
+        for version in SCORING:
             result=deepcopy(self.result);result['summary']['science_version']=version
             display=present(result,self.packet);matrix=display['special']['heatmap']
             self.assertEqual(len(matrix['rows']),2);self.assertEqual(matrix['rows'][0]['compound_name'],'本批原名称')
+            self.assertEqual(matrix['receptors'][0]['name'],'T1')
+            self.assertEqual(matrix['receptors'][0]['display_name'],'原靶点')
             self.assertEqual(matrix['rows'][0]['cells'][0]['value'],-7.0);self.assertIsNone(matrix['rows'][1]['cells'][0]['value'])
             self.assertEqual(matrix['omitted'],[]);self.assertEqual(display['table']['rows'][1]['reason_zh'],'本对象缺资料')
             self.assertIn('NA保留',matrix['color_rule_zh'])
@@ -35,8 +37,27 @@ class SystemDockingDisplayTests(unittest.TestCase):
         display=present(self.result,self.packet);self.assertNotIn('heatmap',display['special'])
         self.assertTrue(all(row['score'] is None for row in display['table']['rows']))
 
+    def test_source_counts_preserve_zero_and_legacy_missing_fields_are_omitted(self):
+        before=present(self.result,self.packet)
+        self.assertFalse(any('来源记录' in r['label_zh'] for r in before['kpis']))
+        self.result['summary'].update(source_record_count=4,verified_structure_count=2,
+            verified_record_count=3,pending_structure_records=0)
+        values={r['label_zh']:r['value'] for r in present(self.result,self.packet)['kpis']}
+        self.assertEqual({k:values[k] for k in ('来源记录','已核实独立结构','已核实来源记录','待核结构记录')},
+            {'来源记录':4,'已核实独立结构':2,'已核实来源记录':3,'待核结构记录':0})
+
+    def test_source_diagnostics_preserve_original_reason_without_guessing_old_categories(self):
+        rows=[{'object_type':'compound','object_id':'C1','failure_stage':'identity_check',
+            'failure_code':'CONFLICT','retryable':False,'reason_zh':'原稳定编号身份冲突'},
+            {'object_id':'C2','reason_zh':'旧批原原因，未登记分类'}]
+        self.result['tables']['source_diagnostics']=deepcopy(rows)
+        value=present(self.result,self.packet)['special']['source_diagnostics']
+        self.assertEqual(value,rows)
+        self.assertNotIn('failure_stage',value[1])
+        self.assertEqual(self.result['tables']['source_diagnostics'],rows)
+
     def test_all_preparation_versions_show_actual_receptor_reason_without_scoring(self):
-        for version in VERSIONS[:-2]:
+        for version in (v for v in VERSIONS if v not in SCORING):
             result=deepcopy(self.result);result['summary'].update(science_version=version,scored_pairs=0,ready_pairs=1)
             result['tables'].update(planned_pairs=result['tables']['plan_scoring_pairs'],
                 receptor_preparation=[{'target_id':'T1','symbol':'原靶点','state':'ready','quality':'探索','reason_zh':'原证据'}])
