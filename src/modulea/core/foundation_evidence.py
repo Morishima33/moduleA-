@@ -77,6 +77,13 @@ def _preparation_rows(home, sid, fact, fixed, files):
                     item = _download(home, sid, ref, files, "原始口袋预测")
                     if item: downloads.append(item)
             assessment = attempt.get("assessment") or {}
+            # 接触链必须有原登记依据；目标链、配体所在链和未筛选距离表不能代替。
+            contacts = evidence.get("reference_contacts")
+            if contacts is not None:
+                require(isinstance(contacts, dict) and isinstance(contacts.get("chains"), list)
+                        and all(isinstance(chain, str) and chain for chain in contacts["chains"])
+                        and isinstance(contacts.get("basis_zh"), str) and contacts["basis_zh"].strip(),
+                        "参考配体接触链缺少原核查依据")
             rows.append({"target_id": receptor["target_id"], "symbol": original.get("symbol") or receptor["target_id"],
                          "attempt": index, "structure_id": evidence.get("structure_id") or spec.get("pdb_id") or spec.get("model_id"),
                          "state": receptor["state"], "quality": receptor.get("quality"),
@@ -85,6 +92,7 @@ def _preparation_rows(home, sid, fact, fixed, files):
                          "chains": deepcopy(identities.get("chains", spec.get("chains"))),
                          "uniprot": identities.get("uniprot", spec.get("uniprot")),
                          "reference": deepcopy(evidence.get("reference")), "pocket_method": spec.get("pocket"),
+                         "reference_contacts": deepcopy(contacts),
                          "top1_rmsd": evidence.get("top1_rmsd"), "box": deepcopy(evidence.get("box")),
                          "pocket_complete": evidence.get("pocket_complete") if environment_recorded else None,
                          "environment_resolved": evidence.get("environment_resolved") if environment_recorded else None,

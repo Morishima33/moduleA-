@@ -121,6 +121,11 @@ class SystemSourcesTests(unittest.TestCase):
         changed = dict(session['binding'], vina_sha256='0' * 64)
         with self.assertRaises(ContractError):
             cp.find_session(self.w, saved, session['batch_file'], session['system_input_ref'], changed)
+        from copy import deepcopy
+        changed = deepcopy(session['binding'])
+        changed['configuration']['vina_parameters']['seed'] += 1
+        with self.assertRaises(ContractError):
+            cp.find_session(self.w, saved, session['batch_file'], session['system_input_ref'], changed)
         with patch.object(science, 'CODE_NAMES', science.CODE_NAMES[:-1]), self.assertRaises(ContractError):
             self.execute()
         original = cp.read_object(self.w, saved, saved[cp.OBJECTS][0])['payload']['files'][0]

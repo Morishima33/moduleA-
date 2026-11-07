@@ -204,6 +204,23 @@ class FoundationEvidenceTests(unittest.TestCase):
         with self.assertRaises(ContractError):
             self.build()
 
+    def test_contact_chains_require_archived_basis_and_never_default_to_target_chain(self):
+        self.assertIsNone(self.build()['preparation'][0]['reference_contacts'])
+        c = self.case
+        def save_preparation():
+            c.prep_result['tables']['preparation_packet'] = [c.json('prep/fact.json', c.prepared)]
+            ref = c.json(c.prep_result_ref['path'], c.prep_result)
+            c.manifest['runs'][c.prep_id]['result_file'] = ref
+            c.run['inputs']['preparation_result'] = ref
+            c.refresh()
+        c.evidence['reference_contacts'] = {'chains':['B'],'basis_zh':'明确合成原核查，保留其依据'}
+        save_preparation()
+        self.assertEqual(self.build()['preparation'][0]['reference_contacts']['chains'], ['B'])
+        c.evidence['reference_contacts'].pop('basis_zh')
+        save_preparation()
+        with self.assertRaisesRegex(ContractError, '接触链'):
+            self.build()
+
     def test_missing_result_index_does_not_invent_a_download_permission(self):
         self.case.files = []
         value = self.build()

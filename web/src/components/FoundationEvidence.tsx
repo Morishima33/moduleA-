@@ -35,6 +35,7 @@ export default function FoundationEvidence({ data }: { data:Evidence }) {
           <div><strong>原受体结果：</strong>{row.reason_zh}</div>
           <div><strong>蛋白链：</strong>{row.chains?.join('，')||'未记录'}；<strong>UniProt：</strong>{row.uniprot||'未记录'}</div>
           <div><strong>共晶参考配体：</strong>{row.reference?`${row.reference.reference_code} / ${row.reference.reference_chain}链 / ${row.reference.reference_sequence}`:'未记录参考配体'}；<strong>Top-1重对接RMSD：</strong>{row.top1_rmsd===null?'未记录':`${row.top1_rmsd} Å`}</div>
+          <div><strong>参考配体接触链：</strong>{row.reference_contacts?<>{row.reference_contacts.chains.join('，')||'原核查未列出'}；{row.reference_contacts.basis_zh}</>:'原记录未核定；不以目标链或配体所在链代替'}</div>
           <div><strong>口袋完整性：</strong>{row.pocket_complete_zh}；<strong>必要环境：</strong>{row.environment_resolved_zh}</div>
           <RecordedList label="口袋缺原子记录" items={row.missing_atoms_zh}/>
           <RecordedList label="邻接未观测残基记录" items={row.unobserved_residues_zh}/>

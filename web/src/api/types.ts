@@ -428,7 +428,7 @@ export interface FoundationEvidence {
   study_id?:string;run_id?:string;input_key?:string;
   preparation:{target_id:string;symbol:string;attempt:number;structure_id:string|null;state:string;state_zh:string;
     quality:string|null;reason_zh:string;attempt_reason_zh:string;chains:string[]|null;uniprot:string|null;
-    reference:Record<string,string>|null;pocket_method:string|null;top1_rmsd:number|null;
+    reference:Record<string,string>|null;reference_contacts?:{chains:string[];basis_zh:string}|null;pocket_method:string|null;top1_rmsd:number|null;
     pocket_complete_zh:string;environment_resolved_zh:string;environment_note_zh:string;
     missing_atoms_zh:string[]|null;unobserved_residues_zh:string[]|null;environment_components_zh:string[]|null;
     box:{center:number[];size:number[]}|null;downloads:{label_zh:string;name:string;url:string;sha256:string}[]}[];
