@@ -79,7 +79,7 @@ function Get-SafePath {
     if (-not $full.StartsWith($root + [System.IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
         Stop-Upload 'INVALID_PATH' '文件路径超出了正式代码仓库。'
     }
-    $allowedFiles = @('.gitignore', '.gitattributes', 'AGENTS.md', 'README.md', 'start.cmd', 'start_v2.cmd', 'start_v2.command')
+    $allowedFiles = @('.gitignore', '.gitattributes', 'AGENTS.md', 'README.md', 'start.cmd', 'start_v2.cmd', 'stop_v2.cmd', 'restart_v2.cmd', 'start_v2.command')
     $top = $rel.Split('/')[0]
     if ($rel -notin $allowedFiles -and $top -notin @('src', 'web', 'tests', 'docs', 'templates', 'config', 'tools', '.github')) {
         Stop-Upload 'EXCLUDED_PATH' ('上传范围不包含：' + $rel)

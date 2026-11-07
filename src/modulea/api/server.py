@@ -18,12 +18,15 @@ import os
 import re
 import secrets
 import sys
+import threading
+from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, quote, urlsplit
 
 from .. import __version__
 from ..config import Settings
+from ..service_identity import ServiceIdentity
 from ..core.kernel import ContractError, Kernel, read_json, verified_file
 from ..core.study_creation import CreationConflict, StudyCreation
 from ..core.plan_creation import PlanCreation, is_plan_created
@@ -47,6 +50,9 @@ class App:
     """接口应用：持有配置、内核、任务管理和视图组装；路由表把 (方法, 路径) 对应到处理函数。"""
 
     def __init__(self, settings: Settings):
+        # 先核对运行写入范围，错误配置不能先让TaskManager在研究包创建数据库。
+        from ..service_control import runtime_location
+        runtime_location(settings)
         self.settings = settings
         self.kernel = Kernel(settings)
         self.tasks = TaskManager(settings)
@@ -54,7 +60,21 @@ class App:
         self.creation = StudyCreation(self.kernel)
         self.plan_creation = PlanCreation(self.kernel)
         self.token = secrets.token_urlsafe(32)
+        self._listen_port = 0
+        self._shutdown_callback = None
+        self._service_stopping = False
+        self._service_lock = threading.RLock()
+        self._write_local = threading.local()
+        self._writes_in_flight = 0
+        self._service_identity_error = None
+        try:self.service_identity = ServiceIdentity(settings)
+        except (OSError,ValueError) as error:
+            # 旧API-only嵌入仍可使用；运行交付健康检查明确报告配置错误。
+            self.service_identity = None
+            self._service_identity_error = str(error)
         self.routes = [
+            ("GET", r"/api/v1/health", self.get_health),
+            ("POST", r"/api/v1/service/stop", self.post_service_stop),
             ("GET", rf"/api/v1/studies/{ID}/runs/{ID}/foundation/pairs/([0-9]+)/top1\.pdbqt", self.get_foundation_top1),
             ("GET", rf"/api/v1/studies/{ID}/runs/{ID}/foundation/pairs/([0-9]+)/context\.json", self.get_foundation_context),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/historical-disease-sources", self.get_historical_disease_sources),
@@ -1358,6 +1378,52 @@ class App:
                 return handler(req, *match.groups())
         raise not_found("接口 " + path)
 
+    def get_health(self, req):
+        """毫秒级实例/前端健康信息；不读取Workflow、研究或科学执行环境。"""
+        if self.service_identity is None:
+            raise ApiError(503,'SERVICE_CONFIG_UNAVAILABLE','服务源码配置不可用：'+str(self._service_identity_error))
+        value=self.service_identity.describe(self._listen_port)
+        value['stopping']=self._service_stopping
+        return value
+
+    @contextmanager
+    def admit_write(self,path=None):
+        """关闭前阻断新增写请求；正常请求并行，不新增研究状态或任务队列。"""
+        with self._service_lock:
+            if self._service_stopping and path!='/api/v1/service/stop':raise ApiError(503,'SERVICE_STOPPING','工作台正在关闭，请完成重新启动后刷新',retryable=True)
+            self._writes_in_flight+=1
+        previous=getattr(self._write_local,'admitted',False);self._write_local.admitted=True
+        try:yield
+        finally:
+            self._write_local.admitted=previous
+            with self._service_lock:self._writes_in_flight-=1
+
+    def post_service_stop(self, req):
+        """只关闭此实例监听；明确身份、无后台任务和无其他写入才允许。"""
+        body=req.json()
+        if not isinstance(body,dict) or set(body)!={'instance_id','confirmed'} or body['confirmed'] is not True:
+            raise ApiError(422,'VALIDATION_FAILED','请明确确认停止当前工作台，不接受进程号或额外参数')
+        if self.service_identity is None or body['instance_id']!=self.service_identity.instance_id:
+            raise ApiError(409,'STALE_INSTANCE','工作台实例已变化，未停止任何服务')
+        with self._service_lock:
+            if self._service_stopping:
+                return {'instance_id':self.service_identity.instance_id,'accepted':True,'message_zh':'本实例已经在安全关闭中。'},202
+            own=1 if getattr(self._write_local,'admitted',False) else 0
+            if self._writes_in_flight>own:
+                raise ApiError(409,'ACTIVE_WRITE','当前有资料操作尚未结束，请稍后再停止工作台')
+            if self.tasks.list(active_only=True,limit=1):
+                raise ApiError(409,'ACTIVE_TASKS','当前有后台任务排队或运行，请先完成或在任务面板明确取消')
+            if self._shutdown_callback is None:raise ApiError(503,'SERVICE_CONTROL_UNAVAILABLE','当前实例未接通安全关闭入口')
+            self._service_stopping=True
+            # 稍后关闭自己的监听，让确认响应先写完；不操作任何PID或worker。
+            timer=threading.Timer(.15,self._shutdown_callback);timer.daemon=True
+            try:timer.start()
+            except Exception:
+                self._service_stopping=False
+                raise
+        return {'instance_id':self.service_identity.instance_id,'accepted':True,
+                'message_zh':'已接受停止工作台；研究资料和任务历史保留。'},202
+
 
 class Request:
     """一次请求的查询参数与 JSON 正文。"""
@@ -1496,7 +1562,10 @@ def make_handler(app: App):
                         raise ApiError(403, "FORBIDDEN_ORIGIN", "不接受其他网页发起的操作")
                     if not secrets.compare_digest(self.headers.get("X-ModuleA-Token", ""), app.token):
                         raise ApiError(403, "BAD_TOKEN", "操作令牌无效，请刷新页面")
-                result = app.dispatch(method, route.path, Request(self, parse_qs(route.query)))
+                request=Request(self, parse_qs(route.query))
+                if method == 'POST':
+                    with app.admit_write(route.path):result = app.dispatch(method, route.path, request)
+                else:result = app.dispatch(method, route.path, request)
                 if isinstance(result, tuple) and result and result[0] == "verified_download":
                     _, data, name, mime, inline = result
                     disposition = ("inline" if inline else "attachment") + "; filename*=UTF-8''" + quote(name, safe="")
@@ -1544,4 +1613,10 @@ def create_server(settings: Settings, port: int = 8765) -> tuple[ThreadingHTTPSe
     app = App(settings)
     server = ThreadingHTTPServer(("127.0.0.1", port), make_handler(app))
     server.daemon_threads = True
+    app._listen_port=server.server_port
+    def stop_own_listener():
+        """同时释放本监听；嵌入式运行也不依赖CLI finally才关闭端口。"""
+        server.shutdown()
+        server.server_close()
+    app._shutdown_callback=stop_own_listener
     return server, app

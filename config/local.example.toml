@@ -8,7 +8,9 @@
 # science_tools_root = "D:/科学工具目录"
 # science_repair_packages = "D:/固定侧链修补依赖/packages"
 # studies/ 与 references/ 所在目录；默认就是项目根目录
-# data_root = "D:/codex-重大专项/moduleA"
+# data_root = "D:/ModuleA-data"
+# 工作台日志与任务索引；应在 studies/ 外，默认 <代码目录>/.runtime
+# runtime_dir = "D:/ModuleA-runtime"
 # 后台科学计算使用的 Python（需已安装 networkx、python-docx、rdkit、meeko 等科学依赖）；默认与工作台相同
 # science_python = "C:/Users/<用户名>/scoop/apps/python/current/python.exe"
 # 预构建前端目录；默认 src/modulea/static

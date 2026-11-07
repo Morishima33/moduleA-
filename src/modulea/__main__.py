@@ -3,6 +3,7 @@
 命令：
   serve     启动本机工作台（JSON 接口 + 预构建前端）
   doctor    检查本机环境：数据目录、研究数量、归档核验、科学依赖是否齐备
+  service   快速检查本目录服务身份，或明确安全停止本实例；不检查科学结果
   task-run  后台任务子进程入口（由任务管理器调用，用户无需手动执行）
 """
 
@@ -38,16 +39,33 @@ def main(argv: list[str] | None = None) -> int:
     task = sub.add_parser("task-run", help="（内部）执行一个后台任务")
     task.add_argument("task_id")
 
+    service=sub.add_parser('service',help='工作台快速状态及安全停止，不运行科学计算')
+    service_actions=service.add_subparsers(dest='service_action',required=True)
+    for action,label in (('status','检查当前目录工作台是否在运行'),('stop','明确停止本目录无任务的工作台')):
+        command=service_actions.add_parser(action,help=label)
+        command.add_argument('--port',type=int,default=8780)
+        command.add_argument('--static-dir')
+        command.add_argument('--json',action='store_true')
+        if action=='stop':command.add_argument('--confirmed',action='store_true')
+
     args = parser.parse_args(argv)
     overrides = {"data_root": args.data_root, "runtime_dir": args.runtime_dir}
     if args.command == "serve":
         overrides["static_dir"] = args.static_dir or (str(DEFAULT_STATIC) if (DEFAULT_STATIC / "index.html").exists() else None)
         overrides["allowed_origins"] = args.allow_origin
-    settings = load_settings(**overrides)
+    if args.command=='service':overrides['static_dir']=args.static_dir or str(DEFAULT_STATIC)
+    try:settings = load_settings(**overrides)
+    except (OSError,ValueError,TypeError) as error:
+        if args.command!='service':raise
+        result={'schema_version':'ModuleA.service_probe.1','state':'configuration_error','ready':False,
+                'preflight_ready':False,'reasons_zh':[str(error)]}
+        if args.json:print(json.dumps(result,ensure_ascii=False),flush=True)
+        else:print('工作台配置不可用：'+str(error),flush=True)
+        return 4
 
     if args.command == "serve":
         from .api.server import create_server
-        server, _ = create_server(settings, args.port)
+        server, app = create_server(settings, args.port)
         address = f"http://127.0.0.1:{server.server_port}"
         print("Module A 工作台：" + address, flush=True)
         print("数据目录：" + str(settings.data_root), flush=True)
@@ -55,15 +73,35 @@ def main(argv: list[str] | None = None) -> int:
             server.server_close()
             print("启动检查通过。", flush=True)
             return 0
-        if not args.no_browser:
-            webbrowser.open(address)
+        from .service_control import register_service,clear_service
+        try:register_service(settings,app.get_health(None))
+        except Exception:
+            server.server_close()
+            raise
         try:
+            if not args.no_browser:webbrowser.open(address)
             server.serve_forever()
         except KeyboardInterrupt:
             print("工作台已停止；已保存的研究资料仍在 studies 目录。", flush=True)
         finally:
             server.server_close()
+            clear_service(settings,server.server_port,app.service_identity.instance_id)
         return 0
+
+    if args.command=='service':
+        from .service_control import probe_service,stop_service
+        try:
+            result=(stop_service(settings,args.port,confirmed=args.confirmed) if args.service_action=='stop'
+                    else probe_service(settings,args.port))
+        except (OSError,ValueError,TypeError) as error:
+            result={'schema_version':'ModuleA.service_probe.1','state':'configuration_error','ready':False,
+                    'preflight_ready':False,'reasons_zh':[str(error)]}
+        if args.json:print(json.dumps(result,ensure_ascii=False),flush=True)
+        else:
+            print('工作台状态：'+result['state'],flush=True)
+            for reason in result.get('reasons_zh',[]):print(reason,flush=True)
+            if result.get('ready'):print('打开：'+result['url'],flush=True)
+        return 0 if result['ready'] or result['state']=='stopped' else 3 if result['state']=='not_running' else 4
 
     if args.command == "doctor":
         return doctor(settings)

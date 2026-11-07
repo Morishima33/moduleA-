@@ -4,7 +4,7 @@
 读取顺序（后者覆盖前者）：
 1. 默认值：数据根目录 = 项目根目录；
 2. config/local.toml（不提交到 git，记录本机路径）；
-3. 环境变量 MODULEA_DATA_ROOT、MODULEA_SCIENCE_PYTHON、MODULEA_ALLOWED_ORIGINS；
+3. 环境变量 MODULEA_DATA_ROOT、MODULEA_RUNTIME_DIR、MODULEA_SCIENCE_PYTHON、MODULEA_ALLOWED_ORIGINS；
 4. 命令行参数（由 __main__ 传入）。
 """
 
@@ -72,6 +72,8 @@ def load_settings(**overrides) -> Settings:
     # local.toml 中的本机路径
     if paths.get("data_root"):
         settings.data_root = Path(paths["data_root"]).expanduser()
+    if paths.get("runtime_dir"):
+        settings.runtime_dir = Path(paths["runtime_dir"]).expanduser()
     if paths.get("science_python"):
         settings.science_python = paths["science_python"]
     if paths.get("science_rscript"):
@@ -89,6 +91,8 @@ def load_settings(**overrides) -> Settings:
         if name in os.environ:setattr(settings,key,int(os.environ[name]))
     if os.environ.get("MODULEA_DATA_ROOT"):
         settings.data_root = Path(os.environ["MODULEA_DATA_ROOT"]).expanduser()
+    if os.environ.get("MODULEA_RUNTIME_DIR"):
+        settings.runtime_dir = Path(os.environ["MODULEA_RUNTIME_DIR"]).expanduser()
     if os.environ.get("MODULEA_SCIENCE_PYTHON"):
         settings.science_python = os.environ["MODULEA_SCIENCE_PYTHON"]
     if os.environ.get("MODULEA_RSCRIPT"):

@@ -1,5 +1,15 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-11-07 本机稳定运行与安全关闭
+
+App构造最先校验runtime及service解析范围，禁止位于studies内；错误配置在Kernel/TaskManager创建任何运行索引之前拒绝。运行标识不得借目录链接进入研究包，创建目录后再次核对。
+
+GET `/api/v1/health`为`ModuleA.local_service.1`，返回每次服务启动独立`instance_id:service_<32hex>`、pid、带时区started_at、实际port、规范project_root/data_root/runtime_dir/static_dir、启动时code_signature、轻量frontend资源摘要和stopping。无token，不调用Workflow/Views、不扫研究大文件、不启动或恢复科学任务，`scientific_validation_performed:false`。保留原Host、no-store及API_CSP。前端缺损明确ready=false；源码配置不可用503，不能把端口有响应当作本目录工作台可用。
+
+POST `/api/v1/service/stop`严格只接受`{instance_id,confirmed:true}`，沿原token/Origin安全检查。错误字段422、实例不同409、任一同runtime排队/运行任务或其他未完成资料写入409。成功202只停止本HTTP实例监听并释放其端口，不杀PID或worker，不取消任务，不改任何研究/人工复核；同nonce重复停止幂等。停止一经接受，新资料写入在进入业务前503，健康GET仍可观察stopping；正常POST继续并行，不改科学状态算法或任务框架。
+
+服务客户端只连接固定127.0.0.1，不跟随重定向；目录/端口/身份不同不发送stop，不自动换端口或结束其它进程。代码较旧但同一项目/数据/运行/前端目录的实例可经明确操作安全停止。服务标识存`runtime/service/service_<port>_<instance_id>.json`，nonce独立，旧服务只清自己的文件；这些是运行记录，不是研究状态。启动脚本/本机配置负责定位本项目，不把病例编号写进程序，也不生成Word或代签复核。
+
 ## 2026-11-07 无Word的同批展示修订
 
 GET `/studies/{sid}/analysis-plan/display-revisions` 返回 `schema_version:ModuleA.display_revision.1`、supported/enabled/blockers、expected_input_hash、current和history。只读，不绘图、不写研究。POST同地址严格接受 `{request_id:displayreq_<32hex>,expected_input_hash,author,note,confirmed:true}`，返回202后台 `plan_display_revision` 或同请求已有完成修订200；输入改变409、字段422、回收站423、忙碌409。请求只允许更新同批图表/译名，不接受科学参数、成员、分数、翻译文本、路径或批准覆盖。
