@@ -89,5 +89,25 @@ class SystemPipelineHttpTests(unittest.TestCase):
         self.assertEqual(status,202,value);m=self.w.load(self.sid)
         selected=next(system_execution.read_batch(self.w,m,ref)[0] for ref in m[system_execution.BATCHES]
             if system_execution.read_batch(self.w,m,ref)[0]['batch_id']==value['batch_id'])
-        self.assertEqual(selected['preparation_protocol'],'A06.system_preparation.2')
+        # 新明确批次按已确认基础层方案固定第三版准备、第二版富集和报告。
+        self.assertEqual(selected['preparation_protocol'],'A06.system_preparation.3')
+        self.assertEqual(selected['enrichment_protocol'],'A05.plan_enrichment.2')
+        self.assertEqual(selected['report_protocol'],'A07.plan_report.2')
         self.assertEqual(self.call('POST',self.path+'/start',body|{'preparation_protocol':'other'})[0],422)
+
+        # 旧第二版明确批次经当前HTTP重试仍保留原协议与原件，不静默升级。
+        old_body=self.start_body|{'request_id':'systembatchreq_'+uuid4().hex}
+        old=self.w.start_analysis_plan_recoverable_system_batch(self.sid,old_body)
+        old_bytes=verified_file(self.w.location(self.sid),old['file']).read_bytes()
+        before=self.w.load(self.sid)
+        with patch.object(self.app.tasks,'submit',return_value=({'task_id':'task_synthetic','state':'queued'},True)):
+            status,value=self.call('POST',self.path+'/start',old_body)
+        self.assertEqual(status,202,value)
+        self.assertEqual(value['batch_id'],old['batch_id'])
+        after=self.w.load(self.sid)
+        self.assertEqual(after,before)
+        replay,_=system_execution.read_batch(self.w,after,old['file'])
+        self.assertEqual(replay['preparation_protocol'],'A06.system_preparation.2')
+        self.assertEqual(replay['enrichment_protocol'],'A05.plan_enrichment.2')
+        self.assertNotIn('report_protocol',replay)
+        self.assertEqual(verified_file(self.w.location(self.sid),old['file']).read_bytes(),old_bytes)
