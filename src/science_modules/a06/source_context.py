@@ -62,6 +62,8 @@ class Fetcher(OriginalFetcher):
             detail = fetch.herb('detail_api', label='Ingredient', v=identifier, key_id=identifier)
             path = folder / 'normalized_detail.json'; write_json(path, detail)
             ref = file_record(self.root, path, 'official_herb_ingredient_detail')
+            # 重放需与返回引用连角色一并登记，不能只留相同字节的泛来源别名。
+            self.records.append(ref)
             self.save_event({'operation': 'herb_detail', 'identifier': identifier, 'file': ref})
             return detail, ref
         finally:

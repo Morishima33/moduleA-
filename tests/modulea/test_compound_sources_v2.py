@@ -143,6 +143,24 @@ class CompoundSourceTests(TestCase):
             source.resolve(ROW, fetch, [{'source':'HERB','source_id':'HBIN000001','name':ROW['name']}])
         self.assertEqual(fetch.calls, [])
 
+    def test_production_herb_detail_response_is_registered_for_offline_replay(self):
+        from science_modules.a06.source_context import Fetcher
+        from science_modules.a06.source_replay import validate
+        fetch = Fetcher(self.root, self.root / 'sources')
+        fetch.replies, fetch.calls = self.fetch().replies, []
+        detail = {'summary': [['Ingredient id','Ingredient name','InChIKey','PubChem id','Molecule formula'],
+                              ['HBIN000001', ROW['name'], KEY, '456', 'C2H6O']]}
+        identities = [{'source':'HERB','source_id':'HBIN000001','name':ROW['name']}]
+        with patch('science_modules.a01.acquisition.Fetcher') as backend, \
+             patch('science_modules.a06.source_context.OriginalFetcher.get', new=Fetch.get), \
+             patch('docking_audit.ligand_identity', return_value={'inchi_key':KEY}):
+            backend.return_value.herb.return_value = detail
+            row = source.resolve(ROW, fetch, identities)
+            row['source_requests'] = fetch.events
+            validate(self.root, {'compounds':[ROW]}, {'compounds':[row],'files':fetch.records},
+                     {ROW['compound_id']:identities})
+        backend.return_value.herb.assert_called_once_with('detail_api', label='Ingredient', v='HBIN000001', key_id='HBIN000001')
+
     def test_offline_replay_rejects_forged_resolution_and_corrupt_response(self):
         from science_modules.a06.source_replay import validate
         identities = [{'source': 'HERB', 'source_id': 'HBIN000001', 'name': ROW['name'],
