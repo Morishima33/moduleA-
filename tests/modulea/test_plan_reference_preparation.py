@@ -122,9 +122,10 @@ class ReferencePreparationTests(unittest.TestCase):
     def test_real_worker_subprocesses_accept_exact_request_and_archive(self):
         from tests.modulea.test_plan_pockets import PocketReviewTests
         from modulea.tasks.worker import run_a06_plan_reference_review, run_a06_plan_reference_preparation
-        from modulea.config import PROJECT_ROOT
+        from modulea.config import PROJECT_ROOT, load_settings
 
-        tools = PROJECT_ROOT.parent / "environment" / "a06_runtime_v1"
+        # 优先使用已配置的只读固定工具，未配置时保留原测试路径回退。
+        tools = load_settings().science_tools_root or PROJECT_ROOT.parent / "environment" / "a06_runtime_v1"
         if not tools.is_dir():
             self.skipTest("固定科学工具未安装")
         base = PocketReviewTests("test_confirmation_revision_preserves_sources_and_na_without_scoring")
@@ -159,10 +160,11 @@ class ReferencePreparationTests(unittest.TestCase):
         from tests.modulea.test_reference_docking import fixture
         from science_modules.a06.reference_candidates import discover
         from modulea.tasks.worker import run_a06_plan_reference_review
-        from modulea.config import PROJECT_ROOT
+        from modulea.config import PROJECT_ROOT, load_settings
         from storage import read_json, verified_file
 
-        tools = PROJECT_ROOT.parent / "environment" / "a06_runtime_v1"
+        # 只调整夹具的工具定位，不改变参考失败保留为NA或原科学协议。
+        tools = load_settings().science_tools_root or PROJECT_ROOT.parent / "environment" / "a06_runtime_v1"
         if not tools.is_dir():
             self.skipTest("固定科学工具未安装")
 
