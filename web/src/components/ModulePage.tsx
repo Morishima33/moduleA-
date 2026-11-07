@@ -50,6 +50,7 @@ import PlanStages from './PlanStages';
 import PlanSystemValidations from './PlanSystemValidations';
 import PlanReports from './PlanReports';
 import SystemExports from './SystemExports';
+import DisplayRevision from './DisplayRevision';
 import SystemReceptorSelection from './SystemReceptorSelection';
 import FoundationEvidence from './FoundationEvidence';
 import SourceDiagnostics from './SourceDiagnostics';
@@ -79,13 +80,15 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       {reviewSlot && <div id="module-review-panel">{reviewSlot}</div>}{downstreamSlot}</div>;
   }
   const m = view.module; // 模块信息
-  const preparationEvidenceAvailable = !view.plan_preparation_ui || !!(view.plan_preparation_ui.current?.completed && view.plan_preparation_ui.current.active && view.plan_preparation_ui.current.matches_input);
+  const preparationEvidenceAvailable = view.reference_workflow_supported !== false && (!view.plan_preparation_ui || !!(view.plan_preparation_ui.current?.completed && view.plan_preparation_ui.current.active && view.plan_preparation_ui.current.matches_input));
   const oldIntersection = !view.historical && m.module_id === 'A03' && view.state.code === 'stale'; // 上游更新后，旧零交集只供追溯。
   const oldSelection = !view.historical && ((m.module_id === 'A03_SELECT' && !(view.plan_compounds?.current||view.compound_selection?.previous_active)) || (['A06', 'A06_PREP'].includes(m.module_id) && !!view.docking_review && !view.docking_review.matrix?.ready && stIsStale(view)));
   const st = view.state; // 状态
   const sp = view.special || {}; // 专属数据
   const systemA01 = m.module_id === 'A01' && !!sp.system_component_publication; // 已归档系统来源不用旧人工上传清单推断缺库。
   const historicalDisease=m.module_id==='A02'&&!!sp.historical_disease_source;
+  const revisedDisplay = !view.historical && !!view.display_revision?.supported && !!view.display_revision.current?.matches_input;
+  const revisedA05 = m.module_id === 'A05' && revisedDisplay;
   const style = stateStyle(st.code); // 状态配色
   const showBox = BOXED.has(st.code) || !!st.reason_zh; // 是否显示状态说明框
   return (
@@ -128,14 +131,23 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
         <Button href={hrefFor({page:'system-pipeline',studyId})}>打开统一执行与续做</Button></section>}
       {view.plan_system_validations&&<PlanSystemValidations key={JSON.stringify(view.plan_system_validations.items.map(row=>[row.request,row.current?.validation_id,row.enabled]))} studyId={studyId} info={view.plan_system_validations}/>}
       {view.plan_reports&&<PlanReports key={[view.plan_reports.expected_input_hash,view.plan_reports.expected_report_run_id].join(':')} studyId={studyId} info={view.plan_reports}/>}
+      {!view.historical && view.display_revision && <DisplayRevision key={`${view.display_revision.expected_input_hash}:${view.display_revision.current?.revision_id || ''}`} studyId={studyId} moduleId={m.module_id} info={view.display_revision} />}
       {view.system_exports&&<SystemExports key={view.system_exports.expected_input_hash} studyId={studyId} info={view.system_exports}/>}
       {view.plan_stages&&<PlanStages key={view.plan_stages.expected_input_hash} studyId={studyId} info={view.plan_stages}/>}
       {view.plan_compounds&&<PlanCompounds key={view.plan_compounds.expected_input_hash} studyId={studyId} info={view.plan_compounds}/>}
       {view.plan_preparation_ui&&<PlanPreparation key={view.plan_preparation_ui.input_hash} studyId={studyId} info={view.plan_preparation_ui}/>}
       {view.plan_selection_ui&&<PlanSelection key={view.plan_selection_ui.input_hash} studyId={studyId} info={view.plan_selection_ui}/>}
       {view.plan_a05&&<PlanA05 key={[view.plan_a05.expected_a00,view.plan_a05.expected_a03,view.plan_a05.expected_a05,view.plan_a05.expected_plan_id].join(':')} studyId={studyId} info={view.plan_a05}/>}
-      {view.plan_a05_display&&<PlanA05Display key={view.plan_a05_display.expected_input_hash} studyId={studyId} info={view.plan_a05_display}/>}
-      {sp.plan_enrichment&&<PlanA05Results studyId={studyId} files={view.files} data={sp.plan_enrichment}/>}
+      {revisedA05 ? (view.plan_a05_display || sp.plan_enrichment) && <Collapse items={[{
+        key: 'original-a05-display', label: '原始A05展示与旧版编辑（保留）', children: <div className="stack">
+          <Alert type="info" showIcon message="以下为原始归档展示与旧版编辑，当前图表与译名请查看上方同批展示修订。" />
+          {view.plan_a05_display && <PlanA05Display key={view.plan_a05_display.expected_input_hash} studyId={studyId} info={view.plan_a05_display} />}
+          {sp.plan_enrichment && <PlanA05Results studyId={studyId} files={view.files} data={sp.plan_enrichment} />}
+        </div>,
+      }]} /> : <>
+        {view.plan_a05_display && <PlanA05Display key={view.plan_a05_display.expected_input_hash} studyId={studyId} info={view.plan_a05_display} />}
+        {sp.plan_enrichment && <PlanA05Results studyId={studyId} files={view.files} data={sp.plan_enrichment} />}
+      </>}
       {systemA01 && <section className="card" id="system-a01-source-status"><h2>本版三库原件已绑定</h2>
         <p>{sp.system_component_publication!.message_zh}</p>
         <Button href={hrefFor({page:'system-pipeline',studyId})}>核对来源与统一接续条件</Button></section>}
@@ -225,11 +237,13 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       {/* 模块专属图 */}
       {sp.venn && <Venn data={sp.venn} />}
       {sp.component_top && sp.component_top.length > 0 && <ComponentTop items={sp.component_top} note={sp.component_top_note_zh} />}
-      {sp.ppi_dual && <PpiDual data={sp.ppi_dual} />}
+      {sp.ppi_dual && (revisedDisplay ? <Collapse items={[{ key: 'original-ppi', label: '原始A04排名与网络（复核保留）', children:
+        <PpiDual data={sp.ppi_dual} /> }]} /> : <PpiDual data={sp.ppi_dual} />)}
       {sp.ppi_top && sp.ppi_top.length > 0 && <PpiTop items={sp.ppi_top} />}
       {sp.enrichment_display_tables && <EnrichmentDisplay special={sp} info={view.enrichment_display} pending={keggPending} rankedMaps={view.ranked_pathway_maps} studyId={studyId} />}
       {sp.enrichment_top && <EnrichmentTop data={sp.enrichment_top} />}
-      {sp.heatmap && !view.docking_review && <Heatmap data={sp.heatmap} />}
+      {sp.heatmap && !view.docking_review && (revisedDisplay ? <Collapse items={[{ key: 'original-heatmap', label: '原始热图数据（复核保留）', children:
+        <Heatmap data={sp.heatmap} /> }]} /> : <Heatmap data={sp.heatmap} />)}
       {sp.foundation_evidence && <FoundationEvidence data={sp.foundation_evidence} />}
       {sp.source_diagnostics && <SourceDiagnostics rows={sp.source_diagnostics} />}
       {(sp.conclusion_zh || sp.leads || sp.limits || sp.report_files) && <ReportSummary special={sp} studyId={studyId} />}

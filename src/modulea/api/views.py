@@ -104,10 +104,14 @@ class Views:
             # 同版本的并发页面请求共用一次完整核验；读取完成后不跨请求缓存。
             info = (workflow.location(study_id) / "manifest.json").stat()
             key = (study_id, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
-            snapshot = self._snapshot_flight.run(key, lambda: workflow.view(study_id))
+            from ..core.read_evidence import current_evidence
+            # 显式证据范围必须自己收集来源；不能在另一请求退出复验前借其快照。
+            snapshot = workflow.view(study_id) if current_evidence(self.kernel.settings.data_root) else self._snapshot_flight.run(key, lambda: workflow.view(study_id))
             # 此Workflow只属于本次只读请求；复用已完整指纹核验的不可变归档。
             # 下一次请求由Kernel新建实例，写入口仍重新读取版本与文件。
-            workflow._view_cache = {
+            evidence=current_evidence(self.kernel.settings.data_root)
+            verified_cache=getattr(workflow,'_request_view_cache',None) if evidence and getattr(workflow,'_request_view_cache_scope',None) is evidence else None
+            workflow._view_cache = verified_cache if verified_cache is not None else {
                 "runs": {m["run"]["run_id"]: m["run"] for m in snapshot["modules"] if m["run"]},
                 "results": {m["result"]["run_id"]: m["result"] for m in snapshot["modules"] if m["result"]},
                 "reviews": {m["result"]["artifact_id"]: m["review"] for m in snapshot["modules"] if m["result"]},
@@ -180,7 +184,10 @@ class Views:
     def _build_cards(self, manifests):
         """独立研究最多三项并行只读，map保持原顺序；不触发后台科学计算。"""
         def read(manifest):
-            return self.study_card(manifest["study_id"], with_states=True)
+            from ..core.read_evidence import read_evidence_scope
+            with read_evidence_scope(self.kernel.settings.data_root,manifest['study_id']) as evidence:
+                value=evidence.call(self.study_card,manifest['study_id'],with_states=True)
+            return value
         if len(manifests) < 2:
             return [read(m) for m in manifests]
         with ThreadPoolExecutor(max_workers=min(3, len(manifests))) as pool:
@@ -355,6 +362,8 @@ class Views:
         system_execution_result=bool(run and run.get('execution_protocol')=='ModuleA.system_execution.1' and not historical)
         # 当前系统A04只展示归档和独立复核，不构建最终会隐藏的旧人工操作表单。
         system_a04 = system_execution_result and module_id == 'A04'
+        from ..presenters.system_docking import VERSIONS as SYSTEM_STRUCTURE_VERSIONS
+        system_structure_current=bool(not historical and run and run.get('config',{}).get('version') in SYSTEM_STRUCTURE_VERSIONS)
         historical_source_result=bool(run and run['config'].get('version') in ('A02.historical_collection.1','A02.system_normalization.4','A02.system_normalization.5'))
         normalization_info = normalization_context(workflow, real, result, self.kernel.settings, bool(self.tasks.active_for(study_id))) if module_id == "A02" and not historical and not historical_source_result else None
         preview_ready = bool(normalization_info and normalization_info["preview"])
@@ -390,19 +399,19 @@ class Views:
                     parts["special"]["enrichment_graphs"][row["group"]] = {"url":f"/api/v1/studies/{study_id}/files/{key}?inline=1","caption_zh":"GO三类各前八；中英文名称，柱长与深浅表示Count。" if row["group"]=="go" else "KEGG统计显著性前十五；横轴RichFactor，面积Count，颜色为−log10(BH校正后P值)。"}
         enrichment_info = display_context(workflow, real, run, result, historical, bool(self.tasks.active_for(study_id))) if module_id == "A05" else None
         hide_pending_kegg(parts["special"],enrichment_info)
-        candidates_info = candidate_context(workflow,real,historical,bool(self.tasks.active_for(study_id))) if module_id in ("A04","A06_PREP","A06") and not preparation_page and not system_a04 else None
+        candidates_info = candidate_context(workflow,real,historical,bool(self.tasks.active_for(study_id))) if module_id in ("A04","A06_PREP","A06") and not preparation_page and not system_a04 and not system_structure_current else None
         if module_id == "A04":
             apply_candidate_context(parts,candidates_info)
         a03_id = real.get("current", {}).get("A03", "")
         ppi_enabled = bool(module_id == "A04" and not system_a04 and a03_id and not historical and not real.get("trashed") and workflow.active(real, a03_id) and workflow.approved(real, a03_id) and not self.tasks.active_for(study_id))
         if run:
             parts["params"] = parts["params"] + self._config_params(run, parts["params"])
-        coverage_info = workflow.coverage_info(real, bool(self.tasks.active_for(study_id))) if module_id == "A06_PREP" and not historical and not preparation_page else None
+        coverage_info = workflow.coverage_info(real, bool(self.tasks.active_for(study_id))) if module_id == "A06_PREP" and not historical and not preparation_page and not system_structure_current else None
         reference_qualification = None
         scoring_readiness = None
         review_packet = None
         review_gate = None
-        if module_id == "A06_PREP" and not historical and not preparation_page:
+        if module_id == "A06_PREP" and not historical and not preparation_page and not system_structure_current:
             try:
                 reference_qualification = workflow.analysis_plan_a06_reference_qualification(study_id)
                 scoring_readiness = workflow.analysis_plan_a06_scoring_readiness(study_id)
@@ -424,7 +433,7 @@ class Views:
                            "review_url": f"#/studies/{study_id}/A06",
                            "note_zh": "本批225组合已接入A06扩展结果复核。原严格准备及失败记录保留；通过仅允许扩展筛查与报告使用。",
                            "reviewer": trial_review["reviewer"], "note": trial_review["note"]}
-        trial_info = __import__("modulea.api.trial_view", fromlist=["trial_info"]).trial_info(workflow,real,bool(self.tasks.active_for(study_id))) if module_id in ("A06_PREP","A06") and not historical and not preparation_page else None
+        trial_info = __import__("modulea.api.trial_view", fromlist=["trial_info"]).trial_info(workflow,real,bool(self.tasks.active_for(study_id))) if module_id in ("A06_PREP","A06") and not historical and not preparation_page and not system_structure_current else None
         if trial_info and handoff and handoff["active"]:
             trial_info["note_zh"] = "本批225组合已接入A06扩展结果复核；既有严格结果及批准留存。请使用顶部正式复核入口，无需重复保存试算核查。"
         response = {
@@ -490,22 +499,31 @@ class Views:
         response['plan_stages'] = None
         response['plan_system_validations'] = None
         response['plan_reports'] = None
+        # 回收站展示实例忽略trash，仅普通研究的当前JSON可共享原同请求核验缓存。
+        from ..core.read_evidence import current_evidence
+        shared_read_workflow=workflow if not real.get('trashed') and current_evidence(self.kernel.settings.data_root) else None
+        response['display_revision'] = None
+        if module_id in ('A03','A04','A05','A06','A07') and not historical:
+            from .display_revisions import info as display_revision_info
+            value=display_revision_info(self,None,study_id)
+            if value['supported']:response['display_revision']=value
         if module_id=='A07' and not historical:
             from .plan_reports import info as plan_report_info
-            value=plan_report_info(self,None,study_id)
+            value=plan_report_info(self,None,study_id,workflow=shared_read_workflow)
             if value['supported']:response['plan_reports']=value
         if module_id in ('A00','A07') and not historical:
             from .system_validation import info as system_validation_info
-            value=system_validation_info(self,None,study_id)
+            value=system_validation_info(self,None,study_id,workflow=shared_read_workflow)
             if value['supported']:response['plan_system_validations']=value
         response['plan_compounds'] = None
         response['plan_selection_ui'] = None
         response['plan_preparation_ui'] = None
-        if module_id=='A06_PREP' and not historical:
+        response['reference_workflow_supported']=not system_structure_current
+        if module_id=='A06_PREP' and not historical and not system_structure_current:
             from .plan_preparation_ui import info as preparation_ui_info
             value=preparation_ui_info(self,None,study_id)
             if value['supported']:response['plan_preparation_ui']=value
-        if module_id in ('A04','A06_PREP') and not historical and not system_a04:
+        if module_id in ('A04','A06_PREP') and not historical and not system_a04 and not system_structure_current:
             from .plan_selection_ui import info as selection_ui_info
             value=selection_ui_info(self,None,study_id)
             if value['supported']:

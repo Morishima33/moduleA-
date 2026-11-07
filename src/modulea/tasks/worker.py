@@ -694,6 +694,17 @@ def run_system_exports(settings, task, manager):
 HANDLERS['plan_system_exports'] = run_system_exports
 
 
+def run_display_revision(settings,task,manager):
+    """沿原资源预算生成同批展示，保留科学结果和所有历史Word。"""
+    manager.update(task['task_id'],progress={'step_zh':'核对本批来源、图表范围和全部展示译名','done':0,'total':1})
+    result=full_workflow(settings.data_root).publish_analysis_plan_display_revision(task['study_id'],json.loads(task['payload']))
+    manager.update(task['task_id'],progress={'step_zh':'同批图表和核译已另存，未生成Word','done':1,'total':1})
+    return '同批展示已归档：'+result['revision_id']+'；未改变科学运行、评分或人工复核。'
+
+
+HANDLERS['plan_display_revision']=run_display_revision
+
+
 def _run_system_receptor_paths(settings, task, manager, mode):
     """预算内按固定隔离解释器运行，不在外壳加载Meeko或Vina依赖。"""
     import subprocess

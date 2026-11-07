@@ -38,6 +38,16 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
         from .system_export_registry import info
         return info(self, study_id)
 
+    def analysis_plan_display_revision_info(self, study_id):
+        """只读同批图表、核译及历史，不生成Word或修改科学状态。"""
+        from .display_revisions import info
+        return info(self, study_id)
+
+    def publish_analysis_plan_display_revision(self, study_id, payload):
+        """明确另存同批展示；原统计、评分、人工复核及Word保持。"""
+        from .display_revisions import publish
+        return publish(self, study_id, payload)
+
     def export_analysis_plan_system_results(self, study_id, payload):
         """明确派生本批导出文件，不改评分、科学运行、报告或人工复核。"""
         from .system_export_registry import execute

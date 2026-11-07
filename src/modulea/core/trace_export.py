@@ -147,6 +147,10 @@ def _plan_decisions(workflow, manifest, all_files):
             ('report_revision_failures','analysis_plan_report_revision_failures','A07.plan_report.2'),
             ('report_archive_repair_requests','analysis_plan_report_archive_repair_requests','ModuleA.report_archive_repair.1'),
             ('report_archive_repairs','analysis_plan_report_archive_repairs','ModuleA.report_archive_repair.1'),
+            ('display_revision_requests','analysis_plan_display_revision_requests','ModuleA.display_revision.1'),
+            ('display_revision_candidates','analysis_plan_display_revision_candidates','ModuleA.display_revision.1'),
+            ('display_revisions','analysis_plan_display_revision_records','ModuleA.display_revision.1'),
+            ('display_revision_failures','analysis_plan_display_revision_failures','ModuleA.display_revision.1'),
             ('report_requests','analysis_plan_report_requests','A07.plan_report.1'),
             ('report_receipts','analysis_plan_report_receipts','A07.plan_report.1'),
             ('report_failures','analysis_plan_report_failures','A07.plan_report.1')):
@@ -162,6 +166,9 @@ def _plan_decisions(workflow, manifest, all_files):
                 'system_scoring_failures':('A06.system_scoring.1','A06.system_scoring.2','A06.system_scoring.3','A06.system_scoring_paths.1')}.get(key,(version,))
             require(value.get('schema_version') in accepted and value.get('study_id')==manifest['study_id'],
                     '方案选择或固定输入归属不一致')
+            if key in ('display_revision_requests','display_revision_candidates','display_revisions'):
+                from . import display_revisions as displays
+                value=(displays.read_request if key=='display_revision_requests' else displays.read_record)(workflow,manifest,reference)
             if key in ('report_archive_repair_requests','report_archive_repairs'):
                 from . import report_archive_repair as repairs
                 value=(repairs.read_request if key=='report_archive_repair_requests' else repairs.read_receipt)(workflow,manifest,reference)

@@ -6,9 +6,10 @@ from ..core import report_archive_repair as repairs
 from .errors import ApiError,from_contract
 
 
-def info(app,req,sid):
+def info(app,req,sid,*,workflow=None):
     """下载链接只取真实归档文件，不能由浏览器提供路径。"""
-    workflow=app.kernel.read_workflow()
+    workflow=workflow or app.kernel.read_workflow()
+    if getattr(workflow,'_view_cache',None) is not None:return _info(app,sid,workflow)
     with workflow.handoff_read_cache():
         return _info(app,sid,workflow)
 
@@ -27,6 +28,9 @@ def _info(app,sid,workflow):
                 item['downloads'].append({'label_zh':'用户批注版（保留'+str(receipt['annotation_evidence']['comment_count'])+'条批注）',
                     'name':'简略版_用户批注.docx' if receipt['original_file']['role']=='brief_report' else '主报告_用户批注.docx',
                     'url':f"/api/v1/studies/{sid}/analysis-plan/reports/{item['run_id']}/annotations/{receipt['repair_id']}"})
+    # 资格仍由原完整绑定计算；首屏历史只发送已约定的状态与真实下载链接。
+    value['history']=[{key:item[key] for key in ('run_id','created_at','active','approved','status_zh','downloads')}
+                      for item in value['history']]
     return value
 
 

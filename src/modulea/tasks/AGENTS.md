@@ -1,5 +1,9 @@
 # tasks/ — 后台任务
 
+## 2026-11-07 同批展示修订（不生成Word）
+
+plan_display_revision沿原重任务预算、单研究任务、进程树取消及真实日志，不能加入轻任务集合。只接严格五字段明确请求；worker调用公开publish_analysis_plan_display_revision，复用本批原来源、分类和统计，另存PNG/SVG/CSV/JSON及核译依据，不启动R/Vina、生成Word或写人工reviews。开始和发表前完整核对原附件SHA、来源链、最新人工意见、明确实现及字体指纹；失败保存诊断，新尝试另目录，已登记成功candidate经核验恢复，不覆盖历史。HTTP GET/刷新/重启不自动执行。
+
 ## 2026-11-07 报告二版网页接入
 
 沿用plan_report原任务类型及预算。新二版HTTP任务由服务端固定payload为{report_protocol:A07.plan_report.2,request:原严格请求}，worker经report_registry调用公开publish_analysis_plan_report_revision；原扁平payload仍调用一版publish_analysis_plan_report。字段、当前输入、实际依赖和科学/人工门控均由原生产发布器重新核验；不因排队期间默认变化升级协议，不签reviews、不重算统计评分。

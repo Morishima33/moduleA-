@@ -1,5 +1,17 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-11-07 无Word的同批展示修订
+
+GET `/studies/{sid}/analysis-plan/display-revisions` 返回 `schema_version:ModuleA.display_revision.1`、supported/enabled/blockers、expected_input_hash、current和history。只读，不绘图、不写研究。POST同地址严格接受 `{request_id:displayreq_<32hex>,expected_input_hash,author,note,confirmed:true}`，返回202后台 `plan_display_revision` 或同请求已有完成修订200；输入改变409、字段422、回收站423、忙碌409。请求只允许更新同批图表/译名，不接受科学参数、成员、分数、翻译文本、路径或批准覆盖。
+
+current为空或 `{revision_id,created_at,source_run_ids,matches_input,counts,translation_coverage,figures,tables,downloads,human_review_written:false,scientific_results_changed:false}`。counts为`[{label_zh,text}]`，保留统计对象和原来源，不混同Degree第二轮与最终受体名单。figures各含`key,module_id,group?,role,label_zh,caption_zh,image_url,downloads`；tables各含`key,module_id,label_zh,columns:[{key,label_zh}],rows,total,downloads,preview_note_zh?`。A05完整实际展示表保留，其余首屏最多50行并注明原总数，完整CSV/JSON按需下载。所有科学数值和中文来自服务端已登记事实，前端只排版/筛选展示类别。translation_coverage含required/verified/missing稳定编号，覆盖不完整明确阻断。history仅保留来源、时间及真实附件链接，不重复完整绑定。
+
+GET `/studies/{sid}/analysis-plan/display-revisions/{revision_id}/files/{index}` 只读取同研究登记附件，逐件SHA并核来源绑定，损坏503/未登记404；`inline=1`仅使PNG/SVG内联显示，不接受任意路径。发送的是长度和SHA再次核验后的同一份不可变字节，避免校验Path后HTTP二次打开竞态。原件和历史展示保留；历史附件按自己的不可变来源读取，不能借当前批重建。当前来源变更后不把旧展示作为新结果。刷新不产生新修订。
+
+当前A03/A04/A05/A06/A07模块视图新增可选`display_revision`，值沿上述GET契约；旧服务或历史页无此字段继续原展示。本字段不影响state/review/continue。网页按本模块展示已验证新图及双语表，原统计表和历史附件仍可追溯；显示修订成功不代表科研复核通过。本轮真实Word及批注不生成或修改。
+
+当前系统准备/评分页增加可选`reference_workflow_supported:false`，表示旧逐步参考绑定界面不适用；网页保留本批准备证据，不再挂载两张旧参考加载卡。后端在当前已归档系统版直接跳过最终不适用的旧准备/选择/覆盖/试算表单读取，历史及普通版本保持；原完整状态、科学结果和复核门控不变。单JSON请求允许延长原Workflow已计算的handoff缓存到返回前复验，只在同一证据范围和非回收站当前页共享；新请求重新核验，回收站不用忽略trash的展示实例计算写入资格。
+
 ## 2026-11-02 系统A04最终名单只读展示
 
 当前系统执行版A04的模块GET新增可选`system_receptor_selection`，旧服务无字段时隐藏。仅展示本研究、本网络、本批已归档的`A04_SELECTION`原顺序名单；包含`archive_state:pending|archived|source_changed`、目标/实际数量、筛选模式、边界并列说明和原始受体行。未归档时数量为null，不能冒充0项。历史、旧人工流程及其他网络不借用当前名单。

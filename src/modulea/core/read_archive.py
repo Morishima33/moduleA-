@@ -145,9 +145,36 @@ class ReadResultMixin:
 
     def _reader(self):
         """一个只读实例只供一个请求使用，独立view会重新建立缓存。"""
+        from .read_evidence import current_evidence
+        evidence = current_evidence(self.root)
+        if evidence is not None:
+            return evidence.reader
         if not hasattr(self, "_read_archive"):
             self._read_archive = ReadArchive()
         return self._read_archive
+
+    def location(self, study_id):
+        """仅显式JSON请求内复用原目录核查，退出按原逻辑路径重新检查。"""
+        from .read_evidence import current_evidence
+        evidence = current_evidence(self.root)
+        original = super().location
+        return evidence.location(original, study_id) if evidence is not None else original(study_id)
+
+    def _active(self, manifest, run_id):
+        """只读显式范围按原super方法字节分派，状态规则与普通路径保持。"""
+        from .read_evidence import read_call
+        return read_call(super()._active, manifest, run_id)
+
+    def _view_snapshot(self, study_id):
+        """局部import也由原方法的请求私有namespace读取，不替换科学实现。"""
+        from .read_evidence import read_call, current_evidence
+        value = read_call(super()._view_snapshot, study_id)
+        evidence = current_evidence(self.root)
+        if evidence is not None:
+            # 仅保留本请求原handoff已计算的同一dict；view finally恢复属性不会改该dict。
+            self._request_view_cache = getattr(self, '_view_cache', None)
+            self._request_view_cache_scope = evidence
+        return value
 
     @contextmanager
     def handoff_read_cache(self):
@@ -222,6 +249,8 @@ class ReadResultMixin:
 
     def view(self, study_id):
         """每次独立状态读取重新核验；不保留上一请求的目录或文件缓存。"""
+        self.__dict__.pop('_request_view_cache', None)
+        self.__dict__.pop('_request_view_cache_scope', None)
         self._read_archive = ReadArchive()
         with legacy_report_read_scope(self.root):
             return super().view(study_id)

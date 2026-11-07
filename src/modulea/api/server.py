@@ -77,6 +77,9 @@ class App:
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/system-pipeline/start", self.post_system_pipeline_start),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/system-pipeline/continue", self.post_system_pipeline_continue),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/reports", self.get_plan_reports),
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/display-revisions", self.get_display_revisions),
+            ("POST", rf"/api/v1/studies/{ID}/analysis-plan/display-revisions", self.post_display_revision),
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/display-revisions/(displayrev_[0-9a-f]{{32}})/files/([0-9]+)", self.get_display_revision_file),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/reports/generate", self.post_plan_report),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/reports/{ID}/files/([0-9]+)", self.get_plan_report_file),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/reports/{ID}/annotations/{ID}", self.get_plan_report_annotation),
@@ -595,12 +598,34 @@ class App:
     def get_plan_system_validations(self,req,study_id):
         """只读当前系统校验资格、原科学状态及不可变历史。"""
         from .system_validation import info
-        return info(self,req,study_id)
+        return self._json_read(study_id,info,self,req,study_id)
 
     def get_plan_reports(self,req,study_id):
         """只读本批报告资格和真实历史下载。"""
         from .plan_reports import info
-        return info(self,req,study_id)
+        return self._json_read(study_id,info,self,req,study_id)
+
+    def get_display_revisions(self,req,study_id):
+        """只读同批另存图表和核译；完成证据范围复验后才返回JSON。"""
+        from .display_revisions import info
+        return self._json_read(study_id,info,self,req,study_id)
+
+    def post_display_revision(self,req,study_id):
+        """明确请求仍沿原完整写入预检与预算，不采用读取范围。"""
+        from .display_revisions import submit
+        return submit(self,req,study_id)
+
+    def get_display_revision_file(self,req,study_id,revision_id,index):
+        """附件流单独逐件检查，不借用JSON响应范围。"""
+        from .display_revisions import download
+        return download(self,req,study_id,revision_id,index)
+
+    def _json_read(self,study_id,function,*args):
+        """只给指定JSON入口复用同请求证据，退出全SHA成功才交给HTTP响应。"""
+        from ..core.read_evidence import read_evidence_scope
+        with read_evidence_scope(self.settings.data_root,study_id) as evidence:
+            result=evidence.call(function,*args)
+        return result
 
     def get_system_pipeline(self,req,study_id):
         """只读统一编排的真实批次和阶段流水。"""
@@ -789,10 +814,10 @@ class App:
         return {"items": self.views.study_cards(trashed=True)}
 
     def get_study(self, req, study_id):
-        return self.views.study(study_id)
+        return self._json_read(study_id,self.views.study,study_id)
 
     def get_module(self, req, study_id, module_id):
-        return self.views.module(study_id, module_id, req.query1("run_id"))
+        return self._json_read(study_id,self.views.module,study_id,module_id,req.query1("run_id"))
 
     def get_runs(self, req, study_id, module_id):
         return {"items": self.views.runs(study_id, module_id)}
@@ -1472,6 +1497,10 @@ def make_handler(app: App):
                     if not secrets.compare_digest(self.headers.get("X-ModuleA-Token", ""), app.token):
                         raise ApiError(403, "BAD_TOKEN", "操作令牌无效，请刷新页面")
                 result = app.dispatch(method, route.path, Request(self, parse_qs(route.query)))
+                if isinstance(result, tuple) and result and result[0] == "verified_download":
+                    _, data, name, mime, inline = result
+                    disposition = ("inline" if inline else "attachment") + "; filename*=UTF-8''" + quote(name, safe="")
+                    return self._send(200, data, mime, FILE_CSP, {"Content-Disposition": disposition})
                 if isinstance(result, tuple) and result and result[0] == "file":
                     _, path, name, mime, inline = result
                     disposition = ("inline" if inline else "attachment") + "; filename*=UTF-8''" + quote(name, safe="")

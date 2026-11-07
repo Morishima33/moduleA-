@@ -535,6 +535,33 @@ export interface SystemExportsInfo {
   expected_module:'A06'|'A06_PREP'|null;expected_run_id:string|null;expected_input_hash:string|null;
   current:SystemExportRecord|null;history:SystemExportRecord[];
 }
+/** 同批展示只读取服务端已登记事实，不代表人工复核或科学结果变更。 */
+export interface DisplayRevisionDownload {label_zh:string;name:string;url:string;bytes?:number;sha256?:string}
+export interface DisplayRevisionFigure {
+  key:string;module_id:string;group?:string;role:string;label_zh:string;caption_zh:string;
+  image_url:string;downloads:DisplayRevisionDownload[];
+}
+export interface DisplayRevisionTable {
+  key:string;module_id:string;label_zh:string;columns:{key:string;label_zh:string}[];
+  rows:Record<string,unknown>[];total:number;preview_note_zh?:string;downloads:DisplayRevisionDownload[];
+}
+export interface DisplayRevisionHistory {
+  revision_id:string;created_at:string;source_run_ids:Record<string,string>;matches_input?:boolean;
+  downloads:DisplayRevisionDownload[];
+}
+export interface DisplayRevisionRecord extends DisplayRevisionHistory {
+  matches_input:boolean;
+  counts:{label_zh:string;text:string}[];
+  translation_coverage:{required:number;verified:number;missing:string[]};
+  figures:DisplayRevisionFigure[];tables:DisplayRevisionTable[];
+  human_review_written:false;scientific_results_changed:false;
+}
+export interface DisplayRevisionInfo {
+  schema_version:string;supported:boolean;enabled:boolean;blockers:string[];expected_input_hash:string|null;
+  current:DisplayRevisionRecord|null;history:DisplayRevisionHistory[];
+}
+export interface DisplayRevisionRequest {request_id:string;expected_input_hash:string;author:string;note:string;confirmed:true}
+export interface DisplayRevisionResponse {task?:Task;revision_id?:string;created:boolean;message_zh:string}
 export interface SystemReceptorSelectionInfo {
   schema_version: string; read_only: true;
   archive_state: 'pending' | 'archived' | 'source_changed';
@@ -547,6 +574,8 @@ export interface SystemReceptorSelectionInfo {
   message_zh: string; scope_note_zh: string;
 }
 export interface ModuleView {
+  reference_workflow_supported?: boolean;
+  display_revision?: DisplayRevisionInfo | null;
   system_receptor_selection?: SystemReceptorSelectionInfo | null;
   system_exports?: SystemExportsInfo | null;
   automatic_docking?: AutomaticDockingInfo | null;

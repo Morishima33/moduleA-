@@ -103,6 +103,9 @@ function qs(params: Record<string, string | number | undefined | null>): string 
 
 // 各端点的薄封装；路径与契约第 3 节一致
 export const api = {
+  /** 只读目录与明确展示修订，沿用操作令牌；不会重算科学结果或生成Word。 */
+  displayRevisions:(sid:string)=>request<import('./types').DisplayRevisionInfo>('GET',`/studies/${sid}/analysis-plan/display-revisions`),
+  reviseDisplay:(sid:string,body:import('./types').DisplayRevisionRequest)=>request<import('./types').DisplayRevisionResponse>('POST',`/studies/${sid}/analysis-plan/display-revisions`,body),
   systemExports:(sid:string)=>request<import('./types').SystemExportsInfo>('GET',`/studies/${sid}/analysis-plan/system-exports`),
   exportSystemResults:(sid:string,body:import('./types').SystemExportRequest)=>request<{task:Task;created:boolean;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/system-exports`,body),
   historicalDiseaseSources:(sid:string)=>request<import('./types').HistoricalDiseaseSourcesInfo>('GET',`/studies/${sid}/analysis-plan/historical-disease-sources`),
