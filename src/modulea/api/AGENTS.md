@@ -719,6 +719,10 @@ GET `/api/v1/studies/{sid}/analysis-plan/creation` 返回本协议建档的初�
 
 ## 2026-11-07 同批准备依据、来源口径与Top-1原字节下载
 
+本日追加报告归档恢复协议ModuleA.report_archive_repair.1。仅公开Workflow.restore_analysis_plan_report_archive接受已明确授权的精确原备份字节；无新增HTTP写入口。先登记并保全批注版和原备份，按原SHA原子恢复报告位置，原run/result/current/reviews及原指纹不变。正文、表格或图片不同的文档不能当作仅批注自动恢复；损坏备份、旧绑定、并发新修改均阻断。中断只能明确重试，GET不恢复。
+
+报告history.downloads在原双Word之外追加已登记“用户批注版（保留N条批注）”。GET `/api/v1/studies/{sid}/analysis-plan/reports/{rid}/annotations/{repair_id}`只返回本研究完成恢复回执对应的批注原字节，逐件核对原报告/备份/批注及锚点指纹；错运行/未登记404，损坏沿现有503 ARCHIVE_UNAVAILABLE，原Host和只读下载规则保持。完整追溯追加report_archive_repair_requests/report_archive_repairs；恢复和保留批注不是科研复核通过。
+
 报告GET/generate/files沿原地址兼容两版：当前第三版结构或已有A07.plan_report.2选择二版生成资格，history合并两版原回执，files各按原协议逐件核验。浏览器仍只提交原严格报告字段；服务端给新plan_report队列payload绑定{report_protocol:A07.plan_report.2,request:原请求}，worker按该协议消费，排队后不改版。旧扁平任务payload仍一版；无GET自动生成或历史报告静默升级。
 
 系统评分热图receptors可选display_name来自本批固定受体symbol；name仍为原稳定编号，与cells.receptor关联。表头、转置和格子详情优先显示display_name，缺失时沿用name；不改变查值键、对象顺序或评分。

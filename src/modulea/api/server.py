@@ -79,6 +79,7 @@ class App:
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/reports", self.get_plan_reports),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/reports/generate", self.post_plan_report),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/reports/{ID}/files/([0-9]+)", self.get_plan_report_file),
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/reports/{ID}/annotations/{ID}", self.get_plan_report_annotation),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/system-validations", self.get_plan_system_validations),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/system-validations/execute", self.post_plan_system_validation),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a05-display", self.get_plan_a05_display),
@@ -705,6 +706,11 @@ class App:
         """下载本研究登记的当前或历史Word，逐件核验。"""
         from .plan_reports import file
         return file(self,req,study_id,run_id,index)
+
+    def get_plan_report_annotation(self,req,study_id,run_id,repair_id):
+        """只读下载已登记且指纹完整的用户批注版。"""
+        from .plan_reports import annotation_file
+        return annotation_file(self,req,study_id,run_id,repair_id)
 
     def post_plan_system_validation(self,req,study_id):
         """显式提交真实科学复算，不在接口进程执行。"""

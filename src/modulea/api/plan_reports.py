@@ -2,6 +2,7 @@
 from contracts import ContractError
 from storage import verified_file
 from ..core import report_registry as core
+from ..core import report_archive_repair as repairs
 from .errors import ApiError,from_contract
 
 
@@ -13,6 +14,12 @@ def info(app,req,sid):
         result=workflow.result(m,item['run_id']);item['downloads']=[{'label_zh':'主报告' if index==0 else '简略版',
             'name':ref['path'].rsplit('/',1)[-1],'url':f"/api/v1/studies/{sid}/analysis-plan/reports/{item['run_id']}/files/{index}"}
             for index,ref in enumerate(result['tables']['report_files'])]
+        for reference in m.get(repairs.RECEIPTS,[]):
+            receipt=repairs.read_receipt(workflow,m,reference)
+            if receipt['run_id']==item['run_id']:
+                item['downloads'].append({'label_zh':'用户批注版（保留'+str(receipt['annotation_evidence']['comment_count'])+'条批注）',
+                    'name':'简略版_用户批注.docx' if receipt['original_file']['role']=='brief_report' else '主报告_用户批注.docx',
+                    'url':f"/api/v1/studies/{sid}/analysis-plan/reports/{item['run_id']}/annotations/{receipt['repair_id']}"})
     return value
 
 
@@ -39,3 +46,15 @@ def file(app,req,sid,rid,index):
                 path=verified_file(workflow.location(sid),refs[number])
                 return 'file',path,path.name,'application/vnd.openxmlformats-officedocument.wordprocessingml.document',False
     raise ApiError(404,'NOT_FOUND','找不到本研究登记的报告版本')
+
+
+def annotation_file(app,req,sid,rid,repair_id):
+    """仅下载本研究恢复回执登记的批注原字节，不开放路径或未登记文件。"""
+    workflow=app.kernel.workflow();m=workflow.load(sid)
+    for reference in m.get(repairs.RECEIPTS,[]):
+        receipt=repairs.read_receipt(workflow,m,reference)
+        if receipt['run_id']==rid and receipt['repair_id']==repair_id:
+            path=verified_file(workflow.location(sid),receipt['annotation_file'])
+            name=('简略版' if receipt['original_file']['role']=='brief_report' else '主报告')+'_用户批注.docx'
+            return 'file',path,name,'application/vnd.openxmlformats-officedocument.wordprocessingml.document',False
+    raise ApiError(404,'NOT_FOUND','找不到本研究登记的批注版')

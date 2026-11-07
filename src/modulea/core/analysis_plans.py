@@ -149,6 +149,11 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
         from .plan_reports_v2 import info
         return info(self, study_id)
 
+    def restore_analysis_plan_report_archive(self, study_id, payload, original_bytes):
+        """恢复精确原报告并独立保全用户批注，不重签原SHA或科研复核。"""
+        from .report_archive_repair import repair
+        return repair(self, study_id, payload, original_bytes)
+
     def publish_analysis_plan_report_revision(self, study_id, payload):
         """明确追加本批第二版展示，不重跑统计评分，不改变原报告或科研复核。"""
         from .plan_reports_v2 import publish
