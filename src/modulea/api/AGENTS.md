@@ -719,11 +719,15 @@ GET `/api/v1/studies/{sid}/analysis-plan/creation` 返回本协议建档的初�
 
 ## 2026-11-07 同批准备依据、来源口径与Top-1原字节下载
 
+报告GET/generate/files沿原地址兼容两版：当前第三版结构或已有A07.plan_report.2选择二版生成资格，history合并两版原回执，files各按原协议逐件核验。浏览器仍只提交原严格报告字段；服务端给新plan_report队列payload绑定{report_protocol:A07.plan_report.2,request:原请求}，worker按该协议消费，排队后不改版。旧扁平任务payload仍一版；无GET自动生成或历史报告静默升级。
+
 系统评分热图receptors可选display_name来自本批固定受体symbol；name仍为原稳定编号，与cells.receptor关联。表头、转置和格子详情优先显示display_name，缺失时沿用name；不改变查值键、对象顺序或评分。
 
 准备证据reference_contacts为原evidence明确登记的{chains:string[],basis_zh:string}或null。只读保留原接触链及依据，未登记时明确未知，不用目标链、参考配体所在链或无阈值的全距离表推断接触链；不补定距离阈值或改变质控。
 
 系统准备/资格/评分模块只读兼容独立第三版及全部旧版。可选KPI分别读取原摘要source_record_count、verified_structure_count、verified_record_count、pending_structure_records；缺失省略，0保留，不按新去重重排固定对象。special.source_diagnostics保留原tables.source_diagnostics各行及object_type/object_id/failure_stage/failure_code/retryable/reason_zh，旧批缺分类时展示“未登记”，不从原因文本猜分类。
+
+第三版source_record_count按固定候选逐项保存的original_sources原A01关系计数；verified_record_count为具备核实结构的这些原关系数，pending_structure_records为未核实原关系数。独立结构以完整InChIKey去重只用于计数。固定成分记录读取compound_count，不用16条固定候选代替可能18条原关系；补查响应不追加为新的原来源关系。
 
 special.foundation_evidence可选，schema_version=ModuleA.foundation_evidence.1，read_only=true，integrity=verified|failed。仅核对本运行system_input_ref、原A06_PREP登记、准备/评分packet、原execution命令、输入与工具指纹、搜索盒、MODEL 1评分/原子及坐标；不重新计算。preparation保留每次候选尝试、参考配体/链、原口袋及环境核查记录和原始原因；未执行的环境核查为null，不解释为通过。scores保留完整原序组合及NA/失败原因、原始评分、来源SHA与经核验下载链接。失配时返回明确只读错误区，无构象链接，不更改状态、复核资格或历史结果。
 

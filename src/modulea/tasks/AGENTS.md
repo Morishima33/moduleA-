@@ -1,5 +1,9 @@
 # tasks/ — 后台任务
 
+## 2026-11-07 报告二版网页接入
+
+沿用plan_report原任务类型及预算。新二版HTTP任务由服务端固定payload为{report_protocol:A07.plan_report.2,request:原严格请求}，worker经report_registry调用公开publish_analysis_plan_report_revision；原扁平payload仍调用一版publish_analysis_plan_report。字段、当前输入、实际依赖和科学/人工门控均由原生产发布器重新核验；不因排队期间默认变化升级协议，不签reviews、不重算统计评分。
+
 ## 2026-11-03 受体目录错误的独立技术修订
 
 plan_system_receptor_path_repair沿既有重任务预算和同研究单任务。明确四字段batch_id、expected_preparation_run_id、expected_result_sha256、request_id；工具目录仅来自服务器配置。核验同批已完成原资格，仅对已满足原口袋与环境检查的WinError 267候选，以相同输入和参数补执行Meeko；其他失败、原受体与成分顺序、原下载/预测均保持。新资格不写人工复核、不评分；重试复用完整已核验尝试。无HTTP入口，GET与重启不启动。
