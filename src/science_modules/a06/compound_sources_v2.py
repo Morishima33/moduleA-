@@ -151,10 +151,13 @@ def resolve(row, fetch, identities):
 
 def structure_counts(rows):
     """来源行与实际核实结构分别计数，不改固定范围或候选次序。"""
-    keys = []
+    keys = []; verified_records = 0; total_records = 0
     for row in rows:
+        count = len(row['original_sources']) if 'original_sources' in row else 1
+        total_records += count
         key = row.get('preparation', {}).get('identity', {}).get('inchi_key')
         if row.get('state') == 'ready' and isinstance(key, str) and KEY.fullmatch(key):
             keys.append(key)
-    return {'source_record_count': len(rows), 'verified_structure_count': len(set(keys)),
-            'verified_record_count': len(keys), 'pending_structure_records': len(rows) - len(keys)}
+            verified_records += count
+    return {'source_record_count': total_records, 'verified_structure_count': len(set(keys)),
+            'verified_record_count': verified_records, 'pending_structure_records': total_records - verified_records}

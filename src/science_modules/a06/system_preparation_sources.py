@@ -81,6 +81,8 @@ def connect_object(w,sid,session_ref,value,packet,kind,index,progress):
         receptors=[packet['receptors'][index]] if kind=='receptor' else [])
     connection=legacy.connect(home,subset,folder,progress);connection['id']=value['session_id']
     require(len(connection[key])==1 and not connection['receptors' if kind=='compound' else 'compounds'],'单对象来源改变了固定范围')
+    if kind=='compound':
+        connection[key][0]['original_sources']=deepcopy(identities[packet['compounds'][index]['compound_id']])
     return cp.append(w,sid,session_ref,'source',kind,index,connection,evidence(home,folder))
 
 
@@ -112,6 +114,7 @@ def prepare_object(w,sid,session_ref,value,kind,index,source_ref,connection,tool
     calculate=FunctionType(legacy.prepare.__code__,dict(vars(legacy),attempt=attempt),legacy.prepare.__name__)
     compounds,receptors=calculate(home,connection,folder,tools,progress,value['configuration'])
     rows=compounds if kind=='compound' else receptors
+    if kind=='compound':rows[0]['original_sources']=deepcopy(connection['compounds'][0]['original_sources'])
     if kind=='compound' and rows[0]['state']=='NA':
         source=connection['compounds'][0]
         rows[0].update({key:source[key] for key in ('failure_stage','failure_code','retryable') if key in source})
@@ -206,7 +209,11 @@ def validator(root,previous):
             '完整准备包与逐对象真实检查点不同')
         from .source_context import bound_sources
         from .source_replay import validate as validate_sources
-        validate_sources(home,packet,fact['connection'],bound_sources(w,m,packet))
+        originals=bound_sources(w,m,packet)
+        for connected,prepared in zip(fact['connection']['compounds'],fact['compounds']):
+            require(connected['original_sources']==prepared['original_sources']==originals[connected['compound_id']],
+                '准备来源关系数与本批A01原始来源不同')
+        validate_sources(home,packet,fact['connection'],originals)
         original.validate_evidence(home,packet,fact,expected_config)
         expected,rows=reports(packet,fact['compounds'],fact['receptors']);rows['preparation_packet']=[inputs['preparation_fact']]
         require(tables['preparation_packet']==[inputs['preparation_fact']] and fingerprint((summary,tables))==fingerprint((expected,rows)),

@@ -49,7 +49,9 @@ class SystemSourcesTests(unittest.TestCase):
         self.assertEqual(self.w.run(manifest, result['run_id'])['config']['version'], 'A06.system_preparation.3')
         fixed = system_decisions.current(self.w, manifest, self.batch_id, 'A06_INPUT')[1]['payload']
         self.assertEqual(result['summary']['na_pairs'], fixed['pair_count'])
-        self.assertEqual(result['summary']['source_record_count'], len(fixed['compounds']))
+        from science_modules.a06.source_context import bound_sources
+        originals = bound_sources(self.w, manifest, fixed)
+        self.assertEqual(result['summary']['source_record_count'], sum(map(len, originals.values())))
         self.assertEqual(result['summary']['verified_structure_count'], 0)
         self.assertEqual(len(manifest[cp.SESSIONS]), 1)
         self.assertNotIn('analysis_plan_system_preparation_sessions', manifest)

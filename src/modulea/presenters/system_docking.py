@@ -15,6 +15,7 @@ def present(result,packet):
         target_name=receptors[row['target_id']].get('symbol') or row['target_id'])
         for row in t['plan_scoring_pairs' if scoring else 'planned_pairs']]
     parts.kpis=clean([kpi('固定组合',s['pair_count'],'本批固定成分×受体，含NA'),
+        kpi('固定成分记录',s.get('compound_count'),'本批固定候选条目数，不等同原始来源关系数或独立结构数'),
         kpi('有效评分' if scoring else '准备可用',s['scored_pairs' if scoring else 'ready_pairs']),
         kpi('准备NA',s['na_pairs']),kpi('评分失败',s.get('failed_pairs')),
         kpi('严格组合' if scoring else '严格受体',s.get('strict_scored_pairs' if scoring else 'strict_receptors')),

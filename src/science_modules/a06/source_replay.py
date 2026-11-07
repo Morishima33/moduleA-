@@ -46,6 +46,6 @@ def validate(home, packet, connection, identities):
         require('source_requests' in row, '来源成功项缺少可重放的请求证据')
         replay = ReplayFetcher(home, row['source_requests'], connection['files'])
         actual = resolve(fixed, replay, identities.get(fixed['compound_id'], []))
-        saved = {k: v for k, v in row.items() if k != 'source_requests'}
+        saved = {k: v for k, v in row.items() if k not in ('source_requests','original_sources')}
         require(not replay.events and fingerprint(actual) == fingerprint(saved),
                 '来源身份、CID、官方三维或原始来源关系与归档响应不同')

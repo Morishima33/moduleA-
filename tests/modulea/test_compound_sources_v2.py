@@ -193,3 +193,10 @@ class CompoundSourceTests(TestCase):
         self.assertEqual(stats, {'source_record_count': 3, 'verified_structure_count': 1,
                                  'verified_record_count': 2, 'pending_structure_records': 1})
         self.assertEqual([r['compound_id'] for r in rows], ['one', 'two', 'three'])
+
+    def test_merged_candidate_counts_all_original_relations_but_not_recovery_evidence_twice(self):
+        rows = [{'state':'ready','preparation':{'identity':{'inchi_key':KEY}},
+                 'original_sources':[{'source':'HERB'},{'source':'TCMSP'}]},
+                {'state':'NA','original_sources':[{'source':'BATMAN'}]}]
+        self.assertEqual(source.structure_counts(rows), {'source_record_count':3,'verified_structure_count':1,
+            'verified_record_count':2,'pending_structure_records':1})
