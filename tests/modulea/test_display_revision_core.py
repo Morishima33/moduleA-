@@ -54,6 +54,20 @@ class DisplayRevisionCoreTests(unittest.TestCase):
     def publish(self,body):
         return self.w.publish_analysis_plan_display_revision(self.sid,body)
 
+    def test_first_approval_keeps_published_display_on_current_results(self):
+        """复核已发表的交集，保留图表和译名的原展示登记。"""
+        body = self.body()
+        original = self.publish(body)
+        manifest = self.w.load(self.sid)
+        run = self.w.run(manifest, manifest['current']['A03'])
+        self.assertIsNone(self.w.latest_review(manifest, run['artifact_id']))
+        self.w.review(self.sid, run['run_id'], 'approved', '合成测试复核', '通过同一交集')
+        current = self.w.analysis_plan_display_revision_info(self.sid)['current']
+        self.assertEqual(current['revision_id'], original['revision_id'])
+        self.assertTrue(current['matches_input'])
+        self.assertEqual(self.publish(body)['revision_id'], original['revision_id'])
+        self.assertEqual(self.w.load(self.sid)['current'], manifest['current'])
+
     def scientific_state(self):
         """只比较科学状态三项，展示请求、候选和诊断应另行追加。"""
         m=self.w.load(self.sid)

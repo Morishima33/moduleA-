@@ -69,6 +69,28 @@ class SystemPipelineTests(unittest.TestCase):
         self.assertEqual([r['stage'] for r in records if r['event']=='stage' and r['state']=='not_applicable'],['A05','A06'])
         self.assertEqual(result['state'],'awaiting_report_review')
 
+    def test_first_approval_keeps_published_batch_and_report_reviewable(self):
+        """首次人工通过同一结果，保留原系统回执和已发表报告。"""
+        from modulea.core import plan_reports, system_validation
+        self.prepare(True)
+        result=self.execute()
+        before=self.w.load(self.sid)
+        a03=before['current']['A03']
+        a07=result['report_run_id']
+        self.assertIsNone(self.w.latest_review(before,self.w.run(before,a03)['artifact_id']))
+        expected=system_validation.request(self.w,self.sid,a03)
+        review=self.w.review(self.sid,a03,'approved','合成测试复核','通过同一交集结果')
+        approved=self.w.load(self.sid)
+        self.assertEqual(approved['current'],before['current'])
+        self.assertEqual(approved['runs'],before['runs'])
+        self.assertEqual(system_validation.request(self.w,self.sid,a03),expected)
+        self.assertTrue(self.w.active(approved,a07))
+        self.assertTrue(plan_reports.info(self.w,self.sid)['history'][-1]['active'])
+        withdrawn=self.w.review(self.sid,a03,'pending','合成测试复核','暂存交集',review['review_id'])
+        self.assertFalse(self.w.active(self.w.load(self.sid),a07))
+        self.w.review(self.sid,a03,'approved','合成测试复核','撤回后再次通过',withdrawn['review_id'])
+        self.assertFalse(self.w.active(self.w.load(self.sid),a07))
+
     def test_explicit_restart_after_actual_source_failure_reuses_all_completed_stages_and_diagnostics(self):
         self.prepare(False)
         with (patch.object(network,'request',side_effect=string_response),patch.object(preparation,'connect',side_effect=ContractError('明确测试：结构来源中断')),

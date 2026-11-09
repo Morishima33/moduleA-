@@ -6,6 +6,7 @@ import json
 
 from contracts import ContractError, fingerprint, require, safe_id
 from storage import file_record, new_id, now, read_json, verified_file, write_json, write_lock
+from .system_validation import same_binding_after_first_approval
 
 VERSION='ModuleA.display_revision.1'
 RENDERER='ModuleA.presentation_bundle.2'
@@ -178,7 +179,8 @@ def info(w,sid):
     history=[];current=None
     for ref in m.get(INDEX,[]):
         value=read_record(w,m,ref);request=read_request(w,m,value['request_file'])
-        matches=bool(current_binding and request['binding']['source']==current_binding['source'])
+        matches=bool(current_binding and same_binding_after_first_approval(
+            w,m,request['binding']['source'],current_binding['source']))
         item=dict(value,file=deepcopy(ref),matches_input=matches)
         history.append(item)
         if matches:current=item
@@ -198,7 +200,8 @@ def validate_request(w,sid,body):
         request=read_request(w,m,ref)
         if request['request']['request_id']==body['request_id']:
             require(request['request']==body,'原请求号已用于其他展示内容')
-            require(request['binding']['source']==sources(w,m),'展示来源已改变，请刷新')
+            require(same_binding_after_first_approval(w,m,request['binding']['source'],sources(w,m)),
+                    '展示来源已改变，请刷新')
             for record in m.get(INDEX,[]):
                 value=read_record(w,m,record)
                 if value['request_file']==ref:

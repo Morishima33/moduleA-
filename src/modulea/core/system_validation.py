@@ -64,6 +64,49 @@ def scientific_status(result,passed):
             'note_zh':'校验只检查本模块记录与证据一致；失败、NA及原交接阻塞仍按实际结果处理。'}
 
 
+def same_binding_after_first_approval(workflow, manifest, archived, current):
+    """只有同一不可变结果首次获人工通过时，允许继续使用原系统证据。"""
+    if archived == current:
+        return True
+    if archived.keys() != current.keys() or any(
+        archived[key] != value for key, value in current.items() if key != 'reviews'
+    ):
+        return False
+    old_reviews, current_reviews = archived['reviews'], current['reviews']
+    if current_reviews[:len(old_reviews)] != old_reviews:
+        return False
+
+    home = workflow.location(manifest['study_id'])
+    current_runs = set(manifest['current'].values())
+    for ref in current_reviews[len(old_reviews):]:
+        review = read_json(verified_file(home, ref))
+        rid = review['run_id']
+        if (review['decision'] != 'approved' or review['previous_review_id'] is not None
+                or review['study_id'] != manifest['study_id'] or rid not in current_runs):
+            return False
+        run = workflow.run(manifest, rid)
+        result_file = manifest['runs'][rid]['result_file']
+        if (not result_file or review['result_hash'] != result_file['sha256']
+                or review['artifact_id'] != run['artifact_id'] or review['config_hash'] != run['config_hash']):
+            return False
+    return True
+
+
+def _existing_evidence_binding(workflow, manifest, rid, current):
+    """保留最近适用回执的原指纹，包括失败回执，避免略过较新的否决。"""
+    if not current['reviews']:
+        return current
+    home = workflow.location(manifest['study_id'])
+    for ref in reversed(manifest.get(INDEX, [])):
+        receipt = read_json(verified_file(home, ref))
+        if receipt.get('run_id') != rid:
+            continue
+        archived = receipt['binding']
+        if same_binding_after_first_approval(workflow, manifest, archived, current):
+            return {**current, 'reviews': deepcopy(archived['reviews'])}
+    return current
+
+
 def binding(workflow,sid,rid):
     """固定实际当前运行、结果、完整父输入和原人工记录；绝不制造替代审核。"""
     m=workflow.load(sid);run=workflow.run(m,rid);home=workflow.location(sid)
@@ -96,7 +139,7 @@ def binding(workflow,sid,rid):
            'parent_files':{module:deepcopy(m['runs'][parent]) for module,parent in run['parent_runs'].items()},
            'dependency_files':dependency_files,
            'binding_scope':'dependency_artifacts.1','reviews':reviews,'config_hash':run['config_hash'],'input_hash':run['input_hash']}
-    return m,run,result,value
+    return m,run,result,_existing_evidence_binding(workflow,m,rid,value)
 
 
 def request(workflow,sid,rid):

@@ -145,7 +145,8 @@ def checked_inputs(workflow,m,inputs):
     require(request.get('schema_version')==VERSION and request.get('study_id')==m['study_id']
             and request['request_hash']==fingerprint(request['request']) and request['request']['confirmed'] is True
             and request['input_hash']==fingerprint(request['binding'])
-            and fingerprint(scientific_binding(request['binding']))==fingerprint(scientific_binding(binding(workflow,m))),
+            and system.same_binding_after_first_approval(
+                workflow,m,scientific_binding(request['binding']),scientific_binding(binding(workflow,m))),
             '报告明确请求、校验或上游已改变，请刷新')
     payload=read_json(verified_file(home,inputs['payload_file']))
     from science_modules.a07.plan_payload import validate
