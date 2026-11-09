@@ -86,6 +86,9 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
   const st = view.state; // 状态
   const sp = view.special || {}; // 专属数据
   const systemA01 = m.module_id === 'A01' && !!sp.system_component_publication; // 已归档系统来源不用旧人工上传清单推断缺库。
+  const identityToolsAvailable = systemA01 && sp.system_component_publication?.identity_tools_available;
+  const showIdentityEvidence = identityToolsAvailable && app.session?.capabilities.component_identity_evidence;
+  const showIdentityProbes = identityToolsAvailable && app.session?.capabilities.component_identity_probes;
   const historicalDisease=m.module_id==='A02'&&!!sp.historical_disease_source;
   const revisedDisplay = !view.historical && !!view.display_revision?.supported && !!view.display_revision.current?.matches_input;
   const revisedA05 = m.module_id === 'A05' && revisedDisplay;
@@ -182,8 +185,6 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       {view.enrichment_display && <div id="module-enrichment-confirmation"><EnrichmentConfirmation studyId={studyId} info={view.enrichment_display} onPendingChange={setKeggPending} navigationRequest={enrichmentNavigation}/></div>}
       {/* 待核验事项紧接标题；证据直接展开，不藏在结果末尾。 */}
       {!view.historical && !oldIntersection && <div id="module-focus"><FocusSection items={view.focus} evidence={sp.ppi_identity ? <IdentityReview studyId={studyId} view={view} data={sp.ppi_identity} /> : undefined} /></div>}
-      {systemA01&&!view.historical&&app.session?.capabilities.component_identity_evidence&&<ComponentIdentityEvidence key={view.run?.run_id} studyId={studyId}/>}
-      {systemA01&&!view.historical&&app.session?.capabilities.component_identity_probes&&<ComponentIdentityProbes key={view.run?.run_id} studyId={studyId}/>}
       {m.module_id === 'A02' && !view.historical && view.source_uploads && <SourceUploads studyId={studyId} moduleId={m.module_id} info={view.source_uploads} />}
       {view.disease_scope && <DiseaseScopeReview key={view.run?.run_id} studyId={studyId} info={view.disease_scope} onDirtyChange={setScopeDirty} />}
       {view.normalization && <NormalizationReview key={'normalization-' + view.run?.run_id + (view.normalization.preview?.stamp || '')} studyId={studyId} info={view.normalization} scopeDirty={scopeDirty} />}
@@ -253,6 +254,18 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
 
       {/* 结果明细 / 参数与版本 / 来源与追溯 */}
       <div id="module-details">{oldSelection ? <Collapse items={[{key:'old-result',label:'已失效历史名单与结果（仅供对照）',children:<><KpiGrid kpis={view.kpis}/><FlowChain steps={view.flow} note={view.flow_note_zh}/><DataTabs studyId={studyId} view={view}/></>}]} /> : oldIntersection ? <Collapse items={[{key:'old-intersection-details',label:'查看旧A03明细及版本（仅供追溯）',children:<DataTabs studyId={studyId} view={view}/>}]} /> : <DataTabs studyId={studyId} view={view} />}</div>
+      {(showIdentityEvidence || showIdentityProbes) && (
+        <Collapse items={[{
+          key: 'component-sources',
+          label: '来源证据与补查',
+          children: (
+            <div className="stack">
+              {showIdentityEvidence && <ComponentIdentityEvidence studyId={studyId} />}
+              {showIdentityProbes && <ComponentIdentityProbes studyId={studyId} />}
+            </div>
+          ),
+        }]} />
+      )}
       {view.docking_candidates && m.module_id === 'A04' && <DockingCandidates studyId={studyId} moduleId={m.module_id} info={view.docking_candidates} />}
       {/* 窄屏时下游影响放在最后 */}
       {downstreamSlot}

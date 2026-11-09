@@ -29,7 +29,7 @@ def context(workflow, m, rid):
     """由实际A01及原关系行提取服务端精确编号；历史读取不依赖当前指针。"""
     run = workflow.run(m, rid); result = workflow.result(m, rid); home = workflow.location(m['study_id'])
     require(run['study_id'] == m['study_id'] and run['module_id'] == 'A01'
-            and run['config'].get('version') == 'A01.system_publication.1', '仅支持系统三库A01原身份待核记录')
+            and evidence.supports_run(run), '仅支持系统三库A01原身份待核记录')
     ref = run['inputs']['system_source_binding']; binding = sources.read_record(workflow, m, ref)
     require(run['inputs']['staging_file'] == ref and binding['plan_file'] == run['inputs']['analysis_plan_file']
             and binding['a00_run_id'] == run['parent_runs']['A00'], '原A01来源绑定不同')
@@ -145,7 +145,7 @@ def execute(workflow, sid, body, *, opener=None, sleeper=None, progress=None):
 def info(workflow, sid):
     """只读资格与所有不可变历史回执；不会联网或重试。"""
     m = workflow.load(sid); rid = m['current'].get('A01'); blockers = []; supported = False; targets = []
-    if rid and workflow.run(m, rid)['config'].get('version') == 'A01.system_publication.1':
+    if rid and evidence.supports_run(workflow.run(m, rid)):
         supported = True; targets = context(workflow, m, rid)['targets']
     else: blockers.append('仅支持本版系统三库A01')
     if not targets: blockers.append('本版没有可按原精确编号补查的HERB待核记录')

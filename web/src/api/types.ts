@@ -442,7 +442,7 @@ export interface Special {
   foundation_evidence?:FoundationEvidence;
   source_diagnostics?:{object_type?:string;object_id?:string;failure_stage?:string;failure_code?:string;retryable?:boolean;reason_zh?:string}[];
   historical_disease_source?:{message_zh:string};
-  system_component_publication?: {source_binding_protocol:string;message_zh:string};
+  system_component_publication?: {source_binding_protocol:string;message_zh:string;identity_tools_available:boolean};
   venn?: Venn;
   component_top?: { compound_id: string; name: string; herbs: string; main_rank: number; intersection_count: number; mixed_degree: number }[];
   component_top_note_zh?: string;

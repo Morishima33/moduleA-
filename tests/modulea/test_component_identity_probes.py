@@ -197,6 +197,13 @@ class ComponentIdentityProbeTests(unittest.TestCase):
             finally: conn.close()
         try:
             path = f'/studies/{self.sid}/analysis-plan/component-identity-probes'
+            module_path = f'/studies/{self.sid}/modules/A01'
+            status, raw = call('GET', module_path)
+            self.assertEqual(status, 200, raw)
+            self.assertTrue(json.loads(raw)['special']['system_component_publication']['identity_tools_available'])
+            status, raw = call('GET', path.replace('probes', 'evidence'))
+            self.assertEqual(status, 200, raw)
+            self.assertTrue(json.loads(raw)['supported'])
             status, raw = call('GET', path); self.assertEqual(status, 200, raw); self.assertEqual(json.loads(raw)['records'], [])
             self.assertEqual(self.w.load(self.sid), self.before); self.assertFalse(self.official.calls)
             status, raw = call('GET', '/session'); token = json.loads(raw)['token']

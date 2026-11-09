@@ -14,6 +14,11 @@ VERSION='A01.identity_evidence_view.1'
 IDENTITY_LABELS={'unmapped':'原符号未匹配到人类基因','ambiguous_or_conflicting':'存在多个候选或身份冲突'}
 
 
+def supports_run(run):
+    """核对清单和精确补查共同支持的原发布协议。"""
+    return bool(run and run['config'].get('version') == 'A01.system_publication.1')
+
+
 def snapshot(m):
     """导出只绑定当前运行、来源及明确人工意见，拒绝刷新后的旧下载链接。"""
     return {'study_id':m['study_id'],'current':m['current'],'reviews':m.get('reviews',[]),
@@ -105,7 +110,7 @@ def info(workflow,sid):
         'message_zh':'仅支持本版系统三库结果；本页不确认身份、不自动排除或批准。','units':[],'files':[],'stats':None}
     if not rid:return base
     run=workflow.run(m,rid);result=workflow.result(m,rid)
-    if not result or run['config'].get('version')!='A01.system_publication.1':return base
+    if not result or not supports_run(run):return base
     require(run['study_id']==sid and run['module_id']=='A01','A01运行归属不正确')
     home=workflow.location(sid);ref=run['inputs']['system_source_binding']
     binding=sources.read_record(workflow,m,ref)

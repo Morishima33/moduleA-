@@ -13,6 +13,7 @@ from pathlib import Path
 from contracts import fingerprint
 
 from ..core import modules as registry
+from ..core.component_identity_evidence import supports_run as supports_component_identity_tools
 from ..core.read_archive import SnapshotFlight
 from ..core.study_creation import PROJECT_FOLDERS
 from ..core.source_catalog import source_intro
@@ -373,6 +374,9 @@ class Views:
         ctx = {"workflow_profile": manifest.get("workflow_profile"), "state_code": state["code"], "results": results, "study_id": study_id, "normalization_preview_ready": preview_ready,
                "execution_protocol": (run or {}).get("execution_protocol")}
         parts = present(module_id, result, ctx) if result and not preparation_page else {"kpis": [], "flow": [], "flow_note_zh": "", "focus": [], "params": [], "table": None, "special": {}}
+        publication = parts['special'].get('system_component_publication')
+        if publication is not None:
+            publication['identity_tools_available'] = not historical and supports_component_identity_tools(run)
         if module_id == "A06" and result and result.get("summary", {}).get("science_version") in ("A06.automatic.1", "A06.automatic.2", "A06.automatic.3"):
             from ..presenters.automatic_docking import present as present_automatic
             parts = present_automatic(result)
