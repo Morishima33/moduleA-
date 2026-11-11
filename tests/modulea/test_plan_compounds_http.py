@@ -4,6 +4,7 @@ from pathlib import Path
 import threading
 import time
 import unittest
+from unittest.mock import patch
 
 from modulea.api.server import create_server
 from modulea.config import Settings
@@ -30,6 +31,18 @@ class PlanCompoundsHttpTests(unittest.TestCase):
     def request(self):
         value=flow.info(self.w,self.sid)
         return dict({k:v for k,v in value.items() if k.startswith('expected_')},operator='隔离测试',reason='明确生成合成名单',confirmed=True)
+
+    def test_get_uses_read_workflow_with_original_values_and_no_writes(self):
+        before=self.w.load(self.sid);expected=flow.info(self.w,self.sid)
+        with patch.object(self.app.kernel,'workflow',side_effect=AssertionError('GET不能新建写入工作流')):
+            status,value=self.call('GET',self.path)
+            self.assertEqual(status,200,value)
+            self.assertEqual(value,expected)
+            status,view=self.call('GET',f'/studies/{self.sid}/modules/A03_SELECT')
+            self.assertEqual(status,200,view)
+            self.assertEqual(view['plan_compounds'],expected)
+        self.assertEqual(self.w.load(self.sid),before)
+        self.assertEqual(self.app.tasks.list(),[])
 
     def test_real_task_count_review_and_trace(self):
         before=self.w.load(self.sid);request=self.request()

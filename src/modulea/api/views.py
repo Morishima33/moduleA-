@@ -538,7 +538,7 @@ class Views:
                         response[key]=None
         if module_id=='A03_SELECT' and not historical:
             from .plan_compounds_view import info as compounds_info
-            value=compounds_info(self,None,study_id)
+            value=compounds_info(self,None,study_id,workflow=shared_read_workflow)
             if value['supported']:
                 response['plan_compounds']=value
                 response['compound_selection']=None

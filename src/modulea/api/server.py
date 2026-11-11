@@ -765,7 +765,7 @@ class App:
     def get_plan_compounds(self,req,study_id):
         """读取本方案成分选择资格，不计算名单。"""
         from .plan_compounds_view import info
-        return info(self,req,study_id)
+        return self._json_read(study_id,info,self,req,study_id)
 
     def get_plan_selection_ui(self,req,study_id):
         """只读受体选择及新版准备输入的当前资格。"""

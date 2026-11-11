@@ -27,6 +27,9 @@ READ_FUNCTIONS = {
     'modulea.api.plan_reports': {'info', '_info'},
     'modulea.api.system_validation': {'info'},
     'modulea.api.display_revisions': {'info', '_info'},
+    'modulea.api.plan_compounds_view': {'info'},
+    'modulea.core.plan_compounds': {'info'},
+    'science_modules.plan_stages_contract': {'context', 'binding'},
     'modulea.core.display_revisions': {'_json', 'sources', 'binding', 'read_request', 'read_record', 'info'},
     'modulea.core.analysis_plans': {'AnalysisPlanWorkflow._active', 'AnalysisPlanWorkflow._view_snapshot'},
     'modulea.core.report_registry': {'current', 'info'},
@@ -252,11 +255,11 @@ class ReadEvidence:
                 self.stats['first_bytes_hashed'] += len(raw)
         if resolved not in self.parsed:
             try:
-                self.parsed[resolved] = json.loads(self.json_bytes[resolved].decode('utf-8'))
+                self.parsed[resolved] = marshal.dumps(json.loads(self.json_bytes[resolved].decode('utf-8')))
             except (ValueError, UnicodeError) as error:
                 raise ContractError('数据文件缺失或损坏：' + resolved.name) from error
-        # 跟原read_json一样，每次返回独立容器，调用方不能污染另一次读取。
-        return marshal.loads(marshal.dumps(self.parsed[resolved]))
+        # 同一请求只编码一次，每次解码仍返回独立容器，调用方不能污染后续读取。
+        return marshal.loads(self.parsed[resolved])
 
     def finish(self):
         """JSON发送前重新完整读遍全部不同原件，mtime恢复也不能掩盖内容变化。"""

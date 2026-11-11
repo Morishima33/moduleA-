@@ -4,9 +4,14 @@ from modulea.core.plan_compounds import info as read_info, validate
 from .errors import ApiError, from_contract
 
 
-def info(app,req,sid):
+def info(app,req,sid,*,workflow=None):
     """返回当前归档与真实阻塞，名单只由科学任务计算。"""
-    value=read_info(app.kernel.workflow(),sid)
+    workflow=workflow or app.kernel.read_workflow()
+    if getattr(workflow,'_view_cache',None) is not None:
+        value=read_info(workflow,sid)
+    else:
+        with workflow.handoff_read_cache():
+            value=read_info(workflow,sid)
     if app.tasks.active_for(sid):
         value['enabled']=False;value['blockers'].append('请等待当前研究后台任务结束')
     return value

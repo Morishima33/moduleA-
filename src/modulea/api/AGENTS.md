@@ -180,6 +180,8 @@ GET `/studies/{sid}/analysis-plan/selection-ui`只读汇总A04实际绑定方案
 
 GET `/studies/{sid}/analysis-plan/a03-selection`只读返回supported/enabled/blockers、expected_a00/a03/selection/plan_id/input_hash、parameter_hash、target_count、metric、原A03完整ranking、identity_pending和当前current/current_summary/current_selected，不在HTTP计算名单。POST同路径`/execute`严格接受`{expected_a00,expected_a03,expected_selection,expected_plan_id,expected_input_hash,operator,reason,confirmed:true}`，不接受名单、数量、指标、路径或批准。后台a03_plan_selection经公开Workflow写锁内复算实际A03，读取方案目标/排序，追加A03.plan_selection.1待复核名单及不可变请求。并列全部保留、不足按实际、零交集不补位，实际入选身份待补时停止不换低排名。当前A03_SELECT可选plan_compounds返回相同只读字段并关闭旧固定前五表单；旧研究保持。生成不代签、不启动A06；新A06准备输入须核对新成分配置与受体选择绑定方案的数量/指标一致，历史选择版本保持。
 
+2026-11-11 读取补充。独立 GET 与 A03_SELECT 内嵌成分确认区采用只读 Workflow 和单请求证据范围，内嵌区复用本请求已核验的同一工作流。返回前逐件重新核验原件及 manifest，字段和阻断判断沿原契约；POST 的原完整预检保持。
+
 研究追溯 JSON 的 stage_execution 附加不可变 requests/receipts，包含确认快照、实际运行/结果及各自文件记录；导出逐件核验 SHA 并检查研究和运行关系。该字段只读，旧研究为空数组。CSV 仍为当前结果表，不将未发布来源响应当计算结果。新方案交集与方案阶段页面的旧“保存并继续”保持关闭，复核后从明确阶段入口继续。
 
 ## 2026-10-29 新方案阶段接续
