@@ -439,6 +439,7 @@ export interface FoundationEvidence {
 }
 
 export interface Special {
+  system_rescue?:SystemRescueDisplay;
   foundation_evidence?:FoundationEvidence;
   source_diagnostics?:{object_type?:string;object_id?:string;failure_stage?:string;failure_code?:string;retryable?:boolean;reason_zh?:string}[];
   historical_disease_source?:{message_zh:string};
@@ -460,6 +461,39 @@ export interface Special {
   limits?: string[];
   pathway?: PathwayItem[];
   report_files?: ReportFile[];
+}
+
+/** 同批受体补救展示；原值、颜色、原因与可下载证据均由后端给出。 */
+export interface RescueDownload {label_zh:string;name:string;url:string;sha256:string}
+export interface RescueCell {
+  compound_id:string;target_id:string;score:number|null;score_text:string;display_score:string;
+  state:string;state_zh:string;quality:string;reason_zh:string;source_kind:string;source_zh:string;
+  color:string;text_color:string;downloads:RescueDownload[];
+}
+export interface RescueMatrix {
+  rows:{compound_id:string;name:string;name_en:string;name_zh:string;label:string}[];
+  columns:{target_id:string;symbol:string;label:string;quality:string;candidate_grade:string}[];
+  cells:RescueCell[][];
+}
+export interface SystemRescueDisplay {
+  schema_version:string;science_version:string;read_only:true;study_id:string;run_id:string;unit:string;
+  score_range:[number|null,number|null];colour_note_zh:string;scope_note_zh:string;review_note_zh:string;
+  summary_rows:{label_zh:string;text:string}[];table:RescueMatrix;heatmap:RescueMatrix;
+  initial_focus:{compound_ids:string[];target_ids:string[]};downloads:RescueDownload[];
+  figures:(RescueDownload&{image_url:string;role:string})[];
+  receptor_preparation:{target_id:string;symbol?:string;state:string;state_zh:string;quality?:string;reason_zh?:string}[];
+}
+
+/** 补救执行只提交当前来源版本和明确操作依据，不接收科学参数。 */
+export interface ReceptorRescueRequest {
+  request_id:string;expected_preparation_run_id:string;expected_scoring_run_id:string;
+  expected_input_hash:string;author:string;note:string;confirmed:true;
+}
+/** 准备页按用户点击惰性读取；续做必须原样使用后端给出的已登记request。 */
+export interface ReceptorRescueInfo {
+  schema_version:'A06.system_rescue.1';enabled:boolean;busy:boolean;blockers:string[];
+  expected_preparation_run_id:string|null;expected_scoring_run_id:string|null;expected_input_hash:string|null;
+  current_run_id:string|null;state:'ready'|'incomplete'|'complete'|'blocked';request?:ReceptorRescueRequest|null;
 }
 
 /** 本版待核原件只读整理；原查询返回量不等于可采用身份数。 */
@@ -574,6 +608,7 @@ export interface SystemReceptorSelectionInfo {
   message_zh: string; scope_note_zh: string;
 }
 export interface ModuleView {
+  receptor_rescue_available?: boolean;
   reference_workflow_supported?: boolean;
   display_revision?: DisplayRevisionInfo | null;
   system_receptor_selection?: SystemReceptorSelectionInfo | null;

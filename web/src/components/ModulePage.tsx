@@ -54,6 +54,8 @@ import DisplayRevision from './DisplayRevision';
 import SystemReceptorSelection from './SystemReceptorSelection';
 import FoundationEvidence from './FoundationEvidence';
 import SourceDiagnostics from './SourceDiagnostics';
+import SystemRescueResults from './SystemRescueResults';
+import ReceptorRescueAction from './ReceptorRescueAction';
 import PlanCompounds from './PlanCompounds';
 import PlanSelection from './PlanSelection';
 import PlanPreparation from './PlanPreparation';
@@ -132,6 +134,8 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       {view.creation_plan&&<CreationPlan studyId={studyId} info={view.creation_plan}/>}
       {view.creation_plan&&!view.historical&&app.session?.capabilities.system_pipeline&&<section className="card"><h2>统一执行与续做</h2><p>核对本批资料和方案后一次确认，后台按实际条件接续；已有结果、NA和失败原因保留。</p>
         <Button href={hrefFor({page:'system-pipeline',studyId})}>打开统一执行与续做</Button></section>}
+      {!view.historical&&m.module_id==='A06_PREP'&&view.receptor_rescue_available&&app.session?.capabilities.system_pipeline&&
+        <ReceptorRescueAction key={view.run?.run_id||studyId} studyId={studyId}/>}
       {view.plan_system_validations&&<PlanSystemValidations key={JSON.stringify(view.plan_system_validations.items.map(row=>[row.request,row.current?.validation_id,row.enabled]))} studyId={studyId} info={view.plan_system_validations}/>}
       {view.plan_reports&&<PlanReports key={[view.plan_reports.expected_input_hash,view.plan_reports.expected_report_run_id].join(':')} studyId={studyId} info={view.plan_reports}/>}
       {!view.historical && view.display_revision && <DisplayRevision key={`${view.display_revision.expected_input_hash}:${view.display_revision.current?.revision_id || ''}`} studyId={studyId} moduleId={m.module_id} info={view.display_revision} />}
@@ -243,7 +247,8 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       {sp.ppi_top && sp.ppi_top.length > 0 && <PpiTop items={sp.ppi_top} />}
       {sp.enrichment_display_tables && <EnrichmentDisplay special={sp} info={view.enrichment_display} pending={keggPending} rankedMaps={view.ranked_pathway_maps} studyId={studyId} />}
       {sp.enrichment_top && <EnrichmentTop data={sp.enrichment_top} />}
-      {sp.heatmap && !view.docking_review && (revisedDisplay ? <Collapse items={[{ key: 'original-heatmap', label: '原始热图数据（复核保留）', children:
+      {sp.system_rescue && <SystemRescueResults key={sp.system_rescue.run_id} data={sp.system_rescue}/>}
+      {sp.heatmap && !sp.system_rescue && !view.docking_review && (revisedDisplay ? <Collapse items={[{ key: 'original-heatmap', label: '原始热图数据（复核保留）', children:
         <Heatmap data={sp.heatmap} /> }]} /> : <Heatmap data={sp.heatmap} />)}
       {sp.foundation_evidence && <FoundationEvidence data={sp.foundation_evidence} />}
       {sp.source_diagnostics && <SourceDiagnostics rows={sp.source_diagnostics} />}

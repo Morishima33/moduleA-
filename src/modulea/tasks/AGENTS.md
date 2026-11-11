@@ -1,5 +1,11 @@
 # tasks/ — 后台任务
 
+## 2026-11-11 当前受体的独立补救
+
+plan_system_receptor_rescue沿既有重任务预算、同研究单任务、磁盘余量、真实日志及整进程树取消，不加入轻任务集合。请求只含request_id、expected_preparation_run_id、expected_scoring_run_id、expected_input_hash、author、note、confirmed七字段；工具及有限修补依赖只取服务器配置。隔离科学进程经公开execute_analysis_plan_receptor_rescue追加正常A06.system_rescue.1，父运行仍为原当前已实际人工批准A06_PREP；原评分作为不可变输入引用，不更换或批准准备、不写人工reviews、不启动报告。
+
+开始、逐对象登记和发表前重核原来源、最新人工意见、代码、实际工具及配置。对象检查点只认本研究索引中登记的不可变记录：成功及稳定科学NA只复用原件，明确retryable临时失败可追加新尝试并保留链。相同请求只恢复同一未完成运行且输入、工具、配置及代码完全一致；已发布请求只返回原结果。软件或工具修正后，另一次明确新请求可在相同原准备、原评分及来源绑定下建立新运行，旧未完成运行和检查点保持；这不授权改变科学阈值。人工暂停、过期或回收站研究拒绝；GET、刷新及服务重启不自动执行。
+
 ## 2026-11-07 同批展示修订（不生成Word）
 
 plan_display_revision沿原重任务预算、单研究任务、进程树取消及真实日志，不能加入轻任务集合。只接严格五字段明确请求；worker调用公开publish_analysis_plan_display_revision，复用本批原来源、分类和统计，另存PNG/SVG/CSV/JSON及核译依据，不启动R/Vina、生成Word或写人工reviews。开始和发表前完整核对原附件SHA、来源链、最新人工意见、明确实现及字体指纹；失败保存诊断，新尝试另目录，已登记成功candidate经核验恢复，不覆盖历史。HTTP GET/刷新/重启不自动执行。

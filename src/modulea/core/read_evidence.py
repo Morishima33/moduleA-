@@ -14,7 +14,7 @@ from pathlib import Path
 import threading
 from types import FunctionType, MethodType, ModuleType
 
-from contracts import require, ContractError
+from contracts import require, ContractError, fingerprint
 from storage import read_json as original_read_json, verified_file as original_verified_file
 from .read_archive import ReadArchive
 
@@ -30,6 +30,17 @@ READ_FUNCTIONS = {
     'modulea.api.plan_compounds_view': {'info'},
     'modulea.core.plan_compounds': {'info'},
     'science_modules.plan_stages_contract': {'context', 'binding'},
+    'modulea.api.receptor_rescue': {'info'},
+    'modulea.core.system_receptor_rescue': {'info', 'source_binding', '_source_binding', '_read_request',
+                                         'SystemReceptorRescueWorkflow._active'},
+    'modulea.core.system_preparation_checkpoints': {'read_session', 'read_object', 'read_packet', 'files'},
+    'science_modules.a06.system_qualification_paths': {'validator', 'source', 'facts'},
+    'science_modules.a06.system_qualification_incremental': {'validator', 'source_data', 'reports'},
+    'science_modules.a06.system_preparation_incremental': {'validator'},
+    'science_modules.a06.system_preparation': {'read_input', 'validate_evidence', 'reports'},
+    'science_modules.a06.system_scoring_paths': {'validator', 'derive'},
+    'science_modules.a06.system_scoring_incremental': {'validator', 'derive', 'expected_rows', 'receptor_evidence', 'summary'},
+    'science_modules.a06.system_receptor_rescue': {'SCORING_READ_FACTORY'},
     'modulea.core.display_revisions': {'_json', 'sources', 'binding', 'read_request', 'read_record', 'info'},
     'modulea.core.analysis_plans': {'AnalysisPlanWorkflow._active', 'AnalysisPlanWorkflow._view_snapshot'},
     'modulea.core.report_registry': {'current', 'info'},
@@ -138,6 +149,7 @@ class ReadEvidence:
         self.home_cache, self.request_paths, self.locations = {}, {}, {}
         self.lock = threading.RLock()
         self.functions, self.namespaces, self.modules = {}, {}, {}
+        self.preparation_records = {}
         self.allowed = None
         self.stats = {'first_sha_checks': 0, 'first_bytes_hashed': 0, 'exit_sha_checks': 0,
                       'exit_bytes_hashed': 0, 'duplicate_references': 0, 'manifest_checks': 1,
@@ -357,7 +369,22 @@ class ReadEvidence:
         clone = FunctionType(function.__code__, namespace, function.__name__, function.__defaults__, function.__closure__)
         clone.__kwdefaults__ = deepcopy(function.__kwdefaults__)
         clone.__annotations__ = dict(function.__annotations__)
-        self.functions[function] = clone
+        target = clone
+        if function.__module__ == 'modulea.core.system_preparation_checkpoints' and function.__name__ in (
+                'read_session', 'read_object', 'read_packet'):
+            def read_preparation(*args, **kwargs):
+                """同次只读规范复用完全相同的登记事实，退出仍逐件全SHA，不跨请求保留。"""
+                if not self._owned() or len(args) != 3 or kwargs:
+                    return function(*args, **kwargs)
+                workflow, manifest, reference = args
+                if current_evidence(getattr(workflow, 'root', None)) is not self:
+                    return function(*args, **kwargs)
+                key = function, id(workflow), fingerprint(manifest), fingerprint(reference)
+                if key not in self.preparation_records:
+                    self.preparation_records[key] = marshal.dumps(clone(*args))
+                return marshal.loads(self.preparation_records[key])
+            target = read_preparation
+        self.functions[function] = target
         if fresh:
             # 函数缓存先登记，避免原函数互相引用递归；原模块namespace始终不改。
             for key, value in original_globals.items():
@@ -365,7 +392,7 @@ class ReadEvidence:
                     namespace[key] = self._value(value)
             namespace['verified_file'] = self.verified_file
             namespace['read_json'] = self.read_json
-        return clone
+        return target
 
     def call(self, function, *args, **kwargs):
         """只有白名单只读入口会绑定；其他函数仍原样调用，不能借此批准或写入。"""

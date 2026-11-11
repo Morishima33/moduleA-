@@ -1,5 +1,19 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-11-11 A06受体补救结果独立只读展示
+
+显式 `A06.system_rescue.1` 科学运行的模块GET使用独立适配器，不伪装成旧自动评分协议。仅读取该运行的 `inputs.system_input_ref` 所指 `A06_INPUT`、`tables.scoring_packet` 唯一已归档事实包及标准结果附件索引，核对研究、运行、输入指纹、固定顺序与完整评分表。历史运行读取自己的原件；GET不生成图、不写研究、不创建任务，不更改 `state`、`review.can_review` 或人工批准。
+
+可选 `special.system_rescue` 为 `schema_version:A06.system_rescue.display.1`、`science_version:A06.system_rescue.1`、`read_only:true`，包括 `study_id/run_id/unit/score_range`、归档 `summary`、`summary_rows:[{label_zh,text}]`，以及 `colour_note_zh/scope_note_zh/review_note_zh`。尝试受体、补救可用、沿用旧评分、新增评分、剩余NA与失败数量均来自归档摘要，不在前端推算。
+
+`table` 与默认 `heatmap` 均保留完整固定成分×受体，不默认裁成8×8，不删除整行/列NA；各含 `rows:[{compound_id,name,name_en,name_zh,label}]`、`columns:[{target_id,symbol,label,quality,candidate_grade}]`、对应二维 `cells`。同名候选的 `label` 追加可区分短编号，名称仅来自同批 `source_fixed`。格子包含原始 `score`、未舍入 `score_text`、显示用 `display_score`、`state/state_zh/quality/reason_zh/source_kind/source_zh/color/text_color/downloads`；NA保持null、白底和原因，不补零。色标取完整同批有效评分，越负越红、越不负越蓝，无通用阈值。
+
+`initial_focus:{compound_ids,target_ids}` 只提供有成功评分对象的初始展示选择；网页可按稳定编号筛选焦点图，选择不写入、不改变完整矩阵、科学名单或评分。`receptor_preparation` 保留本轮受体准备原状态、类别和原因，后端附 `state_zh`。`downloads:[{label_zh,name,url,sha256}]` 与 `figures`（另含 `image_url/role`）仅链接标准 `/studies/{sid}/files/{key}` 登记附件；格子证据下载同样要求路径、大小和SHA与标准索引一致。只有明确登记的Top-1引用才标作Top-1，不能以文件名推断构象有效。完整PNG/SVG、焦点PNG/SVG、原始精度完整CSV及展示JSON由显式后台计算时生成，页面刷新不导出。旧分步执行/导出控件隐藏，新增A06结果仍须独立人工复核；不生成或修改Word。
+
+当前非历史系统准备页可带可选 `receptor_rescue_available:true`，前端同时沿用 `session.capabilities.system_pipeline` 才挂载补救入口。挂载不请求资格；用户点击后才GET `/studies/{sid}/analysis-plan/receptor-rescue`，读取 `schema_version:A06.system_rescue.1`、`enabled/busy/blockers`、`expected_preparation_run_id/expected_scoring_run_id/expected_input_hash`、`current_run_id`、`state:ready|incomplete|complete|blocked` 和可选原 `request`。阻塞原因在执行按钮旁显示，前端不自行判断科学资格。完成时只链接当前A06结果，允许后续独立复核。
+
+明确新执行使用POST `.../receptor-rescue/execute`，七字段为 `{request_id:rescue_<32hex>,expected_preparation_run_id,expected_scoring_run_id,expected_input_hash,author,note,confirmed:true}`，经统一client携带原令牌，202返回 `{task,created,message_zh}`。新执行的人名、依据留空且确认框不预选。`incomplete` 时原执行人和依据只读显示，用户重新主动确认后原样提交GET返回的七字段 `request`，不得另造请求号或替换来源。409后清空本次资格和确认，提示重新读取，不自动重提。不提交人工review、不修改固定名单或原评分，不从前端传科学参数、路径或通过标记。
+
 ## 2026-11-07 本机稳定运行与安全关闭
 
 App构造最先校验runtime及service解析范围，禁止位于studies内；错误配置在Kernel/TaskManager创建任何运行索引之前拒绝。运行标识不得借目录链接进入研究包，创建目录后再次核对。

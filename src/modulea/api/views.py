@@ -359,12 +359,14 @@ class Views:
         else:
             run, result, review = raw["run"], raw["result"], raw["review"]
 
+        rescue_result = bool(run and run.get('config', {}).get('version') == 'A06.system_rescue.1')
         state = dict(states[module_id])
         system_execution_result=bool(run and run.get('execution_protocol')=='ModuleA.system_execution.1' and not historical)
         # 当前系统A04只展示归档和独立复核，不构建最终会隐藏的旧人工操作表单。
         system_a04 = system_execution_result and module_id == 'A04'
         from ..presenters.system_docking import VERSIONS as SYSTEM_STRUCTURE_VERSIONS
-        system_structure_current=bool(not historical and run and run.get('config',{}).get('version') in SYSTEM_STRUCTURE_VERSIONS)
+        system_structure_current=bool(not historical and run and
+                                      (run.get('config',{}).get('version') in SYSTEM_STRUCTURE_VERSIONS or rescue_result))
         historical_source_result=bool(run and run['config'].get('version') in ('A02.historical_collection.1','A02.system_normalization.4','A02.system_normalization.5'))
         normalization_info = normalization_context(workflow, real, result, self.kernel.settings, bool(self.tasks.active_for(study_id))) if module_id == "A02" and not historical and not historical_source_result else None
         preview_ready = bool(normalization_info and normalization_info["preview"])
@@ -373,7 +375,7 @@ class Views:
         results = {m["module_id"]: m["result"] for m in view["modules"] if m.get("result")}
         ctx = {"workflow_profile": manifest.get("workflow_profile"), "state_code": state["code"], "results": results, "study_id": study_id, "normalization_preview_ready": preview_ready,
                "execution_protocol": (run or {}).get("execution_protocol")}
-        parts = present(module_id, result, ctx) if result and not preparation_page else {"kpis": [], "flow": [], "flow_note_zh": "", "focus": [], "params": [], "table": None, "special": {}}
+        parts = present(module_id, result, ctx) if result and not preparation_page and not rescue_result else {"kpis": [], "flow": [], "flow_note_zh": "", "focus": [], "params": [], "table": None, "special": {}}
         publication = parts['special'].get('system_component_publication')
         if publication is not None:
             publication['identity_tools_available'] = not historical and supports_component_identity_tools(run)
@@ -444,7 +446,7 @@ class Views:
             "ranked_pathway_maps": workflow.ranked_map_context(real, run["run_id"], historical,
                 bool(self.tasks.active_for(study_id))) if module_id == "A05" and run and result else None,
             "docking_artifacts": workflow.docking_artifact_context(real, run["run_id"], historical,
-                                     bool(self.tasks.active_for(study_id))) if module_id == "A06" and run else None,
+                                     bool(self.tasks.active_for(study_id))) if module_id == "A06" and run and not rescue_result else None,
             "module": {"module_id": module_id, "title_zh": spec.title_zh, "group_zh": spec.group_zh, "purpose_zh": source_intro(module_id, real, result) + ("STRING人类功能关联网络；两分支独立两轮；Degree图展示第二轮候选，Degree表展示第一轮前十，BC＋CC表展示第二轮前十五。" if module_id == "A04" and result and result.get("summary", {}).get("selection_version") == "A04.dual.3" else ("STRING人类功能关联网络；Degree与BC＋CC两分支独立进行两轮筛选，Degree图表显示第一轮前十，BC＋CC表显示第二轮前十五。" if module_id == "A04" and result and result.get("summary", {}).get("selection_version") == "A04.dual.2" else ("STRING人类功能关联网络；双分支独立两轮，显示第二轮排名。" if module_id == "A04" and result and result.get("summary", {}).get("selection_version") == "A04.dual.1" else spec.purpose_zh))),
                        "sub": spec.sub, "depends_on": list(run["parent_runs"]) if module_id == "A06" and run and run.get("config", {}).get("schema_version") in ("A06.trial.handoff.1", "A06.automatic.1", "A06.automatic.2", "A06.automatic.3") else list(spec.depends_on)},
             "state": state if not historical else {**state, "code": "history", "label_zh": "历史版本（只读）", "can_review": False},
@@ -507,7 +509,7 @@ class Views:
         from ..core.read_evidence import current_evidence
         shared_read_workflow=workflow if not real.get('trashed') and current_evidence(self.kernel.settings.data_root) else None
         response['display_revision'] = None
-        if module_id in ('A03','A04','A05','A06','A07') and not historical:
+        if module_id in ('A03','A04','A05','A06','A07') and not historical and not rescue_result:
             from .display_revisions import info as display_revision_info
             value=display_revision_info(self,None,study_id)
             if value['supported']:response['display_revision']=value
@@ -599,7 +601,7 @@ class Views:
             response['review']['continue'].update(available=False, note_zh='人工决定单独保存；请在新版评分区明确确认执行，不接续旧计算协议。')
         if plan_result:
             response['review']['continue'].update(available=False, note_zh='本版评分独立保存复核决定；新报告协议尚未接通，不调用旧报告。')
-        if module_id in ("A06_PREP", "A06") and not historical and not preparation and not handoff and not plan_preparation and not plan_result and not system_structure and not response['plan_selection_ui']:
+        if module_id in ("A06_PREP", "A06") and not historical and not preparation and not handoff and not plan_preparation and not plan_result and not system_structure and not rescue_result and not response['plan_selection_ui']:
             from ..core.automatic_experience import automatic_context
             with workflow.handoff_read_cache():
                 response["automatic_docking"] = automatic_context(workflow, real, False, bool(self.tasks.active_for(study_id)))
@@ -632,6 +634,10 @@ class Views:
         if system_structure and result:
             from .system_docking_view import apply as apply_system_docking
             apply_system_docking(workflow,real,run,result,response)
+        if rescue_result and result:
+            from .system_rescue_view import apply as apply_rescue
+            apply_rescue(workflow, real, run, result, response)
+        response['receptor_rescue_available'] = bool(module_id == 'A06_PREP' and system_structure and not historical)
         response['system_exports'] = None
         if system_structure and result and not historical:
             # 只读资格来自本批归档，不在页面请求里生成图表或Excel。
@@ -644,7 +650,7 @@ class Views:
                 exports['enabled'] = False
                 exports['blockers'].append('请等待本研究当前任务结束')
             response['system_exports'] = exports
-        response["operation_guide"] = None if plan_preparation or plan_result or system_structure or system_execution_result else operation_navigation(response, result)
+        response["operation_guide"] = None if plan_preparation or plan_result or system_structure or system_execution_result or rescue_result else operation_navigation(response, result)
         if system_execution_result and module_id in ('A01','A02','A03','A04','A05'):
             from ..presenters.base import focus
             response['focus'].append(focus('本版由统一批次接续',

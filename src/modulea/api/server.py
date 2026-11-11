@@ -74,6 +74,8 @@ class App:
             self._service_identity_error = str(error)
         self.routes = [
             ("GET", r"/api/v1/health", self.get_health),
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/receptor-rescue", self.get_receptor_rescue),
+            ("POST", rf"/api/v1/studies/{ID}/analysis-plan/receptor-rescue/execute", self.post_receptor_rescue),
             ("POST", r"/api/v1/service/stop", self.post_service_stop),
             ("GET", rf"/api/v1/studies/{ID}/runs/{ID}/foundation/pairs/([0-9]+)/top1\.pdbqt", self.get_foundation_top1),
             ("GET", rf"/api/v1/studies/{ID}/runs/{ID}/foundation/pairs/([0-9]+)/context\.json", self.get_foundation_context),
@@ -766,6 +768,16 @@ class App:
         """读取本方案成分选择资格，不计算名单。"""
         from .plan_compounds_view import info
         return self._json_read(study_id,info,self,req,study_id)
+
+    def get_receptor_rescue(self, req, study_id):
+        """补救资格只取当前来源，GET不准备结构或启动评分。"""
+        from .receptor_rescue import info
+        return self._json_read(study_id, info, self, req, study_id)
+
+    def post_receptor_rescue(self, req, study_id):
+        """明确同批执行请求进入原重任务队列，科研复核独立保存。"""
+        from .receptor_rescue import execute
+        return execute(self, req, study_id)
 
     def get_plan_selection_ui(self,req,study_id):
         """只读受体选择及新版准备输入的当前资格。"""
