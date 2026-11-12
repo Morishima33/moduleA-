@@ -29,7 +29,7 @@ _ensure_legacy_path()
 from contracts import MODULES, ContractError  # noqa: E402
 from storage import read_json, verified_file  # noqa: E402
 from workflow import Workflow  # noqa: E402
-from .system_receptor_rescue import SystemReceptorRescueWorkflow as DockingWorkflow  # noqa: E402
+from .system_receptor_rescue_v2 import SystemReceptorRescueV2Workflow as DockingWorkflow  # noqa: E402
 from .read_archive import ReadResultMixin  # noqa: E402
 
 __all__ = ["Kernel", "ContractError", "MODULES", "read_json", "verified_file", "full_workflow"]
@@ -157,4 +157,6 @@ def full_workflow(data_root: Path) -> Workflow:
     validators['A06_PREP'] = source_qualification_validator(root, source_preparation_validator(root, validators['A06_PREP']))
     validators['A06'] = source_scoring_validator(root, validators['A06'])
     validators['A06'] = receptor_rescue_validator(root, validators['A06'])
+    from science_modules.a06.system_receptor_rescue_v2 import validator as receptor_rescue_v2_validator
+    validators['A06'] = receptor_rescue_v2_validator(root, validators['A06'])
     return DockingWorkflow(root, validators)

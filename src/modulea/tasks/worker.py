@@ -751,6 +751,8 @@ def run_system_receptor_path_scoring(settings, task, manager):
 HANDLERS['plan_system_receptor_path_scoring'] = run_system_receptor_path_scoring
 from .system_receptor_rescue import run as run_system_receptor_rescue
 HANDLERS['plan_system_receptor_rescue'] = run_system_receptor_rescue
+from .system_receptor_rescue_v2 import run as run_system_receptor_rescue_v2
+HANDLERS['plan_system_receptor_rescue_v2'] = run_system_receptor_rescue_v2
 from .system_disease_manual_sources import run as run_system_disease_manual_source
 HANDLERS['plan_system_disease_manual_source']=run_system_disease_manual_source
 

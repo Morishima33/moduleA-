@@ -476,7 +476,8 @@ export interface RescueMatrix {
   cells:RescueCell[][];
 }
 export interface SystemRescueDisplay {
-  schema_version:string;science_version:string;read_only:true;study_id:string;run_id:string;unit:string;
+  schema_version:'A06.system_rescue.display.1'|'A06.system_rescue.display.2';
+  science_version:'A06.system_rescue.1'|'A06.system_rescue.2';read_only:true;study_id:string;run_id:string;unit:string;
   score_range:[number|null,number|null];colour_note_zh:string;scope_note_zh:string;review_note_zh:string;
   summary_rows:{label_zh:string;text:string}[];table:RescueMatrix;heatmap:RescueMatrix;
   initial_focus:{compound_ids:string[];target_ids:string[]};downloads:RescueDownload[];
@@ -491,7 +492,7 @@ export interface ReceptorRescueRequest {
 }
 /** 准备页按用户点击惰性读取；续做必须原样使用后端给出的已登记request。 */
 export interface ReceptorRescueInfo {
-  schema_version:'A06.system_rescue.1';enabled:boolean;busy:boolean;blockers:string[];
+  schema_version:'A06.system_rescue.1'|'A06.system_rescue.2';enabled:boolean;busy:boolean;blockers:string[];
   expected_preparation_run_id:string|null;expected_scoring_run_id:string|null;expected_input_hash:string|null;
   current_run_id:string|null;state:'ready'|'incomplete'|'complete'|'blocked';request?:ReceptorRescueRequest|null;
 }

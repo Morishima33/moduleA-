@@ -76,6 +76,8 @@ class App:
             ("GET", r"/api/v1/health", self.get_health),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/receptor-rescue", self.get_receptor_rescue),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/receptor-rescue/execute", self.post_receptor_rescue),
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/receptor-rescue-v2", self.get_receptor_rescue_v2),
+            ("POST", rf"/api/v1/studies/{ID}/analysis-plan/receptor-rescue-v2/execute", self.post_receptor_rescue_v2),
             ("POST", r"/api/v1/service/stop", self.post_service_stop),
             ("GET", rf"/api/v1/studies/{ID}/runs/{ID}/foundation/pairs/([0-9]+)/top1\.pdbqt", self.get_foundation_top1),
             ("GET", rf"/api/v1/studies/{ID}/runs/{ID}/foundation/pairs/([0-9]+)/context\.json", self.get_foundation_context),
@@ -777,6 +779,16 @@ class App:
     def post_receptor_rescue(self, req, study_id):
         """明确同批执行请求进入原重任务队列，科研复核独立保存。"""
         from .receptor_rescue import execute
+        return execute(self, req, study_id)
+
+    def get_receptor_rescue_v2(self, req, study_id):
+        """明确二版资格；未完成第一版仍提供其原请求恢复，不自动升级。"""
+        from .receptor_rescue_v2 import info
+        return self._json_read(study_id, info, self, req, study_id)
+
+    def post_receptor_rescue_v2(self, req, study_id):
+        """新的二版请求独立排队，旧版执行地址与请求内容保持。"""
+        from .receptor_rescue_v2 import execute
         return execute(self, req, study_id)
 
     def get_plan_selection_ui(self,req,study_id):

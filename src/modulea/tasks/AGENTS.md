@@ -1,5 +1,13 @@
 # tasks/ — 后台任务
 
+## 2026-11-11 已登记官方原件与补救第二轮
+
+`plan_system_receptor_rescue_v2` 仍为原预算内重任务，保持单研究任务、磁盘余量、实际日志和整进程树取消；不增加并行科学执行或轻任务通道。七字段请求及服务器工具配置保持，独立runner经公开`execute_analysis_plan_receptor_rescue_v2`追加`A06.system_rescue.2`。原第一版未完成请求不自动升级；完整第一版的成功受体和成功评分整对象复用，只补原固定范围内仍缺失受体。本次官方原件复用先验证精确归档来源包及原HTTP凭据；原完整实验路线已经走完才接续其模型补救，不通过略去科学条件消除NA。请求、实现、工具、来源及人工意见全绑定；旧运行和检查点不覆盖，新结果不代签批准，不启动Word或报告。
+
+明确新第二版也可绑定同原PREP与原路径评分的最新未发表第一版。内部`source_binding.partial_recovery`固定为`{run_files,run_id,checkpoint_refs}`，没有适用记录或基线为完整第一版时为null。选择按原运行created_at及run_id确定，不依赖第一版仍为current；全部登记检查点的对象、原配置、previous链及证据SHA重新核验，成功对象不可覆盖，孤立执行目录不认作成功。当前指针转到第二版后仍从相同历史来源重建绑定；来源、人工意见、检查点或原件改变均阻断。只读复用已核验准备及实际登记区域，未登记执行保留为诊断；科学第二版仍需完整复验，不能从ready标记直接放行。
+
+官方来源包管理登记允许当前为同源、有效、未人工退回且未发表的第一版，此时明确请求的expected_scoring_run_id仍为原路径评分；不伪造第一版成功，不给其他历史或未完成第二版相同例外。实际登记只走公开Workflow、原写锁与原队列忙碌保护，旧运行、CP及HTTP日期保持，不隐式启动任务。
+
 ## 2026-11-11 当前受体的独立补救
 
 plan_system_receptor_rescue沿既有重任务预算、同研究单任务、磁盘余量、真实日志及整进程树取消，不加入轻任务集合。请求只含request_id、expected_preparation_run_id、expected_scoring_run_id、expected_input_hash、author、note、confirmed七字段；工具及有限修补依赖只取服务器配置。隔离科学进程经公开execute_analysis_plan_receptor_rescue追加正常A06.system_rescue.1，父运行仍为原当前已实际人工批准A06_PREP；原评分作为不可变输入引用，不更换或批准准备、不写人工reviews、不启动报告。

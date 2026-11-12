@@ -359,7 +359,8 @@ class Views:
         else:
             run, result, review = raw["run"], raw["result"], raw["review"]
 
-        rescue_result = bool(run and run.get('config', {}).get('version') == 'A06.system_rescue.1')
+        rescue_result = bool(run and run.get('config', {}).get('version') in
+                             ('A06.system_rescue.1', 'A06.system_rescue.2'))
         state = dict(states[module_id])
         system_execution_result=bool(run and run.get('execution_protocol')=='ModuleA.system_execution.1' and not historical)
         # 当前系统A04只展示归档和独立复核，不构建最终会隐藏的旧人工操作表单。

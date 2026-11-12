@@ -1,5 +1,13 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-11-11 官方归档原件补救的独立二版入口
+
+GET `/api/v1/studies/{sid}/analysis-plan/receptor-rescue-v2` 为只读资格；字段沿第一版，`schema_version` 显式返回 `A06.system_rescue.2`。如果当前第一版尚未完成，则返回该第一版原资格及原请求，schema仍为`.1`，前端继续从原执行地址提交同一请求，不能静默升级。完整第一版后，二版以其实际已验证结果为基线；本次新增、沿用和累计数量分开显示。GET不联网、不补算、不登记来源包或复核。
+
+POST 同地址 `/execute` 严格接受原七字段 `request_id/expected_preparation_run_id/expected_scoring_run_id/expected_input_hash/author/note/confirmed:true`，仅进入 `plan_system_receptor_rescue_v2` 重任务。第一版原执行地址及校验规则保持。未知字段/查询422、同研究忙碌或缺工具409、陈旧绑定409、回收站423；不允许URL、目录、名单、科学参数和批准覆盖。二版只接受原路径评分或完整第一版补救基线；来源包由已授权管理调用经公开Workflow精确登记，不开放网页任意文件路径。
+
+来源包核验旧研究索引→运行/结果→三件实际官方HTTP200原件及下载记录、本批已登记同目标元数据与字节版本。记录本地复用时间，保留原下载时间，不冒充新HTTP请求。包清单加入本次输入指纹；任何来源包、人工意见、工具或实现变化都阻断原请求恢复。完整保留已成功基线组合及实际Top-1文件，不把原结果重标为本轮新增；新正常A06仍以原已批准PREP为父，另待独立人工复核，不生成Word。
+
 ## 2026-11-11 A06受体补救结果独立只读展示
 
 显式 `A06.system_rescue.1` 科学运行的模块GET使用独立适配器，不伪装成旧自动评分协议。仅读取该运行的 `inputs.system_input_ref` 所指 `A06_INPUT`、`tables.scoring_packet` 唯一已归档事实包及标准结果附件索引，核对研究、运行、输入指纹、固定顺序与完整评分表。历史运行读取自己的原件；GET不生成图、不写研究、不创建任务，不更改 `state`、`review.can_review` 或人工批准。
@@ -13,6 +21,18 @@
 当前非历史系统准备页可带可选 `receptor_rescue_available:true`，前端同时沿用 `session.capabilities.system_pipeline` 才挂载补救入口。挂载不请求资格；用户点击后才GET `/studies/{sid}/analysis-plan/receptor-rescue`，读取 `schema_version:A06.system_rescue.1`、`enabled/busy/blockers`、`expected_preparation_run_id/expected_scoring_run_id/expected_input_hash`、`current_run_id`、`state:ready|incomplete|complete|blocked` 和可选原 `request`。阻塞原因在执行按钮旁显示，前端不自行判断科学资格。完成时只链接当前A06结果，允许后续独立复核。
 
 明确新执行使用POST `.../receptor-rescue/execute`，七字段为 `{request_id:rescue_<32hex>,expected_preparation_run_id,expected_scoring_run_id,expected_input_hash,author,note,confirmed:true}`，经统一client携带原令牌，202返回 `{task,created,message_zh}`。新执行的人名、依据留空且确认框不预选。`incomplete` 时原执行人和依据只读显示，用户重新主动确认后原样提交GET返回的七字段 `request`，不得另造请求号或替换来源。409后清空本次资格和确认，提示重新读取，不自动重提。不提交人工review、不修改固定名单或原评分，不从前端传科学参数、路径或通过标记。
+
+### 受体补救第二版展示
+
+第二版内部来源绑定可增加`partial_recovery:null|{run_files,run_id,checkpoint_refs}`，用原准备及原路径评分对应的最新未发表第一版登记事实恢复。它只参与服务端expected_input_hash和科学核验，不增加浏览器七字段、不把第一版原请求升级或伪造已完成状态。第二版建立后仍按原历史运行与CP引用重建；任何来源、人工决定或登记原件变化拒绝。GET2遇当前未完成第一版仍按既有约定提供原schema1及原请求；技术接替需要明确的新第二版请求及其当前指纹，不自动重提旧第一版。
+
+显式 `A06.system_rescue.2` 使用新 `A06.system_rescue.display.2`，`special.system_rescue` 结构沿用第一版；第一版科学包与图表生成器保持。第二版事实包增加 `reused_pair_keys/new_pair_keys:[[compound_id,target_id],...]`，集合互斥、不重复且覆盖全部有效评分；沿用集合只含成功格，本轮集合可含新实际执行失败格。继承的pair原对象及其 `source_kind` 不回写，代次来源仅据这两份已归档集合显示：成功格为“沿用已核验评分”或“本轮新增评分”，失败与NA保留原状态和原因。集合是否有真实证据由科学第二版校验器核实，前端不从旧 `source_kind='rescue'` 猜代次。
+
+第二版摘要可增加 `baseline_scored_pairs/cumulative_rescue_scored_pairs/cumulative_rescue_target_count/cumulative_rescued_receptors/ready_receptors_total`。API按“基线有效评分／本轮新增有效评分／累计补救有效评分／最初补救范围／累计补救准备可用／当前准备可用受体”分别展示；`rescued_receptors` 仍只指本轮新增准备可用数，不冒充累计。接口读取资格的 `schema_version` 可显式为 `A06.system_rescue.1|A06.system_rescue.2`，执行端点和版本选择单独登记，展示字段不改变HTTP执行入口。
+
+第二版当前图件、完整CSV与展示JSON仅从当前 `runs/A06/{run_id}/rescue/display/` 已登记索引选择，同角色不能重复；继承的旧图及旧CSV仍保留在追溯附件中，不列为本轮图或矩阵。逐格Top-1与execution证据允许引用已核验基线运行的原件，继续按本格引用及标准结果附件路径、大小、SHA连接，不按本轮目录误删历史证据。第二版仍保留完整矩阵、原始精度、同名身份、全NA范围、白底NA与全批色标，GET无写入、无出图、无自动任务或人工批准。
+
+第二版每次实际导出写入上述目录下独立单层 `display_<32hex>/` 尝试目录；出图中断残件保留，续做使用新尝试目录，不能覆盖原残件或把未完成导出列为当前图。标准附件索引只将完整尝试的本轮PNG/SVG/CSV/JSON登记为对应展示角色。
 
 ## 2026-11-07 本机稳定运行与安全关闭
 

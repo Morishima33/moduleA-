@@ -11,6 +11,14 @@ COUNTS = [('rescue_target_count', '本轮尝试受体'), ('rescued_receptors', '
           ('reused_scored_pairs', '沿用原有效评分'), ('new_scored_pairs', '本轮新增有效评分'),
           ('scored_pairs', '合并有效评分'), ('na_pairs', '仍为准备NA'), ('failed_pairs', '评分失败'),
           ('compound_count', '固定成分记录'), ('receptor_count', '固定受体'), ('pair_count', '完整组合')]
+COUNTS_V2 = [('rescue_target_count', '本轮尝试受体'), ('rescued_receptors', '本轮新增准备可用'),
+             ('baseline_scored_pairs', '基线有效评分'), ('new_scored_pairs', '本轮新增有效评分'),
+             ('cumulative_rescue_scored_pairs', '累计补救有效评分'), ('scored_pairs', '合并有效评分'),
+             ('na_pairs', '仍为准备NA'), ('failed_pairs', '评分失败'),
+             ('cumulative_rescue_target_count', '最初补救范围'), ('cumulative_rescued_receptors', '累计补救准备可用'),
+             ('ready_receptors_total', '当前准备可用受体'), ('compound_count', '固定成分记录'),
+             ('reused_prepared_receptors', '复用既有准备'),
+             ('receptor_count', '固定受体'), ('pair_count', '完整组合')]
 OBSOLETE = ('automatic_docking', 'docking_trial', 'docking_coverage', 'docking_preparation', 'docking_candidates',
             'docking_review', 'docking_artifacts', 'reference_qualification', 'scoring_readiness', 'review_packet',
             'review_gate', 'reviewable_preparation', 'plan_scoring', 'plan_selection_ui', 'plan_preparation_ui',
@@ -33,7 +41,13 @@ def _download(sid, ref, files, label):
 def apply(workflow, manifest, run, result, response):
     """新协议独立分派；历史原件按本运行输入读取，状态和人工复核权限保持。"""
     sid = manifest['study_id']
-    require(run['config'].get('version') == SCIENCE_VERSION and run['study_id'] == sid,
+    version = run['config'].get('version')
+    if version == 'A06.system_rescue.2':
+        from science_modules.a06.system_rescue_display_v2 import build_view as builder
+        counts = COUNTS_V2
+    else:
+        builder, counts = build_view, COUNTS
+    require(version in (SCIENCE_VERSION, 'A06.system_rescue.2') and run['study_id'] == sid,
             '受体补救展示协议或研究不同')
     home = workflow.location(sid)
     fixed = read_json(verified_file(home, run['inputs']['system_input_ref']))
@@ -50,10 +64,10 @@ def apply(workflow, manifest, run, result, response):
     require(fingerprint([{key: row.get(key) for key in core_fields} for row in packet['pairs']]) ==
             fingerprint([{key: row.get(key) for key in core_fields} for row in result['tables']['plan_scoring_pairs']]),
             '补救展示事实包与完整评分表不同')
-    view = build_view(packet)
+    view = builder(packet)
     stats = packet['summary']
     parts = Parts()
-    parts.kpis = clean([kpi(label, stats.get(key)) for key, label in COUNTS])
+    parts.kpis = clean([kpi(label, stats.get(key)) for key, label in counts])
     parts.focus = deepcopy(response.get('focus', [])) + [focus('本轮结果须独立复核', REVIEW_NOTE, tier='should_know')]
     parts.flow_note_zh = stats['message_zh']
     parts.params = clean([param('科学协议', SCIENCE_VERSION), param('展示协议', view['schema_version']),
@@ -74,10 +88,18 @@ def apply(workflow, manifest, run, result, response):
                     if (link := _download(sid, source.get(key), files, label))]
     view['downloads'] = []
     view['figures'] = []
+    display_roles = set()
     for item in files:
         role = item.get('role') or ''
         if not (role.startswith('plot_a06_rescue_') or role in ('a06_rescue_matrix_csv', 'a06_rescue_display_view')):
             continue
+        if version == 'A06.system_rescue.2':
+            # 基线图与CSV留在完整追溯，不冒充本轮导出；逐格构象证据不受此目录过滤。
+            prefix = f"runs/A06/{run['run_id']}/rescue/display/"
+            if not item.get('path', '').startswith(prefix):
+                continue
+            require(role not in display_roles, '本轮补救展示附件同角色重复')
+            display_roles.add(role)
         link = _download(sid, item, files, item.get('name') or Path(item['path']).name)
         if link:
             view['downloads'].append(link)
