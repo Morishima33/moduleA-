@@ -74,6 +74,8 @@ class App:
             self._service_identity_error = str(error)
         self.routes = [
             ("GET", r"/api/v1/health", self.get_health),
+            ("GET", rf"/api/v1/studies/{ID}/runs/{ID}/rescue-evidence/(details|top1|source|context|execution)", self.get_rescue_evidence),
+            ("GET", rf"/api/v1/studies/{ID}/runs/{ID}/rescue-focus", self.get_rescue_focus),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/receptor-rescue", self.get_receptor_rescue),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/receptor-rescue/execute", self.post_receptor_rescue),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/receptor-rescue-v2", self.get_receptor_rescue_v2),
@@ -646,8 +648,8 @@ class App:
 
     def _json_read(self,study_id,function,*args):
         """只给指定JSON入口复用同请求证据，退出全SHA成功才交给HTTP响应。"""
-        from ..core.read_evidence import read_evidence_scope
-        with read_evidence_scope(self.settings.data_root,study_id) as evidence:
+        from ..core.rescue_read_evidence import json_evidence_scope
+        with json_evidence_scope(self.settings.data_root,study_id) as evidence:
             result=evidence.call(function,*args)
         return result
 
@@ -891,9 +893,25 @@ class App:
             raise not_found("任务")
 
     def get_file(self, req, study_id, key):
+        from .rescue_evidence import file_download
+        checked = file_download(self, req, study_id, key)
+        if checked is not None:
+            return checked
         path, name, mime = self.views.file(study_id, key)
         inline = req.query1("inline") == "1" and mime.startswith("image/")
         return ("file", path, name, mime, inline)
+
+    def get_rescue_evidence(self, req, study_id, run_id, kind):
+        """详情沿同请求证据范围；字节下载按实际读取内容独立核验。"""
+        from .rescue_evidence import read
+        if kind == 'details':
+            return self._json_read(study_id, read, self, req, study_id, run_id, kind)
+        return read(self, req, study_id, run_id, kind)
+
+    def get_rescue_focus(self, req, study_id, run_id):
+        """焦点图只显示后端返回的同批格子，不触发任何科学计算。"""
+        from .rescue_evidence import focus
+        return self._json_read(study_id, focus, self, req, study_id, run_id)
 
     # ------------------------------------------------------------------ 写入
     def post_review(self, req, study_id, module_id):

@@ -27,6 +27,7 @@ dist/
 *.sqlite-*
 *.db
 *.log
+.test-tmp/
 docs/_qa/
 .DS_Store
 Thumbs.db

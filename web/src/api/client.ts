@@ -103,6 +103,12 @@ function qs(params: Record<string, string | number | undefined | null>): string 
 
 // 各端点的薄封装；路径与契约第 3 节一致
 export const api = {
+  /** 后端登记的同源证据地址；仅发GET，不从浏览器传入路径或科学参数。 */
+  rescueEvidence:(url:string)=>request<import('./types').RescueEvidence>('GET',url.replace(/^\/api\/v1/,'')),
+  /** 用户只提交稳定对象选择，焦点格子与色标由后端返回。 */
+  rescueFocus:(url:string,inputKey:string,compounds:string[],targets:string[])=>
+    request<{run_id:string;input_key:string;heatmap:import('./types').RescueMatrix;score_range:[number|null,number|null]}>(
+      'GET',url.replace(/^\/api\/v1/,'')+qs({expected_input_key:inputKey,compounds:JSON.stringify(compounds),targets:JSON.stringify(targets)})),
   /** 明确展开读取二版入口；实际执行只按返回的显式协议选址，不改请求正文。 */
   receptorRescue:(sid:string)=>request<import('./types').ReceptorRescueInfo>('GET',`/studies/${sid}/analysis-plan/receptor-rescue-v2`),
   executeReceptorRescue:(sid:string,body:import('./types').ReceptorRescueRequest,protocol:'A06.system_rescue.1'|'A06.system_rescue.2'='A06.system_rescue.1')=>

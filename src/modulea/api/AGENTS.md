@@ -1,5 +1,30 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-11-13 补救结果的稳定对象证据与焦点筛选
+
+GET `/studies/{sid}/runs/{rid}/rescue-evidence/{kind}` 仅读取该运行登记事实，kind为
+`details|top1|source|context|execution`。必需查询为单值 `compound_id/target_id/expected_input_key`；
+下载另需 `expected_execution_sha256/expected_download_sha256`，区域执行可加单值 `region_id`。
+按稳定对象及实际execution引用匹配，不从名称或客户端序号推断。未知字段422、对象404、
+绑定改变409、原件或登记不一致503。下载返回核验后的同一份字节，SHA为返回内容的SHA；
+Top-1仅提取原始MODEL 1，不生成坐标，原始多模式文件另存下载。
+
+details返回 `schema_version:ModuleA.rescue_evidence.1/read_only/study_id/run_id/input_key`、
+`compound_id/target_id/state/score/source_zh/region_note_zh`、`regions`和`downloads`。
+区域为已登记的 `region_id/state/state_zh/score/reason_zh/selected/downloads`，不存在区域记录时
+返回空数组并明确说明未登记，不从旧评分推导区域。downloads含`label_zh/name/url/sha256/bytes`。
+来源说明含实际执行运行、原执行SHA、原构象SHA和下载Top-1 SHA，不把继承评分当本轮新增。
+
+GET `/studies/{sid}/runs/{rid}/rescue-focus`接受单值`expected_input_key/compounds/targets`，
+后两项为稳定ID数组的JSON。后端核验范围、去重并保持固定顺序，返回`run_id/input_key/heatmap/score_range`；
+空数组返回空范围，未知ID拒绝。页面只显示该响应，不自行裁切或推算科学结果。
+模块`special.system_rescue`新增`input_key/focus_url`，各格可带`evidence_url`；旧服务缺字段继续旧展示。
+这些GET不写研究、不启动任务、不改变科学状态或复核。
+
+补救结果的标准`/studies/{sid}/files/{key}`链接增加`expected_sha256`，图像可另带`inline=1`。
+本分派同样返回完整核验后的不可变字节，附件登记变化409、内容损坏503；旧无SHA查询的历史
+链接仍逐件核验当前登记字节，其他协议的原下载分派保持。
+
 ## 2026-11-11 官方归档原件补救的独立二版入口
 
 GET `/api/v1/studies/{sid}/analysis-plan/receptor-rescue-v2` 为只读资格；字段沿第一版，`schema_version` 显式返回 `A06.system_rescue.2`。如果当前第一版尚未完成，则返回该第一版原资格及原请求，schema仍为`.1`，前端继续从原执行地址提交同一请求，不能静默升级。完整第一版后，二版以其实际已验证结果为基线；本次新增、沿用和累计数量分开显示。GET不联网、不补算、不登记来源包或复核。

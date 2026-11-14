@@ -9,7 +9,7 @@ export default defineConfig({
   server: { host: 'localhost', port: 5173, strictPort: true }, // 开发服务器固定为 localhost:5173（接口已允许此来源跨源）
   build: {
     outDir: '../src/modulea/static', // 构建产物放进后端静态目录
-    emptyOutDir: true, // 每次构建先清空旧产物，避免残留文件
+    emptyOutDir: false, // 保留已打开页面仍引用的历史哈希资源；入口只指向本次构建
     chunkSizeWarningLimit: 2000, // Ant Design 体积较大，放宽体积提示阈值
     sourcemap: false, // 不生成 sourcemap，减少产物体积
   },

@@ -6,6 +6,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
+from urllib.parse import urlsplit
 
 from contracts import ContractError
 from storage import file_record, read_json, write_json
@@ -169,15 +170,17 @@ class SystemRescueDisplayV2Tests(unittest.TestCase):
         self.assertEqual(len({item['name'] for item in shown['downloads']}), 4)
         expected_current_keys = {f'run_display_v2.{i}' for i, ref in enumerate(files)
                                  if ref['path'].startswith('runs/A06/run_display_v2/rescue/display/')}
-        self.assertEqual({item['url'].rsplit('/', 1)[-1] for item in shown['downloads']}, expected_current_keys)
+        self.assertEqual({urlsplit(item['url']).path.rsplit('/', 1)[-1] for item in shown['downloads']}, expected_current_keys)
         evidence = shown['table']['cells'][0][2]['downloads']
         self.assertEqual([item['label_zh'] for item in evidence], ['本组合执行证据', 'Top-1构象'])
-        self.assertTrue(all(item['url'] in {f"/api/v1/studies/{self.packet['study_id']}/files/run_display_v2.8",
+        self.assertTrue(all(urlsplit(item['url']).path in {f"/api/v1/studies/{self.packet['study_id']}/files/run_display_v2.8",
             f"/api/v1/studies/{self.packet['study_id']}/files/run_display_v2.9"} for item in evidence))
         labels = {row['label_zh']: row['text'] for row in shown['summary_rows']}
         self.assertEqual(labels['基线有效评分'], '42')
         self.assertEqual(labels['本轮新增有效评分'], '16')
         self.assertEqual(labels['累计补救有效评分'], '32')
+        self.assertTrue(any(row['label_zh'] == '科学协议' and row['value'] == 'A06.system_rescue.2'
+                            for row in response['params']))
         self.assertEqual(response['state'], {'code': 'awaiting_review'})
         self.assertTrue(response['review']['can_review'])
         self.assertEqual((self.packet, run, result), before)

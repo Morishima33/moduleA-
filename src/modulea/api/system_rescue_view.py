@@ -6,6 +6,7 @@ from contracts import fingerprint, require
 from storage import read_json, verified_file
 from science_modules.a06.system_rescue_display import build_view, SCIENCE_VERSION, REVIEW_NOTE, STATE_ZH
 from ..presenters.base import Parts, clean, focus, kpi, param, table
+from .rescue_evidence import evidence_url, focus_matrix
 
 COUNTS = [('rescue_target_count', '本轮尝试受体'), ('rescued_receptors', '补救后准备可用'),
           ('reused_scored_pairs', '沿用原有效评分'), ('new_scored_pairs', '本轮新增有效评分'),
@@ -35,7 +36,8 @@ def _download(sid, ref, files, label):
     if row is None:
         return None
     return {'label_zh': label, 'name': row.get('name') or Path(row['path']).name,
-            'url': f"/api/v1/studies/{sid}/files/{row['key']}", 'sha256': row['sha256']}
+            'url': f"/api/v1/studies/{sid}/files/{row['key']}?expected_sha256={row['sha256']}",
+            'sha256': row['sha256'], 'bytes': row['bytes']}
 
 
 def apply(workflow, manifest, run, result, response):
@@ -70,7 +72,7 @@ def apply(workflow, manifest, run, result, response):
     parts.kpis = clean([kpi(label, stats.get(key)) for key, label in counts])
     parts.focus = deepcopy(response.get('focus', [])) + [focus('本轮结果须独立复核', REVIEW_NOTE, tier='should_know')]
     parts.flow_note_zh = stats['message_zh']
-    parts.params = clean([param('科学协议', SCIENCE_VERSION), param('展示协议', view['schema_version']),
+    parts.params = clean([param('科学协议', version), param('展示协议', view['schema_version']),
                           param('固定范围指纹', stats.get('input_key')),
                           param('原方案参数指纹', stats.get('analysis_parameter_hash'))])
     view['summary_rows'] = [{'label_zh': row['label_zh'], 'text': row['text']} for row in parts.kpis]
@@ -83,9 +85,13 @@ def apply(workflow, manifest, run, result, response):
         for line in matrix['cells']:
             for cell in line:
                 source = pairs[(cell['compound_id'], cell['target_id'])]
+                cell['evidence_url'] = evidence_url(sid, run['run_id'], source, stats['input_key'])
                 cell['downloads'] = [link for key, label in (('execution', '本组合执行证据'),
                     ('top1_pose', 'Top-1构象'), ('top1', 'Top-1构象'), ('original_pose', '原始姿势文件'))
                     if (link := _download(sid, source.get(key), files, label))]
+    view['input_key'] = stats['input_key']
+    view['focus_url'] = f"/api/v1/studies/{sid}/runs/{run['run_id']}/rescue-focus"
+    view['heatmap'] = focus_matrix(view, view['initial_focus']['compound_ids'], view['initial_focus']['target_ids'])
     view['downloads'] = []
     view['figures'] = []
     display_roles = set()
@@ -104,7 +110,7 @@ def apply(workflow, manifest, run, result, response):
         if link:
             view['downloads'].append(link)
             if role in ('plot_a06_rescue_full_png', 'plot_a06_rescue_focus_png'):
-                view['figures'].append(dict(link, image_url=link['url'] + '?inline=1', role=role))
+                view['figures'].append(dict(link, image_url=link['url'] + '&inline=1', role=role))
     parts.special['system_rescue'] = view
     # 兼容标准热图读取者；新网页用含原因和来源的独立完整矩阵，不重复挂载旧控件。
     if view['score_range'][0] is not None:

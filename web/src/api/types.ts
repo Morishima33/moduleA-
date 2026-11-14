@@ -464,11 +464,11 @@ export interface Special {
 }
 
 /** 同批受体补救展示；原值、颜色、原因与可下载证据均由后端给出。 */
-export interface RescueDownload {label_zh:string;name:string;url:string;sha256:string}
+export interface RescueDownload {label_zh:string;name:string;url:string;sha256:string;bytes?:number}
 export interface RescueCell {
   compound_id:string;target_id:string;score:number|null;score_text:string;display_score:string;
   state:string;state_zh:string;quality:string;reason_zh:string;source_kind:string;source_zh:string;
-  color:string;text_color:string;downloads:RescueDownload[];
+  color:string;text_color:string;downloads:RescueDownload[];evidence_url?:string;
 }
 export interface RescueMatrix {
   rows:{compound_id:string;name:string;name_en:string;name_zh:string;label:string}[];
@@ -476,6 +476,7 @@ export interface RescueMatrix {
   cells:RescueCell[][];
 }
 export interface SystemRescueDisplay {
+  input_key?:string;focus_url?:string;
   schema_version:'A06.system_rescue.display.1'|'A06.system_rescue.display.2';
   science_version:'A06.system_rescue.1'|'A06.system_rescue.2';read_only:true;study_id:string;run_id:string;unit:string;
   score_range:[number|null,number|null];colour_note_zh:string;scope_note_zh:string;review_note_zh:string;
@@ -483,6 +484,15 @@ export interface SystemRescueDisplay {
   initial_focus:{compound_ids:string[];target_ids:string[]};downloads:RescueDownload[];
   figures:(RescueDownload&{image_url:string;role:string})[];
   receptor_preparation:{target_id:string;symbol?:string;state:string;state_zh:string;quality?:string;reason_zh?:string}[];
+}
+
+/** 只读组合证据；区域选择和失败事实全部由后端提供。 */
+export interface RescueEvidence {
+  schema_version:'ModuleA.rescue_evidence.1';read_only:true;study_id:string;run_id:string;input_key:string;
+  compound_id:string;target_id:string;state:string;score:number|null;source_zh:string;region_note_zh:string;
+  regions:{region_id:string;state:string;state_zh:string;score:number|null;reason_zh:string;
+    selected:boolean;downloads:RescueDownload[]}[];
+  context:Record<string,unknown>;downloads:RescueDownload[];
 }
 
 /** 补救执行只提交当前来源版本和明确操作依据，不接收科学参数。 */
