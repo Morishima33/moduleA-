@@ -47,9 +47,10 @@ def main(argv=None):
     if args.action != 'inspect':
         manager = TaskManager(settings)
     if args.action == 'execute':
+        from modulea.tasks.rescue_worker_io import budget_owns_current_process
         active = manager._raw(args.task_id) if args.task_id else None
         require(active and active['state'] == 'running' and active['kind'] == 'plan_rescue_worker_io'
-                and active['study_id'] == args.study and active['pid'] == os.getppid()
+                and active['study_id'] == args.study and budget_owns_current_process(active, settings.runtime_dir)
                 and active.get('resource_owner_pid') == active['pid']
                 and json.loads(active['payload']) == {'request':body,'run_id':args.expected_run_id,'adapter_version':VERSION},
                 '科学恢复必须由原任务管理器预算worker启动，拒绝直接并发执行')

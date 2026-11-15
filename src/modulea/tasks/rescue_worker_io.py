@@ -2,9 +2,60 @@
 import json
 import os
 import subprocess
+from pathlib import Path
 
 from contracts import require
 from modulea.core.worker_io import VERSION
+
+
+def budget_owns_current_process(active, runtime_dir):
+    """核原预算位、worker出生及实际Job归属，兼容Windows虚拟环境启动中间进程。"""
+    from .process_identity import identity
+    try:
+        if not active or active.get('state') != 'running' or active.get('kind') != 'plan_rescue_worker_io':
+            return False
+        pid = active.get('pid')
+        expected = json.loads(active.get('process_identity') or 'null')
+        if not expected or active.get('resource_owner_pid') != pid or identity(pid) != expected:
+            return False
+        root = Path(runtime_dir).resolve()
+        folder = (root / 'compute_slots').resolve()
+        if not folder.is_relative_to(root):
+            return False
+        for path in folder.glob('slot_*.json'):
+            if not path.resolve().is_relative_to(folder):
+                continue
+            raw = path.read_bytes()
+            record = json.loads(raw)
+            if record.get('schema_version') != 1 or record.get('task_id') != active['task_id'] or record.get('pid') != pid:
+                continue
+            tree = record.get('tree', {})
+            if os.name == 'nt':
+                import re
+                from .process_tree import _windows
+                name = tree.get('job_name')
+                if tree.get('platform') != 'windows' or not isinstance(name, str) or not re.fullmatch(r'Local\\ModuleACompute_[0-9a-f]{32}', name):
+                    continue
+                c, w, kernel = _windows()
+                handle = kernel.OpenJobObjectW(4, False, name)  # 只读JOB_OBJECT_QUERY。
+                if not handle:
+                    continue
+                try:
+                    query = kernel.IsProcessInJob
+                    query.argtypes = [w.HANDLE, w.HANDLE, c.POINTER(w.BOOL)]
+                    query.restype = w.BOOL
+                    member = w.BOOL()
+                    owned = bool(query(kernel.GetCurrentProcess(), handle, c.byref(member)) and member.value)
+                finally:
+                    kernel.CloseHandle(handle)
+            else:
+                owned = (tree.get('platform') == 'posix' and tree.get('pgid') == pid
+                         and os.getppid() == pid and os.getpgrp() == pid and os.getpgid(pid) == pid)
+            if owned and identity(pid) == expected and path.read_bytes() == raw:
+                return True
+        return False
+    except (OSError, ValueError, TypeError, KeyError, AttributeError):
+        return False
 
 
 def run(settings, task, manager):

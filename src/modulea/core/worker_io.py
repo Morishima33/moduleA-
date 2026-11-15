@@ -27,6 +27,16 @@ class _Module:
     def __getattr__(self, name):
         return self.adapter.value(getattr(self.module, name))
 
+    @property
+    def __dict__(self):
+        """旧代码vars(module)须取得完整私有全局映射，不能看到代理内部字段。"""
+        namespace = {name: self.adapter.value(value) for name, value in vars(self.module).items()}
+        original = namespace.get('__builtins__', builtins)
+        local = dict(original if isinstance(original, dict) else vars(original))
+        local['__import__'] = self.adapter._import
+        namespace['__builtins__'] = local
+        return namespace
+
 
 class WorkerIO:
     """只调整实际文件I/O；完整原规则、参数、返回值、写锁与Workflow照用。"""
