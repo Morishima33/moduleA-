@@ -1,0 +1,31 @@
+# 科学环境与真实病例检查单独执行；必须使用隔离环境，禁止指向原机活跃工程。
+name: Isolated science checks
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  science:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - labels: '["self-hosted","Windows","X64","modulea-science-isolated"]'
+          - labels: '["self-hosted","macOS","ARM64","modulea-science-isolated"]'
+          - labels: '["self-hosted","macOS","X64","modulea-science-isolated"]'
+    runs-on: ${{ fromJSON(matrix.labels) }}
+    timeout-minutes: 45
+    env:
+      PYTHONPATH: src
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Record actual interpreter
+        run: python -c "import sys,platform; print(sys.executable,sys.version,platform.system(),platform.machine())"
+      - name: Full shell regression
+        run: python -m unittest discover -s tests/modulea -v
+      - name: Registered result and figure acceptance
+        run: python -m unittest tests.modulea.test_acceptance_bundle tests.modulea.test_system_rescue_display tests.modulea.test_system_rescue_display_v2 -v

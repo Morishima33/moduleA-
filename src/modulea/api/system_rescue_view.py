@@ -91,6 +91,7 @@ def apply(workflow, manifest, run, result, response):
                     if (link := _download(sid, source.get(key), files, label))]
     view['input_key'] = stats['input_key']
     view['focus_url'] = f"/api/v1/studies/{sid}/runs/{run['run_id']}/rescue-focus"
+    view['acceptance_url'] = f"/api/v1/studies/{sid}/runs/{run['run_id']}/acceptance"
     view['heatmap'] = focus_matrix(view, view['initial_focus']['compound_ids'], view['initial_focus']['target_ids'])
     view['downloads'] = []
     view['figures'] = []

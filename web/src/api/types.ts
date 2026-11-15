@@ -476,7 +476,7 @@ export interface RescueMatrix {
   cells:RescueCell[][];
 }
 export interface SystemRescueDisplay {
-  input_key?:string;focus_url?:string;
+  input_key?:string;focus_url?:string;acceptance_url?:string;
   schema_version:'A06.system_rescue.display.1'|'A06.system_rescue.display.2';
   science_version:'A06.system_rescue.1'|'A06.system_rescue.2';read_only:true;study_id:string;run_id:string;unit:string;
   score_range:[number|null,number|null];colour_note_zh:string;scope_note_zh:string;review_note_zh:string;
@@ -493,6 +493,22 @@ export interface RescueEvidence {
   regions:{region_id:string;state:string;state_zh:string;score:number|null;reason_zh:string;
     selected:boolean;downloads:RescueDownload[]}[];
   context:Record<string,unknown>;downloads:RescueDownload[];
+}
+
+/** 准备、组合和区域分别计数；未知总量保持null，不由前端补算。 */
+export interface ScientificProgress {
+  supported:boolean;available:boolean;message_zh:string;run_id?:string;updated_at?:string;
+  current_object_zh?:string;estimate_seconds?:number|null;estimate_note_zh?:string;region_total_note_zh?:string;
+  preparation?:ScientificCounts;pairs?:ScientificCounts;regions?:ScientificCounts;
+}
+export interface ScientificCounts {
+  total:number|null;completed:number;reused:number;new:number;succeeded:number;failed:number;pending:number|null;na?:number;
+}
+
+export interface AcceptanceBundle {
+  schema_version:'ModuleA.acceptance_bundle.1';study_id:string;run_id:string;input_key:string;
+  enabled:boolean;blockers_zh:string[];translation_missing_ids:string[];download_url:string;note_zh:string;
+  files:{path:string;sha256:string;bytes:number}[];
 }
 
 /** 补救执行只提交当前来源版本和明确操作依据，不接收科学参数。 */

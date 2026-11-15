@@ -74,6 +74,9 @@ class App:
             self._service_identity_error = str(error)
         self.routes = [
             ("GET", r"/api/v1/health", self.get_health),
+            ("GET", rf"/api/v1/studies/{ID}/runs/{ID}/acceptance", self.get_acceptance),
+            ("GET", rf"/api/v1/studies/{ID}/runs/{ID}/acceptance\.zip", self.get_acceptance_zip),
+            ("GET", rf"/api/v1/tasks/{ID}/scientific-progress", self.get_scientific_progress),
             ("GET", rf"/api/v1/studies/{ID}/runs/{ID}/rescue-evidence/(details|top1|source|context|execution)", self.get_rescue_evidence),
             ("GET", rf"/api/v1/studies/{ID}/runs/{ID}/rescue-focus", self.get_rescue_focus),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/receptor-rescue", self.get_receptor_rescue),
@@ -886,6 +889,11 @@ class App:
             raise not_found("任务")
         return task
 
+    def get_scientific_progress(self, req, task_id):
+        """按本任务原请求读取已登记科学进度，不改任务或研究状态。"""
+        from .scientific_progress import info
+        return info(self,req,task_id)
+
     def get_task_log(self, req, task_id):
         try:
             return self.tasks.log(task_id, req.query_int("offset", 0))
@@ -912,6 +920,16 @@ class App:
         """焦点图只显示后端返回的同批格子，不触发任何科学计算。"""
         from .rescue_evidence import focus
         return self._json_read(study_id, focus, self, req, study_id, run_id)
+
+    def get_acceptance(self, req, study_id, run_id):
+        """验收资料仅核对同批登记原件齐备性，不补图或重算。"""
+        from .acceptance_bundle import info
+        return info(self,req,study_id,run_id)
+
+    def get_acceptance_zip(self, req, study_id, run_id):
+        """只读整理既有原件和构象，下载发送同一份已核验字节。"""
+        from .acceptance_bundle import download
+        return download(self,req,study_id,run_id)
 
     # ------------------------------------------------------------------ 写入
     def post_review(self, req, study_id, module_id):
@@ -1611,7 +1629,8 @@ def make_handler(app: App):
                 if isinstance(result, tuple) and result and result[0] == "verified_download":
                     _, data, name, mime, inline = result
                     disposition = ("inline" if inline else "attachment") + "; filename*=UTF-8''" + quote(name, safe="")
-                    return self._send(200, data, mime, FILE_CSP, {"Content-Disposition": disposition})
+                    return self._send(200, data, mime, FILE_CSP, {"Content-Disposition": disposition,
+                        "X-Content-SHA256": hashlib.sha256(data).hexdigest()})
                 if isinstance(result, tuple) and result and result[0] == "file":
                     _, path, name, mime, inline = result
                     disposition = ("inline" if inline else "attachment") + "; filename*=UTF-8''" + quote(name, safe="")

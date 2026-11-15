@@ -1,5 +1,27 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-11-13 运行资料与平台管理
+
+GET `/studies/{sid}/runs/{rid}/acceptance`核对已登记补救矩阵、同次尝试完整/焦点PNG/SVG、CSV、
+展示JSON与本批原分数、对象及实际名称，返回`enabled/blockers_zh/translation_missing_ids/files/download_url`。
+缺译、缺本轮附件或不一致不得作为最终交付；GET不补图。PNG检查登记SHA、尺寸和各块CRC；
+SVG与同批纯展示重建字节比较，CSV和展示JSON逐格核对。
+GET同路径`acceptance.zip?expected_input_key=...`只整理已有结果、来源、参数、失败证据、
+已登记原始构象与MODEL 1原字节、来源说明及成员指纹目录；缺译/缺附件409、不一致503。
+不生成Word、重算或新增研究文件。ZIP内目录清单列出除自身外每个成员的实际长度与SHA；
+所有`verified_download`响应新增`X-Content-SHA256`，值为实际HTTP内容字节SHA。
+
+GET `/tasks/{task_id}/scientific-progress`只读该任务原请求绑定的补救运行及登记检查点。
+返回`supported/available/message_zh`；可用时含`run_id/updated_at/current_object_zh`和
+`preparation/pairs/regions`三个分别计数的对象。每组字段为`total/completed/reused/new/succeeded/failed/pending`，
+区域总数尚未固定时为null并写明原因；计数只取完整登记终态，未登记残件不计。组合沿用原选择规则，
+区域成功数不等于组合成功数。`estimate_seconds:null/estimate_note_zh`明确未有可靠耗时样本，
+不以步骤百分比冒充整批成功率。登记或原件损坏503；任务不属于补救分支时supported=false。
+GET不启动、取消、重试或生成研究记录。
+
+共用`modulea.command/modulea.cmd`使用原health、token保护的stop接口及实例签名；
+新平台工具配置仅用于显式`A06.platform_execution.1`，不升级或改写旧Windows批次。
+
 ## 2026-11-13 补救结果的稳定对象证据与焦点筛选
 
 GET `/studies/{sid}/runs/{rid}/rescue-evidence/{kind}` 仅读取该运行登记事实，kind为

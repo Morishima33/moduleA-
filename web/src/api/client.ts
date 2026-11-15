@@ -103,6 +103,7 @@ function qs(params: Record<string, string | number | undefined | null>): string 
 
 // 各端点的薄封装；路径与契约第 3 节一致
 export const api = {
+  acceptanceBundle:(url:string)=>request<import('./types').AcceptanceBundle>('GET',url.replace(/^\/api\/v1/,'')),
   /** 后端登记的同源证据地址；仅发GET，不从浏览器传入路径或科学参数。 */
   rescueEvidence:(url:string)=>request<import('./types').RescueEvidence>('GET',url.replace(/^\/api\/v1/,'')),
   /** 用户只提交稳定对象选择，焦点格子与色标由后端返回。 */
@@ -290,6 +291,7 @@ export const api = {
   tasks: (p: { study?: string; active?: boolean }) => request<{ items: Task[] }>('GET', `/tasks${qs({ study: p.study, active: p.active ? 1 : undefined })}`),
   /** 任务详情 */
   task: (tid: string) => request<Task>('GET', `/tasks/${tid}`),
+  taskScientificProgress:(tid:string)=>request<import('./types').ScientificProgress>('GET',`/tasks/${tid}/scientific-progress`),
   /** 增量日志 */
   taskLog: (tid: string, offset: number) => request<{ offset: number; next_offset: number; text: string }>('GET', `/tasks/${tid}/log${qs({ offset })}`),
   /** 取消任务 */

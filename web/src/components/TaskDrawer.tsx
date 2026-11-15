@@ -5,6 +5,7 @@ import { api, errorText } from '../api/client';
 import type { Task } from '../api/types';
 import { fmtTime } from '../lib/format';
 import { taskColor } from '../lib/theme';
+import TaskScientificProgress from './TaskScientificProgress';
 
 // 进行中的任务状态
 const ACTIVE = new Set(['queued', 'running']);
@@ -122,6 +123,7 @@ export default function TaskDrawer({ open, focusTaskId, onClose, studyId, onTask
             <TaskCard
               key={t.task_id}
               task={t}
+              observe={open}
               showLog={logTask === t.task_id}
               onToggleLog={() => setLogTask(logTask === t.task_id ? undefined : t.task_id)}
               onCancel={() => cancel(t)}
@@ -135,7 +137,7 @@ export default function TaskDrawer({ open, focusTaskId, onClose, studyId, onTask
 }
 
 /** 单个任务卡片：状态、类型、时间、说明/错误、进度与操作 */
-function TaskCard({ task, showLog, onToggleLog, onCancel, onRetry }: { task: Task; showLog: boolean; onToggleLog: () => void; onCancel: () => void; onRetry: () => void }) {
+function TaskCard({ task, showLog, observe, onToggleLog, onCancel, onRetry }: { task: Task; showLog: boolean; observe:boolean; onToggleLog: () => void; onCancel: () => void; onRetry: () => void }) {
   const color = taskColor(task.state); // 状态配色
   const active = ACTIVE.has(task.state); // 是否进行中
   const canRetry = ['failed', 'cancelled', 'interrupted'].includes(task.state); // 失败/取消/中断可重试
@@ -163,6 +165,8 @@ function TaskCard({ task, showLog, onToggleLog, onCancel, onRetry }: { task: Tas
         </div>
       )}
       {/* 说明与错误：失败原因如实显示 */}
+      {observe&&(task.kind==='plan_system_receptor_rescue'||task.kind==='plan_system_receptor_rescue_v2')&&
+        <TaskScientificProgress taskId={task.task_id} active={active}/>}
       {task.message_zh && <div className="small">{task.message_zh}</div>}
       {task.error_zh && <Alert type="error" showIcon message="失败原因" description={<span style={{ overflowWrap: 'anywhere' }}>{task.error_zh}</span>} />}
       {/* 操作按钮 */}

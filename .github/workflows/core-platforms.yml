@@ -1,0 +1,66 @@
+# 默认只使用明确标记的隔离自托管runner，避免私库未经确认产生托管计费。
+name: Windows and macOS core
+on:
+  push:
+    branches: [development]
+  pull_request:
+    branches: [development]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: core-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  core:
+    name: Core ${{ matrix.system }} ${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - system: Windows
+            arch: X64
+            hosted: windows-2022
+            isolated: '["self-hosted","Windows","X64","modulea-isolated"]'
+          - system: macOS
+            arch: ARM64
+            hosted: macos-15
+            isolated: '["self-hosted","macOS","ARM64","modulea-isolated"]'
+          - system: macOS
+            arch: X64
+            hosted: macos-15-intel
+            isolated: '["self-hosted","macOS","X64","modulea-isolated"]'
+    runs-on: ${{ vars.MODULEA_CI_RUNNER_MODE == 'hosted' && matrix.hosted || fromJSON(matrix.isolated) }}
+    timeout-minutes: 20
+    env:
+      PYTHONPATH: src
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Verify actual platform
+        run: python -c "import platform; print(platform.system(), platform.machine())"
+      - name: Core checks with explicit skips
+        run: python tools/run_core_checks.py
+      - name: Frontend locked install
+        working-directory: web
+        run: npm ci --no-audit --no-fund
+      - name: Frontend types
+        working-directory: web
+        run: npm run typecheck
+      - name: Frontend read contracts
+        working-directory: web
+        run: node --test tests/client-read.test.mjs
+      - name: Frontend production build
+        working-directory: web
+        run: npm run build

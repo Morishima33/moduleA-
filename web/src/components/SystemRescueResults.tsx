@@ -5,6 +5,7 @@ import { api } from '../api/client';
 import type { RescueCell, RescueEvidence, RescueMatrix, SystemRescueDisplay } from '../api/types';
 import { HEAT_GRADIENT } from '../lib/theme';
 import { SectionHead } from './common';
+import AcceptanceBundle from './AcceptanceBundle';
 
 /** 直接排版后端返回的行列；不在页面裁切或推算科学结果。 */
 function Matrix({ matrix, label, onPick }: {
@@ -76,6 +77,7 @@ export default function SystemRescueResults({data}:{data:SystemRescueDisplay}) {
   return <section className="card" style={{minWidth:0}}>
     <SectionHead title="受体补救与完整评分" extra="点击格子核对原值、来源与证据"/>
     <Alert type="info" showIcon message={data.review_note_zh} description={data.scope_note_zh}/>
+    {data.acceptance_url&&<AcceptanceBundle key={data.run_id} url={data.acceptance_url}/>}
     <p className="small muted">{data.colour_note_zh}</p>
     {data.downloads.length>0 && <Space wrap style={{marginBottom:14}}>{data.downloads.map(file=><Button key={file.url} size="small" href={file.url}>{file.label_zh}</Button>)}</Space>}
 
