@@ -1,5 +1,14 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-11-15 原二版的显式worker I/O适配
+
+`plan_rescue_worker_io`为独立重任务，沿用原TaskManager、同研究单任务、计算位、日志与进程树取消。
+只由本机管理入口明确排队，不添加GET自动恢复或浏览器工具路径字段。
+私有payload严格为`{request:原七字段,run_id,adapter_version:ModuleA.science_worker_io.1}`。
+科学子进程必须匹配活动任务ID、父worker PID、资源位及原payload；直接execute拒绝。
+inspect完整只读，resume只排队；逐对象和发表前核原科学绑定及独立适配源码快照。
+适配登记追加`worker_io_adaptations`，不改旧run/config/原件/评分/人工reviews；旧二版入口保持原行为。
+
 ## 2026-11-13 运行资料与平台管理
 
 GET `/studies/{sid}/runs/{rid}/acceptance`核对已登记补救矩阵、同次尝试完整/焦点PNG/SVG、CSV、
