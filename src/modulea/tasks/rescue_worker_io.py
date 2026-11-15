@@ -60,6 +60,11 @@ def budget_owns_current_process(active, runtime_dir):
 
 def run(settings, task, manager):
     """只有当前预算worker可启动隔离科学子进程，服务器配置决定工具和解释器。"""
+    # 科学-I子进程忽略PYTHONUTF8环境变量；两端显式UTF-8保留真实进度与错误。
+    import sys
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, 'reconfigure'):
+            stream.reconfigure(encoding='utf-8', errors='backslashreplace')
     value = json.loads(task['payload'])
     require(set(value) == {'request','run_id','adapter_version'} and value['adapter_version'] == VERSION,
             'I/O恢复任务字段或适配版本不同')
@@ -71,7 +76,7 @@ def run(settings, task, manager):
     folder.mkdir(parents=True,exist_ok=False)
     request, output = folder/'request.json',folder/'result.json'
     request.write_text(json.dumps(value['request'],ensure_ascii=False),encoding='utf-8')
-    command = [settings.science_python,'-I','-S','-B',str(settings.project_root/'tools/run_rescue_worker_io.py'),
+    command = [settings.science_python,'-I','-S','-B','-X','utf8',str(settings.project_root/'tools/run_rescue_worker_io.py'),
         'execute','--authorize-adapter','--task-id',task['task_id'],'--runtime-dir',str(settings.runtime_dir),
         '--request-file',str(request),'--result-file',str(output),'--data-root',str(settings.data_root),
         '--tools-root',str(settings.science_tools_root),'--repair-packages',str(settings.science_repair_packages),
