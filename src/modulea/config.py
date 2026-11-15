@@ -37,6 +37,9 @@ class Settings:
     science_rscript: Path | None = None  # 新字段追加末尾，保留旧位置参数构造兼容
     compute_slots: int = 1  # 同runtime重任务计算位，不改变各科学命令线程/参数
     compute_min_free_bytes: int = 16 * 1024 * 1024  # SQLite/日志基础运行余量，非科学产物估算
+    tools_profile: Path | None = None  # 新平台显式工具与版本绑定，不升级旧Windows科学协议
+    font_regular: Path | None = None  # 新平台导出字体；历史图件及冻结绘图实现保持
+    font_bold: Path | None = None
 
     def validate_resources(self):
         """服务器预算须为合法整数；不接受布尔值或静默截断小数。"""
@@ -52,7 +55,7 @@ class Settings:
 
 def _read_local_toml(project_root: Path) -> dict:
     """读取 config/local.toml；文件不存在时返回空配置。"""
-    path = project_root / "config" / "local.toml"
+    path = Path(os.environ.get('MODULEA_CONFIG', project_root / 'config' / 'local.toml')).expanduser()
     if not path.exists():
         return {}
     with path.open("rb") as stream:
@@ -68,6 +71,9 @@ def load_settings(**overrides) -> Settings:
     resources = local.get('resources', {})
     settings.compute_slots = resources.get('compute_slots', settings.compute_slots)
     settings.compute_min_free_bytes = resources.get('compute_min_free_bytes', settings.compute_min_free_bytes)
+    for key in ('tools_profile', 'font_regular', 'font_bold'):
+        if paths.get(key):
+            setattr(settings, key, resolve_local_path(paths[key], settings.project_root))
 
     # local.toml 中的本机路径
     if paths.get("data_root"):
@@ -103,6 +109,10 @@ def load_settings(**overrides) -> Settings:
         settings.science_repair_packages = Path(os.environ["MODULEA_SCIENCE_REPAIR_PACKAGES"]).expanduser()
     if os.environ.get("MODULEA_ALLOWED_ORIGINS"):
         settings.allowed_origins = [o.strip() for o in os.environ["MODULEA_ALLOWED_ORIGINS"].split(",") if o.strip()]
+    for name, key in (('MODULEA_TOOLS_PROFILE', 'tools_profile'), ('MODULEA_FONT_REGULAR', 'font_regular'),
+                      ('MODULEA_FONT_BOLD', 'font_bold')):
+        if os.environ.get(name):
+            setattr(settings, key, resolve_local_path(os.environ[name], settings.project_root))
 
     # 命令行参数（值为 None 表示未指定）
     for key, value in overrides.items():
@@ -114,7 +124,20 @@ def load_settings(**overrides) -> Settings:
             value = [o.strip() for o in value.split(",") if o.strip()]
         setattr(settings, key, value)
 
-    settings.data_root = settings.data_root.resolve()
-    settings.runtime_dir = settings.runtime_dir.resolve()
+    for key in ('data_root', 'runtime_dir', 'static_dir', 'science_tools_root', 'science_repair_packages',
+                'science_rscript', 'tools_profile', 'font_regular', 'font_bold'):
+        value = getattr(settings, key)
+        if value is not None:
+            setattr(settings, key, resolve_local_path(value, settings.project_root))
     settings.validate_resources()
     return settings
+
+
+def resolve_local_path(value, project_root):
+    """本机配置相对代码根解析；跨系统盘符明确报错，不改写历史已归档路径。"""
+    from pathlib import PureWindowsPath
+    text = str(value)
+    if os.name != 'nt' and (PureWindowsPath(text).drive or '\\' in text):
+        raise ValueError('本机配置含Windows路径，请在当前平台重新配置：' + text)
+    path = Path(value).expanduser()
+    return (path if path.is_absolute() else Path(project_root) / path).resolve()

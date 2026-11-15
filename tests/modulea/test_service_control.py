@@ -25,7 +25,7 @@ class ServiceControlTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        self.root = Path(self.tmp.name)
+        self.root = Path(self.tmp.name).resolve()
         self.static = self.root/'static'
         for name, content in {'src/modulea/entry.py':'# shell', 'src/science_modules/model.py':'# model',
                               'src/legacy.py':'# legacy', 'static/index.html':'<script src="app.js"></script><link rel="stylesheet" href="app.css">',

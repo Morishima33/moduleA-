@@ -131,6 +131,8 @@ class TaskManager:
                 db.execute("ALTER TABLE tasks ADD COLUMN payload TEXT")
             if 'resource_owner_pid' not in columns:
                 db.execute('ALTER TABLE tasks ADD COLUMN resource_owner_pid INTEGER')
+            if 'process_identity' not in columns:
+                db.execute('ALTER TABLE tasks ADD COLUMN process_identity TEXT')
         self.reconcile()
 
     @contextmanager
@@ -189,6 +191,7 @@ class TaskManager:
         data.pop("payload", None)  # 私有上传输入不进入接口或日志。
         data.pop("pid", None)
         data.pop('resource_owner_pid',None)
+        data.pop('process_identity',None)
         data.pop("log_path", None)
         return data
 
@@ -200,18 +203,21 @@ class TaskManager:
 
     def claim(self, task_id: str, pid: int) -> bool:
         """由子进程原子认领排队任务；取消或已认领的任务不能重新开始。"""
+        from .process_identity import identity
+        process_identity=json.dumps(identity(pid))
         with self._connect() as db:
             changed = db.execute(
-                "UPDATE tasks SET state='running', pid=?, started_at=? WHERE task_id=? AND state='queued' AND (resource_owner_pid IS NULL OR resource_owner_pid=?)",
-                (pid, _now(), task_id,pid),
+                "UPDATE tasks SET state='running', pid=?, started_at=?, process_identity=? WHERE task_id=? AND state='queued' AND (resource_owner_pid IS NULL OR resource_owner_pid=?)",
+                (pid, _now(), process_identity, task_id,pid),
             ).rowcount
         return changed == 1
 
     def claim_resources(self,task_id,pid):
         """原子登记实际等待worker，兼容Windows虚拟环境解释器启动器与内部PID不同。"""
+        from .process_identity import identity
         with self._connect() as db:
-            return db.execute("UPDATE tasks SET pid=?,resource_owner_pid=? WHERE task_id=? AND state='queued' AND resource_owner_pid IS NULL",
-                (pid,pid,task_id)).rowcount==1
+            return db.execute("UPDATE tasks SET pid=?,resource_owner_pid=?,process_identity=? WHERE task_id=? AND state='queued' AND resource_owner_pid IS NULL",
+                (pid,pid,json.dumps(identity(pid)),task_id)).rowcount==1
 
     def finish(self, task_id: str, state: str, **fields) -> None:
         """终态只覆盖运行中任务，保留并发取消或中断的决定。"""
@@ -280,6 +286,9 @@ class TaskManager:
             env["MODULEA_SCIENCE_TOOLS_ROOT"] = str(self.settings.science_tools_root)
         if self.settings.science_repair_packages:
             env["MODULEA_SCIENCE_REPAIR_PACKAGES"] = str(self.settings.science_repair_packages)
+        for key,name in (('tools_profile','MODULEA_TOOLS_PROFILE'),('font_regular','MODULEA_FONT_REGULAR'),
+                         ('font_bold','MODULEA_FONT_BOLD')):
+            if getattr(self.settings,key,None):env[name]=str(getattr(self.settings,key))
         command = [self.settings.science_python, "-m", "modulea", "--runtime-dir", str(self.settings.runtime_dir), "task-run", task_id]
         flags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
         with open(log_path, "ab") as stream:
@@ -288,8 +297,10 @@ class TaskManager:
         # 保持已启动进程的句柄直到退出，仅等待回收；不改任务状态、不监控或重启任务。
         threading.Thread(target=process.wait,daemon=True,name='modulea-reap-'+task_id).start()
         # 启动器PID只在worker尚未认领时登记，不能覆盖真实worker/取消/运行态。
+        from .process_identity import identity
         with self._connect() as db:
-            db.execute("UPDATE tasks SET pid=? WHERE task_id=? AND state='queued' AND resource_owner_pid IS NULL",(process.pid,task_id))
+            db.execute("UPDATE tasks SET pid=?,process_identity=? WHERE task_id=? AND state='queued' AND resource_owner_pid IS NULL",
+                       (process.pid,json.dumps(identity(process.pid)),task_id))
 
     def cancel(self, task_id: str) -> dict:
         task = self._raw(task_id)
@@ -298,13 +309,8 @@ class TaskManager:
         if task["state"] not in ACTIVE:
             return self.get(task_id)
         if _pid_alive(task["pid"]):
-            try:
-                if os.name == "nt":
-                    subprocess.run(["taskkill", "/PID", str(task["pid"]), "/T", "/F"], capture_output=True)
-                else:
-                    os.killpg(task["pid"], signal.SIGTERM)
-            except OSError:
-                pass
+            from .process_identity import terminate_owned
+            terminate_owned(task['pid'],json.loads(task.get('process_identity') or 'null'))
         self.update(task_id, state="cancelled", finished_at=_now(), error_zh="用户取消；本次未完整提交的运行不可复用，原文件保留")
         if task["kind"] in ("a06_auto_run", "a06_auto_start", "a06_resume"):
             from ..core.kernel import Kernel

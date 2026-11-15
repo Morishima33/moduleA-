@@ -56,10 +56,8 @@ def tree_alive(record):
     if record.get('platform')=='posix' and os.name!='nt':
         pgid=record.get('pgid')
         if type(pgid) is not int or pgid<=0:raise ValueError('资源进程组记录无效')
-        try:os.killpg(pgid,0)
-        except ProcessLookupError:return False
-        except PermissionError:return True
-        return True
+        from .process_identity import group_members
+        return bool(group_members(pgid))
     if record.get('platform')!='windows' or os.name!='nt':raise ValueError('无法核查原计算进程树的平台')
     name=record.get('job_name')
     import re

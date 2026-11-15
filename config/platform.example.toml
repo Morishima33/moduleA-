@@ -1,0 +1,14 @@
+# 公开示例：复制到不提交的config/local.toml，替换成本机绝对路径。
+# Windows TOML可用单引号保留反斜杠，或统一使用正斜杠。
+[paths]
+data_root = '/absolute/path/研究资料'
+runtime_dir = '/absolute/path/Module A runtime'
+science_python = '/absolute/path/science-env/bin/python3'
+# 以下是后续本机科学适配预检配置，不能据此声称执行入口已支持。
+# tools_profile = '/absolute/path/platform-tools.json'
+# font_regular = '/absolute/path/chinese-regular.ttf'
+# font_bold = '/absolute/path/chinese-bold.ttf'
+
+[resources]
+compute_slots = 1
+compute_min_free_bytes = 16777216
