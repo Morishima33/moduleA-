@@ -145,6 +145,9 @@ def _plan_decisions(workflow, manifest, all_files):
             ('report_revision_requests','analysis_plan_report_revision_requests','A07.plan_report.2'),
             ('report_revision_receipts','analysis_plan_report_revision_receipts','A07.plan_report.2'),
             ('report_revision_failures','analysis_plan_report_revision_failures','A07.plan_report.2'),
+            ('report_rescue_requests','analysis_plan_report_rescue_requests','A07.plan_report.3'),
+            ('report_rescue_receipts','analysis_plan_report_rescue_receipts','A07.plan_report.3'),
+            ('report_rescue_failures','analysis_plan_report_rescue_failures','A07.plan_report.3'),
             ('report_archive_repair_requests','analysis_plan_report_archive_repair_requests','ModuleA.report_archive_repair.1'),
             ('report_archive_repairs','analysis_plan_report_archive_repairs','ModuleA.report_archive_repair.1'),
             ('display_revision_requests','analysis_plan_display_revision_requests','ModuleA.display_revision.1'),
@@ -311,16 +314,18 @@ def _plan_decisions(workflow, manifest, all_files):
                 else:
                     require(value['state']=='failed' and value['run_id'] is None and value['error_type'] and value['error_zh'],
                             '系统失败诊断不能伪造科学成功结果')
-            if key in ('report_requests','report_revision_requests'):
+            if key in ('report_requests','report_revision_requests','report_rescue_requests'):
                 require(value['request_hash']==fingerprint(value['request']) and value['request']['confirmed'] is True
                         and value['input_hash']==fingerprint(value['binding']),'报告明确请求与实际上游指纹不一致')
-            if key in ('report_receipts','report_revision_receipts'):
-                from . import plan_reports, plan_reports_v2
-                reader=plan_reports_v2 if key=='report_revision_receipts' else plan_reports
+            if key in ('report_receipts','report_revision_receipts','report_rescue_receipts'):
+                from . import plan_reports, plan_reports_v2, plan_reports_v3
+                reader={'report_receipts':plan_reports,'report_revision_receipts':plan_reports_v2,
+                        'report_rescue_receipts':plan_reports_v3}[key]
                 value=reader.read_receipt(workflow,manifest,reference)
-            if key in ('report_failures','report_revision_failures'):
-                report_requests=('analysis_plan_report_revision_requests' if key=='report_revision_failures'
-                                 else 'analysis_plan_report_requests')
+            if key in ('report_failures','report_revision_failures','report_rescue_failures'):
+                report_requests={'report_failures':'analysis_plan_report_requests',
+                    'report_revision_failures':'analysis_plan_report_revision_requests',
+                    'report_rescue_failures':'analysis_plan_report_rescue_requests'}[key]
                 require(value.get('authority_kind')=='execution_failure' and value.get('human_review_written') is False
                         and value['request_file'] in manifest.get(report_requests,[]),'报告失败诊断来源或类型错误')
                 if value.get('run_id'):

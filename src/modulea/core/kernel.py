@@ -29,7 +29,7 @@ _ensure_legacy_path()
 from contracts import MODULES, ContractError  # noqa: E402
 from storage import read_json, verified_file  # noqa: E402
 from workflow import Workflow  # noqa: E402
-from .system_receptor_rescue_v2 import SystemReceptorRescueV2Workflow as DockingWorkflow  # noqa: E402
+from .report_rescue_workflow import ReportRescueWorkflow as DockingWorkflow  # noqa: E402
 from .read_archive import ReadResultMixin  # noqa: E402
 
 __all__ = ["Kernel", "ContractError", "MODULES", "read_json", "verified_file", "full_workflow"]
@@ -113,6 +113,7 @@ def full_workflow(data_root: Path) -> Workflow:
     from report_dispatch import validator as report_validator
     from science_modules.a07.plan_report_flow import validator as plan_report_validator
     from science_modules.a07.plan_report_flow_v2 import validator as revised_report_validator
+    from science_modules.a07.plan_report_flow_v3 import validator as rescue_report_validator
     from science_modules.a06.quality_flow import validator as quality_validator
     from science_modules.a06.plan_preparation import validator as plan_preparation_validator
     from science_modules.a06.plan_preparation_v2 import validator as plan_preparation_v2_validator
@@ -146,7 +147,7 @@ def full_workflow(data_root: Path) -> Workflow:
         "A05": plan_enrichment_utf8_validator(root,plan_enrichment_validator(root, enrichment_validator(root))),
         "A06_PREP": incremental_qualification_validator(root,incremental_preparation_validator(root,system_qualification_validator(root,system_preparation_validator(root,reviewable_preparation_validator(root, reference_qualification_v2_validator(root, reference_preparation_validator(root, plan_pocket_validator(root, plan_preparation_v2_validator(root, plan_preparation_validator(root, coverage_validator(root, quality_validator(root, docking_validator(root, prep_validator(root)))))))))))))),
         "A06": incremental_scoring_validator(root,system_scoring_validator(root,plan_scoring_validator(root, reference_validator(root, rescue_validator(root, automatic_validator(root, trial_handoff_validator(root, formal_validator(root)))))))),
-        "A07": revised_report_validator(root, plan_report_validator(root, report_validator(root))),
+        "A07": rescue_report_validator(root, revised_report_validator(root, plan_report_validator(root, report_validator(root)))),
     }
     validators["A06_PREP"] = path_qualification_validator(root, validators["A06_PREP"])
     validators["A06"] = path_scoring_validator(root, validators["A06"])

@@ -1,13 +1,18 @@
 """报告网页分派：新批显式展示二版，旧请求和全部历史仍按原协议读取。"""
 from copy import deepcopy
 from contracts import require
-from . import plan_reports as original, plan_reports_v2 as revised
+from . import plan_reports as original, plan_reports_v2 as revised, plan_reports_v3 as rescue
 
-PROTOCOLS = (original, revised)
+PROTOCOLS = (original, revised, rescue)
 
 
 def current(workflow, manifest):
     """仅本批第三版结构或已发表二版报告使用二版入口，不静默升级旧批。"""
+    for module in ('A06', 'A07'):
+        rid = manifest['current'].get(module)
+        if rid and workflow.run(manifest, rid)['config'].get('version') in (
+                'A06.system_rescue.1', 'A06.system_rescue.2', rescue.VERSION):
+            return rescue
     for module in ('A06_PREP', 'A07'):
         rid = manifest['current'].get(module)
         if rid and workflow.run(manifest, rid)['config'].get('version') in (
@@ -46,13 +51,15 @@ def queued_payload(workflow, sid, body):
     """HTTP预检后固定后台协议；客户端不接收或提供协议覆盖字段。"""
     model = current(workflow, workflow.load(sid))
     model.validate_request(workflow, sid, body)
-    return {'report_protocol': revised.VERSION, 'request': deepcopy(body)} if model is revised else body
+    return body if model is original else {'report_protocol': model.VERSION, 'request': deepcopy(body)}
 
 
 def publish_queued(workflow, sid, payload):
     """旧任务原样执行；新任务保持排队时协议并由生产发布器重核全部输入。"""
     if isinstance(payload, dict) and 'report_protocol' in payload:
-        require(set(payload) == {'report_protocol', 'request'} and payload['report_protocol'] == revised.VERSION,
+        require(set(payload) == {'report_protocol', 'request'} and payload['report_protocol'] in (revised.VERSION, rescue.VERSION),
                 '报告后台任务协议或请求字段不同')
+        if payload['report_protocol'] == rescue.VERSION:
+            return workflow.publish_analysis_plan_rescue_report(sid, payload['request'])
         return workflow.publish_analysis_plan_report_revision(sid, payload['request'])
     return workflow.publish_analysis_plan_report(sid, payload)

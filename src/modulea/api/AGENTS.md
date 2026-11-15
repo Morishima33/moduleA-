@@ -843,6 +843,8 @@ GET `/api/v1/studies/{sid}/analysis-plan/creation` 返回本协议建档的初�
 
 报告GET/generate/files沿原地址兼容两版：当前第三版结构或已有A07.plan_report.2选择二版生成资格，history合并两版原回执，files各按原协议逐件核验。浏览器仍只提交原严格报告字段；服务端给新plan_report队列payload绑定{report_protocol:A07.plan_report.2,request:原请求}，worker按该协议消费，排队后不改版。旧扁平任务payload仍一版；无GET自动生成或历史报告静默升级。
 
+2026-11-16 补救报告三版：当前A06.system_rescue.1/.2或已有A07.plan_report.3选择三版；history/files兼容三协议，旧队列不升级。新明确队列固定report_protocol=A07.plan_report.3；浏览器仍只提交原严格字段，不接收客户端评分、路径或科学协议覆盖。三版状态只读核已登记request/payload SHA、完整当前科学binding、父链、真实系统回执、图件/实现SHA与运行指纹，禁止GET创建完整科学工厂；begin/发布/生产validator仍严格重建科学事实。未成功区域、原分与新增及探索限制均按本批原包保留，不改变阈值或代签复核。详见docs/A07补救报告三版_20261116.md；真实非空验收与合成测试分别记录，未经用户要求不生成真实研究Word。
+
 系统评分热图receptors可选display_name来自本批固定受体symbol；name仍为原稳定编号，与cells.receptor关联。表头、转置和格子详情优先显示display_name，缺失时沿用name；不改变查值键、对象顺序或评分。
 
 准备证据reference_contacts为原evidence明确登记的{chains:string[],basis_zh:string}或null。只读保留原接触链及依据，未登记时明确未知，不用目标链、参考配体所在链或无阈值的全距离表推断接触链；不补定距离阈值或改变质控。
