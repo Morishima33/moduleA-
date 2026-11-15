@@ -19,7 +19,11 @@ class PlatformLauncherTests(unittest.TestCase):
         temp = TemporaryDirectory(prefix='Module A 中文 路径 ')
         self.addCleanup(temp.cleanup)
         self.root = Path(temp.name).resolve()
-        self.data = self.root / ('长路径片段 ' * 12) / ('中文目录 ' * 10)
+        # Win32普通路径会裁去段末空格；保留中文和内部空格，不混入特殊路径语义。
+        self.data = self.root / ('长路径片段 ' * 12).rstrip() / ('中文目录 ' * 10).rstrip()
+        if len(str(self.data)) < 270:
+            self.data /= 'long_' + 'x' * (270-len(str(self.data))-6)
+        self.assertGreater(len(str(self.data)), 260)
         self.data.mkdir(parents=True)
         self.settings = Settings(data_root=self.data, runtime_dir=self.root/'运行 目录',
             static_dir=Path(__file__).resolve().parents[2]/'src/modulea/static')

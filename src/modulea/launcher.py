@@ -12,6 +12,7 @@ import webbrowser
 
 from .config import load_settings
 from .service_control import probe_service, runtime_location, stop_service
+from .launch_identity import identity, owns_service_process
 
 
 def start_service(settings, port=8780, *, open_browser=True, timeout=20):
@@ -43,15 +44,16 @@ def start_service(settings, port=8780, *, open_browser=True, timeout=20):
         with log.open('xb') as stream:
             process = subprocess.Popen(command, cwd=settings.project_root, env=env, stdin=subprocess.DEVNULL,
                 stdout=stream, stderr=subprocess.STDOUT, creationflags=flags, start_new_session=os.name != 'nt')
+        started = identity(process.pid)
         threading.Thread(target=process.wait,daemon=True,name='modulea-service-reap').start()
         until = time.monotonic() + timeout
         while time.monotonic() < until:
             value = probe_service(settings, port, timeout=1)
             if value['ready']:
                 # 代码、配置或前端在启动中变化时拒绝宣布成功，不停止未知新实例。
-                if value['expected'] != before['expected'] or value['actual'].get('pid') != process.pid:
+                if value['expected'] != before['expected'] or not owns_service_process(process, started, value['actual'].get('pid')):
                     return dict(value, state='instance_changed', ready=False, log_path=str(log),
-                                reasons_zh=['启动期间代码、目录或实例发生变化，请核对日志'])
+                                reasons_zh=['启动进程、代码、目录或实例未通过核对，请查看日志'])
                 if open_browser:
                     webbrowser.open(value['url'])
                 return dict(value, reused=False, log_path=str(log), message_zh='工作台已启动并通过同实例核对')

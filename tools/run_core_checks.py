@@ -13,6 +13,7 @@ MODULES=(
  'tests.modulea.test_archive_checkout',
  'tests.modulea.test_service_identity','tests.modulea.test_service_control',
  'tests.modulea.test_service_delivery_http','tests.modulea.test_platform_launcher',
+ 'tests.modulea.test_launch_identity',
  'tests.modulea.test_native_process_cancel','tests.modulea.test_compute_budget',
  'tests.modulea.test_resource_runner','tests.modulea.test_tasks',
  'tests.modulea.test_rescue_evidence_http','tests.modulea.test_rescue_read_evidence_v2',
