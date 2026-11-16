@@ -755,6 +755,8 @@ from .system_receptor_rescue_v2 import run as run_system_receptor_rescue_v2
 HANDLERS['plan_system_receptor_rescue_v2'] = run_system_receptor_rescue_v2
 from .rescue_worker_io import run as run_rescue_worker_io
 HANDLERS['plan_rescue_worker_io'] = run_rescue_worker_io
+from .scoped_rescue_worker import run as run_scoped_rescue_worker
+HANDLERS['plan_rescue_worker_io_v2'] = run_scoped_rescue_worker
 from .system_disease_manual_sources import run as run_system_disease_manual_source
 HANDLERS['plan_system_disease_manual_source']=run_system_disease_manual_source
 
