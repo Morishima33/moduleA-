@@ -11,6 +11,9 @@ qualify另含上述两字段及完整按原顺序`decisions:[{target_id,pocket_k
 `expected_preparation_run_id,expected_preparation_result_sha256,expected_preparation_review_id,expected_a06_run_id`。
 请求编号分别为`nativeprep_`、`nativequal_`、`nativescore_`加32位十六进制。
 返回202`{task,created:true,message_zh}`，忙碌/版本变化409，越界字段422；不接受工具路径、参数、评分或批准。
+prepare的当前A06_PREP及score的当前A06均在HTTP排队前核对expected版本；不符返回409 STALE_VERSION。
+同一已登记原请求仅在完整字段、阶段、研究和当前有效运行一致时允许原run接续；改请求号或操作者不继承。
+worker在原写锁内再次核对，提交后发生的版本竞争不能建立替代运行。
 任务`native_a06`共用计算位、队列、日志与取消树；私有payload为`{stage,request,profile_sha256}`。
 worker以`-I`科学Python核完整工具、依赖、平台/芯片、源码和字体后才建立新协议运行。
 prepare复用原第二版身份/准备判断；qualify只按原口袋规则采用明确选择并完整复验，追加待整体人工复核版本；

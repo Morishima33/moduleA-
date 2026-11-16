@@ -4,7 +4,7 @@ from pathlib import Path
 
 from contracts import fingerprint, require, safe_id
 from storage import new_id, now, read_json, write_json, write_lock
-from .bounded_evidence import file_record, verified_file
+from .bounded_evidence import file_record, verified_file, read_verified_json
 from .system_receptor_rescue_v2 import SystemReceptorRescueV2Workflow
 
 PREPARATION='A06.platform_preparation.1'
@@ -42,10 +42,30 @@ def pocket_request(body):
         'reviewer':body['author'],'note':body['note'],'confirmed':body['confirmed'],'decisions':deepcopy(body['decisions'])}
 
 
+def check_current_request(workflow, manifest, sid, stage, body):
+    """提交前核当前版本；仅完整相同的已登记请求可继续自己建立的运行。"""
+    module = 'A06' if stage == 'score' else 'A06_PREP'
+    expected = body['expected_a06_run_id'] if stage == 'score' else body['expected_preparation_run_id']
+    current = manifest['current'].get(module)
+    if current == expected:
+        return
+    run = workflow.run(manifest, current) if current else None
+    version = SCORING if stage == 'score' else PREPARATION
+    require(run and run['config'].get('version') == version and workflow.active(manifest, current),
+            '当前原生计算版本已改变，请刷新')
+    envelope = read_json(verified_file(workflow.location(sid), run['inputs']['native_request']))
+    require(envelope['schema_version'] == SCORING and envelope['study_id'] == sid
+            and envelope['stage'] == stage and envelope['request'] == body
+            and envelope['request_hash'] == fingerprint(body),
+            '当前原生计算版本或请求已改变，请刷新')
+
+
 def source(workflow,sid,stage,body):
     """只从当前已确认固定输入或已人工批准原生准备取来源，不迁入旧批准。"""
     m=workflow.load(sid);require(not m.get('trashed'),'回收站研究只读')
     home=workflow.location(sid)
+    if stage in ('prepare', 'score'):
+        check_current_request(workflow, m, sid, stage, body)
     if stage=='prepare':
         from science_modules.a06.plan_preparation_v2 import current_input
         packet,ref,plan=current_input(workflow,sid,body['expected_input_id'])
@@ -127,10 +147,34 @@ def read_object(workflow,sid,run_id,key):
     m=workflow.load(sid);home=workflow.location(sid);run=workflow.run(m,run_id)
     require(run['config'].get('version') in (PREPARATION,QUALIFIED,SCORING),'检查点不是本原生协议')
     previous=None
+    adapter = getattr(workflow, '_worker_io', None)
     for ref in m.get(CHECKPOINTS,[]):
-        value=read_json(verified_file(home,ref))
-        require(value['schema_version']==SCORING and value['study_id']==sid,'原生检查点归属不同')
-        if value['run_id']!=run_id or value['key']!=key:continue
+        # 每次仍核全部原件SHA；worker只缓存小身份头，不持有无关对象payload。
+        path = verified_file(home, ref)
+        identity = (str(path), ref['bytes'], ref['sha256'])
+        header = adapter.headers.get(identity) if adapter is not None else None
+        value = None
+        if adapter is not None:
+            adapter.stats['checkpoint_sha_checks'] += 1
+        if header is None:
+            value = read_verified_json(home, ref)
+            header = tuple(value.get(field) for field in ('schema_version', 'study_id', 'run_id', 'key'))
+            require(all(isinstance(v, str) and len(v) <= 256 for v in header), '原生检查点身份头不合法')
+            if adapter is not None:
+                adapter.stats['checkpoint_json_parses'] += 1
+                if adapter.header_limit:
+                    adapter.headers[identity] = header
+                    while len(adapter.headers) > adapter.header_limit:
+                        adapter.headers.popitem(last=False)
+        else:
+            adapter.headers.move_to_end(identity)
+            adapter.stats['checkpoint_header_hits'] += 1
+        require(header[:2] == (SCORING, sid), '原生检查点归属不同')
+        if header[2:] != (run_id, key):
+            continue
+        if value is None:
+            value = read_verified_json(home, ref)
+            adapter.stats['checkpoint_json_parses'] += 1
         prefix=f'runs/{run["module_id"]}/{run_id}/native_checkpoints/{key}/'
         require(ref['path'].startswith(prefix) and value['previous']==(previous[0] if previous else None)
                 and value['config_hash']==run['config_hash'] and value['human_review_written'] is False,
@@ -138,6 +182,7 @@ def read_object(workflow,sid,run_id,key):
         if previous:require(previous[1]['payload'].get('retryable') is True,'已完成或稳定NA原生对象不可覆盖')
         for original in value['files']:verified_file(home,original)
         previous=(ref,value)
+    require(fingerprint(workflow.load(sid)) == fingerprint(m), '原生检查点读取期间登记已改变')
     return previous
 
 
