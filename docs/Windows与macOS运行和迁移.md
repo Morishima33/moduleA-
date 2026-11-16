@@ -1,6 +1,6 @@
 # Windows 与 macOS 运行和迁移
 
-本版共用 Python 服务与任务管理器。浏览、项目管理和已归档结果下载不要求安装 Vina。新平台科学执行适配尚未接通；工具预检通过也不会宣布可提交科学计算。旧 Windows 科学入口保留原协议及工具绑定，不能将其用于 Mac。
+本版共用 Python 服务与任务管理器。浏览、项目管理和已归档结果下载不要求安装 Vina。2026-11-16 新增明确本平台准备/资料核查/评分入口，见[依赖、实测和边界](原生科学执行与Windows诊断_20261116.md)。旧 Windows 科学入口保留原协议及工具绑定，不能将其用于 Mac。
 
 ## 启动、状态与正常停止
 
@@ -29,7 +29,7 @@ chmod u+x modulea.command
 
 默认端口 8780，可用 `--port` 或 `MODULEA_PORT` 指定。启动默认打开浏览器，用 `--no-browser` 关闭；重复启动会核对实例、配置和构建，复用同实例。端口被其他程序占用会拒绝启动。正常停止通过原服务保护接口执行，活动任务或写入会阻断；此入口不会取消科学任务或强杀 PID。日志位置由启动结果给出。配置错误返回非零退出码。中文、空格路径应整体加引号。
 
-`preflight --json` 一次列出系统、芯片、Python、前端、数据权限、端口、工具及字体。`browse_available` 只代表基础浏览条件；`toolchain_available` 只代表工具配置核对；当前 `science_available=false`。这三个字段不能互相替代，也不表示研究验收通过。
+`preflight --json` 一次列出系统、芯片、Python、前端、数据权限、端口、工具及字体。`browse_available` 只代表基础浏览条件；`toolchain_available` 只代表工具配置核对；`science_available` 还要求新协议所需环境和字体齐全。提交后worker仍完整核实际源码/依赖SHA。三个字段不能互相替代，也不表示研究验收或旧批恢复通过。
 
 ## 科学依赖与边界
 
@@ -40,9 +40,9 @@ chmod u+x modulea.command
 | Java | 本机原生 JDK 19 | Java 启动器与实际运行库均须记录；不能在 Mac 调用 Windows java.exe |
 | RDKit、Meeko、Gemmi、NumPy、SciPy | 显式工具配置逐项固定版本 | 需在目标芯片的科学 Python 中实际导入，不用 Rosetta 成功推断原生通过 |
 | PDBFixer、OpenMM | [PDBFixer 官方说明](https://github.com/openmm/pdbfixer)、[OpenMM 安装说明](https://docs.openmm.org/latest/userguide/application/01_getting_started.html) | 需要原生库及模板/力场，能导入不能代替准备质控 |
-| 中文字体 | 本机合法可用字体 | 显式配置常规及粗体；旧归档图件不重写，新平台绘图适配仍待完成 |
+| 中文字体 | 本机合法可用字体 | 显式配置常规及粗体；新协议另存图件，旧归档图件不重写 |
 
-工具配置预检格式为 `ModuleA.platform_tools.1`，明确目标协议 `A06.platform_execution.1`。该科学协议仍待实现，不能据配置文件推断已运行。配置必须包含系统、芯片、工具路径/版本/SHA、P2Rank jar/默认配置/模型清单及科学包版本；预检不会安装、下载或静默替换任何工具。依赖许可证以各官方发行版为准。本批不引入付费服务。
+工具配置预检格式为 `ModuleA.platform_tools.1`，明确目标协议 `A06.platform_execution.1`。配置不能证明研究已运行。配置须含系统、芯片、工具路径/版本/SHA、P2Rank全部程序/配置/模型及精确包版本；预检不安装、下载或静默替换工具。依赖许可证以各官方发行版为准。本批不引入付费服务。Windows/Intel Mac实测与跨平台数值审查仍待完成。
 
 ## 迁移研究
 

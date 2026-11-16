@@ -8,7 +8,7 @@ import { SectionHead } from './common';
 import AcceptanceBundle from './AcceptanceBundle';
 
 /** 直接排版后端返回的行列；不在页面裁切或推算科学结果。 */
-function Matrix({ matrix, label, onPick }: {
+export function Matrix({ matrix, label, onPick }: {
   matrix:RescueMatrix;label:string;onPick:(cell:RescueCell)=>void;
 }) {
   const rows = matrix.rows.map((row, index) => ({row, index}));

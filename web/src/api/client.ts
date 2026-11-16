@@ -292,6 +292,8 @@ export const api = {
   /** 任务详情 */
   task: (tid: string) => request<Task>('GET', `/tasks/${tid}`),
   taskScientificProgress:(tid:string)=>request<import('./types').ScientificProgress>('GET',`/tasks/${tid}/scientific-progress`),
+  nativeCompute:(sid:string)=>request<import('./types').NativeComputeInfo>('GET',`/studies/${sid}/native-compute`),
+  executeNativeCompute:(sid:string,stage:string,body:Record<string,unknown>)=>request<{task:Task;message_zh:string}>('POST',`/studies/${sid}/native-compute/${stage}`,body),
   /** 增量日志 */
   taskLog: (tid: string, offset: number) => request<{ offset: number; next_offset: number; text: string }>('GET', `/tasks/${tid}/log${qs({ offset })}`),
   /** 取消任务 */

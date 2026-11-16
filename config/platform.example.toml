@@ -4,7 +4,8 @@
 data_root = '/absolute/path/研究资料'
 runtime_dir = '/absolute/path/Module A runtime'
 science_python = '/absolute/path/science-env/bin/python3'
-# 以下是后续本机科学适配预检配置，不能据此声称执行入口已支持。
+# 本机原生新协议；先按docs/原生科学执行与Windows诊断_20261116.md生成SHA配置。
+# 本机工具就绪不代表旧Windows批次可在Mac无缝接续。
 # tools_profile = '/absolute/path/platform-tools.json'
 # font_regular = '/absolute/path/chinese-regular.ttf'
 # font_bold = '/absolute/path/chinese-bold.ttf'

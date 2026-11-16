@@ -439,6 +439,7 @@ export interface FoundationEvidence {
 }
 
 export interface Special {
+  native_scores?:NativeScoreDisplay;
   system_rescue?:SystemRescueDisplay;
   foundation_evidence?:FoundationEvidence;
   source_diagnostics?:{object_type?:string;object_id?:string;failure_stage?:string;failure_code?:string;retryable?:boolean;reason_zh?:string}[];
@@ -486,6 +487,11 @@ export interface SystemRescueDisplay {
   receptor_preparation:{target_id:string;symbol?:string;state:string;state_zh:string;quality?:string;reason_zh?:string}[];
 }
 
+/** 原生评分复用同一矩阵形状，独立版本，不冒充旧Windows补救结果。 */
+export type NativeScoreDisplay=Omit<SystemRescueDisplay,'schema_version'|'science_version'|'summary_rows'|'receptor_preparation'> & {
+  schema_version:'A06.platform_display.1';science_version:'A06.platform_execution.1';
+};
+
 /** 只读组合证据；区域选择和失败事实全部由后端提供。 */
 export interface RescueEvidence {
   schema_version:'ModuleA.rescue_evidence.1';read_only:true;study_id:string;run_id:string;input_key:string;
@@ -503,6 +509,15 @@ export interface ScientificProgress {
 }
 export interface ScientificCounts {
   total:number|null;completed:number;reused:number;new:number;succeeded:number;failed:number;pending:number|null;na?:number;
+}
+
+/** 本平台各阶段资格与固定输入由后端提供，客户端仅记录明确选择。 */
+export interface NativeComputeInfo {
+  supported:boolean;protocol:string;notice_zh:string;
+  stages:{key:'prepare'|'qualify'|'score';label_zh:string;enabled:boolean;blockers_zh:string[];resumable:boolean;
+    request_template:Record<string,unknown>}[];
+  pockets:{target_id:string;symbol:string;state:string;reason_zh:string;
+    options:{pocket_key:string;eligible:boolean;pdb_id?:string;reason_zh:string}[]}[];
 }
 
 export interface AcceptanceBundle {

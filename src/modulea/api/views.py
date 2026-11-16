@@ -361,6 +361,7 @@ class Views:
 
         rescue_result = bool(run and run.get('config', {}).get('version') in
                              ('A06.system_rescue.1', 'A06.system_rescue.2'))
+        native_result = bool(run and run.get('config', {}).get('version')=='A06.platform_execution.1')
         state = dict(states[module_id])
         system_execution_result=bool(run and run.get('execution_protocol')=='ModuleA.system_execution.1' and not historical)
         # 当前系统A04只展示归档和独立复核，不构建最终会隐藏的旧人工操作表单。
@@ -594,14 +595,17 @@ class Views:
         plan_preparation = bool(module_id == "A06_PREP" and run and
             run.get("config", {}).get("version") in ("A06.plan_preparation.1", "A06.plan_preparation.2",
                 "A06.plan_preparation.3", "A06.plan_reference_preparation.1",
-                "A06.plan_reference_preparation.2", "A06.plan_reviewable_preparation.1"))
-        plan_result = bool(run and run.get('config', {}).get('version') == 'A06.plan_scoring.1')
+                "A06.plan_reference_preparation.2", "A06.plan_reviewable_preparation.1",
+                "A06.platform_preparation.1", "A06.platform_qualified_preparation.1"))
+        plan_result = bool(run and run.get('config', {}).get('version') in ('A06.plan_scoring.1','A06.platform_execution.1'))
         from ..presenters.system_docking import VERSIONS as SYSTEM_STRUCTURE_VERSIONS
         system_structure=bool(run and run.get('config',{}).get('version') in SYSTEM_STRUCTURE_VERSIONS)
         if plan_preparation and run['config'].get('version') == 'A06.plan_reviewable_preparation.1':
             response['review']['continue'].update(available=False, note_zh='人工决定单独保存；请在新版评分区明确确认执行，不接续旧计算协议。')
         if plan_result:
             response['review']['continue'].update(available=False, note_zh='本版评分独立保存复核决定；新报告协议尚未接通，不调用旧报告。')
+        if run and run.get('config',{}).get('version') in ('A06.platform_preparation.1','A06.platform_qualified_preparation.1'):
+            response['review']['continue'].update(available=False,note_zh='原生准备与评分分别明确提交，整体人工复核不会自动启动计算。')
         if module_id in ("A06_PREP", "A06") and not historical and not preparation and not handoff and not plan_preparation and not plan_result and not system_structure and not rescue_result and not response['plan_selection_ui']:
             from ..core.automatic_experience import automatic_context
             with workflow.handoff_read_cache():
@@ -638,6 +642,9 @@ class Views:
         if rescue_result and result:
             from .system_rescue_view import apply as apply_rescue
             apply_rescue(workflow, real, run, result, response)
+        if native_result and result:
+            from .native_results import apply as apply_native
+            apply_native(workflow, real, run, result, response)
         response['receptor_rescue_available'] = bool(module_id == 'A06_PREP' and system_structure and not historical)
         response['system_exports'] = None
         if system_structure and result and not historical:
@@ -651,7 +658,7 @@ class Views:
                 exports['enabled'] = False
                 exports['blockers'].append('请等待本研究当前任务结束')
             response['system_exports'] = exports
-        response["operation_guide"] = None if plan_preparation or plan_result or system_structure or system_execution_result or rescue_result else operation_navigation(response, result)
+        response["operation_guide"] = None if plan_preparation or plan_result or system_structure or system_execution_result or rescue_result or native_result else operation_navigation(response, result)
         if system_execution_result and module_id in ('A01','A02','A03','A04','A05'):
             from ..presenters.base import focus
             response['focus'].append(focus('本版由统一批次接续',

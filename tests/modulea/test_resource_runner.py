@@ -53,7 +53,7 @@ class ResourceRunnerTests(unittest.TestCase):
 
     def start(self,tid,mode='finish'):
         """每项测试实际启动独立进程，禁止给unittest主进程设置kill-on-close。"""
-        process=subprocess.Popen([sys.executable,'-B','-c',CHILD,str(self.root),tid,mode],stdout=subprocess.PIPE,
+        process=subprocess.Popen([sys.executable,'-B','-X','utf8','-c',CHILD,str(self.root),tid,mode],stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,text=True,encoding='utf8',creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0,
             start_new_session=os.name!='nt')
         self.addCleanup(self.stop,process)

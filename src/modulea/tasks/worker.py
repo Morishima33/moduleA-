@@ -834,6 +834,10 @@ HANDLERS.update(a01_acquire=run_a01_acquire, a01_resolve=run_a01_resolve, a02_ma
 HANDLERS.update({"a06_figure": run_figure, "a06_pair_packages": run_packages, "a06_pair_bundle": run_bundle})
 
 
+from .native_execution import run as run_native_execution
+HANDLERS['native_a06'] = run_native_execution
+
+
 def run_task(settings: Settings, task_id: str) -> int:
     manager = TaskManager(settings)
     task = manager._raw(task_id)

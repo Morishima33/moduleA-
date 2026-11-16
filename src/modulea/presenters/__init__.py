@@ -17,6 +17,7 @@ from .report import present_a07
 from .sources import present_a01, present_a02
 from .plan_scoring import present as present_plan_scoring
 from .plan_enrichment import present as present_plan_enrichment
+from .native_scoring import present as present_native_scoring
 
 PRESENTERS = {
     "A00": present_a00,
@@ -45,6 +46,8 @@ def present(module_id: str, result: dict, ctx: dict) -> dict:
     function = PRESENTERS.get(module_id, present_generic)
     if module_id == 'A06' and result.get('summary', {}).get('science_version') == 'A06.plan_scoring.1':
         function = present_plan_scoring
+    if module_id == 'A06' and result.get('summary', {}).get('science_version') == 'A06.platform_execution.1':
+        function = present_native_scoring
     if module_id == 'A05' and result.get('summary', {}).get('protocol_version') in ('A05.plan_enrichment.1','A05.plan_enrichment.2'):
         function = present_plan_enrichment
     try:

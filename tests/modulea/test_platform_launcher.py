@@ -31,7 +31,27 @@ class PlatformLauncherTests(unittest.TestCase):
             stream.bind(('127.0.0.1', 0))
             self.port = stream.getsockname()[1]
 
-    def test_real_start_duplicate_status_and_normal_stop_with_unicode_long_data_path(self):
+    def test_real_start_duplicate_status_and_normal_stop_with_unicode_spaces(self):
+        self.check_lifecycle()
+
+    def test_real_lifecycle_with_over_320_character_path_and_bounded_components(self):
+        long = self.root
+        while len(str(long)) < 340:
+            long = long / ('中文 空格 路径 ' + 'x'*24)
+        # Windows明确使用扩展绝对路径，避免把操作系统目录策略错误混作启动故障。
+        if os.name == 'nt':
+            text = str(long.absolute())
+            if not text.startswith('\\\\?\\'):
+                long = Path('\\\\?\\UNC\\' + text[2:] if text.startswith('\\\\') else '\\\\?\\' + text)
+        self.assertGreater(len(str(long)),320)
+        self.assertTrue(all(len(part.encode('utf-8')) < 255 for part in long.parts))
+        long.mkdir(parents=True)
+        self.data=long
+        self.settings.data_root=long
+        self.check_lifecycle()
+
+    def check_lifecycle(self):
+        """真正启动服务并检验重复识别/状态/正常停止，长短中文路径共用同一断言。"""
         first = start_service(self.settings, self.port, open_browser=False)
         self.addCleanup(lambda: stop_service(self.settings,self.port,confirmed=True))
         self.assertTrue(first['ready'], first)
