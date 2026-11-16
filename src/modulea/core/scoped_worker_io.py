@@ -33,6 +33,7 @@ IMPLEMENTATIONS = (
     'src/modulea/core/read_archive.py', 'src/modulea/tasks/process_identity.py',
     'src/modulea/tasks/process_tree.py', 'src/modulea/tasks/compute_budget.py',
     'src/modulea/tasks/resource_runner.py', 'src/modulea/config.py', 'src/modulea/__main__.py',
+    'src/modulea/core/checkpoint_read_phase.py',
 )
 
 
@@ -185,11 +186,12 @@ class ScopedWorkerIO(original.WorkerIO):
         self.scope_wrappers = {}
         self.last_scopes = deque(maxlen=8)
         self.stats.update(source_scopes=0, source_scope_failures=0, source_binding_hits=0,
-                          scope_first_sha_checks=0, scope_exit_sha_checks=0)
+                          scope_first_sha_checks=0, scope_exit_sha_checks=0, checkpoint_read_phases=0)
 
     def project_code(self, function):
         """本适配器自身不再次代理，避免把私有范围管理递归绑定。"""
-        return super().project_code(function) and Path(function.__code__.co_filename).resolve() != Path(__file__).resolve()
+        return super().project_code(function) and Path(function.__code__.co_filename).resolve() not in (
+            Path(__file__).resolve(), Path(__file__).with_name('checkpoint_read_phase.py').resolve())
 
     def value(self, value):
         """仅原函数对象路由；真正模块和全局函数不替换。"""
@@ -201,6 +203,11 @@ class ScopedWorkerIO(original.WorkerIO):
 
     def bind(self, function):
         """纯读取外层建立范围，source_binding只在同范围与完整参数下复用。"""
+        if function is second.append_checkpoint:
+            if function not in self.scope_wrappers:
+                from .checkpoint_read_phase import bind_checkpoint
+                self.scope_wrappers[function] = bind_checkpoint(self, function, super().bind)
+            return self.scope_wrappers[function]
         if function not in _READS:
             return super().bind(function)
         if function in self.scope_wrappers:
@@ -252,6 +259,15 @@ class ScopedWorkerIO(original.WorkerIO):
         value._worker_io = self
         value.validators = {key: self.bind(fn) for key, fn in workflow.validators.items()}
         return value
+
+    def read_checkpoint(self, workflow, sid, run_id, key, version, field):
+        """本二版范围内将原严格reader的旧CP和目标历史附件一并捕获，范围外照旧。"""
+        evidence = read_evidence.current_evidence(workflow.root)
+        if isinstance(evidence, SourceEvidence) and evidence.study_id == sid:
+            from .checkpoint_read_phase import read_checkpoint_in_scope
+            return read_checkpoint_in_scope(self, original.WorkerIO.read_checkpoint,
+                                           workflow, sid, run_id, key, version, field)
+        return super().read_checkpoint(workflow, sid, run_id, key, version, field)
 
     def activate_registration(self, workflow, sid, reference):
         """只接受本明确二版登记，仍逐对象核原实现和全部归档字节。"""
