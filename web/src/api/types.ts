@@ -505,6 +505,15 @@ export interface ScientificCounts {
   total:number|null;completed:number;reused:number;new:number;succeeded:number;failed:number;pending:number|null;na?:number;
 }
 
+/** 本平台各阶段资格与固定输入由后端提供，客户端仅记录明确选择。 */
+export interface NativeComputeInfo {
+  supported:boolean;protocol:string;notice_zh:string;
+  stages:{key:'prepare'|'qualify'|'score';label_zh:string;enabled:boolean;blockers_zh:string[];resumable:boolean;
+    request_template:Record<string,unknown>}[];
+  pockets:{target_id:string;symbol:string;state:string;reason_zh:string;
+    options:{pocket_key:string;eligible:boolean;pdb_id?:string;reason_zh:string}[]}[];
+}
+
 export interface AcceptanceBundle {
   schema_version:'ModuleA.acceptance_bundle.1';study_id:string;run_id:string;input_key:string;
   enabled:boolean;blockers_zh:string[];translation_missing_ids:string[];download_url:string;note_zh:string;

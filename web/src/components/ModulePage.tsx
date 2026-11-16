@@ -59,6 +59,7 @@ import ReceptorRescueAction from './ReceptorRescueAction';
 import PlanCompounds from './PlanCompounds';
 import PlanSelection from './PlanSelection';
 import PlanPreparation from './PlanPreparation';
+import NativeCompute from './NativeCompute';
 import ReferenceEvidencePanel from './ReferenceEvidencePanel';
 import ReferencePreparationBinding from './ReferencePreparationBinding';
 import ScoringReadiness from './ScoringReadiness';
@@ -143,6 +144,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       {view.plan_stages&&<PlanStages key={view.plan_stages.expected_input_hash} studyId={studyId} info={view.plan_stages}/>}
       {view.plan_compounds&&<PlanCompounds key={view.plan_compounds.expected_input_hash} studyId={studyId} info={view.plan_compounds}/>}
       {view.plan_preparation_ui&&<PlanPreparation key={view.plan_preparation_ui.input_hash} studyId={studyId} info={view.plan_preparation_ui}/>}
+      {!view.historical&&(m.module_id==='A06_PREP'||m.module_id==='A06')&&<NativeCompute key={`${studyId}:${view.run?.run_id||''}`} studyId={studyId}/>}
       {view.plan_selection_ui&&<PlanSelection key={view.plan_selection_ui.input_hash} studyId={studyId} info={view.plan_selection_ui}/>}
       {view.plan_a05&&<PlanA05 key={[view.plan_a05.expected_a00,view.plan_a05.expected_a03,view.plan_a05.expected_a05,view.plan_a05.expected_plan_id].join(':')} studyId={studyId} info={view.plan_a05}/>}
       {revisedA05 ? (view.plan_a05_display || sp.plan_enrichment) && <Collapse items={[{

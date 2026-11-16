@@ -41,6 +41,7 @@ KINDS['plan_system_receptor_path_scoring'] = '按修订后的同批真实资格�
 KINDS['plan_system_receptor_rescue'] = '按明确范围补救本批不可用受体并另存完整A06矩阵'
 KINDS['plan_system_receptor_rescue_v2'] = '复用已核验官方原件补救剩余受体并保留既有评分'
 KINDS['plan_rescue_worker_io'] = '使用明确有界I/O适配恢复原二版，保留登记成功对象'
+KINDS['native_a06'] = '按本机明确工具绑定执行原生A06，结果待独立科研复核'
 KINDS["a05_pathway_maps"] = "生成KEGG排名首位命中图"
 KINDS['a06_resume'] = '核验原件并续算明确授权的中断批次'
 KINDS.update(a01_acquire="获取本研究三库原始资料", a01_resolve="保存A01完整性与身份例外处理", a02_mapping_preview="预览TTD与PharmGKB疾病候选（不改变A02）")

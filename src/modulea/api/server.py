@@ -74,6 +74,8 @@ class App:
             self._service_identity_error = str(error)
         self.routes = [
             ("GET", r"/api/v1/health", self.get_health),
+            ("GET", rf"/api/v1/studies/{ID}/native-compute", self.get_native_compute),
+            ("POST", rf"/api/v1/studies/{ID}/native-compute/(prepare|qualify|score)", self.post_native_compute),
             ("GET", rf"/api/v1/studies/{ID}/runs/{ID}/acceptance", self.get_acceptance),
             ("GET", rf"/api/v1/studies/{ID}/runs/{ID}/acceptance\.zip", self.get_acceptance_zip),
             ("GET", rf"/api/v1/tasks/{ID}/scientific-progress", self.get_scientific_progress),
@@ -893,6 +895,16 @@ class App:
         """按本任务原请求读取已登记科学进度，不改任务或研究状态。"""
         from .scientific_progress import info
         return info(self,req,task_id)
+
+    def get_native_compute(self,req,study_id):
+        """本平台准备、核查与评分资格只读，不运行工具。"""
+        from .native_execution import info
+        return info(self,req,study_id)
+
+    def post_native_compute(self,req,study_id,stage):
+        """明确新平台请求进入同一任务队列，参数由后台读取同批方案。"""
+        from .native_execution import submit
+        return submit(self,req,study_id,stage)
 
     def get_task_log(self, req, task_id):
         try:

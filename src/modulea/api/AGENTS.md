@@ -1,5 +1,22 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-11-16 显式本平台A06执行
+
+GET `/studies/{sid}/native-compute`只读返回`protocol:A06.platform_execution.1`、`supported`、
+`stages:[{key:prepare|qualify|score,label_zh,enabled,blockers_zh,resumable,request_template}]`及`pockets`。
+模板由后端绑定当前输入、准备、结果SHA和批准。未完成同请求恢复返回原请求；GET不探测/启动工具或创建运行。
+POST `/studies/{sid}/native-compute/{stage}`只接受模板字段及实际`author/note/confirmed:true`。
+公共字段为`request_id,platform_protocol,author,note,confirmed`；prepare另含`expected_input_id,expected_preparation_run_id`；
+qualify另含上述两字段及完整按原顺序`decisions:[{target_id,pocket_key:null|SHA}]`；score另含
+`expected_preparation_run_id,expected_preparation_result_sha256,expected_preparation_review_id,expected_a06_run_id`。
+请求编号分别为`nativeprep_`、`nativequal_`、`nativescore_`加32位十六进制。
+返回202`{task,created:true,message_zh}`，忙碌/版本变化409，越界字段422；不接受工具路径、参数、评分或批准。
+任务`native_a06`共用计算位、队列、日志与取消树；私有payload为`{stage,request,profile_sha256}`。
+worker以`-I`科学Python核完整工具、依赖、平台/芯片、源码和字体后才建立新协议运行。
+prepare复用原第二版身份/准备判断；qualify只按原口袋规则采用明确选择并完整复验，追加待整体人工复核版本；
+score仅消费已人工通过的同平台准备，固定同批参数。三者不代签、不生成Word，不冒充旧Windows批次无缝恢复。
+旧批次继续原协议；浏览历史与本机可计算分开。配置存在仅表示可提交worker预检，不表示科研验收已通过。
+
 ## 2026-11-15 原二版的显式worker I/O适配
 
 `plan_rescue_worker_io`为独立重任务，沿用原TaskManager、同研究单任务、计算位、日志与进程树取消。

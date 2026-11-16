@@ -105,10 +105,12 @@ def verify_profile(settings):
     required = {'rdkit', 'meeko', 'gemmi', 'numpy', 'scipy', 'pdbfixer', 'openmm'}
     if not required <= set(packages) or any(not isinstance(x, str) or not x for x in packages.values()):
         raise ValueError('结构准备依赖必须逐项固定版本：' + '、'.join(sorted(required)))
+    if any(packages.get(name)!=version for name,version in (('meeko','0.8.0'),('pdbfixer','1.12.0'),('openmm','8.4.0'))):
+        raise ValueError('原生准备固定Meeko0.8.0、PDBFixer1.12.0、OpenMM8.4.0；不得静默替换')
     script = ('import importlib,importlib.metadata,json,platform; names=' + repr(packages) + '; '
               'print(json.dumps({"machine":platform.machine(),"packages":{n: '
               '{"version":importlib.metadata.version(n),"origin":importlib.import_module(n).__file__} for n in names}}))')
-    probe = json.loads(_run([settings.science_python, '-c', script]).strip())
+    probe = json.loads(_run([settings.science_python, '-I', '-B', '-c', script]).strip())
     actual_arch = {'aarch64': 'arm64', 'AMD64': 'x86_64'}.get(probe['machine'], probe['machine'])
     if actual_arch != machine or any(probe['packages'][name]['version'] != version for name, version in packages.items()):
         raise ValueError('科学Python芯片或实际依赖版本与新平台配置不同')
@@ -171,13 +173,15 @@ def inspect_platform(settings, *, port=8780, probe_tools=True):
         font = getattr(settings, name)
         add(name, '中文绘图字体' + ('常规' if name.endswith('regular') else '粗体'),
             bool(font and font.is_file()), '已配置本机字体' if font and font.is_file() else '未配置可用中文字体，最终图件导出不可用')
+    science_ready=bool(facts and science['passed'] and not blockers and
+        all(getattr(settings,name) and getattr(settings,name).is_file() for name in ('font_regular','font_bold')))
     return {'schema_version': 'ModuleA.platform_preflight.1', 'checked_at': datetime.now(timezone.utc).isoformat(),
             'system': platform.system(), 'machine': platform.machine(), 'checks': checks,
             'browse_available': not blockers, 'browse_blockers_zh': blockers,
             'toolchain_available': bool(facts and science['passed'] and not blockers),
-            'science_available': False,
-            'science_state_zh': '工具预检通过；新平台科学执行适配尚未接通，不能提交计算' if facts and science['passed']
+            'science_available': science_ready,
+            'science_state_zh': '本平台新协议可明确提交；worker完整核源码与实际依赖后执行，人工复核和旧批恢复另核' if science_ready
                 else '依赖或平台绑定尚不齐备；已有结果可按浏览检查单独查看',
-            'execution_profile': PROFILE, 'tool_evidence': facts,
+            'execution_profile': PROFILE, 'science_protocol':'A06.platform_execution.1','tool_evidence': facts,
             'same_batch_resume_verified': False, 'scientific_validation_performed': False,
             'note_zh': '预检不下载、不重算、不批准；迁移历史结果与恢复原计算分别核验，旧Windows批次不自动升级。'}
