@@ -104,6 +104,23 @@ class AcceptanceBundleTests(unittest.TestCase):
         self.assertEqual(before, {p.relative_to(s.case.home).as_posix(): sha256(p.read_bytes()).hexdigest()
                                  for p in s.case.home.rglob('*') if p.is_file()})
 
+    def test_english_or_placeholder_name_zh_does_not_pass_translation_gate(self):
+        """准备包沿用英文或填写占位文字，不能据字段非空称已核中文。"""
+        s = self.seed
+        for name, zh in (('citric acid', 'citric acid'), ('柠檬酸', 'citric acid'),
+                         ('citric acid', '中文待核译'), ('citric acid', '待翻译'), ('citric acid', '中文待核')):
+            with self.subTest(name=name, name_zh=zh):
+                bundle = list(acceptance_bundle.load_bundle(s.app, s.sid, s.rid))
+                bundle[5] = deepcopy(bundle[5])
+                bundle[5]['source_fixed']['compounds'][0].update(name=name, name_zh=zh)
+                bundle[4] = deepcopy(bundle[4])
+                bundle[4]['files'] = [ref for ref in bundle[4]['files'] if not
+                    ref.get('role', '').startswith('plot_a06_rescue_') and ref.get('role') not in
+                    ('a06_rescue_matrix_csv', 'a06_rescue_display_view')]
+                value = acceptance_bundle.assess(bundle)
+                self.assertFalse(value['enabled'])
+                self.assertEqual(value['translation_missing_ids'], ['C1'])
+
     def test_missing_current_figure_is_blocked_without_generating_it(self):
         s=self.seed
         s.files=[r for r in s.files if r.get('role')!='plot_a06_rescue_focus_png'];s.save()

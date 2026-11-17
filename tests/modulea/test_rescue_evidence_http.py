@@ -91,6 +91,25 @@ class RescueEvidenceHttpTests(unittest.TestCase):
                 self.assertIn(b'MODEL 1', raw)
                 self.assertNotIn(b'MODEL 2', raw)
 
+    def test_production_rescue_without_duplicate_batch_field_reads_pinned_preparation(self):
+        # 真实producer的_begin不复制batch_file；原批次只能沿明确父准备和固定输入追溯。
+        self.run.pop('batch_file')
+        self.run['inputs']['source_preparation_run']=self.case.prep_run_ref
+        self.run['inputs']['source_preparation_result']=self.case.prep_result_ref
+        self.save()
+        self.assertEqual(self.details()['score'],-7.125)
+
+    def test_rescue_without_batch_field_rejects_re_registered_foreign_preparation(self):
+        self.run.pop('batch_file')
+        self.run['inputs']['source_preparation_run']=self.case.prep_run_ref
+        self.run['inputs']['source_preparation_result']=self.case.prep_result_ref
+        self.case.prep_run['batch_file']=dict(self.case.batch,sha256='f'*64)
+        changed=self.case.json(self.case.prep_run_ref['path'],self.case.prep_run)
+        self.run['inputs']['source_preparation_run']=changed
+        self.manifest['runs'][self.case.prep_id]['run_file']=changed
+        self.save()
+        with self.assertRaises(ApiError):self.details()
+
     def test_failed_region_keeps_combination_score_and_selected_success(self):
         c = self.case
         failed = dict(c.execution, state='failed', score=None, top_mode=None, mode_count=0,

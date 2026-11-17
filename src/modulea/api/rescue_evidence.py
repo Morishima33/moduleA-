@@ -10,24 +10,10 @@ from urllib.parse import urlencode
 from contracts import ContractError, fingerprint, require
 from storage import read_json, verified_file
 from .errors import ApiError, not_found
+from ..core.rescue_result_read import same_file, checked_bytes, load_rescue_result, bound_batch
 
 VERSION = 'ModuleA.rescue_evidence.1'
 STATE_ZH = {'completed': '已评分', 'failed': '执行失败', 'NA': '准备NA'}
-
-
-def same_file(left, right):
-    """角色允许历史别名，路径、长度和SHA必须全部精确相同。"""
-    return isinstance(left, dict) and isinstance(right, dict) and all(
-        key in left and left[key] == right.get(key) for key in ('path', 'bytes', 'sha256'))
-
-
-def checked_bytes(home, reference, registered):
-    """只读登记原件并校验实际读取字节，避免Path核验后再开文件的竞态。"""
-    require(any(same_file(reference, item) for item in registered), '执行证据或构象未登记')
-    raw = verified_file(home, reference).read_bytes()
-    require(len(raw) == reference['bytes'] and sha256(raw).hexdigest() == reference['sha256'],
-            '证据下载读取期间原件校验失败')
-    return raw
 
 
 def load_bundle(app, sid, rid):
@@ -36,29 +22,7 @@ def load_bundle(app, sid, rid):
     manifest = workflow.load(sid)
     if rid not in manifest.get('runs', {}):
         raise not_found('本研究评分运行')
-    home = workflow.location(sid)
-    run = workflow.run(manifest, rid)
-    result = workflow.result(manifest, rid)
-    require(run.get('module_id') == 'A06' and run['config'].get('version') in
-            ('A06.system_rescue.1', 'A06.system_rescue.2') and result, '该运行不是已归档补救结果')
-    refs = result['tables'].get('scoring_packet', [])
-    require(len(refs) == 1, '缺少唯一已登记评分事实包')
-    packet = json.loads(checked_bytes(home, refs[0], result['files']))
-    fixed = read_json(verified_file(home, run['inputs']['system_input_ref']))
-    require(run['study_id'] == result['study_id'] == packet['study_id'] == fixed['study_id'] == sid
-            and run['run_id'] == result['run_id'] == packet['run_id'] == rid
-            and packet['schema_version'] == run['config']['version']
-            and fixed.get('stage') == 'A06_INPUT'
-            and fixed.get('binding', {}).get('batch_file') == run.get('batch_file')
-            and fingerprint(packet['source_fixed']) == fingerprint(fixed['payload'])
-            and fingerprint(packet['inputs']) == fingerprint(run['inputs'])
-            and fingerprint(packet['summary']) == fingerprint(result['summary']),
-            '补救证据研究、批次、固定输入或科学协议不同')
-    keys = ('compound_id', 'target_id', 'state', 'score', 'quality', 'reason_zh')
-    require(fingerprint([{k: p.get(k) for k in keys} for p in packet['pairs']]) ==
-            fingerprint([{k: p.get(k) for k in keys} for p in result['tables']['plan_scoring_pairs']]),
-            '补救证据与本批完整评分表不同')
-    return workflow, manifest, home, run, result, packet
+    return load_rescue_result(workflow, manifest, sid, rid)
 
 
 def evidence_url(sid, rid, pair, input_key):
@@ -110,7 +74,8 @@ def _execution(bundle, fact, pair=None):
         same_file(origin_ref, ref) for ref in _references(run['inputs']))), '执行运行不在本批来源绑定中')
     origin = read_json(verified_file(home, origin_ref))
     require(origin.get('run_id') == origin_id and origin.get('study_id') == run['study_id']
-            and origin.get('module_id') == 'A06' and origin.get('batch_file') == run.get('batch_file')
+            and origin.get('module_id') == 'A06'
+            and same_file(bound_batch(home, manifest, origin), bound_batch(home, manifest, run))
             and same_file(origin['inputs'].get('system_input_ref'), run['inputs']['system_input_ref'])
             and value.get('state') == fact['state']
             and fingerprint(value.get('score')) == fingerprint(fact.get('score')),

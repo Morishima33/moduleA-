@@ -156,3 +156,46 @@ class HttpBoundedReadTests(TestCase):
                 ref=file_record(self.home,path,'test')
                 with self.assertRaises(ContractError):
                     with json_evidence_scope(self.root,self.sid) as e:e.reader.read(self.home,ref)
+
+    def _rescue_scope_fixture(self):
+        """沿生产JSON入口调用共享加载器，不让测试reader替代HTTP证据收集。"""
+        from tests.modulea.test_rescue_evidence_http import RescueEvidenceHttpTests
+        seed=RescueEvidenceHttpTests('test_inherited_score_has_exact_model_one_source_context_and_no_invented_regions')
+        seed.setUp();self.addCleanup(seed.doCleanups)
+        app=SimpleNamespace(settings=SimpleNamespace(data_root=seed.root),kernel=seed.app.kernel)
+        return seed,app
+
+    def test_shared_rescue_loader_collects_packet_and_fixed_input_for_exit_proof(self):
+        from unittest.mock import patch
+        from modulea.api import rescue_evidence
+        from modulea.core.http_read_evidence import HttpReadEvidence
+        seed,app=self._rescue_scope_fixture();seen=set();finish=HttpReadEvidence.finish
+        def observe(e):
+            seen.update(ref['path'] for home,ref,path in e.proofs.values())
+            return finish(e)
+        with patch.object(HttpReadEvidence,'finish',observe):
+            value=App._json_read(app,seed.sid,rescue_evidence.load_bundle,app,seed.sid,seed.rid)
+        expected={seed.run['inputs']['system_input_ref']['path'],
+                  value[4]['tables']['scoring_packet'][0]['path']}
+        self.assertTrue(expected<=seen,(expected,seen))
+
+    def test_shared_rescue_loader_rejects_input_changed_before_response_with_same_mtime(self):
+        from unittest.mock import patch
+        from modulea.api import rescue_evidence
+        from modulea.core.http_read_evidence import HttpReadEvidence
+        seed,app=self._rescue_scope_fixture();finish=HttpReadEvidence.finish
+        target=seed.case.home/seed.run['inputs']['system_input_ref']['path']
+        raw=target.read_bytes();stamp=target.stat()
+        def mutate(e):
+            changed=raw.replace(b'original',b'changed!',1)
+            self.assertNotEqual(changed,raw)
+            self.assertEqual(len(changed),len(raw))
+            target.write_bytes(changed)
+            os.utime(target,ns=(stamp.st_atime_ns,stamp.st_mtime_ns))
+            return finish(e)
+        try:
+            with patch.object(HttpReadEvidence,'finish',mutate):
+                with self.assertRaises(ContractError):
+                    App._json_read(app,seed.sid,rescue_evidence.load_bundle,app,seed.sid,seed.rid)
+        finally:
+            target.write_bytes(raw)

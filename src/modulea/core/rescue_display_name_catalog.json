@@ -1,0 +1,86 @@
+{
+  "schema_version": "ModuleA.rescue_display_name_catalog.1",
+  "note_zh": "中文为有依据的人工核译，不称PubChem官方中文字段；原来源术语翻译不代表结构身份确认。原专名项必须另有绑定本研究、运行和对象的明确用户决定。",
+  "entries": [
+    {
+      "identity": {"scheme": "PubChem", "id": "311"}, "source_names": ["citric acid"],
+      "display_name_zh": "柠檬酸", "scope": "prepared_identity_translation",
+      "translation_basis": "按已归档PubChem CID及精确原英文核对；citric acid人工核译为柠檬酸。",
+      "sources": [{"url": "https://pubchem.ncbi.nlm.nih.gov/compound/311", "label": "PubChem CID 311：原英文及化合物编号"}]
+    },
+    {
+      "identity": {"scheme": "PubChem", "id": "1548943"}, "source_names": ["capsaicin"],
+      "display_name_zh": "辣椒素", "scope": "prepared_identity_translation",
+      "translation_basis": "按已归档PubChem CID及精确原英文核对；capsaicin人工核译为辣椒素。",
+      "sources": [{"url": "https://pubchem.ncbi.nlm.nih.gov/compound/1548943", "label": "PubChem CID 1548943：原英文及化合物编号"}]
+    },
+    {
+      "identity": {"scheme": "PubChem", "id": "5280343"},
+      "source_names": ["quercetin", "2-(3,4-dihydroxyphenyl)-3,5,7-trihydroxychromen-4-one"],
+      "display_name_zh": "槲皮素", "scope": "prepared_identity_translation",
+      "translation_basis": "原俗名或列明的系统名须同时匹配同批已准备CID；人工核译为槲皮素，不按中文名合并来源记录。",
+      "sources": [{"url": "https://pubchem.ncbi.nlm.nih.gov/compound/5280343", "label": "PubChem CID 5280343：俗名、系统名和编号"}]
+    },
+    {
+      "identity": {"scheme": "PubChem", "id": "5281703"}, "source_names": ["wogonin"],
+      "display_name_zh": "汉黄芩素", "scope": "prepared_identity_translation",
+      "translation_basis": "按已归档CID及wogonin原名核对；人工核译为汉黄芩素，不与其糖苷混称。",
+      "sources": [{"url": "https://pubchem.ncbi.nlm.nih.gov/compound/5281703", "label": "PubChem CID 5281703：原英文及化合物编号"}]
+    },
+    {
+      "identity": {"scheme": "PubChem", "id": "176"}, "source_names": ["acetic acid"],
+      "display_name_zh": "乙酸", "scope": "prepared_identity_translation",
+      "translation_basis": "按已归档CID及acetic acid原名核对；人工核译采用化学名乙酸。",
+      "sources": [{"url": "https://pubchem.ncbi.nlm.nih.gov/compound/176", "label": "PubChem CID 176：原英文及化合物编号"}]
+    },
+    {
+      "identity": {"scheme": "PubChem", "id": "323"}, "source_names": ["coumarin"],
+      "display_name_zh": "香豆素", "scope": "prepared_identity_translation",
+      "translation_basis": "按已归档CID及coumarin原名核对；人工核译为香豆素，不泛指全部香豆素类成分。",
+      "sources": [{"url": "https://pubchem.ncbi.nlm.nih.gov/compound/323", "label": "PubChem CID 323：原英文及化合物编号"}]
+    },
+    {
+      "identity": {"scheme": "PubChem", "id": "10228"}, "source_names": ["osthol", "osthole"],
+      "display_name_zh": "蛇床子素", "scope": "prepared_identity_translation",
+      "translation_basis": "按已归档CID及列明的英文同名形式核对；人工核译为蛇床子素。",
+      "sources": [{"url": "https://pubchem.ncbi.nlm.nih.gov/compound/10228", "label": "PubChem CID 10228：原英文及化合物编号"}]
+    },
+    {
+      "identity": {"scheme": "PubChem", "id": "750"}, "source_names": ["GLY", "glycine"],
+      "display_name_zh": "甘氨酸", "scope": "prepared_identity_translation",
+      "translation_basis": "仅在本批已经准备为CID 750时使用；不凭GLY缩写猜身份。glycine人工核译为甘氨酸。",
+      "sources": [{"url": "https://pubchem.ncbi.nlm.nih.gov/compound/750", "label": "PubChem CID 750：glycine及编号"}]
+    },
+    {
+      "identity": {"scheme": "PubChem", "id": "5281708"},
+      "source_names": ["daidzein", "7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one"],
+      "display_name_zh": "大豆苷元", "scope": "prepared_identity_translation",
+      "translation_basis": "原俗名或列明系统名须同时匹配同批已准备CID；人工核译为大豆苷元，不与大豆苷混称。",
+      "sources": [{"url": "https://pubchem.ncbi.nlm.nih.gov/compound/5281708", "label": "PubChem CID 5281708：俗名、系统名和编号"}]
+    },
+    {
+      "identity": {"scheme": "PubChem", "id": "445639"}, "source_names": ["oleic acid"],
+      "display_name_zh": "油酸", "scope": "prepared_identity_translation",
+      "translation_basis": "按已归档CID及oleic acid原名核对；人工核译为油酸，保留原归档结构和构型。",
+      "sources": [{"url": "https://pubchem.ncbi.nlm.nih.gov/compound/445639", "label": "PubChem CID 445639：原英文及化合物编号"}]
+    },
+    {
+      "identity": {"scheme": "HERB", "id": "HBIN014685"}, "source_names": ["adeninenucleoside"],
+      "display_name_zh": "腺嘌呤核苷", "scope": "source_term_translation_only",
+      "translation_basis": "人工按原HERB术语作保守词根直译；原来源声明的CID不当作已确认结构，译名不改变原NA或特定立体身份。",
+      "sources": [{"url": "https://pubchem.ncbi.nlm.nih.gov/compound/60961", "label": "原HERB记录所链接的PubChem页面；仅为来源声明，不是本批准备通过证据"}]
+    },
+    {
+      "identity": {"scheme": "HERB", "id": "HBIN018100"}, "source_names": ["βetaine"],
+      "display_name_zh": "甜菜碱", "scope": "source_term_translation_only",
+      "translation_basis": "按原HERB编号、精确术语及原来源说明作人工核译；CAAS有Betaine与甜菜碱对应，不将此术语核译升级为已准备结构。",
+      "sources": [{"url": "https://sfncc.caas.cn/swsc/37526.htm", "label": "国家食物与营养咨询委员会：甜菜碱及其营养功能，原文中英名称对应"}]
+    },
+    {
+      "identity": {"scheme": "HERB", "id": "HBIN017246"}, "source_names": ["astramembrannin i"],
+      "display_name_zh": "", "scope": "original_name_requires_user_decision",
+      "translation_basis": "不把MeSH概念上下位关系或另一明确立体产品的同义词当作本来源中文定名依据；只有另行明确的本研究、本运行、本对象决定才可保留原专名，不计为中文核译。",
+      "sources": [{"url": "https://meshb.nlm.nih.gov/record/ui?ui=C052064", "label": "NLM MeSH C052064：不同概念及上下位关系，不能据此擅自定中文结构名"}]
+    }
+  ]
+}

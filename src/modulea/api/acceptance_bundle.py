@@ -5,13 +5,13 @@ from hashlib import sha256
 import io
 import json
 from pathlib import PurePosixPath
-import re
 import zipfile
 import zlib
 
 from contracts import fingerprint,require,ContractError
 from .errors import ApiError
 from .rescue_evidence import load_bundle,checked_bytes,_artifacts,same_file
+from ..core.rescue_presentation_names import chinese_name
 
 ROLES={'plot_a06_rescue_full_png','plot_a06_rescue_full_svg','a06_rescue_matrix_csv','a06_rescue_display_view'}
 MAX_REGISTERED_BYTES=512*1024*1024
@@ -52,7 +52,7 @@ def assess(bundle):
     render=second if packet['schema_version']=='A06.system_rescue.2' else first
     view=render.build_view(packet);blockers=[]
     missing=[row['compound_id'] for row in packet['source_fixed']['compounds'] if not
-             (row.get('name_zh','').strip() or re.search(r'[\u3400-\u9fff]',row.get('name','')))]
+             chinese_name(row.get('name_zh') or row.get('name'))]
     unnamed=[row['target_id'] for row in packet['source_fixed']['receptors'] if not row.get('symbol','').strip()]
     if missing:blockers.append('缺少本批已核译中文成分名：'+'、'.join(missing))
     if unnamed:blockers.append('缺少本批实际受体名称：'+'、'.join(unnamed))

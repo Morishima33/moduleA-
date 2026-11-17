@@ -9,6 +9,7 @@ from contracts import require
 from . import read_evidence as original
 from .bounded_evidence import BoundedEvidence
 from .checkpoint_json_read import CheckpointReadEvidence
+from .rescue_result_read import load_rescue_result, bound_batch
 
 VERSION='ModuleA.http_bounded_read.1'
 JSON_CACHE_BYTES=64*1024*1024
@@ -33,6 +34,12 @@ class HttpReadEvidence(CheckpointReadEvidence):
         self.cache_limit=cache_bytes;self.cache=OrderedDict()
         self.cache_size=self.cache_peak=0
         self.stats.update(json_parses=0,json_cache_hits=0)
+
+    def _allowed_functions(self):
+        """共享只读加载器也加入本请求代理，保持原件首尾SHA，不扩冻结worker白名单。"""
+        functions=super()._allowed_functions()
+        functions.update((load_rescue_result, bound_batch))
+        return functions
 
     # 原有界实现逐件核完整SHA，解析字节另与原登记比对；不长期保留JSON原文。
     _capture=BoundedEvidence._capture
