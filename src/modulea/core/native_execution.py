@@ -251,7 +251,8 @@ class NativeWorkflow(ReportRescueWorkflow):
 
     def _active(self,m,run_id):
         """新版本附加明确来源引用检查；旧运行完全委托原判定。"""
-        if not super()._active(m,run_id):return False
+        from .read_evidence import read_call
+        if not read_call(super()._active,m,run_id):return False
         run=self.run(m,run_id)
         if run['config'].get('version') not in (PREPARATION,QUALIFIED,SCORING):return True
         try:

@@ -24,4 +24,6 @@ class ReportRescueWorkflow(SystemReceptorRescueV2Workflow):
         run = self.run(manifest, run_id)
         if run['module_id'] == 'A07' and run['config'].get('version') == reports.VERSION:
             return reports.is_active(self, manifest, run)
-        return super()._active(manifest, run_id)
+        # 新继承外壳继续传递原JSON读取范围；范围外和写入仍执行原完整判定。
+        from .read_evidence import read_call
+        return read_call(super()._active, manifest, run_id)
