@@ -133,9 +133,10 @@ function RevisionForm({ studyId, info }: { studyId: string; info: DisplayRevisio
 
 /** 按本模块选择展示类别，所有数量、成员、译名及资格均直接采用服务端事实。 */
 export default function DisplayRevision({ studyId, moduleId, info }: { studyId: string; moduleId: string; info: DisplayRevisionInfo }) {
-  if (!info.supported) return null;
+  const scoped = info.module_current?.module_id === moduleId ? info.module_current : null;
+  if (!info.supported && !scoped) return null;
   const current = info.current;
-  const matching = current?.matches_input ? current : null;
+  const matching = current?.matches_input ? current : scoped?.record || null;
   const figures = matching?.figures.filter(figure => moduleId === 'A07' || figure.module_id === moduleId) || [];
   const tables = matching?.tables.filter(table => moduleId === 'A07' || table.module_id === moduleId) || [];
   const primaryFigures = figures.filter(figure => figure.role !== 'full_network_overview');
@@ -148,6 +149,7 @@ export default function DisplayRevision({ studyId, moduleId, info }: { studyId: 
     </div>
     {current && !matching && <Alert type="warning" showIcon message="已有展示修订对应历史来源，本页继续显示当前原始结果。"
       description="请先核对当前资料与阻断说明，再明确更新图表与译名。" />}
+    {scoped && !current?.matches_input && <Alert type="info" showIcon message="沿用本模块已登记图表" description={scoped.note_zh} />}
     {matching && <>
       <p className="small muted">修订保存于 {fmtTime(matching.created_at)}</p>
       <dl className="display-revision-counts">{matching.counts.map((count, index) => <div key={`${count.label_zh}:${index}`}>

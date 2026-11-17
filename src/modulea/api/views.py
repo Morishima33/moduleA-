@@ -185,7 +185,7 @@ class Views:
     def _build_cards(self, manifests):
         """独立研究最多三项并行只读，map保持原顺序；不触发后台科学计算。"""
         def read(manifest):
-            from ..core.checkpoint_json_read import json_evidence_scope
+            from ..core.http_read_evidence import json_evidence_scope
             with json_evidence_scope(self.kernel.settings.data_root,manifest['study_id']) as evidence:
                 value=evidence.call(self.study_card,manifest['study_id'],with_states=True)
             return value
@@ -514,7 +514,10 @@ class Views:
         if module_id in ('A03','A04','A05','A06','A07') and not historical and not rescue_result:
             from .display_revisions import info as display_revision_info
             value=display_revision_info(self,None,study_id)
-            if value['supported']:response['display_revision']=value
+            if not value.get('current') and module_id in ('A03','A04','A05'):
+                from .module_display_read import project
+                value['module_current']=project(workflow,real,module_id)
+            if value['supported'] or value.get('module_current'):response['display_revision']=value
         if module_id=='A07' and not historical:
             from .plan_reports import info as plan_report_info
             value=plan_report_info(self,None,study_id,workflow=shared_read_workflow)

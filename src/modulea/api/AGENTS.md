@@ -1,5 +1,27 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-11-17 HTTP内容缓存预算及退出释放
+
+指定JSON入口与首页／待办卡片使用独立`HttpReadEvidence`，JSON marshal LRU默认64MiB。
+复用原BoundedEvidence流式首验及解析字节SHA，保留CP批读和继承只读白名单；
+发送前仍全量退出SHA／manifest／目录锚点核验，不跨请求复用证明，不使用TTL。
+成功、原业务错误或退出核验失败都立即释放内容与函数包装器缓存，不等待循环GC。
+64MiB只是JSON缓存预算，不是整个进程／单件JSON解析的内存上限；原小型绑定事实照旧复用。
+冻结worker和旧读取适配不改，JSON或科学状态字段含义保持；内存实测、实际部署分别报告。
+
+## 2026-11-17 未变上游模块的已有图表
+
+当前A03/A04/A05的`display_revision`可追加`module_current`，包含
+`{module_id,note_zh,record:原DisplayRevisionRecord的本模块只读子集}`。
+只在本模块及实际祖先的run/result/父链、原方案和最新人工意见仍适用时返回。
+`record.matches_input`仍为false，`source_run_ids`仅含本模块祖先闭包，
+图／表／下载仅含当前模块，不含旧A06或整包下载；页面须按module_id使用并说明来源范围。
+原supported/current/enabled/expected_input_hash和整包matches_input含义不变，不能因此生成新整包。
+退回、来源变动或损坏不采用；缺译不能形成可交付投影。GET只核原件，不补图、不签署。
+同A05后续独立范围／核译决定及原a05_basis均单独核对，不能仅比run/current/reviews；
+不能证明适用时拒绝A05投影，不重建词典或改变原决定。此额外约束不阻断A03/A04。
+A06/A07及显式历史页不使用此投影。原状态、科研复核和任务门槛不变。
+
 ## 2026-11-17 同页只读组装
 
 GET `/studies/{sid}/workspace` 接受可选单值 `module_id/run_id`，拒绝未知、重复或空值查询422。

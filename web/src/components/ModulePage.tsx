@@ -94,7 +94,8 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
   const showIdentityEvidence = identityToolsAvailable && app.session?.capabilities.component_identity_evidence;
   const showIdentityProbes = identityToolsAvailable && app.session?.capabilities.component_identity_probes;
   const historicalDisease=m.module_id==='A02'&&!!sp.historical_disease_source;
-  const revisedDisplay = !view.historical && !!view.display_revision?.supported && !!view.display_revision.current?.matches_input;
+  const revisedDisplay = !view.historical && (!!view.display_revision?.current?.matches_input
+    || view.display_revision?.module_current?.module_id === m.module_id);
   const revisedA05 = m.module_id === 'A05' && revisedDisplay;
   const style = stateStyle(st.code); // 状态配色
   const showBox = BOXED.has(st.code) || !!st.reason_zh; // 是否显示状态说明框

@@ -642,6 +642,7 @@ export interface DisplayRevisionRecord extends DisplayRevisionHistory {
 export interface DisplayRevisionInfo {
   schema_version:string;supported:boolean;enabled:boolean;blockers:string[];expected_input_hash:string|null;
   current:DisplayRevisionRecord|null;history:DisplayRevisionHistory[];
+  module_current?:{module_id:string;note_zh:string;record:DisplayRevisionRecord}|null;
 }
 export interface DisplayRevisionRequest {request_id:string;expected_input_hash:string;author:string;note:string;confirmed:true}
 export interface DisplayRevisionResponse {task?:Task;revision_id?:string;created:boolean;message_zh:string}
