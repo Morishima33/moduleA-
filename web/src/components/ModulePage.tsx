@@ -54,7 +54,7 @@ import DisplayRevision from './DisplayRevision';
 import SystemReceptorSelection from './SystemReceptorSelection';
 import FoundationEvidence from './FoundationEvidence';
 import SourceDiagnostics from './SourceDiagnostics';
-import SystemRescueResults from './SystemRescueResults';
+import RescuePresentationResults from './RescuePresentationResults';
 import ReceptorRescueAction from './ReceptorRescueAction';
 import PlanCompounds from './PlanCompounds';
 import PlanSelection from './PlanSelection';
@@ -251,7 +251,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       {sp.ppi_top && sp.ppi_top.length > 0 && <PpiTop items={sp.ppi_top} />}
       {sp.enrichment_display_tables && <EnrichmentDisplay special={sp} info={view.enrichment_display} pending={keggPending} rankedMaps={view.ranked_pathway_maps} studyId={studyId} />}
       {sp.enrichment_top && <EnrichmentTop data={sp.enrichment_top} />}
-      {sp.system_rescue && <SystemRescueResults key={sp.system_rescue.run_id} data={sp.system_rescue}/>}
+      {sp.system_rescue && <RescuePresentationResults key={sp.system_rescue.run_id} data={sp.system_rescue}/>}
       {sp.native_scores && <NativeScores key={sp.native_scores.run_id} data={sp.native_scores}/>}
       {sp.heatmap && !sp.system_rescue && !view.docking_review && (revisedDisplay ? <Collapse items={[{ key: 'original-heatmap', label: '原始热图数据（复核保留）', children:
         <Heatmap data={sp.heatmap} /> }]} /> : <Heatmap data={sp.heatmap} />)}

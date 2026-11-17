@@ -83,6 +83,11 @@ class App:
             ("GET", rf"/api/v1/tasks/{ID}/scientific-progress", self.get_scientific_progress),
             ("GET", rf"/api/v1/studies/{ID}/runs/{ID}/rescue-evidence/(details|top1|source|context|execution)", self.get_rescue_evidence),
             ("GET", rf"/api/v1/studies/{ID}/runs/{ID}/rescue-focus", self.get_rescue_focus),
+            ("GET", rf"/api/v1/studies/{ID}/runs/{ID}/rescue-presentations", self.get_rescue_presentations),
+            ("POST", rf"/api/v1/studies/{ID}/runs/{ID}/rescue-presentations", self.post_rescue_presentation),
+            ("GET", rf"/api/v1/studies/{ID}/runs/{ID}/rescue-presentations/{ID}", self.get_rescue_presentation),
+            ("GET", rf"/api/v1/studies/{ID}/runs/{ID}/rescue-presentations/{ID}/focus", self.get_rescue_presentation_focus),
+            ("GET", rf"/api/v1/studies/{ID}/runs/{ID}/rescue-presentations/{ID}/files/([0-9]+)", self.get_rescue_presentation_file),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/receptor-rescue", self.get_receptor_rescue),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/receptor-rescue/execute", self.post_receptor_rescue),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/receptor-rescue-v2", self.get_receptor_rescue_v2),
@@ -945,15 +950,40 @@ class App:
         from .rescue_evidence import focus
         return self._json_read(study_id, focus, self, req, study_id, run_id)
 
+    def get_rescue_presentations(self, req, study_id, run_id):
+        """已有修订目录只读，发送前完成原件复验。"""
+        from .rescue_presentations import directory
+        return self._json_read(study_id,directory,self,req,study_id,run_id)
+
+    def post_rescue_presentation(self, req, study_id, run_id):
+        """明确技术修订沿原写令牌/Origin与重任务，不提交专名许可。"""
+        from .rescue_presentations import submit
+        return submit(self,req,study_id,run_id)
+
+    def get_rescue_presentation(self, req, study_id, run_id, revision_id):
+        """只读指定回执的矩阵，不能自动切换到新修订。"""
+        from .rescue_presentations import view
+        return self._json_read(study_id,view,self,req,study_id,run_id,revision_id)
+
+    def get_rescue_presentation_focus(self, req, study_id, run_id, revision_id):
+        """焦点图与当前显示所选的明确修订一致。"""
+        from .rescue_presentations import focus
+        return self._json_read(study_id,focus,self,req,study_id,run_id,revision_id)
+
+    def get_rescue_presentation_file(self, req, study_id, run_id, revision_id, index):
+        """单件下载也在发送前复验全部已读取绑定原件。"""
+        from .rescue_presentations import download
+        return self._json_read(study_id,download,self,req,study_id,run_id,revision_id,index)
+
     def get_acceptance(self, req, study_id, run_id):
         """验收资料仅核对同批登记原件齐备性，不补图或重算。"""
         from .acceptance_bundle import info
-        return info(self,req,study_id,run_id)
+        return self._json_read(study_id,info,self,req,study_id,run_id)
 
     def get_acceptance_zip(self, req, study_id, run_id):
         """只读整理既有原件和构象，下载发送同一份已核验字节。"""
         from .acceptance_bundle import download
-        return download(self,req,study_id,run_id)
+        return self._json_read(study_id,download,self,req,study_id,run_id)
 
     # ------------------------------------------------------------------ 写入
     def post_review(self, req, study_id, module_id):

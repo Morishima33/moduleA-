@@ -479,13 +479,14 @@ export interface RescueCell {
   color:string;text_color:string;downloads:RescueDownload[];evidence_url?:string;
 }
 export interface RescueMatrix {
-  rows:{compound_id:string;name:string;name_en:string;name_zh:string;label:string}[];
+  rows:{compound_id:string;name:string;name_en:string;name_zh:string;label:string;name_scope?:string;name_scope_note_zh?:string}[];
   columns:{target_id:string;symbol:string;label:string;quality:string;candidate_grade:string}[];
   cells:RescueCell[][];
 }
 export interface SystemRescueDisplay {
-  input_key?:string;focus_url?:string;acceptance_url?:string;
-  schema_version:'A06.system_rescue.display.1'|'A06.system_rescue.display.2';
+  input_key?:string;focus_url?:string;acceptance_url?:string;presentation_url?:string;
+  presentation_revision?:RescuePresentationRevision;
+  schema_version:'A06.system_rescue.display.1'|'A06.system_rescue.display.2'|'A06.system_rescue.display.3';
   science_version:'A06.system_rescue.1'|'A06.system_rescue.2';read_only:true;study_id:string;run_id:string;unit:string;
   score_range:[number|null,number|null];colour_note_zh:string;scope_note_zh:string;review_note_zh:string;
   summary_rows:{label_zh:string;text:string}[];table:RescueMatrix;heatmap:RescueMatrix;
@@ -531,6 +532,24 @@ export interface AcceptanceBundle {
   schema_version:'ModuleA.acceptance_bundle.1';study_id:string;run_id:string;input_key:string;
   enabled:boolean;blockers_zh:string[];translation_missing_ids:string[];download_url:string;note_zh:string;
   files:{path:string;sha256:string;bytes:number}[];
+  presentation_revision?:RescuePresentationRevision;
+}
+
+/** 明确修订由回执及原输入绑定；中文名称记录数不等于已核结构数。 */
+export interface RescuePresentationRevision {
+  revision_id:string;receipt_sha256:string;input_key:string;input_hash:string;matches_input:boolean;
+  name_counts:{chinese:number;source_term_only:number;original_proper_name:number};
+  allowed_original_name_ids:string[];
+}
+export interface RescuePresentationItem {
+  revision_id:string;receipt_sha256:string;input_key:string;created_at:string;matches_input:boolean;view_url:string;
+}
+export interface RescuePresentationDirectory {
+  run_id:string;enabled:boolean;blockers_zh:string[];expected_input_hash:string|null;translation_missing_ids:string[];
+  current:RescuePresentationItem|null;history:RescuePresentationItem[];read_only:true;
+}
+export interface RescuePresentationRequest {
+  request_id:string;expected_run_id:string;expected_input_hash:string;author:string;note:string;confirmed:true;
 }
 
 /** 补救执行只提交当前来源版本和明确操作依据，不接收科学参数。 */

@@ -1,4 +1,5 @@
 // 真实客户端隔离测试：并发GET合并、容器隔离、失败重试和写操作前后失效。
+// 使用轻量tasks读入口；inbox会等待workspace，不再假定它同步开始fetch。
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -16,23 +17,23 @@ test('同时读取只发一次；调用者独立，完成后重新取数', async
   const { api } = await fresh();
   const gate = deferred(); let calls = 0;
   globalThis.fetch = () => { calls++; return gate.promise; };
-  const a = api.inbox(), b = api.inbox();
+  const a = api.tasks({ active: true }), b = api.tasks({ active: true });
   assert.equal(calls, 1);
   gate.resolve(response({ items: [{ value: 1 }] }));
   const [x, y] = await Promise.all([a, b]);
   x.items[0].value = 2;
   assert.equal(y.items[0].value, 1);
   globalThis.fetch = async () => { calls++; return response({ items: [] }); };
-  await api.inbox(); assert.equal(calls, 2);
+  await api.tasks({ active: true }); assert.equal(calls, 2);
 });
 
 test('网络失败不留缓存，可重新读取', async () => {
   const { api } = await fresh(); let calls = 0;
   globalThis.fetch = async () => { calls++; throw Error('offline'); };
-  await assert.rejects(Promise.all([api.inbox(), api.inbox()]));
+  await assert.rejects(Promise.all([api.tasks({ active: true }), api.tasks({ active: true })]));
   assert.equal(calls, 1);
   globalThis.fetch = async () => { calls++; return response({ items: [] }); };
-  await api.inbox(); assert.equal(calls, 2);
+  await api.tasks({ active: true }); assert.equal(calls, 2);
 });
 
 test('写请求开始和结束均隔离旧GET，旧响应不会清除新请求', async () => {
@@ -44,16 +45,16 @@ test('写请求开始和结束均隔离旧GET，旧响应不会清除新请求',
     if (opts.method === 'POST') { writes++; return writeGate.promise; }
     const gate = deferred(); reads.push(gate); return gate.promise;
   };
-  const old = api.inbox();
+  const old = api.tasks({ active: true });
   const write = api.createStudy({});
-  const during = api.inbox();
+  const during = api.tasks({ active: true });
   assert.equal(reads.length, 2);
   reads[0].resolve(response({ items: ['old'] })); await old;
-  const duringAgain = api.inbox(); assert.equal(reads.length, 2);
+  const duringAgain = api.tasks({ active: true }); assert.equal(reads.length, 2);
   writeGate.resolve(response({ created: true })); await write;
-  const after = api.inbox(); assert.equal(reads.length, 3);
+  const after = api.tasks({ active: true }); assert.equal(reads.length, 3);
   reads[1].resolve(response({ items: ['during'] })); await Promise.all([during, duringAgain]);
-  const afterAgain = api.inbox(); assert.equal(reads.length, 3);
+  const afterAgain = api.tasks({ active: true }); assert.equal(reads.length, 3);
   reads[2].resolve(response({ items: ['after'] }));
   assert.deepEqual(await after, { items: ['after'] }); await afterAgain;
   assert.equal(writes, 1);

@@ -40,6 +40,13 @@ def _download(sid, ref, files, label):
             'sha256': row['sha256'], 'bytes': row['bytes']}
 
 
+def preparation_rows(result):
+    """原科学准备表只追加展示状态译名，旧图和独立修订共用同一中文口径。"""
+    states = {'ready': '准备可用', 'NA': '准备NA', 'failed': '准备失败', 'pending': '待核查'}
+    return [dict(deepcopy(row), state_zh=row.get('state_zh') or states.get(row.get('state'), row.get('state', '')))
+            for row in result['tables'].get('receptor_preparation', [])]
+
+
 def apply(workflow, manifest, run, result, response):
     """新协议独立分派；历史原件按本运行输入读取，状态和人工复核权限保持。"""
     sid = manifest['study_id']
@@ -76,9 +83,7 @@ def apply(workflow, manifest, run, result, response):
                           param('固定范围指纹', stats.get('input_key')),
                           param('原方案参数指纹', stats.get('analysis_parameter_hash'))])
     view['summary_rows'] = [{'label_zh': row['label_zh'], 'text': row['text']} for row in parts.kpis]
-    preparation_states = {'ready': '准备可用', 'NA': '准备NA', 'failed': '准备失败', 'pending': '待核查'}
-    view['receptor_preparation'] = [dict(row, state_zh=row.get('state_zh') or preparation_states.get(row.get('state'), row.get('state', '')))
-                                   for row in result['tables'].get('receptor_preparation', [])]
+    view['receptor_preparation'] = preparation_rows(result)
     files = response.get('files', [])
     pairs = {(row['compound_id'], row['target_id']): row for row in packet['pairs']}
     for matrix in (view['table'], view['heatmap']):
@@ -92,6 +97,7 @@ def apply(workflow, manifest, run, result, response):
     view['input_key'] = stats['input_key']
     view['focus_url'] = f"/api/v1/studies/{sid}/runs/{run['run_id']}/rescue-focus"
     view['acceptance_url'] = f"/api/v1/studies/{sid}/runs/{run['run_id']}/acceptance"
+    view['presentation_url'] = f"/api/v1/studies/{sid}/runs/{run['run_id']}/rescue-presentations"
     view['heatmap'] = focus_matrix(view, view['initial_focus']['compound_ids'], view['initial_focus']['target_ids'])
     view['downloads'] = []
     view['figures'] = []

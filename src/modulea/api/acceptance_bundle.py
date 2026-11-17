@@ -12,6 +12,7 @@ from .errors import ApiError
 from .rescue_evidence import load_bundle,checked_bytes,_artifacts,same_file
 from ..core.rescue_presentation_names import chinese_name
 from ..core.png_integrity import png_size as _png
+from ..core.read_evidence import current_evidence
 
 ROLES={'plot_a06_rescue_full_png','plot_a06_rescue_full_svg','a06_rescue_matrix_csv','a06_rescue_display_view'}
 MAX_REGISTERED_BYTES=512*1024*1024
@@ -29,8 +30,59 @@ def _registered_files(records):
     return list(groups.values())
 
 
-def assess(bundle):
+def _load(app,sid,rid):
+    """生产HTTP沿既有精确读代理收集固定输入和packet，直接只读调用仍严格核原件。"""
+    settings=getattr(app,'settings',None)
+    reader=current_evidence(settings.data_root) if settings else None
+    return reader.call(load_bundle,app,sid,rid) if reader else load_bundle(app,sid,rid)
+
+
+def _presentation(app,req,sid,rid,*,download=False):
+    """没有修订参数就保持原链接语义；明确修订必须带完整单值绑定。"""
+    if 'revision_id' in req.query:
+        from . import rescue_presentations as revised
+        revised._query(req,{'revision_id','expected_revision_sha256','expected_input_key'})
+        return revised.select(app,req,sid,rid,req.query1('revision_id'))
+    if download:
+        if set(req.query)!={'expected_input_key'} or any(len(v)!=1 for v in req.query.values()):
+            raise ApiError(422,'VALIDATION_FAILED','验收资料下载字段错误')
+    elif req.query:raise ApiError(422,'VALIDATION_FAILED','验收资料资格不接受额外参数')
+    return None
+
+
+def _assess_presentation(bundle,presentation,artifacts=None):
+    """双语修订只替换展示附件；每个已有评分仍须对应原执行的MODEL 1。"""
+    from .rescue_presentations import _revision
+    w,m,home,run,result,packet=bundle
+    record=presentation['record'];bound=presentation['binding']
+    require(record['study_id']==run['study_id'] and record['run_id']==run['run_id']
+            and same_file(bound['source']['scoring_packet'],result['tables']['scoring_packet'][0]),
+            '验收名称修订与原评分运行不同')
+    _registered_files(result['files']);blockers=[]
+    if not presentation['matches_input']:blockers.append('所选为历史输入或科研意见下的图表修订，仅供追溯')
+    unnamed=[row['target_id'] for row in packet['source_fixed']['receptors'] if not row.get('symbol','').strip()]
+    if unnamed:blockers.append('缺少本批实际受体名称：'+'、'.join(unnamed))
+    files=[]
+    for ref in record['files']:
+        row=deepcopy(ref)
+        if ref['role'].endswith('_png'):row['image_size']=_png(checked_bytes(home,ref,record['files']))
+        files.append(row)
+    for index,pair in enumerate(packet['pairs'],1):
+        if pair['state']=='completed':
+            require(pair.get('execution'),'已评分组合缺少原执行，不能核验MODEL 1或交付资料包')
+            values=_artifacts(bundle,pair)
+            if artifacts is not None:artifacts[index]={kind:values[0][kind] for kind in ('top1','context')}
+    return {'schema_version':'ModuleA.acceptance_bundle.1','study_id':run['study_id'],'run_id':run['run_id'],
+            'input_key':packet['summary']['input_key'],'enabled':not blockers,'blockers_zh':blockers,
+            'translation_missing_ids':[],'files':files,'read_only':True,
+            'presentation_revision':_revision(presentation,presentation['matches_input']),
+            'scientific_computation_performed':False,'human_review_written':False,
+            'note_zh':'同修订矩阵、名称范围和原MODEL 1已核对；仅原术语或原专名不代表结构身份确认，技术核验不代替科研批准。'}
+
+
+def assess(bundle,presentation=None):
     """缺译或附件未齐保留具体阻塞；不生成任何缺失图件来掩盖问题。"""
+    if presentation is not None:return _assess_presentation(bundle,presentation)
     workflow,manifest,home,run,result,packet=bundle
     _registered_files(result['files'])
     from science_modules.a06 import system_rescue_display as first,system_rescue_display_v2 as second
@@ -90,10 +142,14 @@ def assess(bundle):
 
 def info(app,req,sid,rid):
     """只返回本批原件齐备性和缺译门控，不创建导出或任务。"""
-    if req.query:raise ApiError(422,'VALIDATION_FAILED','验收资料资格不接受额外参数')
     try:
-        value=assess(load_bundle(app,sid,rid))
-        value['download_url']=f'/api/v1/studies/{sid}/runs/{rid}/acceptance.zip?expected_input_key='+value['input_key']
+        presentation=_presentation(app,req,sid,rid)
+        value=assess(presentation['bundle'] if presentation else _load(app,sid,rid),presentation)
+        from urllib.parse import urlencode
+        query={'expected_input_key':value['input_key']}
+        if presentation:query.update(revision_id=presentation['record']['revision_id'],
+                                     expected_revision_sha256=presentation['record']['file']['sha256'])
+        value['download_url']=f'/api/v1/studies/{sid}/runs/{rid}/acceptance.zip?'+urlencode(query)
         return value
     except (ContractError,KeyError,ValueError,TypeError,OSError) as error:
         raise ApiError(503,'ARCHIVE_UNAVAILABLE','验收资料原件无法完整核验：'+str(error)) from error
@@ -101,14 +157,12 @@ def info(app,req,sid,rid):
 
 def download(app,req,sid,rid):
     """每个ZIP成员由实际核验字节写入内存；manifest与成员SHA对应，不复制未登记残件。"""
-    if set(req.query)!={'expected_input_key'} or any(len(v)!=1 for v in req.query.values()):
-        raise ApiError(422,'VALIDATION_FAILED','验收资料下载字段错误')
     try:
-        bundle=load_bundle(app,sid,rid);w,manifest,home,run,result,packet=bundle
-        value=assess(bundle)
-        if req.query1('expected_input_key')!=value['input_key']:
+        presentation=_presentation(app,req,sid,rid,download=True)
+        bundle=presentation['bundle'] if presentation else _load(app,sid,rid)
+        w,manifest,home,run,result,packet=bundle;poses={}
+        if req.query1('expected_input_key')!=packet['summary']['input_key']:
             raise ApiError(409,'STALE_VERSION','验收资料输入已改变，请刷新')
-        if not value['enabled']:raise ApiError(409,'GATE_BLOCKED','；'.join(value['blockers_zh']))
         members={};inventory=[]
         def add(name,raw,role,registrations=None):
             require(name not in members,'验收资料包成员重复')
@@ -116,14 +170,34 @@ def download(app,req,sid,rid):
             if registrations is not None:inventory[-1]['registrations']=deepcopy(registrations)
         # 复用既有结果登记，历史原件照实保留；不运行生成器或科学工具。
         registered=_registered_files(result['files'])
-        total=sum(group['record']['bytes'] for group in registered)
+        extra=[];presentation_groups=[]
+        if presentation:
+            record=presentation['record'];request=presentation['request'];source=presentation['binding']['source']
+            refs=[record['file'],record['request_file'],*record['files'],request['catalog_file'],request['font_file'],
+                  *request['implementation_files'],*presentation['binding']['name_decisions'],*source['evidence'],source['scoring_packet']]
+            refs.extend(ref for entry in source['basis']['run_files'].values() for ref in entry.values() if ref)
+            presentation_groups=_registered_files(refs)
+            combined=_registered_files(result['files']+refs)
+            original_paths={group['record']['path'] for group in registered}
+            extra=[group for group in combined if group['record']['path'] not in original_paths]
+        total=sum(group['record']['bytes'] for group in registered+extra)
         require(total<=MAX_REGISTERED_BYTES,'资料包超过512MiB，请按既有附件逐件导出；未触发重算')
+        # 先核组合原件预算，再核姿势；只缓存ZIP实际使用的MODEL1/context，不留全模式source。
+        value=_assess_presentation(bundle,presentation,poses) if presentation else assess(bundle)
+        if not value['enabled']:raise ApiError(409,'GATE_BLOCKED','；'.join(value['blockers_zh']))
         for group in registered:
             ref=group['record']
             add('registered/'+ref['path'],checked_bytes(home,ref,result['files']),ref.get('role','registered'),group['registrations'])
+        if presentation:
+            from ..core import rescue_presentations as revised_core
+            for group in extra:
+                ref=group['record'];path=revised_core._verify(w,sid,ref);raw=path.read_bytes()
+                require(len(raw)==ref['bytes'] and sha256(raw).hexdigest()==ref['sha256'],'修订资料整理期间原件变化')
+                add('presentation/'+ref['path'],raw,ref.get('role','presentation'),group['registrations'])
         for index,pair in enumerate(packet['pairs'],1):
             if pair.get('execution') and pair['state']=='completed':
-                artifacts,_,context=_artifacts(bundle,pair)
+                if presentation:artifacts=poses[index]
+                else:artifacts,_,context=_artifacts(bundle,pair)
                 for kind in ('top1','context'):
                     raw,name,_=artifacts[kind];add(f'poses/pair_{index:06d}/{name}',raw,kind)
         add('目录说明.txt',('本资料包来自已登记运行 '+rid+'\nregistered/：原矩阵、图表、来源、参数、失败与执行原件。\n'
@@ -135,6 +209,12 @@ def download(app,req,sid,rid):
                   'files':deepcopy(inventory),'translation_missing_ids':[],'scientific_computation_performed':False,
                   'registered_reference_count':len(result['files']),'registered_unique_file_count':len(registered),
                   'human_review_written':False,'inventory_self_hash_excluded':True,'note_zh':value['note_zh']}
+        if presentation:
+            original_paths={group['record']['path'] for group in registered}
+            metadata['presentation_revision']=deepcopy(value['presentation_revision'])
+            metadata['presentation_files']=[dict(deepcopy(group),zip_path=
+                ('registered/' if group['record']['path'] in original_paths else 'presentation/')+group['record']['path'])
+                for group in presentation_groups]
         add('验收目录与指纹.json',json.dumps(metadata,ensure_ascii=False,indent=2).encode('utf-8'),'inventory')
         output=io.BytesIO()
         with zipfile.ZipFile(output,'w',compression=zipfile.ZIP_DEFLATED) as archive:

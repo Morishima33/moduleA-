@@ -101,15 +101,30 @@ function qs(params: Record<string, string | number | undefined | null>): string 
   return parts.length ? '?' + parts.join('&') : '';
 }
 
+/** 保留后端焦点URL的回执和输入绑定；已有输入冲突时拒绝发送，不覆盖为另一批。 */
+function rescueFocusPath(url:string,inputKey:string,compounds:string[],targets:string[]):string {
+  const path=url.replace(/^\/api\/v1/,'');const index=path.indexOf('?');
+  const query=new URLSearchParams(index<0?'':path.slice(index+1));
+  const existing=query.getAll('expected_input_key');
+  if(existing.length>1||(existing.length===1&&existing[0]!==inputKey))throw new Error('焦点图输入版本已改变，请刷新。');
+  query.set('expected_input_key',inputKey);query.set('compounds',JSON.stringify(compounds));query.set('targets',JSON.stringify(targets));
+  return (index<0?path:path.slice(0,index))+'?'+query.toString();
+}
+
 // 各端点的薄封装；路径与契约第 3 节一致
 export const api = {
+  /** 后端版本目录与明确视图均只读，不能自行替换回执SHA。 */
+  rescuePresentationDirectory:(url:string)=>request<import('./types').RescuePresentationDirectory>('GET',url.replace(/^\/api\/v1/,'')),
+  rescuePresentation:(url:string)=>request<import('./types').SystemRescueDisplay>('GET',url.replace(/^\/api\/v1/,'')),
+  publishRescuePresentation:(url:string,body:import('./types').RescuePresentationRequest)=>
+    request<{task:Task;created:boolean;message_zh:string}>('POST',url.replace(/^\/api\/v1/,''),body),
   acceptanceBundle:(url:string)=>request<import('./types').AcceptanceBundle>('GET',url.replace(/^\/api\/v1/,'')),
   /** 后端登记的同源证据地址；仅发GET，不从浏览器传入路径或科学参数。 */
   rescueEvidence:(url:string)=>request<import('./types').RescueEvidence>('GET',url.replace(/^\/api\/v1/,'')),
   /** 用户只提交稳定对象选择，焦点格子与色标由后端返回。 */
   rescueFocus:(url:string,inputKey:string,compounds:string[],targets:string[])=>
     request<{run_id:string;input_key:string;heatmap:import('./types').RescueMatrix;score_range:[number|null,number|null]}>(
-      'GET',url.replace(/^\/api\/v1/,'')+qs({expected_input_key:inputKey,compounds:JSON.stringify(compounds),targets:JSON.stringify(targets)})),
+      'GET',rescueFocusPath(url,inputKey,compounds,targets)),
   /** 明确展开读取二版入口；实际执行只按返回的显式协议选址，不改请求正文。 */
   receptorRescue:(sid:string)=>request<import('./types').ReceptorRescueInfo>('GET',`/studies/${sid}/analysis-plan/receptor-rescue-v2`),
   executeReceptorRescue:(sid:string,body:import('./types').ReceptorRescueRequest,protocol:'A06.system_rescue.1'|'A06.system_rescue.2'='A06.system_rescue.1')=>

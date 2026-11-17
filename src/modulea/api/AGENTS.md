@@ -1,5 +1,27 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-11-17 补救名称修订的显式读取和下载
+
+GET `/studies/{sid}/runs/{rid}/rescue-presentations`只读返回enabled/blockers_zh/expected_input_hash、
+current和history。条目绑定revision_id、receipt_sha256、input_key、created_at和matches_input，
+view_url指向同一明确修订；历史仍可读，当前不适用时不能生成或冒充本批当前结果。
+POST同路径只接受公开Workflow六字段请求，排队plan_rescue_presentation的publish阶段；
+不接受许可清单、字体/路径、参数、评分或通过标记。缺译、来源变化、忙碌拒绝，不重复询问已登记许可。
+
+GET同路径`/{revision_id}`须单值expected_revision_sha256/expected_input_key，返回display.3。
+GET其`/focus`另须compounds/targets两项JSON稳定编号数组，返回同修订的原评分子矩阵。
+GET其`/files/{index}`另须expected_sha256，inline可选1；只返回已登记实际字节。
+未登记404、过期绑定409、未知/多值字段422、原件损坏503；HTTP发送前复核全部读取原件SHA。
+完整/焦点矩阵、名称范围、图CSV、下载与验收URL均携带同revision和回执SHA。
+页面目录与明确视图的matches_input亦须一致；刷新隔离旧视图和旧ZIP，迟到旧GET不得推翻新目录。
+
+原acceptance和acceptance.zip允许追加单值revision_id/expected_revision_sha256，
+此时expected_input_key亦必填；无revision仍沿原科学附件，不静默切换最新修订。
+新包registered/保留原结果，presentation/追加本修订图件、请求、许可、实现/字体和名称来源证据，
+指纹目录逐项映射；跨分组同路径同SHA只存一次且保留登记关系，冲突拒绝。
+原512MiB原件预算保持；每个已评分组合必须能核验实际MODEL 1，NA不补分。
+GET不登记、不绘图、不联网、不签科研复核或生成Word；当前真实科学活跃时不发布或部署。
+
 ## 2026-11-17 救援读取的父批次与名称门控
 
 补救运行允许沿明确登记父准备追溯原batch，不要求producer未保存的冗余顶层字段。
@@ -7,7 +29,7 @@
 旧执行的原评分、稳定组合、MODEL 1及来源绑定检查保持。共享core加载器仅加入当前HTTP
 精确函数代理，首尾完整SHA、UTF-8、缓存预算、跨根及线程保护保持，不改冻结worker。
 最终交付中文门控检查实际选用的name_zh或name，英文假中文、占位词不能通过。
-独立display.3已接公开修订账本与原重任务，HTTP/网页/ZIP尚未接通，不能据此称页面已采用新译名。
+独立display.3已接公开账本、原重任务和显式修订HTTP/网页/ZIP；实际部署另核，不能据此称当前8780已采用新译名。
 真实科学任务运行期间不登记名称许可、不部署代码或改原评分与人工意见。
 
 ## 2026-11-17 验收ZIP保留重复登记关系

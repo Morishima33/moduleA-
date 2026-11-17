@@ -22,7 +22,7 @@ export function Matrix({ matrix, label, onPick }: {
         </th>)}
       </tr></thead>
       <tbody>{rows.map(({row,index}) => <tr key={row.compound_id}>
-        <th scope="row" title={row.compound_id} style={{padding:8,border:'1px solid #DCE1E5',fontWeight:500,textAlign:'left',overflowWrap:'anywhere'}}>
+        <th scope="row" title={row.compound_id+(row.name_scope_note_zh?'；'+row.name_scope_note_zh:'')} style={{padding:8,border:'1px solid #DCE1E5',fontWeight:500,textAlign:'left',overflowWrap:'anywhere'}}>
           {row.label}{row.name_zh && row.name_en!==row.name_zh && <div className="small muted" style={{maxWidth:300}}>{row.name_en}</div>}
         </th>
         {columns.map(({column,index:columnIndex}) => {
@@ -55,7 +55,7 @@ export default function SystemRescueResults({data}:{data:SystemRescueDisplay}) {
   useEffect(()=>{
     setCompounds(data.initial_focus.compound_ids);setTargets(data.initial_focus.target_ids);
     setFocused(data.heatmap);setPicked(null);setEvidence(null);
-  },[data.run_id,data.input_key]);
+  },[data.run_id,data.input_key,data.presentation_revision?.receipt_sha256]);
   useEffect(()=>{
     if(!data.focus_url||!data.input_key)return;
     let active=true;setFocusLoading(true);setFocusError('');
@@ -77,7 +77,7 @@ export default function SystemRescueResults({data}:{data:SystemRescueDisplay}) {
   return <section className="card" style={{minWidth:0}}>
     <SectionHead title="受体补救与完整评分" extra="点击格子核对原值、来源与证据"/>
     <Alert type="info" showIcon message={data.review_note_zh} description={data.scope_note_zh}/>
-    {data.acceptance_url&&<AcceptanceBundle key={data.run_id} url={data.acceptance_url}/>}
+    {data.acceptance_url&&<AcceptanceBundle key={data.acceptance_url} url={data.acceptance_url}/>}
     <p className="small muted">{data.colour_note_zh}</p>
     {data.downloads.length>0 && <Space wrap style={{marginBottom:14}}>{data.downloads.map(file=><Button key={file.url} size="small" href={file.url}>{file.label_zh}</Button>)}</Space>}
 

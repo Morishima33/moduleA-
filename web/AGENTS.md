@@ -23,7 +23,7 @@
 
 ## 4 构建产物
 
-- `npm run build` 输出到 `../src/modulea/static/`（会先清空）。该目录只放构建产物，不手工编辑。
+- `npm run build` 输出到 `../src/modulea/static/`；当前Vite配置保留旧哈希资源，入口只指本次产物，避免已打开页面失去资源。该目录只放构建产物，不手工编辑。
 - `node_modules/`、`dist/` 不提交；不要把依赖复制进 static。
 - 改完前端必须重新构建，并用 Python 服务（Host 为 `127.0.0.1:<端口>`）实际打开验证，确认无控制台错误。
 
