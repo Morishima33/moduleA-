@@ -65,6 +65,45 @@ class AcceptanceBundleTests(unittest.TestCase):
         self.assertEqual(value['translation_missing_ids'],['C1'])
         self.assertTrue(any('核译' in note for note in value['blockers_zh']))
 
+    def test_new_score_zip_context_agrees_with_matrix_and_download_bytes(self):
+        """本轮合成评分经真实展示导出，ZIP和单项下载必须指向同一代次和MODEL 1。"""
+        from science_modules.a06.system_rescue_display_v2 import export
+        from urllib.parse import parse_qs, urlsplit
+        from modulea.api import rescue_evidence
+        s = self.seed
+        s.make_current_score()
+        s.files = [ref for ref in s.files if not ref.get('role', '').startswith('plot_a06_rescue_')
+                   and ref.get('role') not in ('a06_rescue_matrix_csv', 'a06_rescue_display_view')]
+        folder = s.case.home / f'runs/A06/{s.rid}/rescue/display' / ('display_' + 'e' * 32)
+        font = os.environ.get('MODULEA_TEST_FONT') or next(str(p) for p in
+            [Path(os.environ.get('WINDIR', 'C:/Windows')) / 'Fonts/msyh.ttc',
+             Path('/System/Library/Fonts/Supplemental/Songti.ttc')] if p.is_file())
+        figures, attachments = export(s.case.home, s.packet, folder, font_path=font)
+        s.files.extend(figures + attachments)
+        s.save()
+        before = {p.relative_to(s.case.home).as_posix(): sha256(p.read_bytes()).hexdigest()
+                  for p in s.case.home.rglob('*') if p.is_file()}
+        details = s.details()
+        links = {row['name']: row for row in details['downloads']}
+        answer = acceptance_bundle.download(s.app, self.req, s.sid, s.rid)
+        with zipfile.ZipFile(io.BytesIO(answer[1])) as archive:
+            context = json.loads(archive.read('poses/pair_000001/context.json'))
+            self.assertEqual(context['source_zh'], details['source_zh'])
+            self.assertIn('本轮新增评分', context['source_zh'])
+            top = archive.read('poses/pair_000001/top1.pdbqt')
+            self.assertEqual(sha256(top).hexdigest(), context['top1_sha256'])
+            for name in ('context.json', 'top1.pdbqt'):
+                link = links[name]
+                query = parse_qs(urlsplit(link['url']).query)
+                req = SimpleNamespace(query=query, query1=lambda key: query.get(key, [None])[0])
+                raw = rescue_evidence.read(s.app, req, s.sid, s.rid, name.split('.')[0])[1]
+                self.assertEqual(raw, archive.read('poses/pair_000001/' + name))
+            view_ref = next(r for r in s.files if r.get('role') == 'a06_rescue_display_view')
+            view = json.loads(archive.read('registered/' + view_ref['path']))
+            self.assertEqual(view['table']['cells'][0][0]['source_zh'], '本轮新增评分')
+        self.assertEqual(before, {p.relative_to(s.case.home).as_posix(): sha256(p.read_bytes()).hexdigest()
+                                 for p in s.case.home.rglob('*') if p.is_file()})
+
     def test_missing_current_figure_is_blocked_without_generating_it(self):
         s=self.seed
         s.files=[r for r in s.files if r.get('role')!='plot_a06_rescue_focus_png'];s.save()

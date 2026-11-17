@@ -126,6 +126,11 @@ details返回 `schema_version:ModuleA.rescue_evidence.1/read_only/study_id/run_i
 区域为已登记的 `region_id/state/state_zh/score/reason_zh/selected/downloads`，不存在区域记录时
 返回空数组并明确说明未登记，不从旧评分推导区域。downloads含`label_zh/name/url/sha256/bytes`。
 来源说明含实际执行运行、原执行SHA、原构象SHA和下载Top-1 SHA，不把继承评分当本轮新增。
+二版按已登记`reused_pair_keys/new_pair_keys`区分沿用与本轮新增，不按`source_kind`、
+执行目录或运行编号猜测代次；恢复的旧检查点评分可以是累计补救类别，但仍属于本轮沿用。
+代次缺失、重复、交叠、未知对象或状态不符时拒绝成功构象说明。第一版仍读其原来源类别。
+details、context下载及验收ZIP共用相同说明，动态context字节SHA随说明改变，旧链接须刷新；
+原评分、MODEL 1及历史附件不回写。验证与实际部署范围见docs/构象下载评分代次一致性_20261117.md。
 
 GET `/studies/{sid}/runs/{rid}/rescue-focus`接受单值`expected_input_key/compounds/targets`，
 后两项为稳定ID数组的JSON。后端核验范围、去重并保持固定顺序，返回`run_id/input_key/heatmap/score_range`；

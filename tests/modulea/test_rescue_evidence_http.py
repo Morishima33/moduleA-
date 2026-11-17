@@ -117,6 +117,78 @@ class RescueEvidenceHttpTests(unittest.TestCase):
         self.assertEqual(value['regions'][1]['reason_zh'], failed['reason_zh'])
         self.assertTrue(value['regions'][1]['downloads'])
 
+    def make_current_score(self):
+        """构造本轮真实登记的合成执行，不借用旧运行的成功归属。"""
+        c = self.case
+        pose = c.save(f'runs/A06/{self.rid}/rescue/poses.pdbqt',
+                      (c.home / c.pose['path']).read_text('utf-8'), 'scoring_pose')
+        execution = dict(c.execution, pose=pose, files=[c.command_ref, pose])
+        ref = c.json(f'runs/A06/{self.rid}/rescue/execution.json', execution)
+        self.files.extend([pose, ref])
+        self.packet['pairs'][0]['execution'] = ref
+        self.packet.update(reused_pair_keys=[], new_pair_keys=[['C1', 'HGNC:1']])
+        self.save()
+
+    def test_current_score_context_uses_registered_generation_and_exact_model_one(self):
+        self.make_current_score()
+        before = (self.case.home / 'manifest.json').read_bytes()
+        value = self.details()
+        self.assertEqual(value['context']['execution_run_id'], self.rid)
+        self.assertIn('本轮新增评分', value['source_zh'])
+        self.assertNotIn('沿用', value['source_zh'])
+        link = next(row for row in value['downloads'] if row['name'] == 'context.json')
+        query = parse_qs(urlsplit(link['url']).query)
+        req = SimpleNamespace(query=query, query1=lambda key: query.get(key, [None])[0])
+        raw = rescue_evidence.read(self.app, req, self.sid, self.rid, 'context')[1]
+        self.assertEqual(json.loads(raw)['source_zh'], value['source_zh'])
+        self.assertEqual(sha256(raw).hexdigest(), link['sha256'])
+        self.assertEqual(value['context']['top1_sha256'],
+                         sha256(rescue_evidence._top1((self.case.home / self.case.pose['path']).read_bytes(), -7.125)).hexdigest())
+        old_context = dict(value['context'], source_zh='来自已登记实际执行的MODEL 1原字节；沿用评分不计为本轮新增。')
+        old_raw = json.dumps(old_context, ensure_ascii=False, sort_keys=True, indent=2).encode('utf-8')
+        query['expected_download_sha256'] = [sha256(old_raw).hexdigest()]
+        with self.assertRaises(ApiError) as caught:
+            rescue_evidence.read(self.app, req, self.sid, self.rid, 'context')
+        self.assertEqual(caught.exception.status, 409)
+        self.assertEqual((self.case.home / 'manifest.json').read_bytes(), before)
+
+    def test_checkpoint_recovered_score_is_reused_even_when_source_kind_is_rescue(self):
+        c = self.case
+        self.manifest['runs'][c.score_id]['result_file'] = None
+        checkpoint = c.json(f'runs/A06/{c.score_id}/checkpoint.json',
+                            {'run_id': c.score_id, 'key': 'pair_000001_region_000001',
+                             'payload': {'execution': c.execution_ref}})
+        self.run['inputs']['source_binding'] = {
+            'partial_recovery': {'run_id': c.score_id, 'checkpoint_refs': [checkpoint]}}
+        self.packet['pairs'][0]['source_kind'] = 'rescue'
+        self.save()
+        value = self.details()
+        self.assertIn('沿用已核验评分', value['source_zh'])
+        self.assertNotIn('；本轮新增评分', value['source_zh'])
+        self.assertEqual(value['context']['execution_run_id'], c.score_id)
+
+    def test_ambiguous_or_missing_generation_is_rejected(self):
+        cases = [([], []), ([['C1', 'HGNC:1']], [['C1', 'HGNC:1']]),
+                 ([['C1', 'HGNC:1'], ['C1', 'HGNC:1']], []),
+                 ([['unknown', 'HGNC:1']], []), (None, [])]
+        for reused, new in cases:
+            with self.subTest(reused=reused, new=new):
+                self.packet.update(reused_pair_keys=reused, new_pair_keys=new)
+                self.save()
+                with self.assertRaises(ApiError) as caught:
+                    self.details()
+                self.assertEqual(caught.exception.status, 503)
+
+    def test_first_protocol_uses_original_source_category_without_round_sets(self):
+        self.run['config']['version'] = self.packet['schema_version'] = 'A06.system_rescue.1'
+        self.packet.pop('reused_pair_keys')
+        self.packet.pop('new_pair_keys')
+        for kind, note in [('original', '沿用已核验评分'), ('rescue', '本轮新增评分')]:
+            with self.subTest(kind=kind):
+                self.packet['pairs'][0]['source_kind'] = kind
+                self.save()
+                self.assertIn(note, self.details()['source_zh'])
+
     def test_stale_input_unknown_object_and_path_override_fail(self):
         for change, status in (({'expected_input_key': 'other'}, 409),
                                ({'compound_id': 'same-name-but-another-ID'}, 404),
