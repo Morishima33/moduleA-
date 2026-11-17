@@ -704,6 +704,9 @@ def run_display_revision(settings,task,manager):
 
 HANDLERS['plan_display_revision']=run_display_revision
 
+from .rescue_presentation import run as run_rescue_presentation
+HANDLERS['plan_rescue_presentation']=run_rescue_presentation
+
 
 def _run_system_receptor_paths(settings, task, manager, mode):
     """预算内按固定隔离解释器运行，不在外壳加载Meeko或Vina依赖。"""

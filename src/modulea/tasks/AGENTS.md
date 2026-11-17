@@ -1,5 +1,16 @@
 # tasks/ — 后台任务
 
+## 2026-11-17 补救名称许可与独立图表
+
+plan_rescue_presentation是原预算关口的重任务，不加入LIGHTWEIGHT；私有payload严格为
+{stage:original_name|publish,request:公开Workflow严格请求}，不接浏览器字体/工具路径或科学参数。
+字体仅取服务器font_regular，缺失时按原本机现有默认路径核验，Mac需配置可用中文字体。
+当前task_id、study/kind、实际pid/出生、resource_owner、payload、running和同研究唯一活动任务
+在开始及每次登记短锁前重核；取消/中断/替换后不能发表成功候选或回执。
+仅调用公开register_rescue_original_name_decision或publish_rescue_presentation，不执行对接、
+统计、Word或人工科研复核。未完整归档的科学运行先阻断，真实计算活跃时不提交此任务。
+队列/状态标记合成验证与真实CLI预算、进程树取消及实际病例发表分开报告。
+
 ## 2026-11-16 明确原生执行
 
 `native_a06`只接受明确prepare/qualify/score请求，沿原TaskManager与计算位执行。

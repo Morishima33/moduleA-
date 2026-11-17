@@ -6,12 +6,12 @@ import io
 import json
 from pathlib import PurePosixPath
 import zipfile
-import zlib
 
 from contracts import fingerprint,require,ContractError
 from .errors import ApiError
 from .rescue_evidence import load_bundle,checked_bytes,_artifacts,same_file
 from ..core.rescue_presentation_names import chinese_name
+from ..core.png_integrity import png_size as _png
 
 ROLES={'plot_a06_rescue_full_png','plot_a06_rescue_full_svg','a06_rescue_matrix_csv','a06_rescue_display_view'}
 MAX_REGISTERED_BYTES=512*1024*1024
@@ -27,21 +27,6 @@ def _registered_files(records):
         require(same_file(group['record'],record),'同一归档路径存在冲突长度或指纹，验收资料已阻断')
         group['registrations'].append({'index':index,'record':deepcopy(record)})
     return list(groups.values())
-
-
-def _png(raw):
-    """检查已登记PNG各块CRC和尺寸，不在HTTP进程加载绘图依赖或重画。"""
-    require(raw.startswith(b'\x89PNG\r\n\x1a\n'),'登记PNG格式错误')
-    at=8;ended=False;size=None
-    while at+12<=len(raw):
-        count=int.from_bytes(raw[at:at+4],'big');tag=raw[at+4:at+8];chunk=raw[at+8:at+8+count]
-        require(at+12+count<=len(raw) and zlib.crc32(tag+chunk)==int.from_bytes(raw[at+8+count:at+12+count],'big'),
-                '登记PNG块长度或CRC错误')
-        if tag==b'IHDR':size=[int.from_bytes(chunk[:4],'big'),int.from_bytes(chunk[4:8],'big')]
-        at+=count+12
-        if tag==b'IEND':ended=True;break
-    require(ended and at==len(raw) and size and all(x>0 for x in size),'登记PNG缺少完整图像')
-    return size
 
 
 def assess(bundle):

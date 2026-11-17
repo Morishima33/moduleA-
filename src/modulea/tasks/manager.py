@@ -36,6 +36,7 @@ KINDS['plan_ppi_identity_probe'] = '按本批获准清单补查原HGNC稳定编�
 KINDS['plan_ppi_identity_revision'] = '完整补查后按原参数重取全网络并发布独立PPI版本'
 KINDS['plan_system_exports'] = '从本批归档结果生成Excel、CSV及图表（不重算评分）'
 KINDS['plan_display_revision'] = '另存本批图表与核译，不重算统计评分或生成Word'
+KINDS['plan_rescue_presentation'] = '登记本批明确名称许可或另存双语图表，不改变评分或生成Word'
 KINDS['plan_system_receptor_path_repair'] = '只补执行本批受体目录启动故障并核验资格'
 KINDS['plan_system_receptor_path_scoring'] = '按修订后的同批真实资格执行原参数评分'
 KINDS['plan_system_receptor_rescue'] = '按明确范围补救本批不可用受体并另存完整A06矩阵'
