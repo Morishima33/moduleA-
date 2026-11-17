@@ -185,7 +185,7 @@ class Views:
     def _build_cards(self, manifests):
         """独立研究最多三项并行只读，map保持原顺序；不触发后台科学计算。"""
         def read(manifest):
-            from ..core.inherited_read_evidence import json_evidence_scope
+            from ..core.checkpoint_json_read import json_evidence_scope
             with json_evidence_scope(self.kernel.settings.data_root,manifest['study_id']) as evidence:
                 value=evidence.call(self.study_card,manifest['study_id'],with_states=True)
             return value

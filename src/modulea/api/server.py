@@ -654,7 +654,7 @@ class App:
 
     def _json_read(self,study_id,function,*args):
         """只给指定JSON入口复用同请求证据，退出全SHA成功才交给HTTP响应。"""
-        from ..core.inherited_read_evidence import json_evidence_scope
+        from ..core.checkpoint_json_read import json_evidence_scope
         with json_evidence_scope(self.settings.data_root,study_id) as evidence:
             result=evidence.call(function,*args)
         return result
