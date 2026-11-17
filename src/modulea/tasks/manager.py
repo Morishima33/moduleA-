@@ -279,6 +279,7 @@ class TaskManager:
     def _spawn(self, task_id: str, log_path: Path) -> None:
         """用配置的科学解释器启动子进程：python -m modulea task-run <task_id>。"""
         env = dict(os.environ)
+        env['PYTHONIOENCODING'] = 'utf-8'  # 仅child副本；此变量可覆盖-X utf8的标准流编码。
         env["PYTHONPATH"] = str(LEGACY_SRC) + os.pathsep + env.get("PYTHONPATH", "")
         env["MODULEA_DATA_ROOT"] = str(self.settings.data_root)
         self.settings.validate_resources()
@@ -293,7 +294,8 @@ class TaskManager:
         for key,name in (('tools_profile','MODULEA_TOOLS_PROFILE'),('font_regular','MODULEA_FONT_REGULAR'),
                          ('font_bold','MODULEA_FONT_BOLD')):
             if getattr(self.settings,key,None):env[name]=str(getattr(self.settings,key))
-        command = [self.settings.science_python, "-m", "modulea", "--runtime-dir", str(self.settings.runtime_dir), "task-run", task_id]
+        # 日志接口按UTF8读取；显式解释器选项不受Windows默认代码页或父环境覆盖。
+        command = [self.settings.science_python, "-X", "utf8", "-m", "modulea", "--runtime-dir", str(self.settings.runtime_dir), "task-run", task_id]
         flags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
         with open(log_path, "ab") as stream:
             process = subprocess.Popen(command, cwd=str(self.settings.project_root), env=env, stdout=stream, stderr=subprocess.STDOUT,

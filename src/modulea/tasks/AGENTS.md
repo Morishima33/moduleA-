@@ -1,5 +1,14 @@
 # tasks/ — 后台任务
 
+## 2026-11-18 新后台任务的UTF8日志
+
+TaskManager._spawn为Python子进程明确传入-X utf8，并仅在child环境副本固定PYTHONIOENCODING=utf-8，
+和原log接口的UTF8读取保持一致；Windows默认代码页、父PYTHONUTF8/PYTHONIOENCODING覆盖不能使中文错误或路径乱码。
+不改父环境或已归档日志字节、
+解释器路径、任务命令入口、科学参数、预算、进程树及旧协议；真实SCI活跃时不热换其实现或重启。
+验证须含生产TaskManager→实际CLI→原handler的中文失败日志，不以SQLite error_zh正常代称日志正常。
+真实CLI的拒绝/等待取消通过仍不代表成功完整包发表、实际病例或Mac实机已验。
+
 ## 2026-11-18 同图表修订完整验收包
 
 原plan_rescue_presentation重任务追加archive阶段，payload仍只{stage,request}，不进LIGHTWEIGHT。

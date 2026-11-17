@@ -183,3 +183,26 @@ class ResourceRunnerTests(unittest.TestCase):
         record=json.loads((self.settings.runtime_dir/'compute_slots/slot_0.json').read_text('utf8'))
         self.assertEqual(record['task_id'],task['task_id'])
         self.until(lambda:not tree_alive(record['tree']))
+
+    def test_actual_archive_cli_keeps_chinese_failure_log_readable(self):
+        """生产spawn与完整包handler保留中文错误，不以SQLite中文正确代替实际日志。"""
+        from modulea.tasks.process_tree import tree_alive
+        with patch.dict(os.environ,{'PYTHONIOENCODING':'cp936','PYTHONUTF8':'0'}):
+            task,created=self.manager.submit('synthetic_archive_log','plan_rescue_presentation',
+                '中文日志保护核查',{'stage':'archive','request':{}})
+            self.assertEqual(os.environ['PYTHONIOENCODING'],'cp936','不改服务父环境')
+            self.assertEqual(os.environ['PYTHONUTF8'],'0','不改服务父环境')
+        self.assertTrue(created)
+        tid=task['task_id']
+        self.until(lambda:self.manager.get(tid)['state'] not in ('queued','running'))
+        row=self.manager.get(tid);log=self.manager.log(tid)['text']
+        self.assertEqual(row['state'],'failed',log)
+        self.assertIn('完整包请求字段或确认无效',row['error_zh'])
+        self.assertIn('rescue_presentation.py',log)
+        self.assertIn('rescue_acceptance_archives.py',log)
+        self.assertIn('完整包请求字段或确认无效',log)
+        self.assertNotIn('\ufffd',log)
+        lease=json.loads((self.settings.runtime_dir/'compute_slots/slot_0.json').read_text('utf8'))
+        self.assertEqual(lease['task_id'],tid)
+        self.until(lambda:not tree_alive(lease['tree']))
+        self.assertFalse(self.settings.studies_dir.exists(),'无效技术请求不得产生研究文件')
