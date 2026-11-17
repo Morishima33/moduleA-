@@ -77,7 +77,7 @@ export default function SystemRescueResults({data}:{data:SystemRescueDisplay}) {
   return <section className="card" style={{minWidth:0}}>
     <SectionHead title="受体补救与完整评分" extra="点击格子核对原值、来源与证据"/>
     <Alert type="info" showIcon message={data.review_note_zh} description={data.scope_note_zh}/>
-    {data.acceptance_url&&<AcceptanceBundle key={data.acceptance_url} url={data.acceptance_url}/>}
+    {data.acceptance_url&&<AcceptanceBundle key={data.acceptance_url} url={data.acceptance_url} revision={data.presentation_revision}/>}
     <p className="small muted">{data.colour_note_zh}</p>
     {data.downloads.length>0 && <Space wrap style={{marginBottom:14}}>{data.downloads.map(file=><Button key={file.url} size="small" href={file.url}>{file.label_zh}</Button>)}</Space>}
 

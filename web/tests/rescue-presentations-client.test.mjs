@@ -60,3 +60,25 @@ test('焦点URL已有输入与页面不一致时拒绝发送而不覆盖绑定',
   await assert.rejects(async()=>api.rescueFocus('/api/v1/example/focus?expected_input_key=foreign','I',['C1'],['T1']));
   assert.equal(calls.length,0);
 });
+
+test('完整包目录保留明确图表SHA，只读不自动提交打包',async()=>{
+  const {api}=await fresh();const calls=[];
+  assert.equal(typeof api.acceptanceArchives,'function');
+  globalThis.fetch=async(url,options)=>{calls.push({url,options});return response({history:[]});};
+  const url='/api/v1/studies/S/runs/R/rescue-presentations/V/acceptance-archives?expected_revision_sha256=A&expected_input_key=I';
+  await api.acceptanceArchives(url);
+  assert.equal(calls.length,1);assert.equal(calls[0].options.method,'GET');assert.equal(calls[0].url,url);
+});
+
+test('完整包POST保留九字段与既有令牌，不把目录查询带入正文或路径',async()=>{
+  const {api,loadSession}=await fresh();const calls=[];
+  assert.equal(typeof api.publishAcceptanceArchive,'function');
+  globalThis.fetch=async(url,options)=>{calls.push({url,options});return response(url.endsWith('/session')?{token:'synthetic'}:{created:true});};
+  await loadSession();calls.length=0;
+  const body={request_id:'rescuezipreq_X',expected_run_id:'R',expected_revision_id:'V',expected_revision_sha256:'A',
+    expected_input_key:'I',expected_input_hash:'H',author:'合成测试',note:'同修订完整包',confirmed:true};
+  const url='/api/v1/studies/S/runs/R/rescue-presentations/V/acceptance-archives';
+  await api.publishAcceptanceArchive(url,body);
+  assert.equal(calls.length,1);assert.equal(calls[0].url,url);assert.equal(calls[0].options.method,'POST');
+  assert.deepEqual(JSON.parse(calls[0].options.body),body);assert.equal(calls[0].options.headers['X-ModuleA-Token'],'synthetic');
+});

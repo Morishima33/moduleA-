@@ -13,21 +13,10 @@ from .rescue_evidence import load_bundle,checked_bytes,_artifacts,same_file
 from ..core.rescue_presentation_names import chinese_name
 from ..core.png_integrity import png_size as _png
 from ..core.read_evidence import current_evidence
+from ..core.rescue_acceptance_inventory import registered_files as _registered_files, member_plan, presentation_files
 
 ROLES={'plot_a06_rescue_full_png','plot_a06_rescue_full_svg','a06_rescue_matrix_csv','a06_rescue_display_view'}
 MAX_REGISTERED_BYTES=512*1024*1024
-
-
-def _registered_files(records):
-    """只合并完全相同路径/长度/SHA的原件，清单保留每条原登记和索引。"""
-    groups={}
-    for index,record in enumerate(records):
-        path=record['path']
-        if path not in groups:groups[path]={'record':record,'registrations':[]}
-        group=groups[path]
-        require(same_file(group['record'],record),'同一归档路径存在冲突长度或指纹，验收资料已阻断')
-        group['registrations'].append({'index':index,'record':deepcopy(record)})
-    return list(groups.values())
 
 
 def _load(app,sid,rid):
@@ -144,11 +133,22 @@ def info(app,req,sid,rid):
     """只返回本批原件齐备性和缺译门控，不创建导出或任务。"""
     try:
         presentation=_presentation(app,req,sid,rid)
-        value=assess(presentation['bundle'] if presentation else _load(app,sid,rid),presentation)
+        bundle=presentation['bundle'] if presentation else _load(app,sid,rid)
+        value=assess(bundle,presentation)
         from urllib.parse import urlencode
+        plan=member_plan(bundle[4],presentation)
+        value['registered_source_bytes']=plan['registered_bytes']
+        value['archive_required']=plan['registered_bytes']>MAX_REGISTERED_BYTES
+        if value['archive_required']:
+            value['enabled']=False
+            value['blockers_zh'].append('全部原件超过即时打包容量；请使用本修订完整包下载，保留全部证据。'
+                                       if presentation else '全部原件超过512MiB内存ZIP预算，请沿原附件逐件下载。')
         query={'expected_input_key':value['input_key']}
         if presentation:query.update(revision_id=presentation['record']['revision_id'],
                                      expected_revision_sha256=presentation['record']['file']['sha256'])
+        if presentation:
+            value['archive_url']=f'/api/v1/studies/{sid}/runs/{rid}/rescue-presentations/{presentation["record"]["revision_id"]}/acceptance-archives?'+urlencode({
+                'expected_revision_sha256':presentation['record']['file']['sha256'],'expected_input_key':value['input_key']})
         value['download_url']=f'/api/v1/studies/{sid}/runs/{rid}/acceptance.zip?'+urlencode(query)
         return value
     except (ContractError,KeyError,ValueError,TypeError,OSError) as error:
@@ -169,18 +169,9 @@ def download(app,req,sid,rid):
             members[name]=raw;inventory.append({'path':name,'bytes':len(raw),'sha256':sha256(raw).hexdigest(),'role':role})
             if registrations is not None:inventory[-1]['registrations']=deepcopy(registrations)
         # 复用既有结果登记，历史原件照实保留；不运行生成器或科学工具。
-        registered=_registered_files(result['files'])
-        extra=[];presentation_groups=[]
-        if presentation:
-            record=presentation['record'];request=presentation['request'];source=presentation['binding']['source']
-            refs=[record['file'],record['request_file'],*record['files'],request['catalog_file'],request['font_file'],
-                  *request['implementation_files'],*presentation['binding']['name_decisions'],*source['evidence'],source['scoring_packet']]
-            refs.extend(ref for entry in source['basis']['run_files'].values() for ref in entry.values() if ref)
-            presentation_groups=_registered_files(refs)
-            combined=_registered_files(result['files']+refs)
-            original_paths={group['record']['path'] for group in registered}
-            extra=[group for group in combined if group['record']['path'] not in original_paths]
-        total=sum(group['record']['bytes'] for group in registered+extra)
+        plan=member_plan(result,presentation)
+        registered,extra=plan['registered'],plan['extra']
+        total=plan['registered_bytes']
         require(total<=MAX_REGISTERED_BYTES,'资料包超过512MiB，请按既有附件逐件导出；未触发重算')
         # 先核组合原件预算，再核姿势；只缓存ZIP实际使用的MODEL1/context，不留全模式source。
         value=_assess_presentation(bundle,presentation,poses) if presentation else assess(bundle)
@@ -210,11 +201,8 @@ def download(app,req,sid,rid):
                   'registered_reference_count':len(result['files']),'registered_unique_file_count':len(registered),
                   'human_review_written':False,'inventory_self_hash_excluded':True,'note_zh':value['note_zh']}
         if presentation:
-            original_paths={group['record']['path'] for group in registered}
             metadata['presentation_revision']=deepcopy(value['presentation_revision'])
-            metadata['presentation_files']=[dict(deepcopy(group),zip_path=
-                ('registered/' if group['record']['path'] in original_paths else 'presentation/')+group['record']['path'])
-                for group in presentation_groups]
+            metadata['presentation_files']=presentation_files(plan)
         add('验收目录与指纹.json',json.dumps(metadata,ensure_ascii=False,indent=2).encode('utf-8'),'inventory')
         output=io.BytesIO()
         with zipfile.ZipFile(output,'w',compression=zipfile.ZIP_DEFLATED) as archive:

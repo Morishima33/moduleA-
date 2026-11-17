@@ -1,5 +1,32 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-11-18 同修订完整验收包
+
+GET `/studies/{sid}/runs/{rid}/rescue-presentations/{revision_id}/acceptance-archives`须单值
+expected_revision_sha256/expected_input_key；返回run_id/revision_id/input_key/expected_input_hash、enabled/blockers_zh、
+required_source_bytes、matches_input、current/history及generate_url。历史包可只读；来源暂停不允许新生成。
+每个包条目绑定archive_id、receipt_sha256、archive_sha256、bytes、matches_input和固定download_url。
+POST同路径不带查询，仅接受9字段request_id/expected_run_id/expected_revision_id/expected_revision_sha256/
+expected_input_key/expected_input_hash/author/note/confirmed，排原plan_rescue_presentation的archive重任务。
+字体、路径、归档内容、磁盘配置、科学参数或科研通过标记不可由客户端覆盖。
+
+GET `.../acceptance-archives/{archive_id}/download`须单值expected_revision_sha256/expected_input_key/
+expected_archive_receipt_sha256/expected_archive_sha256。未登记404、版本不符409、未知/多值422、坏原件503；
+完整核同图原件、每个成员、Top1/名字范围及回执后，按verified_snapshot响应，源读取纳入HTTP首尾SHA。
+GET不会生成完整包或登记研究；私有临时下载文件仅在runtime，响应完成/失败后删除。
+
+原验收info在有显式修订时追加archive_url、archive_required、registered_source_bytes。
+全部原件超过原512MiB内存ZIP预算时enabled=false并说明改走完整包，不能先显示必然失败的小包下载链接。
+原512MiB限制保持，完整包走磁盘预算，不通过删来源、放宽科学条件或扩大单次内存来交付。
+
+## 2026-11-17 完整包的有界文件响应基础
+
+内部verified_snapshot返回值只用于已登记完整包：先分块复制并核SHA至运行目录私有临时句柄，
+原研究无写入。HTTP首尾证明成功后才发送；沿原同源/CSP/no-store/附件头，追加实际X-Content-SHA256，
+256KiB分块发送同一快照，不能在发送时重新打开原路径。正常、首尾证明失败、连接断开均关闭删除。
+运行磁盘须有完整快照及配置余量，磁盘不足明确拒绝。原512MiB内存ZIP及旧下载类型保持。
+公开账本、原重任务与页面已接入；真实病例大包及8780实际下载另验，不能据此称真实病例已打包。
+
 ## 2026-11-17 补救名称修订的显式读取和下载
 
 GET `/studies/{sid}/runs/{rid}/rescue-presentations`只读返回enabled/blockers_zh/expected_input_hash、

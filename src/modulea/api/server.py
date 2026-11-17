@@ -88,6 +88,9 @@ class App:
             ("GET", rf"/api/v1/studies/{ID}/runs/{ID}/rescue-presentations/{ID}", self.get_rescue_presentation),
             ("GET", rf"/api/v1/studies/{ID}/runs/{ID}/rescue-presentations/{ID}/focus", self.get_rescue_presentation_focus),
             ("GET", rf"/api/v1/studies/{ID}/runs/{ID}/rescue-presentations/{ID}/files/([0-9]+)", self.get_rescue_presentation_file),
+            ("GET", rf"/api/v1/studies/{ID}/runs/{ID}/rescue-presentations/{ID}/acceptance-archives", self.get_rescue_acceptance_archives),
+            ("POST", rf"/api/v1/studies/{ID}/runs/{ID}/rescue-presentations/{ID}/acceptance-archives", self.post_rescue_acceptance_archive),
+            ("GET", rf"/api/v1/studies/{ID}/runs/{ID}/rescue-presentations/{ID}/acceptance-archives/{ID}/download", self.get_rescue_acceptance_archive_file),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/receptor-rescue", self.get_receptor_rescue),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/receptor-rescue/execute", self.post_receptor_rescue),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/receptor-rescue-v2", self.get_receptor_rescue_v2),
@@ -661,9 +664,15 @@ class App:
     def _json_read(self,study_id,function,*args):
         """只给指定JSON入口复用同请求证据，退出全SHA成功才交给HTTP响应。"""
         from ..core.http_read_evidence import json_evidence_scope
-        with json_evidence_scope(self.settings.data_root,study_id) as evidence:
-            result=evidence.call(function,*args)
-        return result
+        result=None
+        try:
+            with json_evidence_scope(self.settings.data_root,study_id) as evidence:
+                result=evidence.call(function,*args)
+            return result
+        except BaseException:
+            # 响应前原件复核失败时尚未进入Handler，仍须释放私有临时快照。
+            if isinstance(result,tuple) and result and result[0]=='verified_snapshot':result[1].close()
+            raise
 
     def get_system_pipeline(self,req,study_id):
         """只读统一编排的真实批次和阶段流水。"""
@@ -979,6 +988,21 @@ class App:
         """验收资料仅核对同批登记原件齐备性，不补图或重算。"""
         from .acceptance_bundle import info
         return self._json_read(study_id,info,self,req,study_id,run_id)
+
+    def get_rescue_acceptance_archives(self,req,study_id,run_id,revision_id):
+        """完整包目录只读，同一图表回执和源原件发送前完整复核。"""
+        from .rescue_acceptance_archives import directory
+        return self._json_read(study_id,directory,self,req,study_id,run_id,revision_id)
+
+    def post_rescue_acceptance_archive(self,req,study_id,run_id,revision_id):
+        """用户明确请求沿原重任务打包，不在HTTP线程写研究或生成ZIP。"""
+        from .rescue_acceptance_archives import submit
+        return submit(self,req,study_id,run_id,revision_id)
+
+    def get_rescue_acceptance_archive_file(self,req,study_id,run_id,revision_id,archive_id):
+        """大包的私有快照须在HTTP退出完整原件证明成功后才发送。"""
+        from .rescue_acceptance_archives import download
+        return self._json_read(study_id,download,self,req,study_id,run_id,revision_id,archive_id)
 
     def get_acceptance_zip(self, req, study_id, run_id):
         """只读整理既有原件和构象，下载发送同一份已核验字节。"""
@@ -1680,6 +1704,17 @@ def make_handler(app: App):
                 if method == 'POST':
                     with app.admit_write(route.path):result = app.dispatch(method, route.path, request)
                 else:result = app.dispatch(method, route.path, request)
+                if isinstance(result, tuple) and result and result[0] == "verified_snapshot":
+                    _, snapshot, name, mime, inline = result
+                    try:
+                        snapshot.rewind()
+                        disposition = ("inline" if inline else "attachment") + "; filename*=UTF-8''" + quote(name, safe="")
+                        self._headers(200, snapshot.bytes, mime, FILE_CSP, {"Content-Disposition": disposition,
+                            "X-Content-SHA256": snapshot.sha256})
+                        while data := snapshot.read(256 * 1024):self.wfile.write(data)
+                    finally:
+                        snapshot.close()
+                    return
                 if isinstance(result, tuple) and result and result[0] == "verified_download":
                     _, data, name, mime, inline = result
                     disposition = ("inline" if inline else "attachment") + "; filename*=UTF-8''" + quote(name, safe="")

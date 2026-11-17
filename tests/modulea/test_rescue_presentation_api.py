@@ -158,6 +158,16 @@ class RescuePresentationApiTests(unittest.TestCase):
         self.assertFalse(original['enabled']);self.assertNotIn('presentation_revision',original)
         self.assertEqual(set(original['translation_missing_ids']),{'C1','C2'})
 
+    def test_large_revision_info_does_not_offer_a_download_that_exceeds_memory_budget(self):
+        from modulea.api import acceptance_bundle
+        record=self.publish();query=self.request(revision_id=record['revision_id'],
+            expected_revision_sha256=record['file']['sha256'],expected_input_key='original')
+        with patch.object(acceptance_bundle,'MAX_REGISTERED_BYTES',1):
+            value=acceptance_bundle.info(self.app,query,self.sid,self.rid)
+        self.assertFalse(value['enabled']);self.assertTrue(value['archive_required'])
+        self.assertIn(record['revision_id'],value['archive_url'])
+        self.assertIn('完整包','；'.join(value['blockers_zh']))
+
     def test_scored_pair_missing_execution_cannot_pass_revision_acceptance(self):
         from modulea.api import acceptance_bundle
         self.seed.packet['pairs'][0].pop('execution');self.save_score();record=self.publish()

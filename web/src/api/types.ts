@@ -533,6 +533,22 @@ export interface AcceptanceBundle {
   enabled:boolean;blockers_zh:string[];translation_missing_ids:string[];download_url:string;note_zh:string;
   files:{path:string;sha256:string;bytes:number}[];
   presentation_revision?:RescuePresentationRevision;
+  archive_url?:string;archive_required?:boolean;registered_source_bytes?:number;
+}
+
+/** 完整包与图表回执分别绑定，下载URL携带两份SHA，不在前端计算科研状态。 */
+export interface RescueAcceptanceArchiveItem {
+  archive_id:string;receipt_sha256:string;archive_sha256:string;bytes:number;created_at:string;
+  matches_input:boolean;download_url:string;
+}
+export interface RescueAcceptanceArchiveDirectory {
+  run_id:string;revision_id:string;input_key:string;receipt_sha256:string;matches_input:boolean;
+  enabled:boolean;blockers_zh:string[];expected_input_hash:string|null;required_source_bytes:number|null;
+  current:RescueAcceptanceArchiveItem|null;history:RescueAcceptanceArchiveItem[];generate_url:string;read_only:true;
+}
+export interface RescueAcceptanceArchiveRequest {
+  request_id:string;expected_run_id:string;expected_revision_id:string;expected_revision_sha256:string;
+  expected_input_key:string;expected_input_hash:string;author:string;note:string;confirmed:true;
 }
 
 /** 明确修订由回执及原输入绑定；中文名称记录数不等于已核结构数。 */

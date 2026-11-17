@@ -10,6 +10,7 @@ from urllib.parse import urlencode
 from contracts import ContractError, fingerprint, require, safe_id
 from ..core import rescue_presentations as core
 from ..core.rescue_result_read import load_rescue_result
+from ..core.rescue_presentation_read import matches_current as _matches
 from .errors import ApiError, not_found
 from .rescue_evidence import evidence_url, focus_matrix
 
@@ -64,19 +65,6 @@ def _records(w, m, sid, rid):
     return values
 
 
-def _matches(w, m, record, bound):
-    """已有图按科学/译名来源适用；本机字体或生成代码不同只影响新生成，不隐藏原图。"""
-    request = core._read_request(w, m, record['request_file'])
-    if bound is None:
-        try:
-            current, basis, _, source = core._context(w, m['study_id'], record['run_id'])
-            require(fingerprint(current) == fingerprint(m), '名称修订适用性读取期间登记改变')
-            bound, _ = core._binding(w, m, basis, source, font_path=w.location(m['study_id']) / request['font_file']['path'])
-        except (ContractError, KeyError, OSError, ValueError, TypeError):return False
-    readable = deepcopy(bound)
-    readable['font'] = deepcopy(request['binding']['font'])
-    readable['implementation'] = deepcopy(request['binding']['implementation'])
-    return core.compatible_binding(w, m, request['binding'], readable)
 
 
 def _descriptor(sid, rid, record, matches):

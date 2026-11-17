@@ -11,7 +11,7 @@ def run(settings, task, manager):
     """仅消费服务端明确登记的严格请求，字体取配置；每次写锁前重核当前任务。"""
     payload = json.loads(task['payload'])
     require(isinstance(payload, dict) and set(payload) == {'stage', 'request'}
-            and payload['stage'] in ('publish', 'original_name') and isinstance(payload['request'], dict),
+            and payload['stage'] in ('publish', 'original_name', 'archive') and isinstance(payload['request'], dict),
             '名称图表任务字段或阶段不同，不接受工具路径或参数覆盖')
 
     def check_task():
@@ -31,6 +31,10 @@ def run(settings, task, manager):
     if payload['stage'] == 'original_name':
         value = w.register_rescue_original_name_decision(task['study_id'], payload['request'], check_task=check_task)
         result = '本批精确原专名许可已登记；不计入已核中文，未改变评分或人工复核。'
+    elif payload['stage'] == 'archive':
+        value = w.publish_rescue_acceptance_archive(task['study_id'], payload['request'],
+            min_free_bytes=settings.compute_min_free_bytes, check_task=check_task)
+        result = '本批完整包已另存：' + value['archive_id'] + '；未改变原评分、科学状态或人工复核。'
     else:
         value = w.publish_rescue_presentation(task['study_id'], payload['request'],
             font_path=settings.font_regular, check_task=check_task)

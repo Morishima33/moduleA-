@@ -1,5 +1,13 @@
 # tasks/ — 后台任务
 
+## 2026-11-18 同图表修订完整验收包
+
+原plan_rescue_presentation重任务追加archive阶段，payload仍只{stage,request}，不进LIGHTWEIGHT。
+archive请求严格9字段固定run/revision/receipt/input/来源指纹和登记人说明，磁盘余量只取服务器配置；
+Kernel公开Workflow落盘完整ZIP，源校验/打包在锁外，短锁前核原task/pid/出生/单研究任务/取消和manifest。
+完整候选恢复不重包，坏包/换源/换实现/人工暂停阻断，历史仅只读；不改原科学result/reviews/Word。
+真实科学活跃时不向实际研究追加完整包字段；实际病例任务执行与合成handler验证分别报告。
+
 ## 2026-11-17 补救名称许可与独立图表
 
 plan_rescue_presentation是原预算关口的重任务，不加入LIGHTWEIGHT；私有payload严格为

@@ -119,6 +119,10 @@ export const api = {
   publishRescuePresentation:(url:string,body:import('./types').RescuePresentationRequest)=>
     request<{task:Task;created:boolean;message_zh:string}>('POST',url.replace(/^\/api\/v1/,''),body),
   acceptanceBundle:(url:string)=>request<import('./types').AcceptanceBundle>('GET',url.replace(/^\/api\/v1/,'')),
+  /** 只读取已登记完整包；明确生成仍沿原任务令牌。 */
+  acceptanceArchives:(url:string)=>request<import('./types').RescueAcceptanceArchiveDirectory>('GET',url.replace(/^\/api\/v1/,'')),
+  publishAcceptanceArchive:(url:string,body:import('./types').RescueAcceptanceArchiveRequest)=>
+    request<{task:Task;created:boolean;message_zh:string}>('POST',url.replace(/^\/api\/v1/,''),body),
   /** 后端登记的同源证据地址；仅发GET，不从浏览器传入路径或科学参数。 */
   rescueEvidence:(url:string)=>request<import('./types').RescueEvidence>('GET',url.replace(/^\/api\/v1/,'')),
   /** 用户只提交稳定对象选择，焦点格子与色标由后端返回。 */
