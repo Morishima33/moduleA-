@@ -1,5 +1,16 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-11-17 验收ZIP保留重复登记关系
+
+验收原件允许同一路径以证据、图件或附件角色重复登记；只有路径、长度和SHA完全相同才共用ZIP成员。
+每个registered/原路径存一份核验后的不可变字节，指纹清单相应项追加
+`registrations:[{index:原result.files索引,record:完整原登记}]`，保留重复及所有语义角色。
+目录清单另含`registered_reference_count`与`registered_unique_file_count`，原字段保持。
+同路径冲突长度/SHA阻断；不同路径即使同字节也不合并。同图表角色只可重复引用同一原件，
+不同原件仍视为冲突；原科学结果、历史附件、状态及人工决定不改。
+512MiB原件限制保持，按唯一登记文件字节计；逐成员SHA、Top-1、缺译/缺图及末尾登记复验保持。
+GET不生成图、评分、Word或研究文件；合成HTTP包验证与真实病例最终下载分别记录。
+
 ## 2026-11-17 HTTP内容缓存预算及退出释放
 
 指定JSON入口与首页／待办卡片使用独立`HttpReadEvidence`，JSON marshal LRU默认64MiB。

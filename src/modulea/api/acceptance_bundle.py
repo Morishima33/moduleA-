@@ -11,9 +11,22 @@ import zlib
 
 from contracts import fingerprint,require,ContractError
 from .errors import ApiError
-from .rescue_evidence import load_bundle,checked_bytes,_artifacts
+from .rescue_evidence import load_bundle,checked_bytes,_artifacts,same_file
 
 ROLES={'plot_a06_rescue_full_png','plot_a06_rescue_full_svg','a06_rescue_matrix_csv','a06_rescue_display_view'}
+MAX_REGISTERED_BYTES=512*1024*1024
+
+
+def _registered_files(records):
+    """只合并完全相同路径/长度/SHA的原件，清单保留每条原登记和索引。"""
+    groups={}
+    for index,record in enumerate(records):
+        path=record['path']
+        if path not in groups:groups[path]={'record':record,'registrations':[]}
+        group=groups[path]
+        require(same_file(group['record'],record),'同一归档路径存在冲突长度或指纹，验收资料已阻断')
+        group['registrations'].append({'index':index,'record':deepcopy(record)})
+    return list(groups.values())
 
 
 def _png(raw):
@@ -34,6 +47,7 @@ def _png(raw):
 def assess(bundle):
     """缺译或附件未齐保留具体阻塞；不生成任何缺失图件来掩盖问题。"""
     workflow,manifest,home,run,result,packet=bundle
+    _registered_files(result['files'])
     from science_modules.a06 import system_rescue_display as first,system_rescue_display_v2 as second
     render=second if packet['schema_version']=='A06.system_rescue.2' else first
     view=render.build_view(packet);blockers=[]
@@ -48,7 +62,7 @@ def assess(bundle):
         role=ref.get('role')
         if role in ROLES or role in ('plot_a06_rescue_focus_png','plot_a06_rescue_focus_svg'):
             if run['config']['version']=='A06.system_rescue.2' and not ref['path'].startswith(prefix):continue
-            require(role not in exports,'本批展示附件角色重复')
+            require(role not in exports or same_file(exports[role],ref),'本批展示附件角色重复指向不同原件')
             exports[role]=ref
     required=set(ROLES)
     if view['initial_focus']['compound_ids'] and view['initial_focus']['target_ids']:
@@ -111,14 +125,17 @@ def download(app,req,sid,rid):
             raise ApiError(409,'STALE_VERSION','验收资料输入已改变，请刷新')
         if not value['enabled']:raise ApiError(409,'GATE_BLOCKED','；'.join(value['blockers_zh']))
         members={};inventory=[]
-        def add(name,raw,role):
+        def add(name,raw,role,registrations=None):
             require(name not in members,'验收资料包成员重复')
             members[name]=raw;inventory.append({'path':name,'bytes':len(raw),'sha256':sha256(raw).hexdigest(),'role':role})
+            if registrations is not None:inventory[-1]['registrations']=deepcopy(registrations)
         # 复用既有结果登记，历史原件照实保留；不运行生成器或科学工具。
-        total=sum(ref.get('bytes',0) for ref in result['files'])
-        require(total<=512*1024*1024,'资料包超过512MiB，请按既有附件逐件导出；未触发重算')
-        for ref in result['files']:
-            add('registered/'+ref['path'],checked_bytes(home,ref,result['files']),ref.get('role','registered'))
+        registered=_registered_files(result['files'])
+        total=sum(group['record']['bytes'] for group in registered)
+        require(total<=MAX_REGISTERED_BYTES,'资料包超过512MiB，请按既有附件逐件导出；未触发重算')
+        for group in registered:
+            ref=group['record']
+            add('registered/'+ref['path'],checked_bytes(home,ref,result['files']),ref.get('role','registered'),group['registrations'])
         for index,pair in enumerate(packet['pairs'],1):
             if pair.get('execution') and pair['state']=='completed':
                 artifacts,_,context=_artifacts(bundle,pair)
@@ -126,11 +143,12 @@ def download(app,req,sid,rid):
                     raw,name,_=artifacts[kind];add(f'poses/pair_{index:06d}/{name}',raw,kind)
         add('目录说明.txt',('本资料包来自已登记运行 '+rid+'\nregistered/：原矩阵、图表、来源、参数、失败与执行原件。\n'
             'poses/：按固定组合顺序提取的MODEL 1原字节及实际来源说明；未生成新坐标。\n'
-            '验收目录与指纹.json：每个成员的长度、SHA及原运行绑定。\n'
+            '验收目录与指纹.json：每个成员的长度、SHA及原运行绑定；同路径同指纹原件只存一份，registrations保留全部原登记关系。\n'
             '技术核验不代表严格质控、人工科研验收或真实整批计算已完成。\n').encode('utf-8'),'readme')
         metadata={'schema_version':value['schema_version'],'study_id':sid,'run_id':rid,'input_key':value['input_key'],
                   'configuration':run['config'],'inputs':run['inputs'],'summary':result['summary'],
                   'files':deepcopy(inventory),'translation_missing_ids':[],'scientific_computation_performed':False,
+                  'registered_reference_count':len(result['files']),'registered_unique_file_count':len(registered),
                   'human_review_written':False,'inventory_self_hash_excluded':True,'note_zh':value['note_zh']}
         add('验收目录与指纹.json',json.dumps(metadata,ensure_ascii=False,indent=2).encode('utf-8'),'inventory')
         output=io.BytesIO()
