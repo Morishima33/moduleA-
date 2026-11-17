@@ -13,6 +13,7 @@ import webbrowser
 from .config import load_settings
 from .service_control import probe_service, runtime_location, stop_service
 from .launch_identity import identity, owns_service_process
+from .child_environment import child_environment
 
 
 def start_service(settings, port=8780, *, open_browser=True, timeout=20):
@@ -37,8 +38,8 @@ def start_service(settings, port=8780, *, open_browser=True, timeout=20):
         command = [sys.executable, '-B', '-m', 'modulea', '--data-root', str(settings.data_root),
                    '--runtime-dir', str(settings.runtime_dir), 'serve', '--port', str(port),
                    '--static-dir', str(settings.static_dir), '--no-browser']
-        env = dict(os.environ, PYTHONPATH=str(settings.project_root / 'src'),
-                   PYTHONDONTWRITEBYTECODE='1', PYTHONIOENCODING='utf-8')
+        env = child_environment(dict(os.environ, PYTHONPATH=str(settings.project_root / 'src'),
+                   PYTHONDONTWRITEBYTECODE='1', PYTHONIOENCODING='utf-8'))
         log = folder / ('service_start_' + uuid.uuid4().hex + '.log')
         flags = subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS if os.name == 'nt' else 0
         with log.open('xb') as stream:

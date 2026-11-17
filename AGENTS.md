@@ -12,6 +12,12 @@ PROCESSOR_ARCHITECTURE，cli 3.6.5清理函数对该值无空值保护，导致0
 诊断和通过日志保存在仓库外audit_20261115/github_review，源码依据及范围见
 docs/上游图表按模块只读接回方案_20261117.md。测试环境、实际病例和用户科研批准分别记录。
 
+统一launcher新建服务时已接独立child_environment适配：仅给子环境副本补Windows缺失/空白架构值，
+GetNativeSystemInfo实测后映射，未知/失败阻断spawn；已有值与父环境不改，非Windows不读取该API。
+复用已就绪实例和status/stop不补写旧实例环境；不能以代码上传称当前生产环境已修。
+统一入口的隔离长中文路径服务生命周期、实际R清理和HTTP worker→R回归通过；Mac/ARM实机另记。
+直接serve或旧入口仍须核各自实际环境。详见docs/Windows启动子进程架构元数据修复_20261117.md。
+
 ## 2026-11-16 原生执行隔离集成与真实补算分开
 
 依赖只支持带完整登记文件清单的普通安装；direct_url声明editable、editable加载器或缺文件清单时阻断。不得把仅有加载器登记误称外部源码已经核验，也不自动改装用户环境。
