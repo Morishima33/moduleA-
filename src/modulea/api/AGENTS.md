@@ -1,5 +1,22 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-11-17 同页只读组装
+
+GET `/studies/{sid}/workspace` 接受可选单值 `module_id/run_id`，拒绝未知、重复或空值查询422。
+返回 `{study:原StudyView,module:原ModuleView或null,module_error:null或{status,code,message_zh,details,retryable}}`。
+研究不存在整体404；有效研究的模块／历史运行错误保留study并放module_error，不误报研究不存在。
+原归档不可用StudyView.archive_ok=false保持；module=null时不提供模块操作。
+未指定模块时沿原网页的
+下一步模块、首组首项顺序；不推算科学状态。指定历史run_id仍用原历史只读和版本判断。
+读取时的模块归档错误放module_error，保留原研究不可用提示；发送前SHA失败沿原503、
+期间版本／目录变动沿原409，退出核验失败均整体拒绝；Host和安全响应头保持。
+
+同一请求新建局部Views，只复用一次原Workflow快照，容器隔离；数据根、研究及线程绑定。
+首验及发送前逐件完整SHA、manifest和目录锚点检查保持，不跨请求保留证明或快照。
+原study/module端点、文件下载与写入口保持。GET不计算、补图、签署或生成Word。
+前端同页读取合并，全局待办延至当前workspace请求完成后再从原接口取得。
+代码上传、临时端口实测、8780实际部署及科学验收分别记录。
+
 ## 2026-11-16 显式本平台A06执行
 
 原生A06只读展示追加`special.native_scores`，科学版本`A06.platform_execution.1`，展示版本

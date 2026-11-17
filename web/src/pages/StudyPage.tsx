@@ -38,46 +38,35 @@ export default function StudyPage({ studyId, moduleId, runId }: { studyId: strin
   /** 重新加载研究与模块 */
   const reload = useCallback(() => setReloadTick((n) => n + 1), []);
 
-  // 读取研究页
+  // 同页研究及当前模块共用一次后端完整核验；切页/刷新后丢弃旧响应。
   useEffect(() => {
     let current = true; // 新请求或离开页面后，不接纳旧响应。
-    api.study(studyId)
-      .then((s) => {
+    api.workspace(studyId, moduleId, runId)
+      .then(({ study: s, module: v, module_error: error }) => {
         if (!current) return;
         setStudy(s); // 更新研究数据
+        setView(v);
         setStudyError(null);
+        setModuleError(error ? new ApiError(error.status, error.code, error.message_zh, error.retryable, error.details) : null);
         app.trackTasks(s.active_tasks); // 跟踪活动任务
+        if (v) app.trackTasks(v.tasks);
       })
-      .catch((e) => { if (current) setStudyError(e instanceof ApiError ? e : new ApiError(0, 'UNKNOWN', errorText(e))); });
+      .catch((e) => {
+        if (!current) return;
+        const error = e instanceof ApiError ? e : new ApiError(0, 'UNKNOWN', errorText(e));
+        setView(null);
+        setStudyError(error);
+        setModuleError(error);
+      });
     return () => { current = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studyId, app.refreshTick, reloadTick]);
+  }, [studyId, moduleId, runId, app.refreshTick, reloadTick]);
 
   // 顶栏显示研究名
   const { setCrumb } = app;
   useEffect(() => {
     setCrumb(study?.study.title_zh || null);
   }, [study?.study.title_zh, setCrumb]);
-
-  // 读取模块页
-  useEffect(() => {
-    if (!mid) return; // 研究尚未加载
-    let current = true; // 模块切换、刷新和卸载均使旧请求失效。
-    api.module(studyId, mid, runId)
-      .then((v) => {
-        if (!current) return;
-        setView(v); // 更新模块数据
-        setModuleError(null);
-        app.trackTasks(v.tasks); // 跟踪本模块任务
-      })
-      .catch((e) => {
-        if (!current) return;
-        setView(null);
-        setModuleError(e instanceof ApiError ? e : new ApiError(0, 'UNKNOWN', errorText(e)));
-      });
-    return () => { current = false; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studyId, mid, runId, app.refreshTick, reloadTick]);
 
   /** 复核保存成功：刷新研究与模块；有后台任务时打开任务面板 */
   const onSaved = (task: Task | null) => {

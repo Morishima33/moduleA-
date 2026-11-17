@@ -73,6 +73,7 @@ class App:
             self.service_identity = None
             self._service_identity_error = str(error)
         self.routes = [
+            ("GET", rf"/api/v1/studies/{ID}/workspace", self.get_workspace),
             ("GET", r"/api/v1/health", self.get_health),
             ("GET", rf"/api/v1/studies/{ID}/native-compute", self.get_native_compute),
             ("GET", rf"/api/v1/studies/{ID}/runs/{ID}/native/pairs/([0-9]+)/(top1\.pdbqt|context\.json)", self.get_native_top1),
@@ -867,6 +868,11 @@ class App:
 
     def get_study(self, req, study_id):
         return self._json_read(study_id,self.views.study,study_id)
+
+    def get_workspace(self,req,study_id):
+        """同页研究和模块一次完整核验，写入口及原独立GET保持。"""
+        from .workspace import get
+        return get(self,req,study_id)
 
     def get_module(self, req, study_id, module_id):
         return self._json_read(study_id,self.views.module,study_id,module_id,req.query1("run_id"))

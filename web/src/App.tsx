@@ -45,12 +45,13 @@ export default function App() {
   /** 触发一次全局刷新 */
   const bumpRefresh = useCallback(() => setRefreshTick((n) => n + 1), []);
 
-  // 每次刷新信号变化时更新全局待办数
+  // 会话就绪后才更新待办，让研究页先登记workspace，再由client等待该关键读取结束。
   useEffect(() => {
+    if (!session) return;
     let current = true;
     api.inbox().then((r) => { if (current) setInbox(r.items); }).catch(() => undefined); // 待办读取失败不影响页面
     return () => { current = false; }; // 新刷新后，不让旧请求覆盖最新待办。
-  }, [refreshTick]);
+  }, [refreshTick, session]);
 
   /** 登记活动任务；只跟踪排队中或运行中的任务 */
   const trackTasks = useCallback((tasks: (Task | null | undefined)[]) => {

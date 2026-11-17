@@ -303,6 +303,13 @@ export interface GlobalInboxEntry extends InboxEntry {
 }
 
 /** 研究页 */
+/** 同页读取仍返回原研究及模块；模块错误单独呈现，不能误报研究不存在。 */
+export interface WorkspaceView {
+  study: StudyView;
+  module: ModuleView | null;
+  module_error: (ApiErrorBody['error'] & { status: number }) | null;
+}
+
 export interface StudyView {
   storage?: ProjectStorage;
   study: StudyInfo;

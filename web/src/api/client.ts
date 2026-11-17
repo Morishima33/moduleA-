@@ -1,7 +1,7 @@
 // 文件用途：访问本机 JSON 接口的唯一出口。负责拼接地址、携带操作令牌、把错误统一转成 ApiError。
 import type {
   ApiErrorBody, BatchReviewResponse, Decision, GlobalInboxEntry, ModuleView, ReviewResponse, RunItem,
-  Session, StudyCard, StudyView, TablePage, Task,
+  Session, StudyCard, StudyView, WorkspaceView, TablePage, Task,
 } from './types';
 
 // 开发模式下直连本机接口（可用环境变量 VITE_API_BASE 覆盖）；生产构建与后端同源，用相对路径
@@ -215,6 +215,8 @@ export const api = {
   trash: () => request<{ items: StudyCard[] }>('GET', '/trash'),
   /** 研究页 */
   study: (sid: string) => request<StudyView>('GET', `/studies/${sid}`),
+  workspace: (sid: string, moduleId?: string, runId?: string) =>
+    request<WorkspaceView>('GET', `/studies/${sid}/workspace${qs({ module_id: moduleId, run_id: runId })}`),
   /** 当前研究只读追溯摘要；完整结果由页面显式下载。 */
   studyTrace: (sid: string) => request<import('./types').TraceSummary>('GET', `/studies/${sid}/trace`),
   /** 模块页；runId 用于查看历史版本 */
@@ -286,7 +288,13 @@ export const api = {
   restoreStudy: (sid: string, body: { operator: string; reason: string; expected_action_id: string | null; confirm: true }) =>
     request<{ action: unknown }>('POST', `/studies/${sid}:restore`, body),
   /** 跨研究待办 */
-  inbox: () => request<{ items: GlobalInboxEntry[] }>('GET', '/inbox'),
+  inbox: async () => {
+    // 等本轮React效果登记关键页面读取；仅等当前workspace，不等持续轮询或inbox自身。
+    await Promise.resolve();
+    const pages = [...pendingReads].filter(([path]) => path.split('?')[0].endsWith('/workspace')).map(([, pending]) => pending);
+    await Promise.allSettled(pages);
+    return request<{ items: GlobalInboxEntry[] }>('GET', '/inbox');
+  },
   /** 任务列表 */
   tasks: (p: { study?: string; active?: boolean }) => request<{ items: Task[] }>('GET', `/tasks${qs({ study: p.study, active: p.active ? 1 : undefined })}`),
   /** 任务详情 */
