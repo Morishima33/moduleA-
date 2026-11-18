@@ -1,14 +1,20 @@
 // 文件用途：全局待办收件箱（抽屉）。按研究分组列出 GET /inbox 返回的待办，点击直接跳到对应模块。
-import { Alert, Drawer, Empty } from 'antd';
+import { Alert, Button, Drawer, Empty, Spin } from 'antd';
 import type { GlobalInboxEntry } from '../api/types';
 import { hrefFor } from '../lib/route';
 import { StatusPill } from './common';
 
 /** 全局待办抽屉 */
-export default function InboxDrawer({ open, items, onClose }: { open: boolean; items: GlobalInboxEntry[]; onClose: () => void }) {
+export default function InboxDrawer({ open, items, error, onRetry, onClose }: {
+  open: boolean;
+  items: GlobalInboxEntry[] | null;
+  error?: string;
+  onRetry: () => void;
+  onClose: () => void;
+}) {
   // 按研究分组，保持接口给出的顺序
   const groups: { id: string; title: string; entries: GlobalInboxEntry[] }[] = [];
-  for (const it of items) {
+  for (const it of items ?? []) {
     let g = groups.find((x) => x.id === it.study_id); // 找已有分组
     if (!g) {
       g = { id: it.study_id, title: it.study_title_zh, entries: [] }; // 新建分组
@@ -17,9 +23,14 @@ export default function InboxDrawer({ open, items, onClose }: { open: boolean; i
     g.entries.push(it); // 加入条目
   }
   return (
-    <Drawer title={`待你处理（${items.length}）`} open={open} onClose={onClose} width={460}>
+    <Drawer title={items ? `待你处理（${items.length}）` : '待你处理'} open={open} onClose={onClose} width={460}>
       <Alert type="info" showIcon style={{ marginBottom: 16 }} message="“等待”表示还有资料或确认事项需要处理；不会因继续等待而自动完成。后台是否正在计算，请查看“后台任务”的运行状态。" />
-      {!items.length ? (
+      {error ? (
+        <Alert type="warning" showIcon message="待办读取失败" description={error}
+          action={<Button size="small" onClick={onRetry}>重新读取待办</Button>} />
+      ) : !items ? (
+        <div role="status"><Spin size="small" /> 正在读取待办</div>
+      ) : !items.length ? (
         <Empty description="目前没有需要你处理的事项" />
       ) : (
         groups.map((g) => (

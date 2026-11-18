@@ -30,7 +30,8 @@ export default function App() {
   const [focusTask, setFocusTask] = useState<string | undefined>(); // 面板中默认展开的任务
   const [newStudyOpen, setNewStudyOpen] = useState(false); // 新建登记窗口
   const [inboxOpen, setInboxOpen] = useState(false); // 待办面板是否打开
-  const [inbox, setInbox] = useState<GlobalInboxEntry[]>([]); // 全局待办
+  const [inbox, setInbox] = useState<{ status: 'loading' } | { status: 'ready'; items: GlobalInboxEntry[] } | { status: 'failed'; message: string }>({ status: 'loading' });
+  const [inboxRetry, setInboxRetry] = useState(0);
   const [tracked, setTracked] = useState<Set<string>>(new Set()); // 正在跟踪的活动任务编号
   const [crumb, setCrumb] = useState<string | null>(null); // 顶栏位置中的研究名
   const trackedRef = useRef(tracked); // 轮询回调中读取最新值
@@ -49,9 +50,12 @@ export default function App() {
   useEffect(() => {
     if (!session) return;
     let current = true;
-    api.inbox().then((r) => { if (current) setInbox(r.items); }).catch(() => undefined); // 待办读取失败不影响页面
+    setInbox({ status: 'loading' });
+    api.inbox()
+      .then(({ items }) => { if (current) setInbox({ status: 'ready', items }); })
+      .catch((error) => { if (current) setInbox({ status: 'failed', message: errorText(error) }); });
     return () => { current = false; }; // 新刷新后，不让旧请求覆盖最新待办。
-  }, [refreshTick, session]);
+  }, [refreshTick, session, inboxRetry]);
 
   /** 登记活动任务；只跟踪排队中或运行中的任务 */
   const trackTasks = useCallback((tasks: (Task | null | undefined)[]) => {
@@ -175,7 +179,7 @@ export default function App() {
             {/* 全局待办入口 */}
             <Button onClick={() => setInboxOpen(true)}>
               待你处理
-              <Badge count={inbox.length} showZero color="#C76E00" style={{ marginLeft: 6 }} />
+              {inbox.status === 'ready' && <Badge count={inbox.items.length} showZero color="#C76E00" style={{ marginLeft: 6 }} />}
             </Button>
             {route.page === 'study' && <Button disabled={!session?.capabilities.create_study} onClick={() => setNewStudyOpen(true)}>新建研究</Button>}
             {route.page === 'study' && route.moduleId === 'A06_PREP' && <Button href={hrefFor({page: 'plan-pockets', studyId: route.studyId})}>新版口袋核查</Button>}
@@ -218,7 +222,13 @@ export default function App() {
         onActive={trackTasks}
       />
       {/* 全局待办抽屉 */}
-      <InboxDrawer open={inboxOpen} items={inbox} onClose={() => setInboxOpen(false)} />
+      <InboxDrawer
+        open={inboxOpen}
+        items={inbox.status === 'ready' ? inbox.items : null}
+        error={inbox.status === 'failed' ? inbox.message : undefined}
+        onRetry={() => setInboxRetry((n) => n + 1)}
+        onClose={() => setInboxOpen(false)}
+      />
     </AppContext.Provider>
   );
 }
