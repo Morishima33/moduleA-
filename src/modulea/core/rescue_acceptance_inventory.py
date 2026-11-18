@@ -2,6 +2,8 @@
 from copy import deepcopy
 
 from contracts import require
+from .read_evidence import current_evidence
+from .rescue_pose_evidence import recovery_file_refs
 from .rescue_result_read import same_file
 
 
@@ -25,6 +27,9 @@ def member_plan(result,presentation=None):
         refs=[record['file'],record['request_file'],*record['files'],request['catalog_file'],request['font_file'],
               *request['implementation_files'],*presentation['binding']['name_decisions'],*source['evidence'],source['scoring_packet']]
         refs.extend(ref for entry in source['basis']['run_files'].values() for ref in entry.values() if ref)
+        bundle=presentation['bundle']
+        evidence=current_evidence(bundle[0].root)
+        refs.extend(evidence.call(recovery_file_refs,bundle) if evidence else recovery_file_refs(bundle))
         presentation_groups=registered_files(refs)
         combined=registered_files(result['files']+refs)
         original_paths={group['record']['path'] for group in registered}

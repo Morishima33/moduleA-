@@ -11,11 +11,13 @@ from urllib.error import HTTPError
 from urllib.parse import parse_qs, urlencode, urlsplit
 from urllib.request import urlopen
 
+from contracts import fingerprint
 from storage import read_json, verified_file, write_json
 from modulea.api import rescue_evidence
 from modulea.api.errors import ApiError
 from modulea.api.server import create_server
 from modulea.config import Settings
+from modulea.core.rescue_acceptance_inventory import member_plan
 from tests.modulea.test_foundation_evidence import EvidenceFixture
 
 
@@ -185,6 +187,44 @@ class RescueEvidenceHttpTests(unittest.TestCase):
         self.assertIn('沿用已核验评分', value['source_zh'])
         self.assertNotIn('；本轮新增评分', value['source_zh'])
         self.assertEqual(value['context']['execution_run_id'], c.score_id)
+
+    def test_checkpoint_only_execution_attachments_are_downloadable_and_included_in_archive(self):
+        c = self.case
+        self.manifest['runs'][c.score_id]['result_file'] = None
+        c.run['config'] = dict(c.config, version='A06.system_rescue.1')
+        c.run['config_hash'] = fingerprint(c.run['config'])
+        self.manifest['runs'][c.score_id]['run_file'] = c.json(c.run_ref['path'], c.run)
+        self.run['inputs']['source_scoring_run'] = self.manifest['runs'][c.score_id]['run_file']
+        fact = dict(region_id='region_one', state='completed', score=-7.125, reason_zh='',
+                    execution=c.execution_ref, retryable=False)
+        key = 'pair_000001_region_0001'
+        checkpoint = c.json(f'runs/A06/{c.score_id}/rescue_checkpoints/{key}/checkpoint.json', {
+            'study_id': self.sid, 'run_id': c.score_id, 'schema_version': 'A06.system_rescue.1', 'key': key,
+            'config_hash': c.run['config_hash'], 'human_review_written': False, 'payload': fact,
+            'files': [c.execution_ref, c.command_ref, c.pose], 'previous': None})
+        self.manifest['analysis_plan_receptor_rescue_checkpoints'] = [checkpoint]
+        self.run['inputs']['source_binding'] = {'partial_recovery': {
+            'run_id': c.score_id, 'run_files': self.manifest['runs'][c.score_id], 'checkpoint_refs': [checkpoint]}}
+        self.packet['pairs'][0].update(source_kind='rescue', region_id='region_one', regions=[fact])
+        self.files.remove(c.command_ref)
+        self.save()
+
+        value = self.details()
+        self.assertEqual(value['context']['execution_run_id'], c.score_id)
+        self.assertTrue(value['regions'][0]['selected'])
+        bundle = rescue_evidence.load_bundle(self.app, self.sid, self.rid)
+        refs = [c.pose, c.execution_ref]
+        presentation = dict(bundle=bundle, record=dict(file=refs[0], request_file=refs[1], files=[]),
+                            request=dict(catalog_file=refs[0], font_file=refs[1], implementation_files=[]),
+                            binding=dict(name_decisions=[], source=dict(evidence=[], scoring_packet=refs[1],
+                                                                       basis=dict(run_files={}))))
+        plan = member_plan(bundle[4], presentation)
+        expected = {checkpoint['path'], c.command_ref['path']}
+        self.assertTrue(expected <= {group['record']['path'] for group in plan['extra']})
+        self.manifest['analysis_plan_receptor_rescue_checkpoints'] = []
+        self.save()
+        with self.assertRaises(ApiError):
+            self.details()
 
     def test_ambiguous_or_missing_generation_is_rejected(self):
         cases = [([], []), ([['C1', 'HGNC:1']], [['C1', 'HGNC:1']]),

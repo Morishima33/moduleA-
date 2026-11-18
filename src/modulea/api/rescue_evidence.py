@@ -104,7 +104,7 @@ def read(app, req, sid, rid, kind):
             if len(selected) != 1:
                 raise not_found('本组合已登记区域')
             fact = selected[0]
-            ref, raw, _, _ = _execution(bundle, fact, pair)
+            ref, raw, _, _, _ = _execution(bundle, fact, pair)
             artifacts, context = {'execution': (raw, 'execution.json', 'application/json')}, {}
         elif pair.get('execution'):
             artifacts, ref, context = _artifacts(bundle, pair)
@@ -113,7 +113,7 @@ def read(app, req, sid, rid, kind):
         if kind == 'details':
             shown = []
             for region in regions:
-                region_ref, raw, _, _ = _execution(bundle, region, pair)
+                region_ref, raw, _, _, _ = _execution(bundle, region, pair)
                 selected = region['region_id'] == pair.get('region_id') and same_file(region_ref, pair.get('execution'))
                 shown.append({**{k: deepcopy(region.get(k)) for k in ('region_id', 'state', 'score', 'reason_zh')},
                               'state_zh': STATE_ZH.get(region['state'], region['state']), 'selected': selected,

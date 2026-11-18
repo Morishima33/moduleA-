@@ -22,6 +22,32 @@ def _references(value):
         for child in value:
             yield from _references(child)
 
+
+def _checkpoint_attachments(manifest, origin, owner, ordinal, reference, checkpoint_ref, checkpoint, missing):
+    """只从同一已登记区域检查点补齐该次执行的原附件。"""
+    partial_run_id = origin['run_id']
+    regions = [region for region in owner.get('regions', [])
+               if same_file(region.get('execution'), reference)]
+    require(len(regions) == 1, '恢复执行没有唯一的预定区域')
+    region = regions[0]
+    index = owner['regions'].index(region) + 1
+    key = f'pair_{ordinal:06d}_region_{index:04d}'
+    require(checkpoint_ref in manifest.get('analysis_plan_receptor_rescue_checkpoints', [])
+            and checkpoint_ref['path'].startswith(f'runs/A06/{partial_run_id}/rescue_checkpoints/{key}/')
+            and checkpoint.get('key') == key and checkpoint.get('study_id') == manifest['study_id']
+            and checkpoint.get('schema_version') == origin['config']['version'] == 'A06.system_rescue.1'
+            and checkpoint.get('config_hash') == origin.get('config_hash') == fingerprint(origin['config'])
+            and checkpoint.get('human_review_written') is False and checkpoint['payload'] == region,
+            '恢复附件没有绑定原研究、配置及预定区域的检查点')
+    files = checkpoint.get('files', [])
+    require(any(same_file(reference, item) for item in files), '检查点未登记同一实际执行')
+    attempt = PurePosixPath(reference['path']).parent
+    require(all(PurePosixPath(ref['path']).parent == attempt
+                and any(same_file(ref, saved) for saved in files) for ref in missing),
+            '执行附件未由本区域检查点登记')
+    return [checkpoint_ref, *missing]
+
+
 def _execution(bundle, fact, pair=None):
     """执行必须属于本批明确绑定的历史运行，状态与原分数精确对应。"""
     _, manifest, home, run, result, packet = bundle
@@ -46,6 +72,7 @@ def _execution(bundle, fact, pair=None):
     # 同名或同分并不足以匹配；回到原运行自己的事实包，按稳定对象核对实际执行引用。
     owner = pair or fact
     origin_result_ref = manifest['runs'][origin_id].get('result_file')
+    additional = []
     if origin_result_ref:
         origin_result = read_json(verified_file(home, origin_result_ref))
         refs = origin_result.get('tables', {}).get('scoring_packet', [])
@@ -74,12 +101,37 @@ def _execution(bundle, fact, pair=None):
             checkpoint = read_json(verified_file(home, checkpoint_ref))
             if checkpoint.get('key', '').startswith(f'pair_{ordinal:06d}_region_'):
                 if same_file(checkpoint.get('payload', {}).get('execution'), reference):
-                    matches.append(checkpoint)
-        require(len(matches) == 1 and matches[0].get('run_id') == origin_id,
+                    matches.append((checkpoint_ref, checkpoint))
+        require(len(matches) == 1 and matches[0][1].get('run_id') == origin_id,
                 '未发表执行没有对应稳定对象的已登记区域检查点')
+        missing = [item for item in value.get('files', [])
+                   if not any(same_file(item, registered_ref) for registered_ref in registered)]
+        if missing:
+            require(partial.get('run_files') == manifest['runs'][origin_id], '恢复附件的原运行登记已改变')
+            checkpoint_ref, checkpoint = matches[0]
+            additional = _checkpoint_attachments(manifest, origin, owner, ordinal, reference,
+                                                 checkpoint_ref, checkpoint, missing)
+            registered = [*registered, *additional]
     for item in value.get('files', []):
         checked_bytes(home, item, registered)
-    return reference, raw, value, origin
+    return reference, raw, value, origin, additional
+
+
+def recovery_file_refs(bundle):
+    """完整包保留所有采用区域独立登记的执行附件，含未选中的区域。"""
+    _, _, _, run, _, packet = bundle
+    partial = run['inputs'].get('source_binding', {}).get('partial_recovery') or {}
+    origin_id = partial.get('run_id')
+    if not origin_id:
+        return []
+    prefix = f'runs/A06/{origin_id}/'
+    refs = []
+    for pair in packet['pairs']:
+        for region in pair.get('regions', []):
+            if (region.get('execution') or {}).get('path', '').startswith(prefix):
+                _, _, _, _, additional = _execution(bundle, region, pair)
+                refs.extend(additional)
+    return refs
 
 def _top1(raw, score):
     """提取首个MODEL 1的精确原字节，拒绝换模式、缺尾或评分不符。"""
@@ -128,14 +180,14 @@ def _score_source_note(packet, pair):
 def _artifacts(bundle, pair):
     """仅从该组合原执行构造只读下载；派生SHA按返回字节计算。"""
     _, _, home, run, result, packet = bundle
-    ref, execution_raw, execution, origin = _execution(bundle, pair)
+    ref, execution_raw, execution, origin, additional = _execution(bundle, pair)
     artifacts = {'execution': (execution_raw, 'execution.json', 'application/json')}
     if pair['state'] != 'completed':
         return artifacts, ref, {'execution_run_id': origin['run_id']}
     require(execution.get('top_mode') == 1 and execution.get('returncode') == 0
             and execution.get('pose') in execution.get('files', []), '成功评分缺少原始Top-1执行证据')
     source = execution['pose']
-    raw = checked_bytes(home, source, result['files'])
+    raw = checked_bytes(home, source, [*result['files'], *additional])
     top = _top1(raw, pair['score'])
     if pair.get('top1_pose'):
         require(checked_bytes(home, pair['top1_pose'], result['files']) == top,
