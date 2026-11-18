@@ -88,24 +88,24 @@ class WorkspaceReadTests(TestCase):
 
     def test_tampering_before_scope_exit_blocks_entire_response(self):
         import os
-        from modulea.core.checkpoint_json_read import CheckpointReadEvidence
-        original=CheckpointReadEvidence.finish;target=self.target()
+        from modulea.core.http_read_evidence import HttpReadEvidence
+        original=HttpReadEvidence.finish;target=self.target()
         def finish(evidence):
             stamp=target.stat();raw=target.read_bytes();target.write_bytes(raw[:-1]+bytes([raw[-1]^1]))
             os.utime(target,ns=(stamp.st_atime_ns,stamp.st_mtime_ns))
             return original(evidence)
-        with patch.object(CheckpointReadEvidence,'finish',finish):
+        with patch.object(HttpReadEvidence,'finish',finish):
             with self.assertRaises(HTTPError) as failure:self.get(f'/studies/{self.sid}/workspace?module_id=A07')
         self.assertEqual(failure.exception.code,503)
         body=json.load(failure.exception);self.assertNotIn('study',body);self.assertNotIn('module',body)
 
     def test_manifest_change_at_exit_blocks_both_parts(self):
-        from modulea.core.checkpoint_json_read import CheckpointReadEvidence
-        original=CheckpointReadEvidence.finish;path=self.data/'studies'/self.sid/'manifest.json'
+        from modulea.core.http_read_evidence import HttpReadEvidence
+        original=HttpReadEvidence.finish;path=self.data/'studies'/self.sid/'manifest.json'
         def finish(evidence):
             path.write_bytes(path.read_bytes()+b'\n')
             return original(evidence)
-        with patch.object(CheckpointReadEvidence,'finish',finish):
+        with patch.object(HttpReadEvidence,'finish',finish):
             with self.assertRaises(HTTPError) as failure:self.get(f'/studies/{self.sid}/workspace?module_id=A07')
         self.assertEqual(failure.exception.code,409)
         self.assertNotIn('study',json.load(failure.exception))

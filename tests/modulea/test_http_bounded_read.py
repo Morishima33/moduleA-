@@ -45,6 +45,34 @@ class HttpBoundedReadTests(TestCase):
         self.assertEqual(self.evidence.stats['first_sha_checks'],self.evidence.stats['exit_sha_checks'])
         self.assert_closed()
 
+    def test_large_response_revalidates_all_files_through_batch_reader(self):
+        from unittest.mock import patch
+        from modulea.core.http_read_evidence import json_evidence_scope
+        from modulea.core.read_archive import ReadArchive
+
+        refs = []
+        for index in range(75):
+            path = self.home / f'attachment-{index}.txt'
+            path.write_bytes(b'original')
+            refs.append(file_record(self.home, path, 'test'))
+
+        original_bulk = ReadArchive.verify_all
+        with patch.object(ReadArchive, 'verify_all', autospec=True, side_effect=original_bulk) as bulk:
+            with json_evidence_scope(self.root, self.sid) as scope:
+                for ref in refs:
+                    scope.reader.verify(self.home, ref)
+            bulk.assert_called_once_with(scope.raw_reader, self.home.resolve(), refs)
+            self.assertEqual(scope.stats['exit_sha_checks'], len(refs))
+
+        with self.assertRaises(ContractError):
+            with json_evidence_scope(self.root, self.sid) as scope:
+                for ref in refs:
+                    scope.reader.verify(self.home, ref)
+                target = self.home / refs[-1]['path']
+                stamp = target.stat()
+                target.write_bytes(b'tampered')
+                os.utime(target, ns=(stamp.st_atime_ns, stamp.st_mtime_ns))
+
     def test_callback_error_releases_buffers_and_preserves_error(self):
         def fail():
             self.read();raise ValueError('原始错误')

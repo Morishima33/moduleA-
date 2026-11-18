@@ -45,6 +45,24 @@ class HttpReadEvidence(CheckpointReadEvidence):
     _capture=BoundedEvidence._capture
     read_json=_utf8_read_json
 
+    def finish(self):
+        """HTTP响应退出时按目录分批调度，仍逐件完整核验并复查登记。"""
+        if not self.enabled:
+            return
+        require(self._owned(), '读取证据范围已退出或线程不同')
+        self._anchors()
+        require(self.manifest.read_bytes() == self.manifest_bytes, '读取期间研究登记已改变，请刷新')
+        groups = {}
+        for home, record, _ in self.proofs.values():
+            groups.setdefault(home, []).append(record)
+        for home, records in groups.items():
+            self.raw_reader.verify_all(home, records)
+            self.stats['exit_sha_checks'] += len(records)
+            self.stats['exit_bytes_hashed'] += sum(record['bytes'] for record in records)
+        self._anchors()
+        require(self.manifest.read_bytes() == self.manifest_bytes, '读取期间研究登记已改变，请刷新')
+        self.stats['manifest_checks'] += 2
+
     def close(self):
         """成功、业务错误和退出核验失败都清缓存；保留计数供外部自检。"""
         BoundedEvidence.close(self)
