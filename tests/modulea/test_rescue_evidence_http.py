@@ -7,6 +7,7 @@ from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import threading
 import unittest
+from unittest.mock import patch
 from urllib.error import HTTPError
 from urllib.parse import parse_qs, urlencode, urlsplit
 from urllib.request import urlopen
@@ -18,6 +19,7 @@ from modulea.api.errors import ApiError
 from modulea.api.server import create_server
 from modulea.config import Settings
 from modulea.core.rescue_acceptance_inventory import member_plan
+from modulea.core import rescue_pose_evidence
 from tests.modulea.test_foundation_evidence import EvidenceFixture
 
 
@@ -172,6 +174,15 @@ class RescueEvidenceHttpTests(unittest.TestCase):
             rescue_evidence.read(self.app, req, self.sid, self.rid, 'context')
         self.assertEqual(caught.exception.status, 409)
         self.assertEqual((self.case.home / 'manifest.json').read_bytes(), before)
+
+    def test_current_execution_reuses_the_already_verified_scoring_packet(self):
+        self.make_current_score()
+        bundle = rescue_evidence.load_bundle(self.app, self.sid, self.rid)
+        scoring_ref = bundle[4]['tables']['scoring_packet'][0]
+        with patch.object(rescue_pose_evidence, 'checked_bytes', wraps=rescue_pose_evidence.checked_bytes) as read:
+            artifacts, _, _ = rescue_pose_evidence._artifacts(bundle, bundle[-1]['pairs'][0])
+        self.assertIn('top1', artifacts)
+        self.assertNotIn(scoring_ref, [call.args[1] for call in read.call_args_list])
 
     def test_checkpoint_recovered_score_is_reused_even_when_source_kind_is_rescue(self):
         c = self.case

@@ -74,10 +74,14 @@ def _execution(bundle, fact, pair=None):
     origin_result_ref = manifest['runs'][origin_id].get('result_file')
     additional = []
     if origin_result_ref:
-        origin_result = read_json(verified_file(home, origin_result_ref))
-        refs = origin_result.get('tables', {}).get('scoring_packet', [])
-        require(len(refs) == 1, '原执行运行缺少唯一评分事实包')
-        origin_packet = json.loads(checked_bytes(home, refs[0], origin_result['files']))
+        if origin_id == run['run_id']:
+            # bundle 已绑定并核验当前运行的唯一评分包，同批每个区域共享这份原字节解析结果。
+            origin_packet = packet
+        else:
+            origin_result = read_json(verified_file(home, origin_result_ref))
+            refs = origin_result.get('tables', {}).get('scoring_packet', [])
+            require(len(refs) == 1, '原执行运行缺少唯一评分事实包')
+            origin_packet = json.loads(checked_bytes(home, refs[0], origin_result['files']))
         require(origin_packet.get('study_id') == run['study_id']
                 and origin_packet.get('run_id') == origin_id, '原执行事实包归属不同')
         candidates = [p for p in origin_packet['pairs'] if p['compound_id'] == owner['compound_id']
