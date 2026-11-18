@@ -184,11 +184,23 @@ class Views:
 
     def _build_cards(self, manifests):
         """独立研究最多三项并行只读，map保持原顺序；不触发后台科学计算。"""
+        from ..core.http_read_evidence import HttpReadVersionChanged, json_evidence_scope
+
+        def read_once(study_id):
+            with json_evidence_scope(self.kernel.settings.data_root, study_id) as evidence:
+                return evidence.call(self.study_card, study_id, with_states=True)
+
         def read(manifest):
-            from ..core.http_read_evidence import json_evidence_scope
-            with json_evidence_scope(self.kernel.settings.data_root,manifest['study_id']) as evidence:
-                value=evidence.call(self.study_card,manifest['study_id'],with_states=True)
-            return value
+            study_id = manifest['study_id']
+            try:
+                return read_once(study_id)
+            except HttpReadVersionChanged:
+                # 只重读冲突的研究一次，另开证据范围，原件损坏和持续冲突仍报错。
+                card = read_once(study_id)
+                if card['study']['trashed'] != bool(manifest.get('trashed')):
+                    raise HttpReadVersionChanged('读取期间研究登记已改变，请刷新')
+                return card
+
         if len(manifests) < 2:
             return [read(m) for m in manifests]
         with ThreadPoolExecutor(max_workers=min(3, len(manifests))) as pool:

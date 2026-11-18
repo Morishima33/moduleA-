@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from types import FunctionType,SimpleNamespace
 
-from contracts import require
+from contracts import ContractError, require
 from . import read_evidence as original
 from .bounded_evidence import BoundedEvidence
 from .checkpoint_json_read import CheckpointReadEvidence
@@ -24,6 +24,10 @@ def _utf8_loads(raw):
 _read_json=BoundedEvidence.read_json
 _utf8_read_json=FunctionType(_read_json.__code__,dict(_read_json.__globals__,
     json=SimpleNamespace(loads=_utf8_loads)),_read_json.__name__,_read_json.__defaults__,_read_json.__closure__)
+
+
+class HttpReadVersionChanged(ContractError):
+    """本次只读请求期间研究登记字节发生变化。"""
 
 
 class HttpReadEvidence(CheckpointReadEvidence):
@@ -45,13 +49,18 @@ class HttpReadEvidence(CheckpointReadEvidence):
     _capture=BoundedEvidence._capture
     read_json=_utf8_read_json
 
+    def _verify_manifest_version(self):
+        """保留原登记字节检查，供列表精确识别可重新读取的冲突。"""
+        if self.manifest.read_bytes() != self.manifest_bytes:
+            raise HttpReadVersionChanged('读取期间研究登记已改变，请刷新')
+
     def finish(self):
         """HTTP响应退出时按目录分批调度，仍逐件完整核验并复查登记。"""
         if not self.enabled:
             return
         require(self._owned(), '读取证据范围已退出或线程不同')
         self._anchors()
-        require(self.manifest.read_bytes() == self.manifest_bytes, '读取期间研究登记已改变，请刷新')
+        self._verify_manifest_version()
         groups = {}
         for home, record, _ in self.proofs.values():
             groups.setdefault(home, []).append(record)
@@ -60,7 +69,7 @@ class HttpReadEvidence(CheckpointReadEvidence):
             self.stats['exit_sha_checks'] += len(records)
             self.stats['exit_bytes_hashed'] += sum(record['bytes'] for record in records)
         self._anchors()
-        require(self.manifest.read_bytes() == self.manifest_bytes, '读取期间研究登记已改变，请刷新')
+        self._verify_manifest_version()
         self.stats['manifest_checks'] += 2
 
     def close(self):

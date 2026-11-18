@@ -175,6 +175,47 @@ class HttpBoundedReadTests(TestCase):
         for e in seen:
             self.assertFalse(e.active);self.assertFalse(e.proofs);self.assertFalse(e.cache)
 
+    def test_list_rereads_conflicting_study_once_using_new_evidence(self):
+        from unittest.mock import patch
+        from modulea.api.views import Views
+        from modulea.core.http_read_evidence import HttpReadEvidence
+        from contracts import ContractError
+
+        manifest = self.home / 'manifest.json'
+        original = manifest.read_bytes()
+        kernel = SimpleNamespace(settings=SimpleNamespace(data_root=self.root))
+        for changes, moved in ((1, False), (2, False), (1, True)):
+            with self.subTest(changes=changes, moved=moved):
+                manifest.write_bytes(original)
+                seen = []
+                views = Views(kernel, None)
+                first_finish = HttpReadEvidence.finish
+
+                def read(study_id, *, with_states):
+                    self.assertTrue(with_states)
+                    self.assertEqual(study_id, self.sid)
+                    scope = current_evidence(self.root)
+                    scope.reader.verify(self.home, self.refs[0])
+                    seen.append(scope)
+                    return {'study': {'trashed': moved and len(seen) == 2}, 'version': scope.manifest_bytes}
+
+                def finish(scope):
+                    if len(seen) <= changes:
+                        manifest.write_bytes(manifest.read_bytes() + b' ')
+                    return first_finish(scope)
+
+                with patch.object(views, 'study_card', side_effect=read), patch.object(HttpReadEvidence, 'finish', finish):
+                    if changes == 1 and not moved:
+                        result = views._build_cards([{'study_id': self.sid}])
+                        self.assertEqual(result[0]['version'], original + b' ')
+                        self.assertEqual(seen[-1].stats['exit_sha_checks'], 1)
+                    else:
+                        with self.assertRaisesRegex(ContractError, '研究登记已改变'):
+                            views._build_cards([{'study_id': self.sid}])
+                self.assertEqual(len(seen), 2)
+                self.assertIsNot(seen[0], seen[1])
+                self.assertTrue(all(not evidence.active for evidence in seen))
+
     def test_http_keeps_original_strict_utf8_json_encoding_contract(self):
         from modulea.core.http_read_evidence import json_evidence_scope
         # 独立索引随合成原件正确登记，验证的是内容契约，不是SHA损坏。
