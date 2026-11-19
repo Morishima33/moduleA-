@@ -1,7 +1,7 @@
 // 文件用途：访问本机 JSON 接口的唯一出口。负责拼接地址、携带操作令牌、把错误统一转成 ApiError。
 import type {
   ApiErrorBody, BatchReviewResponse, Decision, GlobalInboxEntry, ModuleView, ReviewResponse, RunItem,
-  Session, StudyCard, StudyView, WorkspaceView, TablePage, Task,
+  Session, StudyCard, StudyOpening, StudyView, WorkspaceView, TablePage, Task,
 } from './types';
 
 // 开发模式下直连本机接口（可用环境变量 VITE_API_BASE 覆盖）；生产构建与后端同源，用相对路径
@@ -235,6 +235,7 @@ export const api = {
   trash: () => request<{ items: StudyCard[] }>('GET', '/trash'),
   /** 研究页 */
   study: (sid: string) => request<StudyView>('GET', `/studies/${sid}`),
+  studyOpening: (sid: string) => request<StudyOpening>('GET', `/studies/${sid}/opening`),
   workspace: (sid: string, moduleId?: string, runId?: string) =>
     request<WorkspaceView>('GET', `/studies/${sid}/workspace${qs({ module_id: moduleId, run_id: runId,
       include_rescue: !moduleId || moduleId === 'A06' ? 1 : undefined })}`),

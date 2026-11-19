@@ -310,6 +310,12 @@ export interface WorkspaceView {
   module_error: (ApiErrorBody['error'] & { status: number }) | null;
 }
 
+/** 只用于首屏，归档状态、操作权限和结果仍来自 WorkspaceView。 */
+export interface StudyOpening {
+  study: StudyInfo;
+  nav: { group_zh: string; modules: Pick<NavModule, 'module_id' | 'title_zh' | 'sub'>[] }[];
+}
+
 export interface StudyView {
   storage?: ProjectStorage;
   study: StudyInfo;

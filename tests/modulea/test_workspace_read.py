@@ -87,6 +87,27 @@ class WorkspaceReadTests(TestCase):
         self.assertFalse(value['study']['archive_ok']);self.assertIsNone(value['module'])
         self.assertEqual(value['module_error']['status'],503)
 
+    def test_opening_reads_only_registered_intake_and_navigation(self):
+        study=self.app.views.study(self.sid)
+        self.target().write_bytes(b'corrupted synthetic archive')
+        with patch.object(Views,'_snapshot',side_effect=AssertionError('opening must not build the archive snapshot')):
+            opening=self.get(f'/studies/{self.sid}/opening')
+        self.assertEqual(set(opening),{'study','nav'})
+        self.assertEqual(opening['study'],study['study'])
+        expected=[(group['group_zh'],[item['module_id'] for item in group['modules']]) for group in study['nav']]
+        self.assertEqual([(group['group_zh'],[item['module_id'] for item in group['modules']]) for group in opening['nav']],expected)
+        self.assertTrue(all(set(item)=={'module_id','title_zh','sub'} for group in opening['nav'] for item in group['modules']))
+        workspace=self.get(f'/studies/{self.sid}/workspace?module_id=A07')
+        self.assertIsNone(workspace['module'])
+        self.assertEqual(workspace['module_error']['status'],503)
+        self.assertEqual(self.app.tasks.list(self.sid),[])
+        manifest=self.app.kernel.read_workflow().load(self.sid)
+        run_ref=manifest['runs'][manifest['current']['A00']]['run_file']
+        (self.data/'studies'/self.sid/run_ref['path']).write_bytes(b'corrupted initial registration')
+        with self.assertRaises(HTTPError) as failure:
+            self.get(f'/studies/{self.sid}/opening')
+        self.assertEqual(failure.exception.code,503)
+
     def test_tampering_before_scope_exit_blocks_entire_response(self):
         import os
         from modulea.core.http_read_evidence import HttpReadEvidence

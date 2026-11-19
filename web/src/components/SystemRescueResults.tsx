@@ -7,6 +7,11 @@ import { HEAT_GRADIENT } from '../lib/theme';
 import { SectionHead } from './common';
 import AcceptanceBundle from './AcceptanceBundle';
 
+/** 判断所选范围是否与工作台返回的默认范围逐项相同。 */
+function sameSelection(selected:string[], initial:string[]) {
+  return selected.length===initial.length && selected.every((value,index)=>value===initial[index]);
+}
+
 /** 直接排版后端返回的行列；不在页面裁切或推算科学结果。 */
 export function Matrix({ matrix, label, onPick }: {
   matrix:RescueMatrix;label:string;onPick:(cell:RescueCell)=>void;
@@ -58,13 +63,18 @@ export default function SystemRescueResults({data}:{data:SystemRescueDisplay}) {
   },[data.run_id,data.input_key,data.presentation_revision?.receipt_sha256]);
   useEffect(()=>{
     if(!data.focus_url||!data.input_key)return;
+    // 默认范围已随工作台核验和返回；只有自选范围才需要独立读取。
+    if(sameSelection(compounds,data.initial_focus.compound_ids)&&sameSelection(targets,data.initial_focus.target_ids)){
+      setFocused(data.heatmap);setFocusLoading(false);setFocusError('');
+      return;
+    }
     let active=true;setFocusLoading(true);setFocusError('');
     api.rescueFocus(data.focus_url,data.input_key,compounds,targets).then(value=>{
       if(active&&value.run_id===data.run_id&&value.input_key===data.input_key)setFocused(value.heatmap);
     }).catch(error=>{if(active)setFocusError(error instanceof Error?error.message:'焦点范围读取失败');})
       .finally(()=>{if(active)setFocusLoading(false);});
     return()=>{active=false;};
-  },[data.focus_url,data.input_key,data.run_id,compounds,targets]);
+  },[data.focus_url,data.input_key,data.run_id,data.initial_focus,data.heatmap,compounds,targets]);
   useEffect(()=>{
     let active=true;setEvidence(null);setEvidenceError('');
     if(picked?.evidence_url)api.rescueEvidence(picked.evidence_url).then(value=>{

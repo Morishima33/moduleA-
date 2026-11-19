@@ -1,5 +1,11 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+## 2026-11-19 研究页先显示登记信息和导航
+
+GET `/studies/{sid}/opening` 只读返回 `study` 与 `nav`。`study` 沿用 `StudyInfo`，资料来自当前已登记、指纹校验通过的 A00 运行。`nav` 按固定流程分组，每项只有 `module_id`、`title_zh` 和 `sub`。
+这个接口不组装完整研究快照，不读取分析附件，不返回进度、资格、复核权限或下载地址。前端先提供研究标题和模块导航，原 `/workspace` 完整核验成功后再显示实际状态、结果与操作。后台校验失败时显示原因，首屏信息不充当通过依据。
+A06 初始焦点使用已随工作台完成核验的默认焦点数据。自选范围沿用原带运行及输入绑定的 `/focus`，归档原图仅在展开后预览，下载仍沿原指纹核验。
+
 ## 2026-11-18 同修订完整验收包
 
 GET `/studies/{sid}/runs/{rid}/rescue-presentations/{revision_id}/acceptance-archives`须单值

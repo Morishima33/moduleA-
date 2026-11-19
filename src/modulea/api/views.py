@@ -10,7 +10,7 @@ import mimetypes
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from contracts import fingerprint
+from contracts import fingerprint, require
 
 from ..core import modules as registry
 from ..core.component_identity_evidence import supports_run as supports_component_identity_tools
@@ -227,8 +227,9 @@ class Views:
             card["_states"] = states
         return card
 
-    def _study_info(self, study_id: str, manifest: dict) -> dict:
-        intake = self._intake(study_id, manifest)
+    def _study_info(self, study_id: str, manifest: dict, *, intake: dict | None = None) -> dict:
+        if intake is None:
+            intake = self._intake(study_id, manifest)
         herbs = intake.get("herbs")
         if isinstance(herbs, str):
             herbs = [h for h in herbs.replace("，", "、").replace(",", "、").split("、") if h]
@@ -295,17 +296,39 @@ class Views:
             return {'module_id': 'A06_PREP', 'code': 'running' if active_task else 'ready', 'text_zh': text}
         return fallback
 
+    @staticmethod
+    def _navigation(trial_preparation=False) -> list[dict]:
+        """按登记的模块分组整理导航文字，状态由完整研究视图补充。"""
+        groups = []
+        for group in registry.GROUP_ORDER:
+            items = [{"module_id": module_id,
+                      "title_zh": "本批对接准备" if module_id == "A06_PREP" and trial_preparation else registry.SPECS[module_id].title_zh,
+                      "sub": registry.SPECS[module_id].sub}
+                     for module_id in registry.ORDER if registry.SPECS[module_id].group_zh == group]
+            if items:
+                groups.append({"group_zh": group, "modules": items})
+        return groups
+
+    def study_opening(self, study_id: str) -> dict:
+        """登记信息和模块目录不需要读取分析结果、复核或附件。"""
+        manifest = self._manifest(study_id)
+        run_id = manifest.get("current", {}).get("A00")
+        intake = {}
+        if run_id:
+            run = self.kernel.read_workflow().run(manifest, run_id)
+            require(run.get("module_id") == "A00", "研究登记运行的模块不一致")
+            intake = run["inputs"]
+        return {"study": self._study_info(study_id, manifest, intake=intake), "nav": self._navigation()}
+
     def study(self, study_id: str) -> dict:
         workflow, view, error = self._snapshot(study_id)
         manifest = self._manifest(study_id)  # 真实索引（含回收站标记）
         states = self._states(study_id, view, error, bool(manifest.get("trashed")))
-        nav = []
-        for group in registry.GROUP_ORDER:
-            items = [{"module_id": m, "title_zh": "本批对接准备" if m == "A06_PREP" and view and view.get("trial_preparation") else registry.SPECS[m].title_zh, "sub": registry.SPECS[m].sub,
-                      "code": states[m]["code"], "label_zh": states[m]["label_zh"]}
-                     for m in registry.ORDER if registry.SPECS[m].group_zh == group]
-            if items:
-                nav.append({"group_zh": group, "modules": items})
+        nav = self._navigation(bool(view and view.get("trial_preparation")))
+        for group in nav:
+            for module in group["modules"]:
+                state = states[module["module_id"]]
+                module.update(code=state["code"], label_zh=state["label_zh"])
         approved = sum(1 for s in states.values() if s["code"] in ("approved", "published"))
         return {
             "study": self._study_info(study_id, manifest),
