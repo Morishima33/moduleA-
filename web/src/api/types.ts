@@ -448,6 +448,7 @@ export interface FoundationEvidence {
 export interface Special {
   native_scores?:NativeScoreDisplay;
   system_rescue?:SystemRescueDisplay;
+  rescue_presentation?:RescuePresentationBootstrap;
   foundation_evidence?:FoundationEvidence;
   source_diagnostics?:{object_type?:string;object_id?:string;failure_stage?:string;failure_code?:string;retryable?:boolean;reason_zh?:string}[];
   historical_disease_source?:{message_zh:string};
@@ -565,6 +566,7 @@ export interface RescuePresentationDirectory {
   current:RescuePresentationItem|null;history:RescuePresentationItem[];read_only:true;
   current_view?:SystemRescueDisplay|null;
 }
+export type RescuePresentationBootstrap = {directory:RescuePresentationDirectory} | {error_zh:string};
 export interface RescuePresentationRequest {
   request_id:string;expected_run_id:string;expected_input_hash:string;author:string;note:string;confirmed:true;
 }

@@ -70,6 +70,32 @@ class RescuePresentationHttpTests(TestCase):
             self.assertEqual(response.status,202);self.assertTrue(json.load(response)['created'])
         self.assertEqual(self.seed.tasks.submit.call_count,1)
 
+    def test_workspace_embeds_current_presentation_in_one_evidence_scope(self):
+        from modulea.api.workspace import _PageViews
+
+        self.seed.publish()
+        expected=self.get(self.url+'?include_current=1')
+        study={'study':{'study_id':self.seed.sid},'next_step':{'module_id':'A06'}}
+        module={'run':{'run_id':self.seed.rid},'special':{'system_rescue':{'presentation_url':self.url}}}
+        url=f'/api/v1/studies/{self.seed.sid}/workspace?include_rescue=1'
+        original=HttpReadEvidence.finish
+        scopes=[]
+
+        def finish(reader):
+            scopes.append(reader.study_id)
+            return original(reader)
+
+        before=self.seed.w.load(self.seed.sid)
+        with (patch.object(_PageViews,'study',return_value=study),
+              patch.object(_PageViews,'module',return_value=module),
+              patch.object(HttpReadEvidence,'finish',finish)):
+            reply=self.get(url)
+            self.assertEqual(scopes,[self.seed.sid])
+            self.assertEqual(reply['module']['special']['rescue_presentation'],{'directory':expected})
+            self.assertEqual(reply['study'],study)
+        self.assertEqual(self.seed.w.load(self.seed.sid),before)
+        self.seed.tasks.submit.assert_not_called()
+
     def test_actual_view_response_rejects_archive_font_changed_at_finish(self):
         record=self.seed.publish();directory=self.get(self.url)
         request=json.loads((self.seed.home/record['request_file']['path']).read_text('utf8'))

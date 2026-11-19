@@ -75,7 +75,8 @@ class WorkspaceReadTests(TestCase):
         self.assertNotIn('study',json.load(failure.exception))
 
     def test_unknown_repeated_and_blank_queries_are_rejected(self):
-        for query in ('unknown=1','module_id=A06&module_id=A07','run_id=','module_id=','module_id=A07&run_id=x&run_id=y'):
+        for query in ('unknown=1','module_id=A06&module_id=A07','run_id=','module_id=','module_id=A07&run_id=x&run_id=y',
+                      'include_rescue=0','include_rescue=1&include_rescue=1'):
             with self.subTest(query=query):
                 with self.assertRaises(HTTPError) as failure:self.get(f'/studies/{self.sid}/workspace?{query}')
                 self.assertEqual(failure.exception.code,422)

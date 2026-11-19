@@ -25,7 +25,7 @@ class _PageViews(Views):
         return workflow,SnapshotFlight._clone(view),error
 
 
-def build(app,study_id,module_id,run_id):
+def build(app,study_id,module_id,run_id,include_rescue=False):
     """先原研究框架，再原模块；模块选择错误保持在模块区，退出SHA失败仍整体拒绝。"""
     evidence=current_evidence(app.settings.data_root)
     if evidence is None:
@@ -44,13 +44,26 @@ def build(app,study_id,module_id,run_id):
         except (ApiError,ContractError) as failure:
             if isinstance(failure,ContractError):failure=from_contract(str(failure))
             error={'status':failure.status,**failure.body()['error']}
+    if include_rescue and module_id == 'A06' and module:
+        special = module.get('special') or {}
+        rescue = special.get('system_rescue') or {}
+        run = module.get('run') or {}
+        if rescue.get('presentation_url') and run.get('run_id'):
+            from .rescue_presentations import read_directory
+            try:
+                directory = read_directory(app, study_id, run['run_id'], include_current=True)
+                special['rescue_presentation'] = {'directory': directory}
+            except ApiError as failure:
+                special['rescue_presentation'] = {'error_zh': failure.body()['error']['message_zh']}
     return {'study':study,'module':module,'module_error':error}
 
 
 def get(app,request,study_id):
     """仅当前新端点保留空查询以严格校验，不改变原Request的解析约定。"""
     query=parse_qs(urlsplit(request.handler.path).query,keep_blank_values=True)
-    if (set(query)-{'module_id','run_id'} or any(len(values)!=1 or not values[0].strip() for values in query.values())):
-        raise ApiError(422,'VALIDATION_FAILED','同页读取只接受单值且非空的module_id、run_id')
+    if (set(query)-{'module_id','run_id','include_rescue'} or
+            any(len(values)!=1 or not values[0].strip() for values in query.values()) or
+            query.get('include_rescue', ['1']) != ['1']):
+        raise ApiError(422,'VALIDATION_FAILED','同页读取参数缺失、重复或越界')
     return app._json_read(study_id,build,app,study_id,
-        query.get('module_id',[None])[0],query.get('run_id',[None])[0])
+        query.get('module_id',[None])[0],query.get('run_id',[None])[0],'include_rescue' in query)

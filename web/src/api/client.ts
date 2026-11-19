@@ -236,7 +236,8 @@ export const api = {
   /** 研究页 */
   study: (sid: string) => request<StudyView>('GET', `/studies/${sid}`),
   workspace: (sid: string, moduleId?: string, runId?: string) =>
-    request<WorkspaceView>('GET', `/studies/${sid}/workspace${qs({ module_id: moduleId, run_id: runId })}`),
+    request<WorkspaceView>('GET', `/studies/${sid}/workspace${qs({ module_id: moduleId, run_id: runId,
+      include_rescue: !moduleId || moduleId === 'A06' ? 1 : undefined })}`),
   /** 当前研究只读追溯摘要；完整结果由页面显式下载。 */
   studyTrace: (sid: string) => request<import('./types').TraceSummary>('GET', `/studies/${sid}/trace`),
   /** 模块页；runId 用于查看历史版本 */

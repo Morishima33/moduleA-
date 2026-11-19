@@ -82,6 +82,11 @@ def directory(app, req, sid, rid):
     include_current = req.query1('include_current')
     if include_current not in (None, '1'):
         raise ApiError(422, 'VALIDATION_FAILED', '当前图表读取参数错误')
+    return read_directory(app, sid, rid, include_current=include_current == '1')
+
+
+def read_directory(app, sid, rid, *, include_current=False):
+    """工作台和独立目录共用同一只读核验。"""
     with _errors():
         w, m = _base(app, sid, rid)
         bound, bundle, blockers = _status(w, m, sid, rid, app.settings.font_regular)

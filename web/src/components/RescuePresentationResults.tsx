@@ -2,13 +2,13 @@
 import { Alert, Button, Input, Select, Space } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import { api, errorText } from '../api/client';
-import type { RescuePresentationDirectory, SystemRescueDisplay } from '../api/types';
+import type { RescuePresentationBootstrap, RescuePresentationDirectory, SystemRescueDisplay } from '../api/types';
 import { useApp } from '../lib/appContext';
 import { fmtTime } from '../lib/format';
 import SystemRescueResults from './SystemRescueResults';
 
 /** 每次选择固定回执；刷新仅更新目录，用户选过的历史版本不会自动跳到新版本。 */
-export default function RescuePresentationResults({data}:{data:SystemRescueDisplay}) {
+export default function RescuePresentationResults({data,preloaded}:{data:SystemRescueDisplay;preloaded?:RescuePresentationBootstrap}) {
   const app=useApp();
   const [catalog,setCatalog]=useState<RescuePresentationDirectory|null>(null);
   const [choice,setChoice]=useState<string|null>(null);
@@ -20,12 +20,19 @@ export default function RescuePresentationResults({data}:{data:SystemRescueDispl
   const [note,setNote]=useState('按当前固定来源整理双语矩阵、图表与名称证据，不改变评分或科研复核。');
   const [submitting,setSubmitting]=useState(false);
   const pinned=useRef(false);
+  const handledReload=useRef(0);
+  const refreshTick=preloaded ? undefined : app.refreshTick;
 
   // 全局仅在任务终态等变化时刷新；不另建持续轮询，不自动生成图表。
   useEffect(()=>{
     if(!data.presentation_url)return;
     let active=true;setLoading(true);setError('');setDisplay(null);
-    api.rescuePresentationDirectory(data.presentation_url,!pinned.current).then(value=>{
+    const manual=reload!==handledReload.current;
+    handledReload.current=reload;
+    const reading=preloaded&&!manual
+      ? 'directory' in preloaded ? Promise.resolve(preloaded.directory) : Promise.reject(new Error(preloaded.error_zh))
+      : api.rescuePresentationDirectory(data.presentation_url,!pinned.current);
+    reading.then(value=>{
       if(!active)return;
       if(value.run_id!==data.run_id)throw new Error('图表版本与本运行不同，请刷新。');
       setCatalog(value);
@@ -33,7 +40,7 @@ export default function RescuePresentationResults({data}:{data:SystemRescueDispl
     }).catch(cause=>{if(active){setError(errorText(cause));setDisplay(null);}})
       .finally(()=>{if(active)setLoading(false);});
     return()=>{active=false;};
-  },[data.presentation_url,data.run_id,app.refreshTick,reload]);
+  },[data.presentation_url,data.run_id,preloaded,refreshTick,reload]);
 
   const selected=catalog?.history.find(item=>item.revision_id===choice);
   useEffect(()=>{
