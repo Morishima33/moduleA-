@@ -11,6 +11,7 @@ from contracts import ContractError, fingerprint, require, safe_id
 from ..core import rescue_presentations as core
 from ..core.rescue_result_read import load_rescue_result
 from ..core.rescue_presentation_read import matches_current as _matches
+from ..core.read_evidence import current_evidence, read_call
 from .errors import ApiError, not_found
 from .rescue_evidence import evidence_url, focus_matrix
 
@@ -45,7 +46,7 @@ def _base(app, sid, rid):
 def _status(w, m, sid, rid, font_path):
     """生成资格仍用原完整状态规则；历史查看不因当前暂停而丢失原件。"""
     try:
-        current, basis, bundle, source = core._context(w, sid, rid)
+        current, basis, bundle, source = read_call(core._context, w, sid, rid)
         require(fingerprint(current) == fingerprint(m), '名称修订读取期间研究登记改变')
         bound, _ = core._binding(w, m, basis, source, font_path=font_path)
         return bound, bundle, [row['reason_zh'] for row in bound['names']['blockers']]
@@ -85,10 +86,26 @@ def directory(app, req, sid, rid):
     return read_directory(app, sid, rid, include_current=include_current == '1')
 
 
-def read_directory(app, sid, rid, *, include_current=False):
+def _matching_page_cache(workflow, manifest, snapshot):
+    """仅使用当前请求已核验、同一登记版本且未进入回收站的视图缓存。"""
+    if snapshot is None or manifest.get('trashed'):
+        return None
+    display, view, _ = snapshot
+    evidence = current_evidence(workflow.root)
+    if (evidence is not None and evidence.study_id == manifest.get('study_id')
+            and getattr(display, '_request_view_cache_scope', None) is evidence
+            and view and view.get('manifest') == dict(manifest, trashed=False)):
+        return display._request_view_cache
+    return None
+
+
+def read_directory(app, sid, rid, *, include_current=False, page_snapshot=None):
     """工作台和独立目录共用同一只读核验。"""
     with _errors():
         w, m = _base(app, sid, rid)
+        shared = _matching_page_cache(w, m, page_snapshot)
+        if shared is not None:
+            w._view_cache = shared
         bound, bundle, blockers = _status(w, m, sid, rid, app.settings.font_regular)
         history, current = [], None
         current_record = current_request = None

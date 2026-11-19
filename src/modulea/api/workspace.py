@@ -51,7 +51,8 @@ def build(app,study_id,module_id,run_id,include_rescue=False):
         if rescue.get('presentation_url') and run.get('run_id'):
             from .rescue_presentations import read_directory
             try:
-                directory = read_directory(app, study_id, run['run_id'], include_current=True)
+                directory = read_directory(app, study_id, run['run_id'], include_current=True,
+                                           page_snapshot=views.snapshot)
                 special['rescue_presentation'] = {'directory': directory}
             except ApiError as failure:
                 special['rescue_presentation'] = {'error_zh': failure.body()['error']['message_zh']}

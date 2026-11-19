@@ -5,6 +5,7 @@ from pathlib import Path
 from contracts import fingerprint, require
 from storage import read_json, verified_file
 from science_modules.a06.system_rescue_display import build_view, SCIENCE_VERSION, REVIEW_NOTE, STATE_ZH
+from ..core.read_evidence import current_evidence
 from ..presenters.base import Parts, clean, focus, kpi, param, table
 from .rescue_evidence import evidence_url, focus_matrix
 
@@ -27,12 +28,26 @@ OBSOLETE = ('automatic_docking', 'docking_trial', 'docking_coverage', 'docking_p
             'display_revision', 'plan_stages')
 
 
-def _download(sid, ref, files, label):
+def _file_key(ref):
+    """链接按完整登记身份查找，不能用同名文件或其他指纹替代。"""
+    return (ref.get('path'), ref.get('bytes'), ref.get('sha256'))
+
+
+def _download_index(files):
+    """同一原件可能有多条登记，保留原先匹配到的第一条可下载记录。"""
+    index = {}
+    for item in files:
+        key = _file_key(item)
+        if item.get('key') and None not in key:
+            index.setdefault(key, item)
+    return index
+
+
+def _download(sid, ref, index, label):
     """只连接标准结果索引中路径、大小和SHA全部相同的原件。"""
     if not isinstance(ref, dict):
         return None
-    row = next((item for item in files if item.get('key') and all(item.get(key) == ref.get(key)
-                for key in ('path', 'bytes', 'sha256')) and all(ref.get(key) is not None for key in ('path', 'bytes', 'sha256'))), None)
+    row = index.get(_file_key(ref))
     if row is None:
         return None
     return {'label_zh': label, 'name': row.get('name') or Path(row['path']).name,
@@ -59,10 +74,16 @@ def apply(workflow, manifest, run, result, response):
     require(version in (SCIENCE_VERSION, 'A06.system_rescue.2') and run['study_id'] == sid,
             '受体补救展示协议或研究不同')
     home = workflow.location(sid)
-    fixed = read_json(verified_file(home, run['inputs']['system_input_ref']))
+    scope = current_evidence(workflow.root)
+
+    def read(ref):
+        """HTTP 与后续修订核验复用同一份已核字节，其余调用保持原读取。"""
+        return scope.reader.read(home, ref) if scope else read_json(verified_file(home, ref))
+
+    fixed = read(run['inputs']['system_input_ref'])
     refs = result['tables'].get('scoring_packet', [])
     require(len(refs) == 1 and refs[0] in result.get('files', []), '补救展示缺少唯一已登记评分事实包')
-    packet = read_json(verified_file(home, refs[0]))
+    packet = read(refs[0])
     require(fixed.get('study_id') == sid and fixed.get('stage') == 'A06_INPUT'
             and packet.get('study_id') == sid and packet.get('run_id') == run['run_id']
             and fingerprint(packet.get('inputs')) == fingerprint(run['inputs'])
@@ -85,6 +106,7 @@ def apply(workflow, manifest, run, result, response):
     view['summary_rows'] = [{'label_zh': row['label_zh'], 'text': row['text']} for row in parts.kpis]
     view['receptor_preparation'] = preparation_rows(result)
     files = response.get('files', [])
+    file_index = _download_index(files)
     pairs = {(row['compound_id'], row['target_id']): row for row in packet['pairs']}
     for matrix in (view['table'], view['heatmap']):
         for line in matrix['cells']:
@@ -93,7 +115,7 @@ def apply(workflow, manifest, run, result, response):
                 cell['evidence_url'] = evidence_url(sid, run['run_id'], source, stats['input_key'])
                 cell['downloads'] = [link for key, label in (('execution', '本组合执行证据'),
                     ('top1_pose', 'Top-1构象'), ('top1', 'Top-1构象'), ('original_pose', '原始姿势文件'))
-                    if (link := _download(sid, source.get(key), files, label))]
+                    if (link := _download(sid, source.get(key), file_index, label))]
     view['input_key'] = stats['input_key']
     view['focus_url'] = f"/api/v1/studies/{sid}/runs/{run['run_id']}/rescue-focus"
     view['acceptance_url'] = f"/api/v1/studies/{sid}/runs/{run['run_id']}/acceptance"
@@ -113,7 +135,7 @@ def apply(workflow, manifest, run, result, response):
                 continue
             require(role not in display_roles, '本轮补救展示附件同角色重复')
             display_roles.add(role)
-        link = _download(sid, item, files, item.get('name') or Path(item['path']).name)
+        link = _download(sid, item, file_index, item.get('name') or Path(item['path']).name)
         if link:
             view['downloads'].append(link)
             if role in ('plot_a06_rescue_full_png', 'plot_a06_rescue_focus_png'):

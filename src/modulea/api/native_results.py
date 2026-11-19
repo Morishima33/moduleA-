@@ -68,7 +68,7 @@ def _links(sid,rid,index,input_key,execution_ref,execution):
 def apply(workflow,manifest,run,result,response):
     """复用已确认矩阵几何与实际本批名称，所有组合保留；仅追加只读展示。"""
     from science_modules.a06.native_display import renderer
-    from .system_rescue_view import _download,OBSOLETE
+    from .system_rescue_view import _download, _download_index, OBSOLETE
     fact,source,record=archive(workflow,manifest,run,result)
     packet={**fact,'source_fixed':record['packet'],'compounds':source['compounds'],'receptors':source['receptors'],
             'pairs':[dict(row,source_kind='native') for row in fact['pairs']]}
@@ -88,10 +88,12 @@ def apply(workflow,manifest,run,result,response):
         'columns':[r for r in full['columns'] if r['target_id'] in focus['target_ids']],
         'cells':[[cell for cell in line if cell['target_id'] in focus['target_ids']]
                  for row,line in zip(full['rows'],full['cells']) if row['compound_id'] in focus['compound_ids']]}
-    for item in response.get('files',[]):
+    files=response.get('files',[])
+    file_index=_download_index(files)
+    for item in files:
         role=item.get('role','')
         if not (role.startswith('plot_a06_native_') or role in ('a06_native_matrix_csv','a06_native_display_view','native_matrix_csv')):continue
-        link=_download(sid,item,response['files'],item.get('name') or Path(item['path']).name)
+        link=_download(sid,item,file_index,item.get('name') or Path(item['path']).name)
         if link:
             view['downloads'].append(link)
             if role.endswith('_png'):view['figures'].append(dict(link,image_url=link['url']+'&inline=1',role=role))

@@ -2,8 +2,10 @@
 from collections import OrderedDict
 from contextlib import contextmanager
 import json
+import marshal
 from pathlib import Path
 from types import FunctionType,SimpleNamespace
+import zlib
 
 from contracts import ContractError, require
 from . import read_evidence as original
@@ -20,10 +22,25 @@ def _utf8_loads(raw):
     return json.loads(raw.decode('utf-8'))
 
 
-# 复用有界读取原code，仅给私有namespace替换解析入口；冻结模块globals保持原样。
+def _pack_cache(value):
+    """只压缩大型 A06 补救事实包，使其能进入现有有界请求缓存。"""
+    raw = marshal.dumps(value)
+    if (JSON_CACHE_BYTES < len(raw) <= 128 * 1024 * 1024 and isinstance(value, dict)
+            and value.get('schema_version') in ('A06.system_rescue.1', 'A06.system_rescue.2')):
+        return b'Z' + zlib.compress(raw, level=1)
+    return b'M' + raw
+
+
+def _unpack_cache(raw):
+    """只解包同一请求内生成的缓存，每次返回独立容器。"""
+    return marshal.loads(zlib.decompress(raw[1:]) if raw[:1] == b'Z' else memoryview(raw)[1:])
+
+
+# 复用有界读取原code，私有namespace使用严格UTF-8及有界编码；冻结模块globals保持原样。
 _read_json=BoundedEvidence.read_json
 _utf8_read_json=FunctionType(_read_json.__code__,dict(_read_json.__globals__,
-    json=SimpleNamespace(loads=_utf8_loads)),_read_json.__name__,_read_json.__defaults__,_read_json.__closure__)
+    json=SimpleNamespace(loads=_utf8_loads),marshal=SimpleNamespace(dumps=_pack_cache,loads=_unpack_cache)),
+    _read_json.__name__,_read_json.__defaults__,_read_json.__closure__)
 
 
 class HttpReadVersionChanged(ContractError):
@@ -41,8 +58,9 @@ class HttpReadEvidence(CheckpointReadEvidence):
 
     def _allowed_functions(self):
         """共享只读加载器也加入本请求代理，保持原件首尾SHA，不扩冻结worker白名单。"""
+        from .rescue_presentations import _context
         functions=super()._allowed_functions()
-        functions.update((load_rescue_result, bound_batch))
+        functions.update((load_rescue_result, bound_batch, _context))
         return functions
 
     # 原有界实现逐件核完整SHA，解析字节另与原登记比对；不长期保留JSON原文。

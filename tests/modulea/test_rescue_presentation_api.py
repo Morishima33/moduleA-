@@ -18,6 +18,21 @@ from tests.modulea.test_rescue_presentation_records import RescuePresentationRec
 
 
 class RescuePresentationApiTests(unittest.TestCase):
+    def test_only_matching_verified_page_snapshot_can_supply_current_cache(self):
+        from modulea.core.http_read_evidence import json_evidence_scope
+
+        manifest=self.w.load(self.sid)
+        cache={'active':{self.rid:True}}
+        with json_evidence_scope(self.w.root,self.sid) as evidence:
+            display=SimpleNamespace(root=self.w.root,_request_view_cache_scope=evidence,_request_view_cache=cache)
+            view={'manifest':dict(manifest,trashed=False)}
+            snapshot=(display,view,None)
+            self.assertIs(self.api._matching_page_cache(self.w,manifest,snapshot),cache)
+            self.assertIsNone(self.api._matching_page_cache(self.w,dict(manifest,trashed=True),snapshot))
+            self.assertIsNone(self.api._matching_page_cache(self.w,dict(manifest,updated_at='different'),snapshot))
+        with json_evidence_scope(self.w.root,self.sid):
+            self.assertIsNone(self.api._matching_page_cache(self.w,manifest,snapshot))
+
     def setUp(self):
         path=Path(__file__).resolve().parents[2]/'src/modulea/api/rescue_presentations.py'
         self.assertTrue(path.is_file(),'缺少名称修订HTTP读取与显式下载')

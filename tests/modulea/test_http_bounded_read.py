@@ -101,6 +101,25 @@ class HttpBoundedReadTests(TestCase):
             self.assertEqual(e.reader.read(self.home,self.refs[0])['nested'],[1,2])
         self.assert_closed()
 
+    def test_large_rescue_packet_reuses_bounded_cache_and_rechecks_sha_at_exit(self):
+        from unittest.mock import patch
+        from modulea.core import http_read_evidence as http
+
+        path=self.home/'rescue.json'
+        raw=json.dumps({'schema_version':'A06.system_rescue.2','data':'x'*24000,'nested':[1,2]}).encode()
+        path.write_bytes(raw);ref=file_record(self.home,path,'rescue_scoring_packet')
+        with patch.object(http,'JSON_CACHE_BYTES',8192), self.assertRaises(ContractError):
+            with http.json_evidence_scope(self.root,self.sid,cache_bytes=8192) as e:
+                self.evidence=e
+                e.reader.read(self.home,ref)['nested'].append(3)
+                self.assertEqual(e.reader.read(self.home,ref)['nested'],[1,2])
+                self.assertEqual(e.stats['json_parses'],1)
+                self.assertEqual(e.stats['json_cache_hits'],1)
+                self.assertLessEqual(e.cache_peak,8192)
+                stamp=path.stat();path.write_bytes(raw.replace(b'xx',b'zz',1))
+                os.utime(path,ns=(stamp.st_atime_ns,stamp.st_mtime_ns))
+        self.assert_closed()
+
     def test_reparse_after_verification_rejects_changed_bytes_without_ttl(self):
         from modulea.core.http_read_evidence import json_evidence_scope
         with self.assertRaises(ContractError):
