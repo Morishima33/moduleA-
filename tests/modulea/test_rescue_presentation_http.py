@@ -35,6 +35,12 @@ class RescuePresentationHttpTests(TestCase):
         info=self.get(self.url)
         self.assertEqual(info['current']['revision_id'],record['revision_id'])
         view=self.get(info['current']['view_url'])
+        self.assertNotIn('current_view',info)
+        inline=self.get(self.url+'?include_current=1')
+        self.assertEqual(inline,{**info,'current_view':view})
+        with self.assertRaises(HTTPError) as caught:
+            self.get(self.url+'?include_current=1&include_current=1')
+        self.assertEqual(caught.exception.code,422)
         for link in view['downloads']:
             with urlopen(self.base+link['url']) as response:raw=response.read()
             self.assertEqual(sha256(raw).hexdigest(),link['sha256'])
@@ -73,9 +79,11 @@ class RescuePresentationHttpTests(TestCase):
             target.write_bytes(bytes([raw[0]^1])+raw[1:]);os.utime(target,ns=(stamp.st_atime_ns,stamp.st_mtime_ns))
             return finish(reader)
         try:
-            with patch.object(HttpReadEvidence,'finish',mutate),self.assertRaises(HTTPError) as caught:
-                self.get(directory['current']['view_url'])
-            self.assertEqual(caught.exception.code,503)
+            for url in (directory['current']['view_url'],self.url+'?include_current=1'):
+                with patch.object(HttpReadEvidence,'finish',mutate),self.assertRaises(HTTPError) as caught:
+                    self.get(url)
+                self.assertEqual(caught.exception.code,503)
+                target.write_bytes(raw)
         finally:target.write_bytes(raw)
 
     def inherited_source(self,partial=False):

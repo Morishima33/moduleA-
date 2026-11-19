@@ -563,6 +563,7 @@ export interface RescuePresentationItem {
 export interface RescuePresentationDirectory {
   run_id:string;enabled:boolean;blockers_zh:string[];expected_input_hash:string|null;translation_missing_ids:string[];
   current:RescuePresentationItem|null;history:RescuePresentationItem[];read_only:true;
+  current_view?:SystemRescueDisplay|null;
 }
 export interface RescuePresentationRequest {
   request_id:string;expected_run_id:string;expected_input_hash:string;author:string;note:string;confirmed:true;

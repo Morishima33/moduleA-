@@ -114,7 +114,8 @@ function rescueFocusPath(url:string,inputKey:string,compounds:string[],targets:s
 // 各端点的薄封装；路径与契约第 3 节一致
 export const api = {
   /** 后端版本目录与明确视图均只读，不能自行替换回执SHA。 */
-  rescuePresentationDirectory:(url:string)=>request<import('./types').RescuePresentationDirectory>('GET',url.replace(/^\/api\/v1/,'')),
+  rescuePresentationDirectory:(url:string,includeCurrent=false)=>request<import('./types').RescuePresentationDirectory>(
+    'GET',url.replace(/^\/api\/v1/,'')+(includeCurrent?'?include_current=1':'')),
   rescuePresentation:(url:string)=>request<import('./types').SystemRescueDisplay>('GET',url.replace(/^\/api\/v1/,'')),
   publishRescuePresentation:(url:string,body:import('./types').RescuePresentationRequest)=>
     request<{task:Task;created:boolean;message_zh:string}>('POST',url.replace(/^\/api\/v1/,''),body),

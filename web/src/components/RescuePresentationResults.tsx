@@ -25,7 +25,7 @@ export default function RescuePresentationResults({data}:{data:SystemRescueDispl
   useEffect(()=>{
     if(!data.presentation_url)return;
     let active=true;setLoading(true);setError('');setDisplay(null);
-    api.rescuePresentationDirectory(data.presentation_url).then(value=>{
+    api.rescuePresentationDirectory(data.presentation_url,!pinned.current).then(value=>{
       if(!active)return;
       if(value.run_id!==data.run_id)throw new Error('图表版本与本运行不同，请刷新。');
       setCatalog(value);
@@ -41,7 +41,9 @@ export default function RescuePresentationResults({data}:{data:SystemRescueDispl
     if(choice===null)return;
     if(!selected){setError('所选图表版本已不可用，请重新读取版本目录。');setDisplay(null);return;}
     let active=true;setDisplay(null);setLoading(true);setError('');
-    api.rescuePresentation(selected.view_url).then(value=>{
+    const inline=catalog?.current?.revision_id===selected.revision_id ? catalog.current_view : null;
+    const reading=inline ? Promise.resolve(inline) : api.rescuePresentation(selected.view_url);
+    reading.then(value=>{
       if(!active)return;
       const revision=value.presentation_revision;
       if(value.run_id!==data.run_id||!revision||revision.revision_id!==selected.revision_id||

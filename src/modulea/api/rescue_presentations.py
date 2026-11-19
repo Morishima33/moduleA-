@@ -45,12 +45,12 @@ def _base(app, sid, rid):
 def _status(w, m, sid, rid, font_path):
     """生成资格仍用原完整状态规则；历史查看不因当前暂停而丢失原件。"""
     try:
-        current, basis, _, source = core._context(w, sid, rid)
+        current, basis, bundle, source = core._context(w, sid, rid)
         require(fingerprint(current) == fingerprint(m), '名称修订读取期间研究登记改变')
         bound, _ = core._binding(w, m, basis, source, font_path=font_path)
-        return bound, [row['reason_zh'] for row in bound['names']['blockers']]
+        return bound, bundle, [row['reason_zh'] for row in bound['names']['blockers']]
     except (ContractError, OSError, KeyError, ValueError, TypeError) as error:
-        return None, [str(error)]
+        return None, None, [str(error)]
 
 
 def _records(w, m, sid, rid):
@@ -78,24 +78,37 @@ def _descriptor(sid, rid, record, matches):
 
 def directory(app, req, sid, rid):
     """只读版本目录；新生成资格与当前/历史修订分别表示，不自动排队。"""
-    _query(req, set())
+    _query(req, set(), {'include_current'})
+    include_current = req.query1('include_current')
+    if include_current not in (None, '1'):
+        raise ApiError(422, 'VALIDATION_FAILED', '当前图表读取参数错误')
     with _errors():
         w, m = _base(app, sid, rid)
-        bound, blockers = _status(w, m, sid, rid, app.settings.font_regular)
+        bound, bundle, blockers = _status(w, m, sid, rid, app.settings.font_regular)
         history, current = [], None
+        current_record = current_request = None
         for record in _records(w, m, sid, rid):
             request = core._read_request(w, m, record['request_file'])
             record['input_key'] = request['binding']['source']['basis']['input_key']
             item = _descriptor(sid, rid, record, _matches(w, m, record, bound))
             history.append(item)
-            if item['matches_input']:current = item
+            if item['matches_input']:
+                current = item
+                current_record, current_request = record, request
         if app.tasks.active_for(sid):blockers.append('本研究已有活动任务，请等待完成')
         if current:blockers.append('本批已有适用的名称图表修订，可直接查看或下载')
+        reply = {'schema_version': core.VERSION, 'run_id': rid, 'enabled': bool(bound and not blockers),
+                 'blockers_zh': blockers, 'expected_input_hash': fingerprint(bound) if bound else None,
+                 'translation_missing_ids': bound['names']['missing_ids'] if bound else [],
+                 'current': current, 'history': history, 'read_only': True}
+        if include_current:
+            reply['current_view'] = None
+            if current_record is not None:
+                selected = _selection(w, m, sid, rid, current_record, current_request, bundle)
+                selected['matches_input'] = True
+                reply['current_view'] = _view(selected, sid, rid, current['revision_id'], current['input_key'])
         require(fingerprint(w.load(sid)) == fingerprint(m), '名称修订目录读取期间登记改变')
-        return {'schema_version': core.VERSION, 'run_id': rid, 'enabled': bool(bound and not blockers),
-                'blockers_zh': blockers, 'expected_input_hash': fingerprint(bound) if bound else None,
-                'translation_missing_ids': bound['names']['missing_ids'] if bound else [],
-                'current': current, 'history': history, 'read_only': True}
+        return reply
 
 
 def select(app, req, sid, rid, revision_id):
@@ -110,15 +123,21 @@ def select(app, req, sid, rid, revision_id):
     request = core._read_request(w, m, chosen['request_file']);bound = request['binding']
     if req.query1('expected_input_key') != bound['source']['basis']['input_key']:
         raise ApiError(409, 'STALE_VERSION', '名称修订固定输入已改变，请刷新')
-    bundle = load_rescue_result(w, m, sid, rid)
-    require(bundle[4]['tables']['scoring_packet'][0] == bound['source']['scoring_packet'], '名称修订与指定评分包不同')
-    saved = next(ref for ref in chosen['files'] if ref['role'] == 'a06_rescue_display_view')
-    result = {'workflow': w, 'manifest': m, 'home': w.location(sid), 'record': chosen,
-              'request': request, 'binding': bound, 'bundle': bundle, 'view': core._read(w, sid, saved)}
-    current, _ = _status(w, m, sid, rid, app.settings.font_regular)
+    current, bundle, _ = _status(w, m, sid, rid, app.settings.font_regular)
+    result = _selection(w, m, sid, rid, chosen, request, bundle)
     result['matches_input'] = _matches(w, m, chosen, current)
     require(fingerprint(w.load(sid)) == fingerprint(m), '名称修订读取期间登记改变')
     return result
+
+
+def _selection(w, m, sid, rid, record, request, bundle):
+    bound = request['binding']
+    if bundle is None:
+        bundle = load_rescue_result(w, m, sid, rid)
+    require(bundle[4]['tables']['scoring_packet'][0] == bound['source']['scoring_packet'], '名称修订与指定评分包不同')
+    saved = next(ref for ref in record['files'] if ref['role'] == 'a06_rescue_display_view')
+    return {'workflow': w, 'manifest': m, 'home': w.location(sid), 'record': record,
+            'request': request, 'binding': bound, 'bundle': bundle, 'view': core._read(w, sid, saved)}
 
 
 def _revision(selection, matches=False):
@@ -135,30 +154,35 @@ def view(app, req, sid, rid, revision_id):
     _query(req, {'expected_revision_sha256', 'expected_input_key'})
     with _errors():
         selected = select(app, req, sid, rid, revision_id)
-        result = deepcopy(selected['view']);packet = selected['bundle'][-1]
-        result['presentation_revision'] = _revision(selected, selected['matches_input'])
-        tokens = {'expected_revision_sha256': selected['record']['file']['sha256'], 'expected_input_key': req.query1('expected_input_key')}
-        base = f'/api/v1/studies/{sid}/runs/{rid}/rescue-presentations/{revision_id}'
-        result.update(input_key=tokens['expected_input_key'], focus_url=base + '/focus?' + urlencode(tokens),
-            acceptance_url=f'/api/v1/studies/{sid}/runs/{rid}/acceptance?' + urlencode(dict(tokens, revision_id=revision_id)),
-            downloads=[], figures=[], summary_rows=[], receptor_preparation=[])
-        for matrix in (result['table'], result['heatmap']):
-            for line in matrix['cells']:
-                for cell in line:cell['evidence_url'] = evidence_url(sid, rid, cell, tokens['expected_input_key'])
-        result['heatmap'] = focus_matrix(result, result['initial_focus']['compound_ids'], result['initial_focus']['target_ids'])
-        from .system_rescue_view import COUNTS, COUNTS_V2, preparation_rows
-        counts = COUNTS_V2 if packet['schema_version'] == 'A06.system_rescue.2' else COUNTS
-        result['summary_rows'] = [{'label_zh': label, 'text': str(packet['summary'][key])}
-                                  for key, label in counts if packet['summary'].get(key) is not None]
-        result['receptor_preparation'] = preparation_rows(selected['bundle'][4])
-        for index, ref in enumerate(selected['record']['files']):
-            url = base + '/files/' + str(index) + '?' + urlencode(dict(tokens, expected_sha256=ref['sha256']))
-            name = PurePosixPath(ref['path']).name
-            link = dict(label_zh=name, name=name, url=url, bytes=ref['bytes'], sha256=ref['sha256'])
-            result['downloads'].append(link)
-            if ref['role'] in ('plot_a06_rescue_full_png', 'plot_a06_rescue_focus_png'):
-                result['figures'].append(dict(link, image_url=url + '&inline=1', role=ref['role']))
-        return result
+        return _view(selected, sid, rid, revision_id, req.query1('expected_input_key'))
+
+
+def _view(selected, sid, rid, revision_id, input_key):
+    """显式版本和目录中的当前版本使用同一个矩阵与链接构建规则。"""
+    result = deepcopy(selected['view']);packet = selected['bundle'][-1]
+    result['presentation_revision'] = _revision(selected, selected['matches_input'])
+    tokens = {'expected_revision_sha256': selected['record']['file']['sha256'], 'expected_input_key': input_key}
+    base = f'/api/v1/studies/{sid}/runs/{rid}/rescue-presentations/{revision_id}'
+    result.update(input_key=tokens['expected_input_key'], focus_url=base + '/focus?' + urlencode(tokens),
+        acceptance_url=f'/api/v1/studies/{sid}/runs/{rid}/acceptance?' + urlencode(dict(tokens, revision_id=revision_id)),
+        downloads=[], figures=[], summary_rows=[], receptor_preparation=[])
+    for matrix in (result['table'], result['heatmap']):
+        for line in matrix['cells']:
+            for cell in line:cell['evidence_url'] = evidence_url(sid, rid, cell, tokens['expected_input_key'])
+    result['heatmap'] = focus_matrix(result, result['initial_focus']['compound_ids'], result['initial_focus']['target_ids'])
+    from .system_rescue_view import COUNTS, COUNTS_V2, preparation_rows
+    counts = COUNTS_V2 if packet['schema_version'] == 'A06.system_rescue.2' else COUNTS
+    result['summary_rows'] = [{'label_zh': label, 'text': str(packet['summary'][key])}
+                              for key, label in counts if packet['summary'].get(key) is not None]
+    result['receptor_preparation'] = preparation_rows(selected['bundle'][4])
+    for index, ref in enumerate(selected['record']['files']):
+        url = base + '/files/' + str(index) + '?' + urlencode(dict(tokens, expected_sha256=ref['sha256']))
+        name = PurePosixPath(ref['path']).name
+        link = dict(label_zh=name, name=name, url=url, bytes=ref['bytes'], sha256=ref['sha256'])
+        result['downloads'].append(link)
+        if ref['role'] in ('plot_a06_rescue_full_png', 'plot_a06_rescue_focus_png'):
+            result['figures'].append(dict(link, image_url=url + '&inline=1', role=ref['role']))
+    return result
 
 
 def focus(app, req, sid, rid, revision_id):
