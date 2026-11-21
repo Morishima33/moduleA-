@@ -118,6 +118,7 @@ class App:
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/system-pipeline", self.get_system_pipeline),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/system-pipeline/start", self.post_system_pipeline_start),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/system-pipeline/continue", self.post_system_pipeline_continue),
+            ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a00-followup", self.post_a00_followup),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/reports", self.get_plan_reports),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/display-revisions", self.get_display_revisions),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/display-revisions", self.post_display_revision),
@@ -1020,6 +1021,25 @@ class App:
         return self._json_read(study_id,download,self,req,study_id,run_id)
 
     # ------------------------------------------------------------------ 写入
+    def _queue_a00_followup(self, study_id, body):
+        from ..tasks.a00_followup import current_approval
+        workflow = self.kernel.workflow()
+        if not is_plan_created(workflow, workflow.load(study_id)):
+            raise ApiError(409, 'GATE_BLOCKED', '此接续仅适用于新版建档研究')
+        _, review = current_approval(workflow, study_id, body)
+        task, created = self.tasks.submit(study_id, 'plan_a00_followup', review['reviewer'], body)
+        if not created:
+            raise ApiError(409, 'GATE_BLOCKED', '本研究已有任务。任务结束后可沿用这次 A00 复核接续。')
+        return task
+
+    def post_a00_followup(self, req, study_id):
+        """用户已确认的 A00 可独立接续，无需再写一条人工意见。"""
+        try:
+            task = self._queue_a00_followup(study_id, req.json())
+        except ContractError as error:
+            raise from_contract(str(error)) from error
+        return {'task': task, 'message_zh': self._task_message(task)}, 202
+
     def post_review(self, req, study_id, module_id):
         body = req.json()
         decision = body.get("decision")
@@ -1030,6 +1050,11 @@ class App:
             run_id = body.get("run_id") or ""
             if run_id not in manifest["runs"] or workflow.run(manifest, run_id)["module_id"] != module_id:
                 raise ApiError(409, "STALE_VERSION", "复核对象与模块不一致，请刷新后重试")
+            followup = module_id == 'A00' and decision == 'approved' and after == 'continue' and is_plan_created(workflow, manifest)
+            if followup:
+                plans = workflow._analysis_plan_records(manifest)
+                if not plans or plans[-1]['expected_a00'] != run_id or plans[-1]['plan_id'] != body.get('expected_plan_id'):
+                    raise ApiError(409, 'STALE_VERSION', 'A00 的保存方案已改变，请刷新后确认')
             review = workflow.review(study_id, run_id, decision, body.get("reviewer", ""), body.get("note", ""), body.get("expected_review_id") or None)
         except ModuleNotFoundError as error:
             # A07 通过需核对报告通路，依赖 python-docx 等报告库；本机缺少时如实说明
@@ -1037,6 +1062,14 @@ class App:
         except ContractError as error:
             raise from_contract(str(error))
         task = None
+        if followup:
+            payload = {'run_id':run_id, 'review_id': review['review_id'], 'plan_id':body['expected_plan_id']}
+            try:
+                task = self._queue_a00_followup(study_id, payload)
+            except (ContractError, ApiError) as error:
+                return {'review':review, 'task':None, 'message_zh':'A00 复核已保存。'+str(error)}, 201
+            return {'review':review, 'task':task,
+                    'message_zh':'A00 复核已保存。'+self._task_message(task)}, 201
         automatic_a00 = module_id == "A00" and manifest.get("workflow_profile") in PREUPLOAD_PROFILES
         if decision == "approved" and (after == "continue" or automatic_a00):
             prep_id = manifest.get('current', {}).get('A06_PREP')

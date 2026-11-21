@@ -36,6 +36,27 @@ class SystemPipelineTests(unittest.TestCase):
 
     def execute(self):return self.w.execute_analysis_plan_system_pipeline(self.sid,self.body,tools=self.tools)
 
+    def test_a00_followup_stops_at_a02_and_reuses_both_results(self):
+        from modulea.tasks.a00_followup import execute
+        self.prepare(True)
+        m=self.w.load(self.sid);m['current'].pop('A01');m.pop(system_execution.BATCHES);self.w.save(m)
+        rid=m['current']['A00']
+        review=self.w.latest_review(m,self.w.run(m,rid)['artifact_id'])
+        draft=self.w._analysis_plan_records(m)[-1]
+        request={'run_id':rid,'review_id':review['review_id'],'plan_id':draft['plan_id']}
+        progress=[]
+        execute(self.w,self.sid,request,progress=progress.append)
+        actual=self.w.load(self.sid)
+        self.assertEqual(set(actual['current']),{'A00','A01','A02'})
+        self.assertEqual(actual['reviews'],m['reviews'])
+        self.assertEqual(progress,['计算 A01','计算 A02'])
+        with patch.object(self.w,'execute_analysis_plan_system_stage',side_effect=AssertionError('不能重跑已完成结果')):
+            execute(self.w,self.sid,request,progress=progress.append)
+        self.assertEqual(self.w.load(self.sid),actual)
+        self.w.review(self.sid,rid,'pending','隔离复核','改为暂存',review['review_id'])
+        with self.assertRaisesRegex(ContractError,'A00 复核已改变'):
+            execute(self.w,self.sid,request,progress=progress.append)
+
     def test_empty_pipeline_generates_real_report_without_any_inapplicable_science_then_repeat_keeps_versions(self):
         self.prepare(True)
         with patch.object(network,'request',side_effect=AssertionError('空集不请求PPI')),patch.object(preparation,'connect',side_effect=AssertionError('空集不连接结构')):

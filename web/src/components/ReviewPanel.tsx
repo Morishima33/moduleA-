@@ -66,6 +66,8 @@ export default function ReviewPanel({ studyId, view, onSaved, onStale }: Props) 
   const [success, setSuccess] = useState<string | null>(null); // 决定已保存的说明
   const [taskFailed, setTaskFailed] = useState(false); // 保存后后台启动是否失败
   const [batchOpen, setBatchOpen] = useState(false); // 批量复核弹窗
+  const [startingA00, setStartingA00] = useState(false);
+  const planId = view.module.module_id === 'A00' ? view.creation_plan?.current_plan_id : undefined;
   const decision = Form.useWatch('decision', form) as Decision | undefined; // 当前选择的决定
 
   const r = view.review; // 复核信息
@@ -103,6 +105,7 @@ export default function ReviewPanel({ studyId, view, onSaved, onStale }: Props) 
         reviewer: v.reviewer.trim(),
         note: v.note.trim(),
         after,
+        ...(after === 'continue' && planId ? {expected_plan_id: planId} : {}),
       });
       rememberReviewer(v.reviewer.trim()); // 记住复核人
       form.setFieldsValue({ decision: undefined, note: '' }); // 清空决定与意见，避免重复提交
@@ -123,6 +126,22 @@ export default function ReviewPanel({ studyId, view, onSaved, onStale }: Props) 
       }
     } finally {
       setSaving(null);
+    }
+  };
+
+  const resumeA00 = async () => {
+    if (!planId || !r.run_id || r.current?.decision !== 'approved' || startingA00) return;
+    setStartingA00(true);
+    try {
+      const res = await api.a00Followup(studyId, {run_id:r.run_id, review_id:r.current.review_id, plan_id:planId});
+      if (res.task.state === 'failed') message.warning(res.message_zh);
+      else message.success(res.message_zh);
+      onSaved(res.task);
+    } catch (e) {
+      message.warning(errorText(e));
+      if (e instanceof ApiError && e.status === 409) onStale();
+    } finally {
+      setStartingA00(false);
     }
   };
 
@@ -168,6 +187,9 @@ export default function ReviewPanel({ studyId, view, onSaved, onStale }: Props) 
         {success && <Alert type={taskFailed ? "warning" : "success"} showIcon message={success} />}
         <span style={{ fontSize: 14 }}>{code === 'published' ? '两份正式报告已发布，无需重复操作。' : '本版本已通过复核，无需重复操作。'}</span>
         {r.current && <CurrentDecision session={session} r={r} moduleId={view.module.module_id} />}
+        {planId && r.current?.decision === 'approved' && <Button loading={startingA00}
+          disabled={view.tasks.some(task => task.state === 'queued' || task.state === 'running')}
+          onClick={() => void resumeA00()}>沿用本次复核接续 A01、A02</Button>}
         <Button style={{ alignSelf: 'flex-start' }} onClick={() => setChangeOpen(true)}>更改决定</Button>
       </Box>
     );
@@ -219,13 +241,17 @@ export default function ReviewPanel({ studyId, view, onSaved, onStale }: Props) 
             </Button>
           </Tooltip>
         )}
-        <Button block size="large" type={canContinue ? 'default' : 'primary'} loading={saving === 'save'} disabled={!!saving} onClick={() => submit('save')}>
-          仅保存复核决定
-        </Button>
+        {planId && decision === 'approved' ?
+          <Button block size="large" type="primary" loading={saving === 'continue'} disabled={!!saving}
+            onClick={() => submit('continue')}>确认 A00 并开始计算 A01、A02</Button> :
+          <Button block size="large" type={canContinue ? 'default' : 'primary'} loading={saving === 'save'} disabled={!!saving} onClick={() => submit('save')}>
+            {planId ? '保存复核决定' : '仅保存复核决定'}
+          </Button>}
         {changeOpen && <Button block type="text" onClick={() => setChangeOpen(false)}>取消更改</Button>}
       </Space>
       <p className="tiny muted" style={{ margin: 0 }}>
-        {canContinue ? r.continue.note_zh : r.continue.note_zh ? `本次不提供“保存并继续”。${r.continue.note_zh}` : '本次不提供“保存并继续”。'}
+        {planId ? 'A00 通过后后台核验资料并依次计算 A01、A02，结果仍需复核。' :
+          canContinue ? r.continue.note_zh : r.continue.note_zh ? `本次不提供“保存并继续”。${r.continue.note_zh}` : '本次不提供“保存并继续”。'}
       </p>
       <p className="tiny muted" style={{ margin: 0 }}>{view.module.module_id === 'A07' ? '通过表示本版报告已完成复核，不代表已经证明药效。' : '通过只表示本版本可交给下一步使用，不代表已经证明药效。'}</p>
       {/* A01/A02 一起提交 */}

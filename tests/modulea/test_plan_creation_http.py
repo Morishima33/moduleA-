@@ -57,6 +57,38 @@ class PlanCreationHttpTests(unittest.TestCase):
         self.assertEqual(status,200,export);self.assertEqual(export['initial_plan_id'],value['plan_id'])
         self.assertEqual(self.app.tasks.list(),[])
 
+    def test_a00_approval_enqueues_only_the_bound_followup_and_old_approval_can_resume(self):
+        _,body=self.prepare()
+        status,created=self.call('POST','/analysis-plans/creation',body)
+        self.assertEqual(status,201,created)
+        sid=created['study_id'];w=self.app.kernel.workflow()
+        rid=w.load(sid)['current']['A00']
+        path=f'/studies/{sid}/modules/A00/reviews'
+        approval={'run_id':rid,'decision':'approved','reviewer':'隔离测试','note':'确认登记',
+                  'after':'continue','expected_plan_id':created['plan_id']}
+        self.assertEqual(self.call('POST',path,approval|{'expected_plan_id':'plan_'+'0'*32})[0],409)
+        task={'task_id':'task_test','state':'queued','kind':'plan_a00_followup'}
+        with patch.object(self.app.tasks,'submit',return_value=(task,True)) as submit:
+            status,value=self.call('POST',path,approval)
+            self.assertEqual(status,201,value)
+            self.assertEqual(value['task'],task)
+            expected={'run_id':rid,'review_id':value['review']['review_id'],'plan_id':created['plan_id']}
+            submit.assert_called_once_with(sid,'plan_a00_followup','隔离测试',expected)
+            submit.reset_mock()
+            self.assertEqual(self.call('POST',path,approval)[0],409)
+            submit.assert_not_called()
+            followup=f'/studies/{sid}/analysis-plan/a00-followup'
+            self.assertEqual(self.call('POST',followup,expected|{'review_id':'review_'+'0'*32})[0],409)
+            status,value=self.call('POST',followup,expected)
+            self.assertEqual(status,202,value)
+            submit.assert_called_once_with(sid,'plan_a00_followup','隔离测试',expected)
+        self.assertEqual(len(w.load(sid)['reviews']),1)
+        from contracts import ContractError
+        from modulea.tasks.a00_followup import execute
+        with self.assertRaisesRegex(ContractError,'GeneCards、OMIM'):
+            execute(w,sid,expected,progress=lambda _:None)
+        self.assertEqual(set(w.load(sid)['current']),{'A00'})
+
     def test_invalid_csrf_origin_unknown_fields_and_expiry(self):
         for token,origin in ((False,None),(True,'https://untrusted.example')):
             status,_=self.call('POST','/analysis-plans/creation/preflight',self.body,token,origin)

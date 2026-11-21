@@ -297,7 +297,9 @@ export const api = {
   saveTrialReview:(sid:string,body:unknown)=>request<{message_zh:string}>('POST','/studies/'+sid+'/modules/A06_PREP/actions/trial_review',body),
   saveCoverageSelection:(sid:string,body:unknown)=>request<{message_zh:string;task?:Task}>('POST','/studies/'+sid+'/modules/A06_PREP/actions/coverage_selection',body),
   /** 单个模块复核 */
-  review: (sid: string, mid: string, body: { run_id: string; expected_review_id: string | null; decision: Decision; reviewer: string; note: string; after: 'save' | 'continue' }) =>
+  a00Followup: (sid:string, body:{run_id:string;review_id:string;plan_id:string}) =>
+    request<{task:Task;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/a00-followup`,body),
+  review: (sid: string, mid: string, body: { run_id: string; expected_review_id: string | null; decision: Decision; reviewer: string; note: string; after: 'save' | 'continue'; expected_plan_id?:string }) =>
     request<ReviewResponse>('POST', `/studies/${sid}/modules/${mid}/reviews`, body),
   /** A01+A02 一次提交 */
   batchReview: (sid: string, body: { reviewer: string; entries: Record<string, { run_id: string; expected_review_id: string | null; action: 'decide' | 'preserve'; decision: Decision | ''; note: string }> }) =>
