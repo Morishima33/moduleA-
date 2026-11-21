@@ -121,6 +121,11 @@ class DrawingTests(unittest.TestCase):
         pair_id = Path(cwd).name
         for name in (f"result_{pair_id}.pdb", f"session_{pair_id}.pse", "hbond_info.txt"):
             (Path(cwd) / name).write_text("isolated generated output", encoding="ascii")
+        from PIL import Image
+        for name in ("overview.png", "pocket.png"):
+            image = Image.new("RGB", (100, 80), "white")
+            image.paste((230, 125, 20), (30, 30, 60, 50))
+            image.save(Path(cwd) / name)
         return types.SimpleNamespace(returncode=0, stdout="isolated pymol", stderr="")
 
     def prepare(self):
@@ -147,8 +152,23 @@ class DrawingTests(unittest.TestCase):
             self.assertIn("ATOM pose1", pose)
             self.assertNotIn("ATOM pose2", pose)
             self.assertIn(self.key + "/session_" + self.key + ".pse", archive.namelist())
+            self.assertIn(self.key + "/figure_checks.json", archive.namelist())
+            self.assertIn(self.key + "/pocket.png", archive.namelist())
         _, call = self.prepare()
         self.assertEqual(call.call_count, 0)
+
+    def test_blank_pocket_blocks_package_publication(self):
+        from PIL import Image
+
+        def render(*args, cwd, **kwargs):
+            result = self.fake_pymol(*args, cwd=cwd, **kwargs)
+            Image.new("RGB", (100, 80), "white").save(Path(cwd) / "pocket.png")
+            return result
+
+        with patch("science_modules.a06.drawing_packages.subprocess.run", side_effect=render):
+            with self.assertRaisesRegex(ValueError, "空白"):
+                prepare_packages(self.workflow, self.sid, self.payload, __import__("sys").executable)
+        self.assertEqual(self.workflow.artifact_records(self.workflow.load(self.sid)), [])
 
     def test_noneligible_unknown_and_duplicate_selection_rejected(self):
         for keys in ([self.pairs[1]["pair_key"]], ["pair_fake"], [self.key, self.key], []):

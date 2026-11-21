@@ -13,10 +13,89 @@ from docking_task_package import _pml, _selected_pose
 from storage import file_record, read_json, verified_file
 
 
+PREVIEW_SCRIPT = """@01_open_in_pymol.pml
+set stick_color, orange, ligand
+hide labels, polar_distance_contacts
+python
+from pymol import cmd
+alpha = {(a.chain, a.resi): a for a in cmd.get_model('protein and name CA').atom}
+seen = set()
+for row in contact_rows:
+    key = (row[5], row[4])
+    if key in alpha and key not in seen:
+        atom = alpha[key]
+        cmd.label('protein and index %d' % atom.index, 'resn+resi')
+        seen.add(key)
+        if len(seen) == 4:
+            break
+python end
+set label_size, 16
+set float_labels, on
+png pocket.png, 960, 720, ray=1
+hide labels
+hide dashes, polar_distance_contacts
+zoom (protein or ligand), 4
+png overview.png, 960, 720, ray=1
+"""
+
+
+def check_previews(folder):
+    """Verify new controlled previews before they can enter a downloadable package."""
+    from PIL import Image, ImageChops
+
+    findings = {}
+    for name in ('overview.png', 'pocket.png'):
+        path = folder / name
+        require(path.is_file(), f'PyMOL缺少预览图：{name}')
+        try:
+            with Image.open(path) as image:
+                require(image.format == 'PNG' and 0 < image.width * image.height <= 1_000_000,
+                        f'PyMOL预览格式或尺寸不符合要求：{name}')
+                image.verify()
+            with Image.open(path) as image:
+                rgba = image.convert('RGBA')
+        except OSError as error:
+            raise ValueError(f'PyMOL预览图无法完整解码：{name}') from error
+        rendered = Image.new('RGBA', rgba.size, 'white')
+        rendered.alpha_composite(rgba)
+        rgb = rendered.convert('RGB')
+        difference = ImageChops.difference(rgb, Image.new('RGB', rgb.size, 'white'))
+        require(any(low != high for low, high in rgb.getextrema())
+                and sum(difference.convert('L').histogram()[16:]) >= 20, f'PyMOL预览为空白：{name}')
+        if name == 'pocket.png':
+            pixels = getattr(rgb, 'get_flattened_data', rgb.getdata)()
+            ligand_pixels = sum(r >= 120 and r > g + 20 and g > b + 25 for r, g, b in pixels)
+            require(ligand_pixels >= 12, 'PyMOL口袋特写中未找到可辨识的配体')
+        findings[name] = {'width': rgb.width, 'height': rgb.height,
+                          'sha256': sha256(path.read_bytes()).hexdigest()}
+    return findings
+
+
 def _write(path, text):
     """新任务目录内写入可追溯说明，已有文件禁止覆盖。"""
     with path.open("x", encoding="utf-8", newline="") as stream:
         stream.write(text)
+
+
+def render_previews(package, pair_id, pymol_exe):
+    """Render and verify the supplied, already validated receptor and Top-1 pose."""
+    _write(package / "01_open_in_pymol.pml", _pml(pair_id))
+    _write(package / "02_render_previews.pml", PREVIEW_SCRIPT)
+    environment = dict(os.environ)
+    environment.pop("PYTHONPATH", None)
+    environment.pop("PYTHONHOME", None)
+    process = subprocess.run(
+        [str(pymol_exe), "-cq", "02_render_previews.pml"], cwd=package, env=environment,
+        capture_output=True, text=True, errors="replace", timeout=120,
+        creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
+    )
+    log = process.stdout + "\n" + process.stderr
+    _write(package / "pymol_build_log.txt", log)
+    expected = [f"result_{pair_id}.pdb", f"session_{pair_id}.pse", "hbond_info.txt"]
+    require(process.returncode == 0 and "Traceback (most recent call last):" not in log
+            and all((package / p).is_file() and (package / p).stat().st_size for p in expected),
+            "PyMOL出图包制作失败，请查看任务日志和保留草案")
+    _write(package / "figure_checks.json", json.dumps(check_previews(package), indent=2) + "\n")
 
 
 def _source_files(study, pair, destination):
@@ -107,7 +186,7 @@ def build_pair_package(workflow, study_id, a06, binding, pair, pymol_exe):
     study = workflow.location(study_id)
     source = _source_files(study, pair, package)
     pair_id = pair["pair_key"]
-    _write(package / "01_open_in_pymol.pml", _pml(pair_id))
+    render_previews(package, pair_id, pymol_exe)
     # 包内入口提供环境变量/本机已配置程序/PATH三种已有安装定位方式。
     launcher = (
         '@echo off\ncd /d "%~dp0"\n'
@@ -116,26 +195,6 @@ def build_pair_package(workflow, study_id, a06, binding, pair, pymol_exe):
         'pymol -r "01_open_in_pymol.pml"\nif errorlevel 1 pause\n'
     )
     _write(package / "START_PYMOL.cmd", launcher)
-    environment = dict(os.environ)
-    environment.pop("PYTHONPATH", None)
-    environment.pop("PYTHONHOME", None)
-    process = subprocess.run(
-        [str(pymol_exe), "-cq", "01_open_in_pymol.pml"],
-        cwd=package,
-        env=environment,
-        capture_output=True,
-        text=True,
-        errors="replace",
-        timeout=120,
-        creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
-    )
-    _write(package / "pymol_build_log.txt", process.stdout + "\n" + process.stderr)
-    expected = [f"result_{pair_id}.pdb", f"session_{pair_id}.pse", "hbond_info.txt"]
-    require(
-        process.returncode == 0
-        and all((package / p).is_file() and (package / p).stat().st_size for p in expected),
-        "PyMOL出图包制作失败，请查看任务日志和保留草案",
-    )
     metadata = {
         "schema_version": "A06.drawing.pair.package.1",
         "binding": binding,
@@ -154,6 +213,7 @@ def build_pair_package(workflow, study_id, a06, binding, pair, pymol_exe):
         f"{pair['compound_name_zh']} × {pair['target_zh']}；原始评分 {pair['score']} kcal/mol。\n"
         "先解压到独立目录，再双击START_PYMOL.cmd或用PyMOL打开session文件。PDB是同源受体和固定姿势合并结构。\n"
         "selected_pose.pdbqt与矩阵同源；output.pdbqt保留全部原姿势；config.txt供追溯，不要求重新对接。\n"
+        "overview.png与pocket.png使用同一方向；figure_checks.json记录本次预览的尺寸和指纹。\n"
         "可以调整视角、标签和出图样式，图片随后在A06页面上传并填写说明。\n"
         "hbond_info.txt及红色虚线是N/O距离接触，不能直接视为已确认氢键。\n"
         + pair["scope_zh"]
