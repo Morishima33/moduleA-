@@ -9,3 +9,7 @@
 - `open_snapshot_preview.py`：使用指定的独立 `--data-root` 和 `--runtime-dir` 打开核查页面，启动时检查归档与 A01 版本；服务进程隐藏启动，浏览器可见。同一端口已运行时复用，不停止其他服务、不触发研究复核或科学重跑。研究快照与运行日志不提交。
 
 - `check_report_template.py`：Python 3.11+标准库，只读核对第24版模板及直接排版依赖SHA256；失败输出具体路径，不访问或修改研究资料。清单位于`templates/A07.double_report.24.lock.json`。
+
+- `replay_archived_network.py`：使用 Module A 的科学 Python 运行，显式指定已归档的研究、A03/A04/A05 和本机 Rscript。通过原校验器复算 A03 交集、A04 STRING 网络和 A05 GO/KEGG；R 仅在临时目录中用固定注释分析。输出每阶段归档、表格指纹和耗时。A04/A05 必须属于指定 A03；A05 支持方案富集协议 1 和 2。
+
+  `python tools/replay_archived_network.py --data-root <归档根目录> --study-id <研究编号> --a03 <运行编号> --a04 <运行编号> --a05 <运行编号> --rscript <程序路径>`
