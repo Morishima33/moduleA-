@@ -1,21 +1,22 @@
 // 文件用途：应用外壳。负责顶栏、路由切换、全局待办与后台任务面板，以及“有活动任务时每 3 秒轮询、任务结束后刷新页面”。
 import { Badge, Button, Result, Spin } from 'antd';
 import { UnorderedListOutlined } from '@ant-design/icons';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, errorText, loadSession } from './api/client';
 import type { GlobalInboxEntry, Session, Task } from './api/types';
 import { AppContext, type AppContextValue } from './lib/appContext';
 import { hrefFor, useRoute } from './lib/route';
 import HomePage from './pages/HomePage';
-import StudyPage from './pages/StudyPage';
-import TaskDrawer from './components/TaskDrawer';
-import InboxDrawer from './components/InboxDrawer';
-import NewStudyModal from './components/NewStudyModal';
-import AnalysisPlanPreviewPage from './pages/AnalysisPlanPreviewPage';
-import PlanStudyCreationPage from './pages/PlanStudyCreationPage';
-import CreationSourceWorkspace from './components/CreationSourceWorkspace';
-import PlanPocketPage from './pages/PlanPocketPage';
-import SystemPipelinePage from './pages/SystemPipelinePage';
+
+const StudyPage = lazy(() => import('./pages/StudyPage'));
+const TaskDrawer = lazy(() => import('./components/TaskDrawer'));
+const InboxDrawer = lazy(() => import('./components/InboxDrawer'));
+const NewStudyModal = lazy(() => import('./components/NewStudyModal'));
+const AnalysisPlanPreviewPage = lazy(() => import('./pages/AnalysisPlanPreviewPage'));
+const PlanStudyCreationPage = lazy(() => import('./pages/PlanStudyCreationPage'));
+const CreationSourceWorkspace = lazy(() => import('./components/CreationSourceWorkspace'));
+const PlanPocketPage = lazy(() => import('./pages/PlanPocketPage'));
+const SystemPipelinePage = lazy(() => import('./pages/SystemPipelinePage'));
 
 // 任务仍在进行的状态
 const ACTIVE = new Set(['queued', 'running']);
@@ -26,7 +27,7 @@ export default function App() {
   const [session, setSession] = useState<Session | null>(null); // 会话信息
   const [sessionError, setSessionError] = useState<string | null>(null); // 会话读取失败说明
   const [refreshTick, setRefreshTick] = useState(0); // 刷新信号
-  const [tasksOpen, setTasksOpen] = useState(false); // 任务面板是否打开
+  const [tasksOpen, setTasksOpen] = useState<boolean | null>(null); // 首次打开才加载，随后保留抽屉筛选
   const [focusTask, setFocusTask] = useState<string | undefined>(); // 面板中默认展开的任务
   const [newStudyOpen, setNewStudyOpen] = useState(false); // 新建登记窗口
   const [inboxOpen, setInboxOpen] = useState(false); // 待办面板是否打开
@@ -194,8 +195,9 @@ export default function App() {
         </div>
       </header>
 
-      {/* 页面主体：会话就绪后再渲染 */}
-      {!session ? (
+      {/* 首页登记目录是只读入口，可与会话并行。其他页面仍等待会话就绪。 */}
+      <Suspense fallback={<div style={{ padding: 80, textAlign: 'center' }}><Spin /> 正在加载页面…</div>}>
+      {!session && route.page !== 'home' ? (
         <div style={{ padding: 80, textAlign: 'center' }}><Spin tip="正在连接本机服务…"><div style={{ height: 40 }} /></Spin></div>
       ) : route.page === 'parameters-preview' ? (
         <AnalysisPlanPreviewPage />
@@ -212,25 +214,28 @@ export default function App() {
       ) : (
         <HomePage />
       )}
+      </Suspense>
 
-      <NewStudyModal open={newStudyOpen} onClose={() => setNewStudyOpen(false)} onCreated={bumpRefresh} />
+      <Suspense fallback={null}>
       {/* 后台任务抽屉 */}
-      <TaskDrawer
+      {tasksOpen !== null && <TaskDrawer
         open={tasksOpen}
         focusTaskId={focusTask}
         onClose={() => setTasksOpen(false)}
         studyId={ctx.currentStudyId}
         onTaskEnded={bumpRefresh}
         onActive={trackTasks}
-      />
+      />}
+      {newStudyOpen && <NewStudyModal open={newStudyOpen} onClose={() => setNewStudyOpen(false)} onCreated={bumpRefresh} />}
       {/* 全局待办抽屉 */}
-      <InboxDrawer
+      {inboxOpen && <InboxDrawer
         open={inboxOpen}
         items={inbox.status === 'ready' ? inbox.items : null}
         error={inbox.status === 'failed' ? inbox.message : undefined}
         onRetry={() => setInboxRetry((n) => n + 1)}
         onClose={() => setInboxOpen(false)}
-      />
+      />}
+      </Suspense>
     </AppContext.Provider>
   );
 }

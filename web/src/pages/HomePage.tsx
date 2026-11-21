@@ -1,14 +1,15 @@
 // 文件用途：首页。显示研究卡片（进度、下一步、待办数、继续按钮）、全局待办、回收站（列表与恢复）。
 import { Alert, Button, Empty, Skeleton } from 'antd';
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { api, errorText } from '../api/client';
 import type { GlobalInboxEntry, StudyCard, StudyInfo } from '../api/types';
 import { ArchiveAlert, KindTag, ProgressSegs, PurposeTag, StatusPill } from '../components/common';
-import ManageStudyModal from '../components/ManageStudyModal';
 import { useApp } from '../lib/appContext';
 import { fmtDate } from '../lib/format';
 import { hrefFor, navigate } from '../lib/route';
 import { taskColor } from '../lib/theme';
+
+const ManageStudyModal = lazy(() => import('../components/ManageStudyModal'));
 
 /** 首页 */
 export default function HomePage() {
@@ -144,6 +145,7 @@ export default function HomePage() {
 
       {/* 恢复对话框 */}
       {restoring && (
+        <Suspense fallback={null}>
         <ManageStudyModal
           open={!!restoring}
           mode="restore"
@@ -152,6 +154,7 @@ export default function HomePage() {
           onClose={() => setRestoring(null)}
           onDone={app.bumpRefresh}
         />
+        </Suspense>
       )}
     </div>
   );

@@ -5,13 +5,14 @@ from contextlib import contextmanager
 import json
 import marshal
 from pathlib import Path
-from types import FunctionType,SimpleNamespace
+from types import FunctionType, ModuleType, SimpleNamespace
 import zlib
 
 from contracts import ContractError, require
 from . import read_evidence as original
 from .bounded_evidence import BoundedEvidence
 from .checkpoint_json_read import CheckpointReadEvidence
+from . import plan_reports_v3
 from .rescue_result_read import load_rescue_result, bound_batch
 
 VERSION='ModuleA.http_bounded_read.1'
@@ -61,8 +62,26 @@ class HttpReadEvidence(CheckpointReadEvidence):
         """共享只读加载器也加入本请求代理，保持原件首尾SHA，不扩冻结worker白名单。"""
         from .rescue_presentations import _context
         functions=super()._allowed_functions()
-        functions.update((load_rescue_result, bound_batch, _context))
+        functions.update((load_rescue_result, bound_batch, _context, plan_reports_v3.is_active,
+                          plan_reports_v3.checked_inputs_archive, plan_reports_v3.binding,
+                          plan_reports_v3.scientific_binding))
         return functions
+
+    def _value(self, value):
+        """让已绑定的 Workflow 进入同请求 A07 核验，原模块保持原样。"""
+        if isinstance(value, ModuleType) and value is plan_reports_v3:
+            if value not in self.modules:
+                self.modules[value] = original._BoundModule(value, self)
+            return self.modules[value]
+        return super()._value(value)
+
+    def _import(self, name, globals=None, locals=None, fromlist=(), level=0):
+        """仅给三版报告原归档核验复用本次已验证原件，退出仍重新核全SHA。"""
+        if (level == 1 and name == 'read_archive' and fromlist == ('ReadArchive',)
+                and globals and globals.get('__name__') == plan_reports_v3.__name__
+                and self._owned()):
+            return SimpleNamespace(ReadArchive=lambda: self.reader)
+        return super()._import(name, globals, locals, fromlist, level)
 
     # 原有界实现逐件核完整SHA，解析字节另与原登记比对；不长期保留JSON原文。
     _capture=BoundedEvidence._capture

@@ -63,6 +63,16 @@ class TraceExportTests(unittest.TestCase):
         with self.assertRaises(ContractError):
             build_trace(self.workflow, self.sid, include_data=True)
 
+    def test_reference_collection_keeps_first_match_and_archive_versions(self):
+        from modulea.core.trace_export import _records
+
+        first = {'path': 'a.json', 'sha256': 'a', 'bytes': 1, 'role': 'first'}
+        second = {'path': 'b.json', 'sha256': 'b', 'bytes': 2}
+        revised = dict(first, sha256='c')
+        output = [first]
+        _records({'group': [dict(first, role='duplicate'), second, {'next': revised}, second]}, output)
+        self.assertEqual(output, [first, second, revised])
+
     def test_cross_study_trace_is_isolated(self):
         other = self.workflow.create({"formula": "另一个方", "herbs": "另一个药", "disease": "另一个病",
                                       "disease_scope": "仅本病", "operator": "隔离测试", "species": 9606}, kind="contract_test")

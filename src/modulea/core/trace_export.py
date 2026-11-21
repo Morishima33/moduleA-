@@ -23,19 +23,28 @@ def _record(value):
 
 
 def _records(value, output):
-    """递归收集输入、结果、附件和证据文件记录，去重后仍保留出现顺序。"""
-    item = _record(value)
-    if item is not None:
-        key = (item["path"], item["sha256"])
-        if key not in {(row["path"], row["sha256"]) for row in output}:
-            output.append(item)
-        return
-    if isinstance(value, dict):
-        for child in value.values():
-            _records(child, output)
-    elif isinstance(value, list):
-        for child in value:
-            _records(child, output)
+    """一次建立去重索引，保留原先深度遍历的首条记录及顺序。"""
+    seen = {(row["path"], row["sha256"]) for row in output}
+
+    def walk(node):
+        if isinstance(node, dict):
+            item = _record(node)
+            if item is not None:
+                key = item["path"], item["sha256"]
+                if key not in seen:
+                    seen.add(key)
+                    output.append(item)
+                return
+            children = node.values()
+        elif isinstance(node, list):
+            children = node
+        else:
+            return
+        for child in children:
+            if isinstance(child, (dict, list)):
+                walk(child)
+
+    walk(value)
 
 
 def _verified_records(root, records):

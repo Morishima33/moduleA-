@@ -263,6 +263,47 @@ class HttpBoundedReadTests(TestCase):
                 with self.assertRaises(ContractError):
                     with json_evidence_scope(self.root,self.sid) as e:e.reader.read(self.home,ref)
 
+    def test_report_archive_adds_payload_attachments_to_http_exit_checks(self):
+        from unittest.mock import patch
+        from contracts import fingerprint
+        from modulea.core import plan_reports_v3 as reports
+        from modulea.core.http_read_evidence import json_evidence_scope
+        from modulea.core.read_evidence import read_call
+        from science_modules.a07.plan_facts_v2 import completion
+
+        def save(name, value):
+            path = self.home / name
+            path.write_text(json.dumps(value), encoding='utf-8')
+            return file_record(self.home, path, 'test')
+
+        attachment = self.home / 'report-figure-evidence.txt'
+        attachment.write_bytes(b'original')
+        ref = file_record(self.home, attachment, 'report_evidence')
+        facts = completion([{'branch': 'synthetic', 'state': 'completed', 'reason_zh': '合成证据'}])
+        self.assertTrue(facts['all_applicable_finished'])
+        payload = {'schema_version': reports.CONFIG['payload_version'], 'study_id': self.sid,
+                   'run_ids': {}, 'completion': facts, 'figures': [], 'figure_source': None, 'source': ref}
+        payload['figure_source'] = save('figures.json', {
+            'schema_version': reports.CONFIG['figures_version'], 'study_id': self.sid,
+            'run_ids': {}, 'figures': [], 'human_review_written': False, 'payload_hash': fingerprint(payload)})
+        request = {'confirmed': True}
+        request_ref = save('request.json', {'schema_version': reports.VERSION, 'study_id': self.sid,
+            'request': request, 'request_hash': fingerprint(request), 'binding': {}, 'input_hash': fingerprint({})})
+        inputs = {'request_file': request_ref, 'payload_file': save('payload.json', payload)}
+        manifest = {'study_id': self.sid, reports.REQUESTS: [request_ref]}
+        workflow = SimpleNamespace(root=self.root, location=lambda _: self.home)
+        with patch.object(reports, 'binding', return_value={}), \
+             patch.object(reports, 'scientific_binding', return_value={}), \
+             patch.object(reports.original.system, 'same_binding_after_first_approval', return_value=True), \
+             patch.object(reports, 'validate_receipts'):
+            with self.assertRaisesRegex(ContractError, '归档文件校验失败'):
+                with json_evidence_scope(self.root, self.sid) as scope:
+                    self.assertEqual(read_call(reports.checked_inputs_archive, workflow, manifest, inputs)[1], payload)
+                    self.assertIn(ref['path'], {r['path'] for _, r, _ in scope.proofs.values()})
+                    stamp = attachment.stat()
+                    attachment.write_bytes(b'tampered')
+                    os.utime(attachment, ns=(stamp.st_atime_ns, stamp.st_mtime_ns))
+
     def _rescue_scope_fixture(self):
         """沿生产JSON入口调用共享加载器，不让测试reader替代HTTP证据收集。"""
         from tests.modulea.test_rescue_evidence_http import RescueEvidenceHttpTests
