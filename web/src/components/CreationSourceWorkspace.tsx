@@ -20,7 +20,7 @@ export default function CreationSourceWorkspace({studyId, initialTarget}: {
       <div style={{display:'flex', flexWrap:'wrap', gap:8}}>
         <Button href={hrefFor({page:'study', studyId, moduleId:'A00'})}>查看本研究登记</Button>
         {app.session?.capabilities.system_pipeline &&
-          <Button href={hrefFor({page:'system-pipeline', studyId})}>资料核对完成后进入统一执行</Button>}
+          <Button type="primary" href={hrefFor({page:'system-pipeline', studyId})}>打开计算工作台</Button>}
       </div>
     </section>
     <Tabs activeKey={initialTarget} onChange={value=>navigate({

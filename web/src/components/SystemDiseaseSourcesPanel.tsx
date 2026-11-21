@@ -5,10 +5,11 @@ import {api,ApiError,errorText} from '../api/client';
 import type {SystemAcquisitionRequest,SystemDiseaseAcquisitionInfo,SystemSourceBindingRequest} from '../api/types';
 import {useApp} from '../lib/appContext';
 import {fmtTime} from '../lib/format';
+import {hrefFor} from '../lib/route';
 import SystemDiseaseManualSources from './SystemDiseaseManualSources';
 
 /** 只在明确点击时提交；旧读取响应忽略，刷新和任务完成不触发获取。 */
-export default function SystemDiseaseSourcesPanel({studyId}:{studyId:string}){
+export default function SystemDiseaseSourcesPanel({studyId,compact=false}:{studyId:string;compact?:boolean}){
  const app=useApp();const [info,setInfo]=useState<SystemDiseaseAcquisitionInfo|null>(null);const [error,setError]=useState('');
  const [notice,setNotice]=useState('');const [author,setAuthor]=useState('');const [note,setNote]=useState('');
  const [confirmed,setConfirmed]=useState(false);const [saving,setSaving]=useState(false);const [tick,setTick]=useState(0);
@@ -21,7 +22,9 @@ export default function SystemDiseaseSourcesPanel({studyId}:{studyId:string}){
   setInfo(value);setError('');setSelected(old=>value.requests.some(r=>r.request_id===old)?old:value.requests[value.requests.length-1]?.request_id);
  }).catch(e=>{if(current){setInfo(null);setError(errorText(e));setConfirmed(false);}});return()=>{current=false;};
  },[studyId,app.refreshTick,tick]);
- const previous=info?.requests.find(r=>r.request_id===selected);const disabled=saving||!!info?.busy;
+ const previous=compact?info?.requests.filter(r=>r.plan_id===info.expected_plan_id&&
+  r.request.expected_a00===info.expected_a00).pop():info?.requests.find(r=>r.request_id===selected);
+ const disabled=saving||!!info?.busy;
  /** 原请求编号在网络异常后保留，版本冲突只刷新；HTTP仍在服务端再次预检。 */
  async function submit(body:SystemAcquisitionRequest){
   setSaving(true);setError('');setNotice('');
@@ -52,12 +55,24 @@ export default function SystemDiseaseSourcesPanel({studyId}:{studyId:string}){
   const signature=JSON.stringify(content);
   if(publicationRequest.current.signature!==signature)publicationRequest.current={signature,id:'diseasepublishreq_'+crypto.randomUUID().replace(/-/g,'')};
   const body:SystemSourceBindingRequest={...content,request_id:publicationRequest.current.id};
+  if(compact){void submitPublication(body);return;}
   Modal.confirm({title:'发布本研究疾病候选',content:<><p>仅使用所选获取记录的完整五库原件，按既有规则整理可追溯候选。</p>
    <p>发布登记沿用原获取登记人：{previous.request.author}。原说明：{previous.request.note}</p>
    <p>本次发布说明：{content.note}</p>
    <p>候选记录不是标准化疾病基因集合。本次不批准科研结果、不启动标准化或下游计算；下一步由明确执行批次处理。</p></>,
    okText:'确认发布疾病候选',cancelText:'取消',onOk:()=>submitPublication(body)});
  }
+ if(compact)return <section className="card stack" aria-label="疾病资料">
+  <h3>疾病五库</h3>
+  <div>{error||info?.blockers.join('，')||info?.historical_candidate?.message_zh||previous?.state_label_zh||
+   (info?'等待核验 GeneCards、OMIM 和三个公共来源':'正在读取疾病资料…')}</div>
+  {notice&&<div role="status">{notice}</div>}
+  {previous?.publication?.published_run_id?<strong>疾病候选已就绪</strong>:
+   app.session?.capabilities.system_disease_publication&&previous?.publication?.enabled&&previous.publication.request&&
+    <Button loading={saving} disabled={disabled} onClick={publishCandidates}>用已核验原件整理疾病候选</Button>}
+  {error&&<Button onClick={()=>setTick(n=>n+1)}>刷新疾病资料状态</Button>}
+  <a href={hrefFor({page:'creation-sources',studyId,sourceSection:'disease'})}>查看疾病资料明细</a>
+ </section>;
  /** HTTP只排队，实际候选任务结束后刷新；版本冲突不自动重复提交。 */
  async function submitPublication(body:SystemSourceBindingRequest){
   setSaving(true);setError('');setNotice('');

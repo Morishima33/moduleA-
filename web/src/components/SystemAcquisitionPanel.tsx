@@ -5,9 +5,12 @@ import {api,ApiError,errorText} from '../api/client';
 import type {SystemAcquisitionInfo,SystemAcquisitionRequest} from '../api/types';
 import {useApp} from '../lib/appContext';
 import {fmtTime} from '../lib/format';
+import {hrefFor} from '../lib/route';
 
 /** 读取只忽略过时响应，获取与补取均只由用户的明确操作触发。 */
-export default function SystemAcquisitionPanel({studyId}:{studyId:string}){
+export default function SystemAcquisitionPanel({studyId,compact=false,operator=''}:{
+ studyId:string;compact?:boolean;operator?:string;
+}){
  const app=useApp();const [info,setInfo]=useState<SystemAcquisitionInfo|null>(null);const [error,setError]=useState('');
  const [author,setAuthor]=useState('');const [note,setNote]=useState('');const [confirmed,setConfirmed]=useState(false);
  const [saving,setSaving]=useState(false);const [notice,setNotice]=useState('');const [tick,setTick]=useState(0);
@@ -20,7 +23,9 @@ export default function SystemAcquisitionPanel({studyId}:{studyId:string}){
   setInfo(value);setError('');setSelected(old=>value.requests.some(r=>r.request_id===old)?old:value.requests[value.requests.length-1]?.request_id);
  }).catch(e=>{if(current){setInfo(null);setError(errorText(e));setConfirmed(false);}});return()=>{current=false;};
  },[studyId,app.refreshTick,tick]);
- const previous=info?.requests.find(r=>r.request_id===selected);const disabled=saving||!!info?.busy;
+ const previous=compact?info?.requests.filter(r=>r.plan_id===info.expected_plan_id&&
+  r.request.expected_a00===info.expected_a00).pop():info?.requests.find(r=>r.request_id===selected);
+ const disabled=saving||!!info?.busy;
  /** 网络异常保留原请求号；409刷新后不自动重交，也不替换原方案。 */
  async function submit(body:SystemAcquisitionRequest){
   setSaving(true);setError('');setNotice('');
@@ -32,9 +37,12 @@ export default function SystemAcquisitionPanel({studyId}:{studyId:string}){
   finally{setSaving(false);}
  }
  /** 新获取固定当前方案和输入；不从页面接收阈值、路径或通过标记。 */
- function start(){if(!info?.enabled||!confirmed||!info.expected_a00||!info.expected_plan_id||disabled)return;
+ function start(){
+  const actor=compact?operator.trim():author.trim();
+  const reason=compact?'按当前已保存方案获取并核验本研究方剂三库原件。':note.trim();
+  if(!info?.enabled||(!compact&&!confirmed)||!actor||!reason||!info.expected_a00||!info.expected_plan_id||disabled)return;
   const content={expected_a00:info.expected_a00,expected_plan_id:info.expected_plan_id,expected_input_hash:info.expected_input_hash,
-   author:author.trim(),note:note.trim(),confirmed:true as const};const signature=JSON.stringify(content);
+   author:actor,note:reason,confirmed:true as const};const signature=JSON.stringify(content);
   if(signature!==request.current.signature)request.current={signature,id:'systemacqreq_'+crypto.randomUUID().replace(/-/g,'')};
   void submit({...content,request_id:request.current.id});
  }
@@ -47,10 +55,7 @@ export default function SystemAcquisitionPanel({studyId}:{studyId:string}){
  /** 来源绑定只采用服务端原件及原获取依据，明确确认后由实际后台重建核验。 */
  function bindSources(){if(!previous?.binding?.enabled||!previous.binding.request||disabled)return;
   const original=previous;const expected=previous.binding.request;
-  Modal.confirm({title:'绑定为本批科学输入',content:<><p>原TCMSP门槛：OB≥{original.screening_parameters.ob_min}%，DL≥{original.screening_parameters.dl_min}。</p>
-   <p>登记人：{original.request.author}。沿用原件获取说明：{original.request.note}</p>
-   <p>后台将从原ZIP重建核验后绑定同方案输入。此操作不发布A01或批准科研结果；科学批次另按实际资料条件执行。</p></>,
-   okText:'确认绑定科学输入',cancelText:'取消',onOk:async()=>{
+  const submitBinding=async()=>{
     const content={...expected,author:original.request.author,note:original.request.note,confirmed:true as const};const signature=JSON.stringify(content);
     if(bindRequest.current.signature!==signature)bindRequest.current={signature,id:'systemsourcebindreq_'+crypto.randomUUID().replace(/-/g,'')};
     setSaving(true);setError('');setNotice('');
@@ -60,8 +65,26 @@ export default function SystemAcquisitionPanel({studyId}:{studyId:string}){
      app.bumpRefresh();
     }catch(e){setError(errorText(e));if(e instanceof ApiError&&e.status===409)setTick(n=>n+1);}
     finally{setSaving(false);}
-   }});
+  };
+  if(compact){void submitBinding();return;}
+  Modal.confirm({title:'绑定为本批科学输入',content:<><p>原TCMSP门槛：OB≥{original.screening_parameters.ob_min}%，DL≥{original.screening_parameters.dl_min}。</p>
+   <p>登记人：{original.request.author}。沿用原件获取说明：{original.request.note}</p>
+   <p>后台将从原ZIP重建核验后绑定同方案输入。</p></>,
+   okText:'确认绑定科学输入',cancelText:'取消',onOk:submitBinding});
  }
+ if(compact)return <section className="card stack" aria-label="方剂资料">
+  <h3>方剂三库</h3>
+  <div>{error||info?.blockers.join('，')||previous?.state_label_zh||(info?'等待获取 TCMSP、HERB、BATMAN':'正在读取方剂资料…')}</div>
+  {notice&&<div role="status">{notice}</div>}
+  {previous?.binding?.bound?<strong>已核验并绑定</strong>:
+   previous?.binding?.enabled&&previous.binding.request?
+     <Button loading={saving} disabled={disabled} onClick={bindSources}>核验并绑定方剂资料</Button>:
+   previous?.state!=='complete'&&previous?.retry_enabled?
+     <Button loading={saving} disabled={disabled} onClick={()=>void submit(previous.request)}>补取缺少的方剂资料</Button>:
+   !previous&&<Button loading={saving} disabled={disabled||!info?.enabled||!operator.trim()} onClick={start}>获取方剂三库</Button>}
+  {error&&<Button onClick={()=>setTick(n=>n+1)}>刷新方剂资料状态</Button>}
+  <a href={hrefFor({page:'creation-sources',studyId,sourceSection:'formula'})}>查看方剂资料明细</a>
+ </section>;
  return <section className="card stack" id="system-source-acquisition"><h2>补齐三库原件</h2>
   <Alert showIcon type="info" message="获取和核验本研究原件" description="成功来源会保留，失败后可以补取。这里尚未自动衔接科学标准化；原件齐全后仍须满足新批次的资料检查。"/>
   {error&&<Alert type="error" showIcon message={error} action={<Button onClick={()=>setTick(n=>n+1)}>重新读取原件状态</Button>}/>}
