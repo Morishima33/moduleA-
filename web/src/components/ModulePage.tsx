@@ -94,6 +94,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
   const showIdentityEvidence = identityToolsAvailable && app.session?.capabilities.component_identity_evidence;
   const showIdentityProbes = identityToolsAvailable && app.session?.capabilities.component_identity_probes;
   const historicalDisease=m.module_id==='A02'&&!!sp.historical_disease_source;
+  const readyStage = view.plan_stages?.stages.find(stage => stage.stage === m.module_id && stage.enabled);
   const revisedDisplay = !view.historical && (!!view.display_revision?.current?.matches_input
     || view.display_revision?.module_current?.module_id === m.module_id);
   const revisedA05 = m.module_id === 'A05' && revisedDisplay;
@@ -121,6 +122,8 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
         </div>
         <div style={{ flex: '1 1 200px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, minWidth: 0 }}>
           <StatusPill code={st.code} label={st.label_zh} large />
+          {view.creation_plan&&!view.historical&&app.session?.capabilities.system_pipeline&&
+            <Button href={hrefFor({page:'system-pipeline',studyId})}>打开计算工作台</Button>}
           {view.run ? (
             <span className="tiny muted" style={{ textAlign: 'right' }}>
               <Tooltip title={`运行编号：${view.run.run_id}`}><span>{view.historical ? '查看版本' : '当前版本'} {view.run.order_zh}</span></Tooltip>
@@ -135,15 +138,14 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       {view.operation_guide && !systemA01 && !historicalDisease && <ModuleOperationGuide studyId={studyId} moduleId={m.module_id} info={view.operation_guide} pending={m.module_id === 'A05' && keggPending}
         onLocate={target => {if (target === 'module-enrichment-confirmation') setEnrichmentNavigation(n => n + 1);}}/>}
       {view.creation_plan&&<CreationPlan studyId={studyId} info={view.creation_plan}/>}
-      {view.creation_plan&&!view.historical&&app.session?.capabilities.system_pipeline&&<section className="card">
-        <Button href={hrefFor({page:'system-pipeline',studyId})}>打开计算工作台</Button></section>}
       {!view.historical&&m.module_id==='A06_PREP'&&view.receptor_rescue_available&&app.session?.capabilities.system_pipeline&&
         <ReceptorRescueAction key={view.run?.run_id||studyId} studyId={studyId}/>}
       {view.plan_system_validations&&<PlanSystemValidations key={JSON.stringify(view.plan_system_validations.items.map(row=>[row.request,row.current?.validation_id,row.enabled]))} studyId={studyId} info={view.plan_system_validations}/>}
       {view.plan_reports&&<PlanReports key={[view.plan_reports.expected_input_hash,view.plan_reports.expected_report_run_id].join(':')} studyId={studyId} info={view.plan_reports}/>}
       {!view.historical && view.display_revision && <DisplayRevision key={`${view.display_revision.expected_input_hash}:${view.display_revision.current?.revision_id || ''}`} studyId={studyId} moduleId={m.module_id} info={view.display_revision} />}
       {view.system_exports&&<SystemExports key={view.system_exports.expected_input_hash} studyId={studyId} info={view.system_exports}/>}
-      {view.plan_stages&&<PlanStages key={view.plan_stages.expected_input_hash} studyId={studyId} info={view.plan_stages}/>}
+      {view.plan_stages&&readyStage&&<PlanStages key={view.plan_stages.expected_input_hash}
+        studyId={studyId} info={view.plan_stages} stage={readyStage.stage}/>}
       {view.plan_compounds&&<PlanCompounds key={view.plan_compounds.expected_input_hash} studyId={studyId} info={view.plan_compounds}/>}
       {view.plan_preparation_ui&&<PlanPreparation key={view.plan_preparation_ui.input_hash} studyId={studyId} info={view.plan_preparation_ui}/>}
       {!view.historical&&(m.module_id==='A06_PREP'||m.module_id==='A06')&&<NativeCompute key={`${studyId}:${view.run?.run_id||''}`} studyId={studyId}/>}
@@ -159,9 +161,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
         {view.plan_a05_display && <PlanA05Display key={view.plan_a05_display.expected_input_hash} studyId={studyId} info={view.plan_a05_display} />}
         {sp.plan_enrichment && <PlanA05Results studyId={studyId} files={view.files} data={sp.plan_enrichment} />}
       </>}
-      {systemA01 && <section className="card" id="system-a01-source-status"><h2>本版三库原件已绑定</h2>
-        <p>{sp.system_component_publication!.message_zh}</p>
-        <Button href={hrefFor({page:'system-pipeline',studyId})}>核对来源与统一接续条件</Button></section>}
+      {systemA01 && <div className="small muted" id="system-a01-source-status">{sp.system_component_publication!.message_zh}</div>}
       {historicalDisease&&<section className="card" id="historical-a02-source-status"><h2>本版历史来源限制</h2><p>{sp.historical_disease_source!.message_zh}</p><Button href={hrefFor({page:'system-pipeline',studyId})}>核对历史来源与统一接续条件</Button></section>}
       {view.plan_a01&&!systemA01&&<PlanA01 key={[view.plan_a01.expected_a00,view.plan_a01.expected_a01,view.plan_a01.expected_plan_id,view.plan_a01.expected_staging].join(':')} studyId={studyId} info={view.plan_a01}/>}
       {m.module_id === 'A06_PREP' && view.reference_qualification && <ReferenceQualification studyId={studyId} info={view.reference_qualification} packet={view.review_packet} gate={view.review_gate} />}

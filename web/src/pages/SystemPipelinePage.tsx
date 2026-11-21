@@ -66,7 +66,7 @@ export default function SystemPipelinePage({studyId}:{studyId:string}){
   {notice&&<Alert type="success" showIcon message={notice}/>}
   {!info?(!error&&<Skeleton active/>):<>
    {info.busy&&<Alert type="info" showIcon message="本研究后台任务正在进行" description="任务完成后会刷新实际状态。"/>}
-   <section className="card stack" id="pipeline-start"><h2>开始计算</h2>
+   {!info.busy&&<section className="card stack" id="pipeline-start"><h2>开始计算</h2>
     {!info.start.enabled&&<Alert type="warning" showIcon message="先处理下方所列资料" description={<ul style={{margin:0,paddingLeft:20}}>
       {info.start.blockers.map(reason=><li key={reason}>{reason}</li>)}</ul>}/>}
     <div style={{display:'flex', flexWrap:'wrap',alignItems:'end',gap:12}}>
@@ -74,28 +74,26 @@ export default function SystemPipelinePage({studyId}:{studyId:string}){
       <Button type="primary" loading={saving} disabled={disabled||!info.start.enabled||!operator.trim()} onClick={()=>execute(true)}>按已保存方案开始计算</Button>
     </div>
     <Parameters value={info.start}/>
-   </section>
-   {!info.start.enabled&&<div className="source-field-grid">
+   </section>}
+   {!info.busy&&!info.start.enabled&&<div className="source-field-grid">
     {app.session?.capabilities.system_acquisition&&<SystemAcquisitionPanel studyId={studyId} compact operator={operator}/>}
     {canReadDisease&&<SystemDiseaseSourcesPanel studyId={studyId} compact/>}
    </div>}
-   {app.session?.capabilities.historical_disease_sources&&<Collapse items={[{key:'history',label:'查看历史疾病资料',children:<HistoricalDiseaseSources studyId={studyId}/>}]} />}
-   <section className="card stack" id="pipeline-history"><h2>已有批次与实际流水</h2>
-    {!info.batches.length?<p>尚未确认执行批次。</p>:<>
+   {!info.busy&&app.session?.capabilities.historical_disease_sources&&<Collapse items={[{key:'history',label:'查看历史疾病资料',children:<HistoricalDiseaseSources studyId={studyId}/>}]} />}
+   {info.batches.length>0&&<section className="card stack" id="pipeline-history"><h2>执行记录</h2>
+    {info.batches.length>1&&
      <Select aria-label="已有执行批次" value={selected} style={{width:'100%'}} onChange={setSelected} disabled={saving}
-      options={info.batches.map((b,i)=>({value:b.batch_id,label:`批次 ${i+1} · ${b.mode_label_zh} · ${b.latest_event?.state_label_zh??'已保存授权'}`}))}/>
+      options={info.batches.map((b,i)=>({value:b.batch_id,label:`批次 ${i+1} · ${b.mode_label_zh} · ${b.latest_event?.state_label_zh??'已保存授权'}`}))}/>}
      {batch&&<><Parameters value={batch}/><p>{batch.latest_event?.state_label_zh??'已保存授权，尚无执行流水'}</p>
       {batch.continue_blockers.length>0&&<Alert type="warning" message={batch.continue_blockers.join('；')}/>}
       <div style={{display:'flex',gap:12,flexWrap:'wrap'}}><Button disabled={disabled||!batch.continue_enabled} onClick={()=>execute(false)}>按当前状态续做本批</Button>
        <Button href={hrefFor({page:'study',studyId,moduleId:'A07'})}>查看报告与复核</Button><Button onClick={()=>setTick(n=>n+1)}>刷新实际状态</Button></div>
-      <p className="small muted">续做核对原批方案和已归档阶段，只处理未完成部分。已完成的有效报告会保留。</p>
       <Table size="small" rowKey={(_,i)=>String(i)} dataSource={batch.history} pagination={{pageSize:14}} scroll={{x:650}}
        columns={[{title:'阶段',dataIndex:'stage_label_zh',width:130},{title:'状态',dataIndex:'state_label_zh',width:150},
         {title:'依据或原因',render:(_,row)=>row.error_zh??row.reason_zh??'原一次明确批次授权'},
         {title:'记录时间',render:(_,row)=>fmtTime(row.created_at),width:160}]}/>
      </>}
-    </>}
-   </section>
+   </section>}
   </>}
  </main>;
 }
