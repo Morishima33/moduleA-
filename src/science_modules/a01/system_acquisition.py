@@ -1,5 +1,6 @@
 """系统授权三库获取的原件核验与完整/失败事实；不发布科学A01或改旧上传关口。"""
 from copy import deepcopy
+from contextlib import nullcontext
 from pathlib import Path
 import tempfile
 from contracts import fingerprint,require
@@ -79,6 +80,7 @@ def source_herbs(workflow,m,request):
 def collect(workflow,m,request,request_ref,plan_record,previous,progress,opener,sleeper,source_ready):
     """逐库原件先保存再校验；单库失败保留成功库，不写三库当前清单或科学运行。"""
     from modulea.core.system_acquisition import require_current
+    from modulea.core.herb_snapshot_reuse import open_snapshot
     sid=m['study_id'];home=workflow.location(sid);plan=plan_record['plan']
     herbs=source_herbs(workflow,m,request);folder=home/'raw/A01_system_acquisition'/request['request']['request_id']
     rows=existing_slots(workflow,m,request,plan,herbs);saved={r['database']:r for r in previous['sources'] if r['state']=='ready'} if previous else {}
@@ -91,8 +93,11 @@ def collect(workflow,m,request,request_ref,plan_record,previous,progress,opener,
         try:
             progress('获取本研究 '+db+' 官方原件')
             binding={'study_id':sid,'a00_run':request['binding']['a00'],'a01_run':request['binding']['a01']}
-            source=plan_acquisition.acquire_for_plan(db,herbs,folder/'collector_cache',binding,plan,
-                progress=progress,opener=opener,sleeper=sleeper)
+            candidate = open_snapshot(workflow, m, request, herbs) if db == 'HERB' else nullcontext()
+            with candidate as snapshot:
+                options = {'herb_snapshot': snapshot} if snapshot is not None else {}
+                source=plan_acquisition.acquire_for_plan(db,herbs,folder/'collector_cache',binding,plan,
+                    progress=progress,opener=opener,sleeper=sleeper,**options)
             location=folder/'responses'/new_id('source');location.mkdir(parents=True,exist_ok=False)
             archive=location/'original.zip';archive.write_bytes(source['data'])
             metadata={key:deepcopy(value) for key,value in source.items() if key!='data'};write_json(location/'source.json',metadata)
@@ -103,7 +108,8 @@ def collect(workflow,m,request,request_ref,plan_record,previous,progress,opener,
             output.append({'database':db,'state':'failed','mode':'downloaded','error_type':type(error).__name__,
                 'reason_zh':str(error),'source':None,'archive':None})
     implementations=[]
-    for path in (Path(__file__),Path(plan_acquisition.__file__),Path(uploads.__file__)):
+    import modulea.core.herb_snapshot_reuse as herb_reuse
+    for path in (Path(__file__),Path(plan_acquisition.__file__),Path(uploads.__file__),Path(herb_reuse.__file__)):
         destination=folder/'implementations'/new_id('implementation')/path.name;destination.parent.mkdir(parents=True,exist_ok=False)
         destination.write_bytes(path.read_bytes());implementations.append(file_record(home,destination,'system_acquisition_implementation'))
     files=[file_record(home,p,'system_acquisition_evidence') for p in folder.rglob('*') if p.is_file()]

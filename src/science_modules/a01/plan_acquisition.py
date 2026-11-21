@@ -1,6 +1,7 @@
 """新方案来源获取：TCMSP查询及筛选使用相同OB/DL，同研究绑定独立缓存。"""
 
 import html
+from functools import partial
 import re
 from pathlib import Path
 from types import FunctionType
@@ -59,8 +60,8 @@ def _tcmsp(fetch, herbs, progress, parameters):
     return files, counts, {"encoding": "utf-8-sig", "screening_parameters": parameters, "acquisition_protocol": VERSION}
 
 
-def acquire_for_plan(database, herbs, folder, binding, plan, progress=None, opener=None, sleeper=None):
-    """调用原包装及请求校验器；缓存绑定研究、输入和相关门槛，不跨研究借用。"""
+def acquire_for_plan(database, herbs, folder, binding, plan, progress=None, opener=None, sleeper=None, herb_snapshot=None):
+    """同研究缓存保持，已授权 HERB 详情按当次查询和原始指纹核验后复用。"""
     parameters = screening_parameters(plan)
     require(database in ("TCMSP", "HERB", "BATMAN"), "采集数据库无效")
     require(isinstance(herbs, list) and herbs and all(isinstance(h, str) and h.strip() and len(h) <= 2000 for h in herbs)
@@ -87,7 +88,12 @@ def acquire_for_plan(database, herbs, folder, binding, plan, progress=None, open
         def collect(fetch, names, report):
             return _tcmsp(fetch, names, report, parameters)
         namespace = dict(vars(legacy), _tcmsp=collect)
+        if database == 'HERB' and herb_snapshot is not None:
+            from modulea.core.herb_snapshot_reuse import SnapshotFetcher
+            namespace['Fetcher'] = partial(SnapshotFetcher, snapshot=herb_snapshot)
         acquire = FunctionType(legacy.acquire.__code__, namespace, legacy.acquire.__name__, legacy.acquire.__defaults__, legacy.acquire.__closure__)
         result = acquire(database, herbs, work, progress=progress,
                          opener=opener or legacy.urllib.request.urlopen, sleeper=sleeper or legacy.time.sleep)
+        if database == 'HERB' and herb_snapshot is not None:
+            result['herb_snapshot_authorization'] = herb_snapshot.provenance
         return dict(result, version=VERSION, analysis_plan_source={"binding_hash": key, **context})
