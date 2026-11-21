@@ -169,6 +169,11 @@ a:hover { color: #0A4350; }
 .plan-group-body { min-width: 0; }
 .plan-group-body > p { margin: 12px 0 22px; line-height: 1.7; }
 .plan-field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px 26px; }
+.source-field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 20px; }
+.source-field-grid > label { display: flex; flex-direction: column; min-width: 0; gap: 6px; }
+.source-field-grid input[type=file] { width: 100%; max-width: 100%; }
+.source-field-wide { grid-column: 1 / -1; }
+.source-reference { min-width: 0; padding: 10px 12px; border: 1px solid #E1E6EA; border-radius: 8px; overflow-wrap: anywhere; }
 .plan-field { min-width: 0; }
 .plan-field label { display: block; font-weight: 600; margin-bottom: 10px; }
 .plan-field-help { line-height: 1.65; margin-top: 9px; }
@@ -208,6 +213,7 @@ a:hover { color: #0A4350; }
 @media (max-width: 720px) {
   .plan-page-heading h1 { font-size: 22px; }
   .plan-mode-options, .plan-field-grid, .plan-summary-strip { grid-template-columns: minmax(0, 1fr); }
+  .source-field-grid { grid-template-columns: minmax(0, 1fr); }
   .plan-parameter-layout { grid-template-columns: minmax(0, 1fr); gap: 20px; }
   .plan-group-nav { display: grid; grid-template-columns: 1fr 1fr; }
   .plan-mode-card { padding: 18px; }

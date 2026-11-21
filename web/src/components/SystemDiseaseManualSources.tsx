@@ -56,23 +56,25 @@ export default function SystemDiseaseManualSources({studyId}:{studyId:string}){
      {title:'原版本说明',dataIndex:'version',width:130},
      {title:'原获取日期',dataIndex:'retrieved_at',width:120},{title:'字节数',dataIndex:'bytes',width:100},
      {title:'SHA-256',dataIndex:'sha256',render:(value:string)=><span title={value}>{value.slice(0,16)}…</span>}]}/>
+   <div className="source-field-grid">
    <label>手动原件数据库<Select aria-label="手动原件数据库" style={{width:'100%'}} value={database} disabled={disabled}
     options={Object.keys(info.formats).map(value=>({value,label:value}))} onChange={value=>{setDatabase(value);setFile(null);setDate('');setVersion('');setQuoted('unknown');setCompleteness('unknown');setConfirmed(false);}}/></label>
    <label>手动原件格式<Select aria-label="手动原件格式" style={{width:'100%'}} value={format} disabled={disabled}
     options={(info.formats[database]||[]).map(value=>({value,label:LABELS[value]||value}))} onChange={value=>{setFormat(value);setFile(null);setConfirmed(false);}}/></label>
-   <label>原始文件<input key={studyId+database+format} type="file" aria-label="疾病手动原件文件" disabled={disabled}
-    accept={format==='omim_xlsx_v2'?'.xlsx':format==='genecards_csv'?'.csv':'.txt,.tsv'}
-    onChange={e=>{setFile(e.target.files?.[0]||null);setConfirmed(false);request.current={signature:'',id:''};}}/></label>
    <label>原检索词<Input aria-label="手动原件检索词" value={query} maxLength={2000} disabled={disabled} onChange={e=>{setQuery(e.target.value);setConfirmed(false);}}/></label>
    <label>原获取日期<Input aria-label="手动原件获取日期" placeholder="按原件记录填写，不自动改为今天" value={date} maxLength={2000} disabled={disabled} onChange={e=>{setDate(e.target.value);setConfirmed(false);}}/></label>
    <label>原数据库版本或快照说明<Input aria-label="手动原件版本" value={version} maxLength={2000} disabled={disabled} onChange={e=>{setVersion(e.target.value);setConfirmed(false);}}/></label>
+   <label>上传登记人<Input aria-label="手动原件上传人" value={author} maxLength={2000} disabled={disabled} onChange={e=>{setAuthor(e.target.value);setConfirmed(false);}}/></label>
+   <label>原始文件<input key={studyId+database+format} type="file" aria-label="疾病手动原件文件" disabled={disabled}
+    accept={format==='omim_xlsx_v2'?'.xlsx':format==='genecards_csv'?'.csv':'.txt,.tsv'}
+    onChange={e=>{setFile(e.target.files?.[0]||null);setConfirmed(false);request.current={signature:'',id:''};}}/></label>
    <label>编码<Select aria-label="手动原件编码" style={{width:'100%'}} value={encoding} disabled={disabled} options={[{value:'utf-8-sig',label:'UTF-8'},{value:'gbk',label:'GBK'}]} onChange={v=>{setEncoding(v);setConfirmed(false);}}/></label>
    {database==='GeneCards'&&<><label>原检索词是否加引号<Select aria-label="手动原件检索引号" style={{width:'100%'}} value={quoted} disabled={disabled}
     options={[{value:'unknown',label:'原件未说明'},{value:'yes',label:'是'},{value:'no',label:'否'}]} onChange={v=>{setQuoted(v);setConfirmed(false);}}/></label>
     <label>原导出完整性<Select aria-label="手动原件导出完整性" style={{width:'100%'}} value={completeness} disabled={disabled}
      options={[{value:'unknown',label:'原件未说明'},{value:'complete',label:'完整导出'},{value:'partial',label:'部分导出'}]} onChange={v=>{setCompleteness(v);setConfirmed(false);}}/></label></>}
-   <label>上传登记人<Input aria-label="手动原件上传人" value={author} maxLength={2000} disabled={disabled} onChange={e=>{setAuthor(e.target.value);setConfirmed(false);}}/></label>
-   <label>上传依据<Input.TextArea aria-label="手动原件上传依据" value={note} maxLength={2000} disabled={disabled} onChange={e=>{setNote(e.target.value);setConfirmed(false);}}/></label>
+   <label className="source-field-wide">上传依据<Input.TextArea aria-label="手动原件上传依据" value={note} maxLength={2000} disabled={disabled} onChange={e=>{setNote(e.target.value);setConfirmed(false);}}/></label>
+   </div>
    <Checkbox checked={confirmed} disabled={disabled||!info.enabled} onChange={e=>setConfirmed(e.target.checked)}>我已核对原件、原检索词与本研究，确认仅预上传资料</Checkbox>
    <Button type="primary" loading={saving} disabled={disabled||!ready||!confirmed} onClick={()=>void upload()}>校验并保存本研究原件</Button>
   </>}

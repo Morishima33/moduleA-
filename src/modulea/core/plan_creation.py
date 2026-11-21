@@ -121,7 +121,7 @@ class PlanCreation:
         return {'schema_version': VERSION, 'preflight_id': identifier, 'input_hash': value['input_hash'],
                 'plan': content['plan'], 'mesh_verification': evidence, 'materials': snapshot,
                 'expires_at': value['expires_at'], 'can_create': True, 'execution_available': False,
-                'message_zh': '登记与方案校验通过；确认后只建档，资料缺口及自动接续状态一并留存'}
+                'message_zh': '登记与方案校验通过。建档后请补齐资料，再按执行页提示推进。'}
 
     def create(self, body):
         """锁内防重复并复核预检指纹和资料变化；过期凭证不产生新研究。"""
@@ -172,4 +172,4 @@ def context(workflow, sid):
             'initial_plan': initial['plan'], 'current_plan_id': current['plan_id'] if current else None,
             'current_plan': current['plan'] if current else None, 'materials_at_creation': saved['creation_preflight']['materials'],
             'preflight_id': saved['creation_preflight']['preflight_id'], 'execution_available': False,
-            'reason_zh': '初始方案及资料预检已归档；新自动接续尚未开放，请核对本研究资料与独立复核关口'}
+            'reason_zh': '初始方案及资料预检已归档。请核对本研究资料，并按执行页提示推进和复核。'}
