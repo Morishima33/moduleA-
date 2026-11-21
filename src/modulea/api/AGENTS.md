@@ -1,5 +1,7 @@
 # api/ — 本机 JSON 接口契约（前端与后端的唯一约定）
 
+GET `/study-openings` 返回 `{items: StudyInfo[]}`，仅供首页打开研究。按现有非回收站项目索引列出研究，标题来自经指纹核对的A00登记。单项A00损坏时保留项目编号入口，详情由原核验接口报告。身份目录不携带进度、结果或任何操作资格。原 `/studies`、`/inbox` 与 `/workspace` 保持完整校验，前两者由页面按需读取。
+
 ## 2026-11-19 研究页先显示登记信息和导航
 
 GET `/studies/{sid}/opening` 只读返回 `study` 与 `nav`。`study` 沿用 `StudyInfo`，资料来自当前已登记、指纹校验通过的 A00 运行。`nav` 按固定流程分组，每项只有 `module_id`、`title_zh` 和 `sub`。

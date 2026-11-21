@@ -73,6 +73,24 @@ class HttpBoundedReadTests(TestCase):
                 target.write_bytes(b'tampered')
                 os.utime(target, ns=(stamp.st_atime_ns, stamp.st_mtime_ns))
 
+    def test_batched_http_first_pass_checks_all_unique_references_before_response(self):
+        from modulea.core.http_read_evidence import json_evidence_scope
+
+        refs = []
+        for index in range(100):
+            path = self.home / f'batch-{index}.txt'
+            path.write_bytes(b'original')
+            refs.append(file_record(self.home, path, 'test'))
+        with json_evidence_scope(self.root, self.sid) as scope:
+            scope.reader.verify_all(self.home, refs + refs)
+        self.assertEqual(scope.stats['first_sha_checks'], len(refs))
+        self.assertEqual(scope.stats['exit_sha_checks'], len(refs))
+        self.assertEqual(scope.stats['duplicate_references'], len(refs))
+        (self.home / refs[-1]['path']).write_bytes(b'tampered')
+        with self.assertRaises(ContractError):
+            with json_evidence_scope(self.root, self.sid) as scope:
+                scope.reader.verify_all(self.home, refs)
+
     def test_callback_error_releases_buffers_and_preserves_error(self):
         def fail():
             self.read();raise ValueError('原始错误')

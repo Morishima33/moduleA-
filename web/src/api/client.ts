@@ -1,7 +1,7 @@
 // 文件用途：访问本机 JSON 接口的唯一出口。负责拼接地址、携带操作令牌、把错误统一转成 ApiError。
 import type {
   ApiErrorBody, BatchReviewResponse, Decision, GlobalInboxEntry, ModuleView, ReviewResponse, RunItem,
-  Session, StudyCard, StudyOpening, StudyView, WorkspaceView, TablePage, Task,
+  Session, StudyCard, StudyInfo, StudyOpening, StudyView, WorkspaceView, TablePage, Task,
 } from './types';
 
 // 开发模式下直连本机接口（可用环境变量 VITE_API_BASE 覆盖）；生产构建与后端同源，用相对路径
@@ -230,6 +230,7 @@ export const api = {
   drawingPackages: (sid: string, action: 'pair_packages' | 'pair_bundle', body: {expected_a06: string; pair_keys: string[]}) =>
     request<{task: Task; message_zh: string}>('POST', `/studies/${sid}/modules/A06/actions/${action}`, body),
   /** 首页研究卡片 */
+  studyOpenings: () => request<{ items: StudyInfo[] }>('GET', '/study-openings'),
   studies: () => request<{ items: StudyCard[] }>('GET', '/studies'),
   /** 回收站研究卡片 */
   trash: () => request<{ items: StudyCard[] }>('GET', '/trash'),

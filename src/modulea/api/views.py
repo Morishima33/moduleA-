@@ -168,6 +168,24 @@ class Views:
         return states
 
     # ------------------------------------------------------------------ 首页与研究
+    def study_openings(self) -> list[dict]:
+        """首页目录逐项核对登记，不等待各研究的分析原件。"""
+        from ..core.http_read_evidence import HttpReadVersionChanged, json_evidence_scope
+
+        items = []
+        for manifest in self.kernel.read_workflow().studies():
+            study_id = manifest['study_id']
+            try:
+                with json_evidence_scope(self.kernel.settings.data_root, study_id):
+                    info = self.study_opening(study_id)['study']
+            except HttpReadVersionChanged:
+                continue  # 登记在读取中变动时，下次列表刷新再显示。
+            except ContractError:
+                info = self._study_info(study_id, self._manifest(study_id), intake={})
+            if not info['trashed']:
+                items.append(info)
+        return sorted(items, key=lambda info: info['updated_at'] or '', reverse=True)
+
     def study_cards(self, trashed: bool = False) -> list[dict]:
         cards = self._card_batch(trashed)
         for card in cards:

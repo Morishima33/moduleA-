@@ -1,5 +1,6 @@
 """HTTP独立有界JSON缓存：复用现有全SHA读取，结束立即释放，不改冻结worker。"""
 from collections import OrderedDict
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 import json
 import marshal
@@ -66,6 +67,35 @@ class HttpReadEvidence(CheckpointReadEvidence):
     # 原有界实现逐件核完整SHA，解析字节另与原登记比对；不长期保留JSON原文。
     _capture=BoundedEvidence._capture
     read_json=_utf8_read_json
+
+    def verify_all(self, root, records):
+        """HTTP首验按组派工，组内每件仍走原完整文件核验。"""
+        home = self._home(root)
+        if home is None:
+            return super().verify_all(root, records)
+        pending = {}
+        for record in records:
+            key = self._key(home, record)
+            if key in self.proofs or key in pending:
+                self.stats['duplicate_references'] += 1
+            else:
+                pending[key] = record
+        rows = list(pending.values())
+        if len(rows) < 32:
+            for record in rows:
+                self._capture(home, record)
+            return
+
+        def capture_batch(batch):
+            """组内保持原指纹和异常，等待线程结果后才继续。"""
+            for record in batch:
+                self._capture(home, record)
+
+        chunk = min(32, max(1, len(rows) // 32))
+        batches = (rows[i:i + chunk] for i in range(0, len(rows), chunk))
+        with ThreadPoolExecutor(max_workers=8, thread_name_prefix='request-evidence') as pool:
+            for _ in pool.map(capture_batch, batches):
+                pass
 
     def _verify_manifest_version(self):
         """保留原登记字节检查，供列表精确识别可重新读取的冲突。"""

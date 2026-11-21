@@ -2,7 +2,7 @@
 import { Alert, Button, Empty, Skeleton } from 'antd';
 import { useEffect, useState } from 'react';
 import { api, errorText } from '../api/client';
-import type { GlobalInboxEntry, StudyCard } from '../api/types';
+import type { GlobalInboxEntry, StudyCard, StudyInfo } from '../api/types';
 import { ArchiveAlert, KindTag, ProgressSegs, PurposeTag, StatusPill } from '../components/common';
 import ManageStudyModal from '../components/ManageStudyModal';
 import { useApp } from '../lib/appContext';
@@ -13,6 +13,9 @@ import { taskColor } from '../lib/theme';
 /** 首页 */
 export default function HomePage() {
   const app = useApp(); // 全局上下文
+  const [openings, setOpenings] = useState<StudyInfo[] | null>(null);
+  const [showStatus, setShowStatus] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
   const [cards, setCards] = useState<StudyCard[] | null>(null); // 研究卡片
   const [error, setError] = useState<string | null>(null); // 读取失败说明
   const [inbox, setInbox] = useState<GlobalInboxEntry[]>([]); // 全局待办
@@ -24,21 +27,33 @@ export default function HomePage() {
   const { setCrumb } = app; // 设置顶栏研究名的函数
   useEffect(() => setCrumb(null), [setCrumb]);
 
-  // 读取研究卡片与待办；刷新信号变化时重读
+  // 首先显示已登记的研究入口。
   useEffect(() => {
     let current = true;
+    api.studyOpenings().then(({items}) => {
+      if (current) { setOpenings(items); setError(null); }
+    }).catch((e) => { if (current) setError(errorText(e)); });
+    return () => { current = false; };
+  }, [app.refreshTick]);
+
+  // 详细状态按需走原完整核验。折叠时保留可立即打开的研究入口。
+  useEffect(() => {
+    if (!showStatus) return;
+    let current = true;
+    setCards(null);
+    setStatusError(null);
+    setInbox([]);
     api.studies()
       .then((r) => {
         if (!current) return;
         setCards(r.items); // 更新卡片
-        setError(null);
         app.trackTasks(r.items.map((c) => c.active_task)); // 跟踪活动任务
       })
-      .catch((e) => { if (current) setError(errorText(e)); });
+      .catch((e) => { if (current) setStatusError(errorText(e)); });
     api.inbox().then((r) => { if (current) setInbox(r.items); }).catch(() => undefined); // 待办读取失败不影响卡片
     return () => { current = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [app.refreshTick]);
+  }, [showStatus, app.refreshTick]);
 
   // 展开回收站时读取列表
   useEffect(() => {
@@ -67,7 +82,7 @@ export default function HomePage() {
       {error && <Alert type="error" showIcon message={error} />}
 
       {/* 全局待办 */}
-      {inbox.length > 0 && (
+      {showStatus && inbox.length > 0 && (
         <section className="card" aria-label="待你处理" style={{ borderColor: '#E9B872' }}>
           <h2 style={{ margin: '0 0 10px', fontSize: 16 }}>待你处理（{inbox.length}）</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -87,12 +102,16 @@ export default function HomePage() {
       )}
 
       {/* 研究卡片 */}
-      {cards === null && !error ? (
-        <Skeleton active />
-      ) : cards && cards.length === 0 ? (
-        <Empty description="还没有研究" />
-      ) : (
-        cards?.map((c) => <StudyCardView key={c.study.study_id} card={c} />)
+      {!!openings?.length && <Button style={{ alignSelf: 'flex-start' }} aria-expanded={showStatus}
+        onClick={() => setShowStatus((open) => !open)}>{showStatus ? '收起详细状态' : '核验研究状态与待办'}</Button>}
+      {showStatus && statusError && <Alert type="error" showIcon message={statusError} />}
+      {showStatus && cards === null && !statusError && <p role="status">正在核验研究状态与待办…</p>}
+      {showStatus && cards ? cards.map((c) => <StudyCardView key={c.study.study_id} card={c} />) : (
+        openings === null ? (!error && <Skeleton active />) : openings.length === 0 ? <Empty description="还没有研究" /> :
+          openings.map((study) => <article className="card study-card" key={study.study_id}>
+            <h2 style={{margin:0,fontSize:19}}>{study.title_zh} <KindTag kind={study.kind} /></h2>
+            <Button type="primary" href={hrefFor({page:'study', studyId:study.study_id})}>打开研究</Button>
+          </article>)
       )}
 
       {/* 回收站入口与列表 */}

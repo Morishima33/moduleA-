@@ -87,6 +87,19 @@ class WorkspaceReadTests(TestCase):
         self.assertFalse(value['study']['archive_ok']);self.assertIsNone(value['module'])
         self.assertEqual(value['module_error']['status'],503)
 
+    def test_home_openings_keep_navigation_without_reading_science_archives(self):
+        study=self.app.views.study(self.sid)['study']
+        self.target().write_bytes(b'corrupted analysis attachment')
+        with patch.object(Views,'_snapshot',side_effect=AssertionError('home opening must not validate results')):
+            self.assertEqual(self.get('/study-openings'),{'items':[study]})
+        detailed=self.get('/studies')['items'][0]
+        self.assertFalse(detailed['archive_ok'])
+        workflow=self.app.kernel.read_workflow()
+        manifest=workflow.load(self.sid)
+        manifest['trashed']=True
+        workflow.save(manifest)
+        self.assertEqual(self.get('/study-openings'),{'items':[]})
+
     def test_opening_reads_only_registered_intake_and_navigation(self):
         study=self.app.views.study(self.sid)
         self.target().write_bytes(b'corrupted synthetic archive')

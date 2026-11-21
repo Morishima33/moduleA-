@@ -193,6 +193,7 @@ class App:
             ("POST", rf"/api/v1/studies/{ID}/modules/A01/actions/resolve_sources", self.post_source_resolve),
             ("POST", rf"/api/v1/studies/{ID}/modules/A02/actions/mapping_preview", self.post_mapping_preview),
             ("GET", r"/api/v1/studies", self.list_studies),
+            ("GET", r"/api/v1/study-openings", self.list_study_openings),
             ("POST", r"/api/v1/studies", self.post_create_study),
             ("POST", r"/api/v1/analysis-plans/creation/preflight", self.post_plan_creation_preflight),
             ("POST", r"/api/v1/analysis-plans/creation", self.post_plan_creation),
@@ -892,6 +893,10 @@ class App:
     def get_study_opening(self,req,study_id):
         """先返回登记名称和导航；完整验证仍由工作台接口负责。"""
         return self._json_read(study_id,self.views.study_opening,study_id)
+
+    def list_study_openings(self,req):
+        """首页只读取研究登记，详细状态沿用原接口。"""
+        return {"items": self.views.study_openings()}
 
     def get_module(self, req, study_id, module_id):
         return self._json_read(study_id,self.views.module,study_id,module_id,req.query1("run_id"))

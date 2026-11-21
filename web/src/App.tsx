@@ -46,16 +46,16 @@ export default function App() {
   /** 触发一次全局刷新 */
   const bumpRefresh = useCallback(() => setRefreshTick((n) => n + 1), []);
 
-  // 会话就绪后才更新待办，让研究页先登记workspace，再由client等待该关键读取结束。
+  // 仅打开待办时核验跨研究状态，避免争用当前页面的归档读取。
   useEffect(() => {
-    if (!session) return;
+    if (!session || !inboxOpen) return;
     let current = true;
     setInbox({ status: 'loading' });
     api.inbox()
       .then(({ items }) => { if (current) setInbox({ status: 'ready', items }); })
       .catch((error) => { if (current) setInbox({ status: 'failed', message: errorText(error) }); });
     return () => { current = false; }; // 新刷新后，不让旧请求覆盖最新待办。
-  }, [refreshTick, session, inboxRetry]);
+  }, [refreshTick, session, inboxOpen, inboxRetry]);
 
   /** 登记活动任务；只跟踪排队中或运行中的任务 */
   const trackTasks = useCallback((tasks: (Task | null | undefined)[]) => {
@@ -71,11 +71,13 @@ export default function App() {
 
   // 启动、进入研究及重新回到页面时发现活动任务，避免漏掉快速完成的任务。
   useEffect(() => {
-    let current = true;
+    let current = true, pending = false;
     async function recover(refresh: boolean) {
-      if (document.visibilityState === 'hidden') return;
+      if (document.visibilityState === 'hidden' || pending) return;
+      pending = true;
       try { const r = await api.tasks({ active: true }); if (current) { trackTasks(r.items); if (refresh) bumpRefresh(); } }
       catch { /* 保留现有页面，下一次聚焦重试。 */ }
+      finally { pending = false; }
     }
     // 新页面自身已经读取当前归档；发现任务不再立即重发整套页面请求。
     void recover(false);
