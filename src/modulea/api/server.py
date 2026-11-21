@@ -204,6 +204,7 @@ class App:
             ("GET", rf"/api/v1/studies/{ID}/modules/{ID}", self.get_module),
             ("GET", rf"/api/v1/studies/{ID}/modules/{ID}/runs", self.get_runs),
             ("GET", rf"/api/v1/studies/{ID}/modules/{ID}/tables/{ID}", self.get_table),
+            ("GET", rf"/api/v1/studies/{ID}/runs/{ID}/intersection-trace.csv", self.get_intersection_trace),
             ("GET", rf"/api/v1/studies/{ID}/files/([A-Za-z0-9_.]+)", self.get_file),
             ("POST", rf"/api/v1/studies/{ID}/modules/{ID}/reviews", self.post_review),
             ("POST", rf"/api/v1/studies/{ID}/reviews:batch", self.post_batch_review),
@@ -904,6 +905,10 @@ class App:
 
     def get_runs(self, req, study_id, module_id):
         return {"items": self.views.runs(study_id, module_id)}
+
+    def get_intersection_trace(self, req, study_id, run_id):
+        from .intersection_trace import download
+        return self._json_read(study_id, download, self, study_id, run_id)
 
     def get_table(self, req, study_id, module_id, name):
         return self.views.table(study_id, module_id, name, req.query1("run_id"), req.query_int("page", 1),

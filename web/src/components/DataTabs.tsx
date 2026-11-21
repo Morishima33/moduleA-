@@ -2,7 +2,7 @@
 import { Button, Empty, Image, Input, Modal, Table, Tabs, Tag, Tooltip } from 'antd';
 import { DownloadOutlined, EyeOutlined, TableOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
-import { api, errorText, fileUrl } from '../api/client';
+import { api, apiUrl, errorText, fileUrl } from '../api/client';
 import type { ModuleView, TableIndex, TablePage } from '../api/types';
 import { decisionLabel, useApp } from '../lib/appContext';
 import { cellText, fmtBytes, fmtTime, originZh, outcomeZh, shortId } from '../lib/format';
@@ -63,6 +63,11 @@ function DetailTab({ studyId, view }: { studyId: string; view: ModuleView }) {
                 <span className="muted small" style={{ marginLeft: 6 }}>{tb.kind === 'rows' ? `${tb.row_count ?? '?'} 行` : '结构化记录'}</span>
               </Button>
             ))}
+            {view.module.module_id === 'A03' && view.run?.run_id &&
+              view.tables.some((tb) => tb.name === 'intersection_targets') &&
+              <Button icon={<DownloadOutlined />} href={apiUrl(`/api/v1/studies/${studyId}/runs/${view.run.run_id}/intersection-trace.csv`)}>
+                下载交集来源追溯表
+              </Button>}
           </div>
         )}
       </div>
