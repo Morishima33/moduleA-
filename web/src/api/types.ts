@@ -355,6 +355,7 @@ export interface ReviewInfo {
   can_review: boolean;
   allowed_decisions: Decision[];
   blocked_reason_zh: string | null;
+  blockers?: ReviewBlocker[];
   expected_review_id: string | null;
   run_id: string | null;
   batch_with: string | null;
@@ -826,6 +827,15 @@ export interface PpiRunInfo { enabled: boolean; disabled_reason_zh: string; expe
 // 只读待核验身份，显示归档原值；不提供代签或自动身份替换。
 export interface PpiIdentityRow { target_id: string; symbol: string; returned: string; reason_zh: string }
 export interface PpiIdentity { total: number; source_table: string; note_zh: string; rows: PpiIdentityRow[]; scope_kind?: 'explicit_bound_test_decision'; handoff_blocked?: boolean }
+export interface ReviewBlocker {
+  title_zh: string;
+  owner_zh: string;
+  action_zh: string;
+  examples: string[];
+  section_id: string | null;
+  href: string | null;
+  file_key: string | null;
+}
 
 // 保存的是人工补查方案；身份与模块是否可通过仍由科学归档和Workflow决定。
 export interface IdentityPlanInfo { enabled: boolean; disabled_reason_zh: string; expected_a03: string; expected_a04: string; expected_decision_id: string | null; latest: { decision_id: string; reviewer: string; note_zh: string; created_at: string; check_ids: string[]; omit_ids: string[]; applied_run_id: string | null; pending_count: number | null; evidence_url?: string | null; error_zh?: string; status_zh: string } | null }

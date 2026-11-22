@@ -7,6 +7,7 @@ import type { Decision, ModuleView, Task } from '../api/types';
 import { decisionLabel, useApp } from '../lib/appContext';
 import { StatusPill } from './common';
 import DecisionPicker from './DecisionPicker';
+import ReviewBlockers from './ReviewBlockers';
 
 /** 单个模块在批量表单中的填写内容 */
 interface Entry { action: 'decide' | 'preserve'; decision?: Decision; note: string }
@@ -136,8 +137,11 @@ export default function BatchReviewModal({ open, studyId, current, otherId, onCl
                     <Alert type="info" showIcon message={`${mid} 当前不能复核：${v.state.label_zh}`} />
                   ) : (
                     <>
-                      <DecisionPicker value={e.decision} onChange={(d) => patch(mid, { decision: d })} blockedReason={v.review.blocked_reason_zh}
+                      <DecisionPicker value={e.decision} onChange={(d) => patch(mid, { decision: d })} blockedReason={v.review.blockers?.length ? null : v.review.blocked_reason_zh}
                         options={(['approved', 'rejected', 'pending'] as Decision[]).map((d) => ({ value: d, label: decisionLabel(session, d), disabled: !allowed.has(d) }))} />
+                      {!!v.review.blockers?.length && <ReviewBlockers studyId={studyId} blockers={v.review.blockers.map(item =>
+                        mid === current.module.module_id || item.href ? item : { ...item, section_id: null, href: `#/studies/${studyId}/${mid}` }
+                      )} onNavigate={onClose} />}
                       <Input.TextArea rows={3} value={e.note} onChange={(ev) => patch(mid, { note: ev.target.value })} placeholder={`${mid} 的复核意见`} maxLength={2000} />
                     </>
                   )}

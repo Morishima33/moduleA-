@@ -9,6 +9,7 @@ import { fmtTime } from '../lib/format';
 import { stateStyle } from '../lib/theme';
 import BatchReviewModal from './BatchReviewModal';
 import DecisionPicker from './DecisionPicker';
+import ReviewBlockers from './ReviewBlockers';
 import {PreparationSource} from './TrialPreparation';
 
 // 契约第 2 节：这些状态不显示复核表单
@@ -211,16 +212,17 @@ export default function ReviewPanel({ studyId, view, onSaved, onStale }: Props) 
       {r.current && <CurrentDecision session={session} r={r} moduleId={view.module.module_id} />}
       {view.special.ppi_identity && (view.special.ppi_identity.scope_kind === 'explicit_bound_test_decision' && view.special.ppi_identity.handoff_blocked === false
         ? <Alert type="info" showIcon style={{ marginBottom: 12 }} message="本批身份未决与适用范围" description={view.special.ppi_identity.note_zh} />
-        : <Alert type="warning" showIcon style={{ marginBottom: 12 }} message="请先完成身份核验" description="待核验清单已在页面标题下展开。这里保存的是整体模块复核意见，不会自动解决身份问题。" />)}
-      {view.normalization && <Button onClick={() => document.getElementById(view.normalization?.preview ? 'normalization-confirmation' : 'normalization-review')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>{view.normalization.preview ? '前往确认身份处理并生成结果' : '前往基因身份核查'}</Button>}
+        : !r.blockers?.length && <Alert type="warning" showIcon style={{ marginBottom: 12 }} message="请先完成身份核验" description="待核验清单已在页面标题下展开。这里保存的是整体模块复核意见，不会自动解决身份问题。" />)}
+      {view.normalization && !r.blockers?.length && <Button onClick={() => document.getElementById(view.normalization?.preview ? 'normalization-confirmation' : 'normalization-review')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>{view.normalization.preview ? '前往确认身份处理并生成结果' : '前往基因身份核查'}</Button>}
       <Form form={form} layout="vertical" requiredMark={false} disabled={!!saving}>
         {/* 决定：三选一 */}
         <Form.Item name="decision" label="决定" rules={[{ required: true, message: '请选择决定' }]} style={{ marginBottom: 12 }}>
           <DecisionPicker
             options={all.map((d) => ({ value: d, label: decisionLabel(session, d, view.module.module_id), disabled: !allowed.has(d) }))}
-            blockedReason={r.blocked_reason_zh}
+            blockedReason={r.blockers?.length ? null : r.blocked_reason_zh}
           />
         </Form.Item>
+        {!!r.blockers?.length && <ReviewBlockers studyId={studyId} blockers={r.blockers} />}
         {/* 复核人 */}
         <Form.Item name="reviewer" label="复核人" rules={[{ required: true, whitespace: true, message: '请填写复核人' }]} style={{ marginBottom: 12 }}>
           <Input placeholder="填写姓名" maxLength={60} />

@@ -752,7 +752,8 @@ special新增enrichment_display_tables：{bp_top15,cc_top15,mf_top15,kegg_p_top1
   "review": {
     "current": {"review_id","decision","reviewer","note","created_at","batch"} | null,
     "history": [..], "can_review", "allowed_decisions": ["approved","rejected","pending"],
-    "blocked_reason_zh", "expected_review_id", "run_id", "batch_with": "A02"|null,
+    "blocked_reason_zh", "blockers": [{ "title_zh", "owner_zh", "action_zh", "examples": [], "section_id", "href", "file_key" }],
+    "expected_review_id", "run_id", "batch_with": "A02"|null,
     "continue": {"available","note_zh"}, "already_approved"
   },
   "downstream": {"note_zh", "modules": [{"module_id","title_zh","code","label_zh"}]},

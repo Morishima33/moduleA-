@@ -730,6 +730,12 @@ class Views:
         response["input_audit"] = input_audit_context(workflow, real, module_id, run, result, stale=not historical and state["code"] == "stale")
         if literature_input and module_id in ('A01', 'A02'):
             response['input_audit'] = None  # 两侧文献数量已由同源结果数量链展示，避免重复常规范围表。
+        from .review_blockers import blockers
+        response['review']['blockers'] = blockers(response, result, study_id)
+        if response['review']['blockers']:
+            reason = '、'.join(item['title_zh'] for item in response['review']['blockers'])
+            response['review']['blocked_reason_zh'] = reason
+            response['state']['reason_zh'] = reason
         return response
 
     @staticmethod

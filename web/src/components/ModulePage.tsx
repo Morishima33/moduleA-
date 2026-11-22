@@ -76,6 +76,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
 }) {
   const [keggPending, setKeggPending] = useState(false); // 本地未保存勾选只控制旧图可见性。
   const [scopeDirty, setScopeDirty] = useState(false); // 仅阻止使用未保存的本页范围继续核查。
+  const [identityEvidenceOpen, setIdentityEvidenceOpen] = useState(false); // 打开证据区后再挂载补查组件。
   const [enrichmentNavigation, setEnrichmentNavigation] = useState(0); // 仅展开显示区，不确认清单。
   const app = useApp(); // 全局上下文（打开任务面板）
   if (view.trial_preparation && !view.historical) {
@@ -208,7 +209,7 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
           {st.reason_zh && <span style={{ fontSize: 14, color: '#26323C', overflowWrap: 'anywhere' }}>{st.reason_zh}</span>}
           {st.code === 'failed' && <span className="small muted">这是执行失败，不是“0 条结果”。</span>}
           {st.is_empty_result && <span className="small muted">计算已完整执行，结果为空；完整统计表照常保存，可按正常流程复核。</span>}
-          {st.handoff_blocked && <span className="small" style={{ color: '#4E3780' }}>资料补齐或例外确认前不能选择“通过”。</span>}
+          {st.handoff_blocked && !view.review.blockers?.length && <span className="small" style={{ color: '#4E3780' }}>资料补齐或例外确认前不能选择“通过”。</span>}
         </div>
       )}
 
@@ -265,16 +266,14 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       {/* 结果明细 / 参数与版本 / 来源与追溯 */}
       <div id="module-details">{oldSelection ? <Collapse items={[{key:'old-result',label:'已失效历史名单与结果（仅供对照）',children:<><KpiGrid kpis={view.kpis}/><FlowChain steps={view.flow} note={view.flow_note_zh}/><DataTabs studyId={studyId} view={view}/></>}]} /> : oldIntersection ? <Collapse items={[{key:'old-intersection-details',label:'查看旧A03明细及版本（仅供追溯）',children:<DataTabs studyId={studyId} view={view}/>}]} /> : <DataTabs studyId={studyId} view={view} />}</div>
       {(showIdentityEvidence || showIdentityProbes) && (
-        <Collapse items={[{
-          key: 'component-sources',
-          label: '来源证据与补查',
-          children: (
-            <div className="stack">
-              {showIdentityEvidence && <ComponentIdentityEvidence studyId={studyId} />}
-              {showIdentityProbes && <ComponentIdentityProbes studyId={studyId} />}
-            </div>
-          ),
-        }]} />
+        <details className="card" id="component-source-evidence" style={{ scrollMarginTop: 90 }}
+          onToggle={(event) => { if (event.currentTarget.open) setIdentityEvidenceOpen(true); }}>
+          <summary>来源证据与补查</summary>
+          {identityEvidenceOpen && <div className="stack" style={{ marginTop: 12 }}>
+            {showIdentityEvidence && <ComponentIdentityEvidence studyId={studyId} />}
+            {showIdentityProbes && <ComponentIdentityProbes studyId={studyId} />}
+          </div>}
+        </details>
       )}
       {view.docking_candidates && m.module_id === 'A04' && <DockingCandidates studyId={studyId} moduleId={m.module_id} info={view.docking_candidates} />}
       {/* 窄屏时下游影响放在最后 */}
