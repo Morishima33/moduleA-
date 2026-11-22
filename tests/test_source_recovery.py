@@ -61,13 +61,30 @@ class RecoveryTests(unittest.TestCase):
                 rows = [row(i) for i in range(1, 3001)] if index == 0 else [row(1)]
             else:
                 rows = [row(i) for i in range(2, 3001)] if index == 0 else [row(1), row(3001)]
-            return {"data": {"disease": {"id": did, "name": "Fixture Disease", "associatedTargets": {"count": 3001, "rows": rows}}}}
+            return {"data": {"meta": {"dataVersion": {"year": "26", "month": "09", "iteration": None},
+                                     "apiVersion": {"x": "26", "y": "9", "z": "0"}},
+                             "disease": {"id": did, "name": "Fixture Disease", "associatedTargets": {"count": 3001, "rows": rows}}}}
         with patch("disease_io.request_page", fetch):
             item = fetch_otp("TEST_1", fetch=fetch)
         snapshot = json.loads(item["data"])
         self.assertEqual(len(parse_source(item, item["data"])), 3001)
         self.assertEqual(len(snapshot["pages"]), 4)
         self.assertFalse(snapshot["enableIndirect"])
+        self.assertEqual(snapshot["collection_version"], "OTP.direct.complete.3")
+        self.assertEqual(item["version"], "26.09")
+        snapshot["pages"][1]["data"]["meta"]["dataVersion"]["iteration"] = 2
+        with self.assertRaisesRegex(ContractError, "版本"):
+            parse_source(item, json.dumps(snapshot).encode())
+
+    def test_otp_release_change_cannot_be_merged(self):
+        def fetch(did, index):
+            return {"data": {"meta": {"dataVersion": {"year": 26, "month": 9, "iteration": index + 1},
+                                     "apiVersion": {"x": 26, "y": 9, "z": 0}},
+                             "disease": {"id": did, "name": "Fixture Disease", "associatedTargets": {
+                                 "count": 2, "rows": [{"score": 0.5, "target": {"id": str(index), "approvedSymbol": "G"}}]}}}}
+        with self.assertRaisesRegex(ContractError, "版本") as error:
+            fetch_otp("TEST_1", fetch=fetch)
+        self.assertEqual(len(error.exception.source_trace["requests"]), 2)
 
     def test_failed_trace_is_archived_without_candidate_rows(self):
         with self.assertRaises(ContractError) as error:

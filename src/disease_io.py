@@ -8,7 +8,38 @@ import urllib.request  # 仅连接明确的官方API。
 from contracts import require, ContractError  # 统一处理可预期失败。
 from storage import now  # 保存获取时间。
 ENDPOINT = "https://api.platform.opentargets.org/api/v4/graphql"  # 不接受用户提供任意请求地址。
-QUERY = "query DiseaseTargets($id:String!,$index:Int!,$size:Int!){disease(efoId:$id){id name associatedTargets(enableIndirect:false,page:{index:$index,size:$size}){count rows{score target{id approvedSymbol}}}}}"  # 显式关闭间接关联，不设置评分门槛。
+LEGACY_QUERY = "query DiseaseTargets($id:String!,$index:Int!,$size:Int!){disease(efoId:$id){id name associatedTargets(enableIndirect:false,page:{index:$index,size:$size}){count rows{score target{id approvedSymbol}}}}}"
+QUERY = LEGACY_QUERY.replace("{disease(", "{meta{dataVersion{year month iteration} apiVersion{x y z}} disease(", 1)
+OTP_RELEASE_PROTOCOL = "OTP.direct.complete.3"
+
+
+def otp_release(response):
+    """Read version metadata from the same GraphQL response as the disease page."""
+    meta = response.get("data", {}).get("meta")
+    require(isinstance(meta, dict), "OTP本页缺少官方发布版本")
+    release = {}
+    for name, fields in (("dataVersion", ("year", "month", "iteration")), ("apiVersion", ("x", "y", "z"))):
+        block = meta.get(name)
+        require(isinstance(block, dict) and all(k in block for k in fields), "OTP官方发布版本字段不完整")
+        values = {}
+        for key in fields:
+            value = block[key]
+            if key == "iteration" and value is None:
+                values[key] = None  # Production explicitly returns null for some releases.
+            else:
+                require((type(value) is int and value >= 0) or
+                        (isinstance(value, str) and re.fullmatch(r"[0-9]{1,8}", value)),
+                        "OTP官方发布版本字段格式无效")
+                values[key] = int(value)
+        release[name] = values
+    require(release["dataVersion"]["year"] > 0 and 1 <= release["dataVersion"]["month"] <= 12,
+            "OTP官方数据发布年月无效")
+    return release
+
+
+def otp_release_label(release):
+    data = release["dataVersion"]
+    return f"{data['year']:02d}.{data['month']:02d}"
 
 def multipart(content_type, body):  # 读取一个受大小限制的上传表单。
     require(len(body) <= 17 * 1024 * 1024 and "\r" not in content_type and "\n" not in content_type, "上传请求大小或格式不合法")  # 不将用户头部当成任意MIME指令。
@@ -46,6 +77,7 @@ def _fetch_otp(disease_id, fetch, trace):  # 收集全部直接关联候选，�
     pages, requests, total, seen, disease_name = [], [], None, {}, ""  # 保留重试响应及稳定标识。
     started, page_count, page_size = time.monotonic(), 1, 3000  # 首次使用官方允许的最大页宽。
     adaptive = fetch is request_page  # 生产接口可改变页宽，旧测试注入保持两参数约定。
+    release = None
     tried_sizes = [page_size]  # 防止重复使用同一分页边界。
     for attempt in range(8 if adaptive else 3):  # 生产环境可尝试多个完整同分边界。
         if adaptive:  # 每轮重算页数，跨轮只合并相同身份、总量且无冲突的稳定ID。
@@ -57,6 +89,12 @@ def _fetch_otp(disease_id, fetch, trace):  # 收集全部直接关联候选，�
             response = fetch(disease_id, index, page_size) if adaptive else fetch(disease_id, index)  # 读取一个明确页号。
             trace.append({"attempt": attempt + 1, "index": index, "size": page_size, "response": response})
             require(not response.get("errors") and response.get("data", {}).get("disease"), "OTP未返回有效疾病；请核对编号或接口提示")  # 错误不是空集合。
+            if adaptive or release is not None or "meta" in response["data"]:
+                page_release = otp_release(response)
+                if release is None:
+                    require(not pages, "OTP分页的发布版本证据不一致")
+                    release = page_release
+                require(page_release == release, "OTP分页期间数据或API版本发生变化，未发布混合结果")
             disease = response["data"]["disease"]  # 保存真实疾病身份。
             require(disease["id"] == disease_id, "OTP返回疾病身份不一致")  # 不混合其他疾病。
             block = disease["associatedTargets"]  # 本页数据和接口总数。
@@ -88,10 +126,12 @@ def _fetch_otp(disease_id, fetch, trace):  # 收集全部直接关联候选，�
             page_size = min(choices, key=lambda value: (abs(value - preferred), -value))  # 改变分页边界，避免连续落在同一同分组。
             tried_sizes.append(page_size)  # 不重复尝试相同边界。
     require(len(seen) == total, "OTP同分分页仍未取得全部唯一标识；未发布部分结果，请使用官方导出")  # 补取失败不放宽完整性。
-    snapshot = {"disease_id": disease_id, "disease_name": disease_name, "enableIndirect": False, "total": total, "queried_at": now(), "query": QUERY, "endpoint": ENDPOINT, "collection_version": "OTP.direct.complete.2", "requests": requests, "pages": pages}  # 固定每次响应及配置。
+    snapshot = {"disease_id": disease_id, "disease_name": disease_name, "enableIndirect": False, "total": total, "queried_at": now(), "query": QUERY if release else LEGACY_QUERY, "endpoint": ENDPOINT, "collection_version": OTP_RELEASE_PROTOCOL if release else "OTP.direct.complete.2", "requests": requests, "pages": pages}  # 固定每次响应及配置。
+    if release:
+        snapshot["release"] = release
     data = json.dumps(snapshot, ensure_ascii=False, allow_nan=False).encode("utf-8")  # 保存完整候选来源。
     require(len(data) <= 16 * 1024 * 1024, "OTP完整快照超过当前容量，请使用官方导出")  # 不截断来源文件。
-    return {"database": "OTP", "format": "otp_api", "query": disease_name, "retrieved_at": snapshot["queried_at"], "version": "接口未提供数据库发布版本；以响应快照固定", "source_url": ENDPOINT, "name": "otp_direct.json", "encoding": "utf-8-sig", "data": data}  # 与上传共用整理流程。
+    return {"database": "OTP", "format": "otp_api", "query": disease_name, "retrieved_at": snapshot["queried_at"], "version": otp_release_label(release) if release else "接口未提供数据库发布版本；以响应快照固定", "source_url": ENDPOINT, "name": "otp_direct.json", "encoding": "utf-8-sig", "data": data}  # 与上传共用整理流程。
 
 
 def fetch_otp(disease_id, fetch=request_page):

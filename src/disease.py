@@ -139,11 +139,24 @@ def parse_source(meta, data):  # 所有获取方式进入同一候选解析函�
             require(len(symbols) == cross.get("disgenet_count"), "DisGeNET旧对照数量不一致")  # 不掩盖旧文件损坏。
             entries = [{"raw_symbol": symbol, "source_row": index, "relation_type": "旧交叉对照恢复名单；原始评分与证据缺失"} for index, symbol in enumerate(symbols, 1)]  # 明确是派生名单。
     elif fmt == "otp_api":  # 在线采集器与上传快照使用相同解析方式。
+        from disease_io import ENDPOINT, OTP_RELEASE_PROTOCOL, QUERY, otp_release, otp_release_label
         value = json.loads(text)  # 完整响应分页已经保存在这个快照中。
         require(value.get("enableIndirect") is False and isinstance(value.get("pages"), list), "OTP快照没有明确关闭间接关联")  # 不默许API默认范围。
+        versioned = (value.get("collection_version") == OTP_RELEASE_PROTOCOL or "release" in value
+                     or any("meta" in response.get("data", {}) for response in value["pages"]))
+        if versioned:
+            require(value.get("collection_version") == OTP_RELEASE_PROTOCOL and value["pages"],
+                    "OTP版本化快照缺少正式协议或响应页")
+            require(value.get("endpoint") == ENDPOINT and value.get("query") == QUERY,
+                    "OTP版本化快照的官方接口或直接关联查询不一致")
+            release = otp_release(value["pages"][0])
+            require(value.get("release") == release and meta.get("version") == otp_release_label(release),
+                    "OTP快照发布版本与来源登记不一致")
         unique, locations = {}, {}  # 相同稳定ID仅在内容完全一致时合并，原响应保留。
         for page_index, response in enumerate(value["pages"], 1):  # 逐页核查实际响应。
             require(not response.get("errors") and response.get("data", {}).get("disease"), "OTP响应不完整或含错误")  # 失败不是空集合。
+            if versioned:
+                require(otp_release(response) == release, "OTP原件包含不同发布版本的响应页")
             disease = response["data"]["disease"]  # 响应中的真实疾病。
             require(disease["id"] == value["disease_id"] and disease["associatedTargets"]["count"] == value["total"], "OTP返回疾病或总数不一致")  # 不拼接不同来源。
             for row_index, row in enumerate(disease["associatedTargets"]["rows"], 1):  # 保留每个候选的原始定位。
