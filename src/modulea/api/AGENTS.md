@@ -692,6 +692,8 @@ special新增enrichment_display_tables：{bp_top15,cc_top15,mf_top15,kegg_p_top1
 | GET `/studies/{sid}/files/{key}?inline=1` | 下载归档文件。`key` 为 `<run_id>.<序号>`（来自 `ModuleView.files[].key`），或 `<run_id>.r<行号>`（A07 报告登记在 report_files 表中时）；两种都逐字节核验指纹。`inline=1` 且为图片时内嵌显示 |
 | POST `/studies/{sid}/modules/{mid}/reviews` | 复核：`{run_id, expected_review_id, decision: approved\|rejected\|pending, reviewer, note, after: "save"\|"continue"}` → 201 `{review, task, message_zh}` |
 | POST `/studies/{sid}/reviews:batch` | A01+A02 一次提交：`{reviewer, entries: {A01: {run_id, expected_review_id, action: "decide"\|"preserve", decision, note}, A02: {...}}}` → 201 `{reviews, task, message_zh}`；两项都通过时自动开始生成 A03 |
+
+个性化 A03 输入核查可附 `continue_to_a03: true` 和 `expected_plan_id`。两项只可明确通过或保留已有通过，按现有原子复核校验保存。保存后沿指定方案提交 A03；排队失败返回已保存的事实和原因。历史批量请求保持原行为。
 | POST `/studies/{sid}:continue` | 手动推进到下一人工关口 → 202 `{task, created}` |
 | POST `/studies/{sid}:trash` / `:restore` | `{operator, reason, expected_action_id, confirm: true}` → 201 `{action}` |
 | GET `/inbox` | 跨研究待办 `{items: [{study_id, study_title_zh, module_id, code, label_zh, text_zh}]}` |

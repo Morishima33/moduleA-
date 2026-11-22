@@ -302,7 +302,7 @@ export const api = {
   review: (sid: string, mid: string, body: { run_id: string; expected_review_id: string | null; decision: Decision; reviewer: string; note: string; after: 'save' | 'continue'; expected_plan_id?:string }) =>
     request<ReviewResponse>('POST', `/studies/${sid}/modules/${mid}/reviews`, body),
   /** A01+A02 一次提交 */
-  batchReview: (sid: string, body: { reviewer: string; entries: Record<string, { run_id: string; expected_review_id: string | null; action: 'decide' | 'preserve'; decision: Decision | ''; note: string }> }) =>
+  batchReview: (sid: string, body: { reviewer: string; continue_to_a03?: boolean; expected_plan_id?: string; entries: Record<string, { run_id: string; expected_review_id: string | null; action: 'decide' | 'preserve'; decision: Decision | ''; note: string }> }) =>
     request<BatchReviewResponse>('POST', `/studies/${sid}/reviews:batch`, body),
   /** 手动推进到下一人工关口 */
   continue: (sid: string) => request<{ task: Task; created: boolean }>('POST', `/studies/${sid}:continue`, {}),

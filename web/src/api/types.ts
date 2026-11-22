@@ -99,6 +99,7 @@ export interface PlanReportsInfo {
    downloads:{label_zh:string;name:string;url:string}[]}[];
 }
 export interface PlanStagesInfo {
+  plan_mode?: 'standard' | 'personalized' | null;
  schema_version:string;supported:boolean;expected_input_hash:string;expected_a00:string;expected_plan_id:string;parameter_hash:string;
  parameters:Record<string,unknown>;stages:{stage:string;enabled:boolean;blockers:string[];current_run:string|null;active:boolean;approved:boolean}[];message_zh:string;
 }

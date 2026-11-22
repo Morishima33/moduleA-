@@ -79,6 +79,7 @@ def info(workflow,sid):
     return {'schema_version':VERSION,'supported':intake.get('analysis_plan_profile')==PLAN_VERSION,
             'expected_input_hash':fingerprint(snapshot),'expected_a00':a00 or '',
             'expected_plan_id':draft['plan_id'] if draft else '',
+            'plan_mode':draft['plan']['mode'] if draft else None,
             'parameter_hash':draft['plan']['parameter_hash'] if draft else '',
             'parameters':draft['plan']['parameters'] if draft else {},'stages':stages,
             'message_zh':'按当前方案明确执行一个就绪阶段，结果仍须独立复核；缺少资料会显示具体原因。'}

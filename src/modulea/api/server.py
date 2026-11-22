@@ -1093,11 +1093,47 @@ class App:
             entries[module] = {"run_id": item.get("run_id", ""), "expected_review": item.get("expected_review_id") or None,
                                "action": item.get("action", "decide"), "decision": item.get("decision", ""), "note": item.get("note", "")}
         workflow = self.kernel.workflow()
+        advance = body.get('continue_to_a03', False)
+        if type(advance) is not bool:
+            raise ApiError(422, 'VALIDATION_FAILED', 'A03接续标记格式错误')
+        if advance:
+            from science_modules.plan_stages_contract import context
+            _, _, plan = context(workflow, study_id)
+            if not plan or plan['plan']['mode'] != 'personalized' or plan['plan_id'] != body.get('expected_plan_id'):
+                raise ApiError(409, 'STALE_VERSION', '个性化方案已改变，请核对当前两侧输入')
+            if any(x['action'] != 'preserve' and x['decision'] != 'approved' for x in entries.values()):
+                raise ApiError(422, 'VALIDATION_FAILED', 'A03入口须明确通过两侧输入')
+            manifest = workflow.load(study_id)
+            for entry in entries.values():
+                if entry['action'] == 'preserve' and not (
+                    entry['run_id'] in manifest['runs'] and workflow.approved(manifest, entry['run_id'])
+                ):
+                    raise ApiError(409, 'GATE_BLOCKED', '只能保留仍有效的原通过决定，请刷新')
+            if self.tasks.active_for(study_id):
+                raise ApiError(409, 'GATE_BLOCKED', '请等待当前后台任务结束')
         try:
             reviews = workflow.review_a01_a02(study_id, entries, body.get("reviewer", ""))
         except ContractError as error:
             raise from_contract(str(error))
         task = None
+        if advance:
+            from science_modules.plan_stages_contract import info, validate
+            try:
+                readiness = info(workflow, study_id)
+                if readiness['expected_plan_id'] != body['expected_plan_id']:
+                    return {'reviews': reviews, 'task': None, 'message_zh': '两侧决定已保存。方案已改变，请刷新 A03 后核对。'}, 201
+                stage = next(item for item in readiness['stages'] if item['stage'] == 'A03')
+                if not stage['enabled']:
+                    return {'reviews': reviews, 'task': None, 'message_zh': '两侧决定已保存。' + '；'.join(stage['blockers'])}, 201
+                request = {key: readiness[key] for key in ('expected_a00', 'expected_plan_id', 'expected_input_hash')}
+                request.update(stage='A03', operator=body['reviewer'].strip(), confirmed=True,
+                               reason='在 A03 统一复核两侧输入后生成交集及图表')
+                validate(workflow, study_id, request)
+                task, created = self.tasks.submit(study_id, 'plan_stage', request['operator'], request)
+                note = self._task_message(task) if created else '后台正忙，待任务结束后可在 A03 继续。'
+            except ContractError as error:
+                note = '暂未启动 A03。' + str(error)
+            return {'reviews': reviews, 'task': task, 'message_zh': '两侧决定已保存。' + note}, 201
         study = self.views.study(study_id)
         codes = {m["module_id"]: m["code"] for group in study["nav"] for m in group["modules"]}
         if codes.get("A01") == "approved" and codes.get("A02") == "approved" and not is_plan_created(workflow, workflow.load(study_id)) and not has_new_a05(workflow,workflow.load(study_id)) and not has_new_intersection(workflow,workflow.load(study_id)):

@@ -10,6 +10,7 @@ import { hrefFor } from '../lib/route';
 import { stateStyle, taskColor } from '../lib/theme';
 import { StatusPill } from './common';
 import DataTabs from './DataTabs';
+import IntersectionInputReview from './IntersectionInputReview';
 import DockingCandidates from './DockingCandidates';
 import CompoundSelection from './CompoundSelection';
 import DockingMatrix from './DockingMatrix';
@@ -145,6 +146,9 @@ export default function ModulePage({ studyId, view, reviewSlot, downstreamSlot }
       {view.plan_reports&&<PlanReports key={[view.plan_reports.expected_input_hash,view.plan_reports.expected_report_run_id].join(':')} studyId={studyId} info={view.plan_reports}/>}
       {!view.historical && view.display_revision && <DisplayRevision key={`${view.display_revision.expected_input_hash}:${view.display_revision.current?.revision_id || ''}`} studyId={studyId} moduleId={m.module_id} info={view.display_revision} />}
       {view.system_exports&&<SystemExports key={view.system_exports.expected_input_hash} studyId={studyId} info={view.system_exports}/>}
+      {m.module_id === 'A03' && !readyStage && !view.historical && view.plan_stages?.plan_mode === 'personalized' &&
+        (!view.run || stIsStale(view)) && <IntersectionInputReview key={view.plan_stages.expected_input_hash}
+          studyId={studyId} planId={view.plan_stages.expected_plan_id} busy={view.tasks.some(task => task.state === 'queued' || task.state === 'running')} />}
       {view.plan_stages&&readyStage&&<PlanStages key={view.plan_stages.expected_input_hash}
         studyId={studyId} info={view.plan_stages} stage={readyStage.stage}/>}
       {view.plan_compounds&&<PlanCompounds key={view.plan_compounds.expected_input_hash} studyId={studyId} info={view.plan_compounds}/>}

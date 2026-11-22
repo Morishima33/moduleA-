@@ -58,6 +58,39 @@ class PlanStagesHttpTests(unittest.TestCase):
         self.assertEqual(status,201,saved);self.assertIsNone(saved['task'])
         self.assertEqual(len(self.app.tasks.list(self.sid)),1)
 
+    def test_joint_input_review_queues_a03_without_second_confirmation(self):
+        manifest = self.w.load(self.sid)
+        manifest['workflow_profile'] = 'A00.preupload.2'
+        self.w.save(manifest)
+        entries = {}
+        for module in ('A01', 'A02'):
+            manifest = self.w.load(self.sid)
+            rid = manifest['current'][module]
+            previous = self.w.latest_review(manifest, self.w.run(manifest, rid)['artifact_id'])
+            saved = self.w.review(self.sid, rid, 'pending', '测试', '等待两侧一并核对', previous['review_id'])
+            entries[module] = {'run_id': rid, 'expected_review_id': saved['review_id'],
+                               'action': 'decide', 'decision': 'approved', 'note': '两侧核查完成'}
+        path = f'/studies/{self.sid}/reviews:batch'
+        payload = {'reviewer': '测试', 'entries': entries, 'continue_to_a03': True,
+                   'expected_plan_id': self.plan['plan_id']}
+        self.assertEqual(self.call('POST', path, dict(payload, expected_plan_id='stale'))[0], 409)
+        self.assertNotIn('A03', self.w.load(self.sid)['current'])
+        status, result = self.call('POST', path, payload)
+        self.assertEqual(status, 201, result)
+        self.assertEqual(len(result['reviews']), 2)
+        self.assertIsNotNone(result['task'], result)
+        deadline = time.monotonic() + 45
+        while time.monotonic() < deadline:
+            task = self.app.tasks.get(result['task']['task_id'])
+            if task['state'] not in ('queued', 'running'):
+                break
+            time.sleep(.1)
+        self.assertEqual(task['state'], 'succeeded', task)
+        manifest = self.w.load(self.sid)
+        result = self.w.result(manifest, manifest['current']['A03'])
+        self.assertEqual(result['summary']['交集靶点数'], 4)
+        self.assertTrue(result['figures'])
+
     def test_csrf_hidden_stale_busy_and_worker_revalidation(self):
         """非法请求不入队，排队后上游改变则实际科学任务失败且不发布结果。"""
         request=body(self.w,self.sid,'A03')
