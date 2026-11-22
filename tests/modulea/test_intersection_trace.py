@@ -2,10 +2,17 @@ import csv
 import io
 import unittest
 
-from modulea.api.intersection_trace import trace_csv
+from modulea.api.intersection_trace import _evidence_type, trace_csv
 
 
 class IntersectionTraceTests(unittest.TestCase):
+    def test_only_identifiable_archived_evidence_tables_are_labeled(self):
+        self.assertIn('已有靶点表', _evidence_type('方剂', 'HERB', 'raw/item.json:ingredient_target:3'))
+        self.assertEqual(_evidence_type('方剂', 'BATMAN', 'raw/BATMAN_known_browse_by_ingredients.txt.gz:18'),
+                         'BATMAN已知关联表')
+        self.assertEqual(_evidence_type('方剂', 'BATMAN', 'raw/prediction.tsv:18'), '')
+        self.assertEqual(_evidence_type('疾病', 'HERB', 'raw/item.json:ingredient_target:3'), '')
+
     def test_counts_keep_overlaps_and_unattributed_records(self):
         result = {'summary': {'交集靶点数': 2}, 'tables': {
             'intersection_targets': [{'target_id': 'HGNC:1', 'symbol': 'A'},

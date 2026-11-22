@@ -13,3 +13,9 @@
 - `replay_archived_network.py`：使用 Module A 的科学 Python 运行，显式指定已归档的研究、A03/A04/A05 和本机 Rscript。通过原校验器复算 A03 交集、A04 STRING 网络和 A05 GO/KEGG；R 仅在临时目录中用固定注释分析。输出每阶段归档、表格指纹和耗时。A04/A05 必须属于指定 A03；A05 支持方案富集协议 1 和 2。
 
   `python tools/replay_archived_network.py --data-root <归档根目录> --study-id <研究编号> --a03 <运行编号> --a04 <运行编号> --a05 <运行编号> --rscript <程序路径>`
+
+- `check_database_evidence.py` 将补充证据输出为只读 JSON。三个入口分别核对补救批次已选实验结构的 PDBe 链和残基区间与 wwPDB 报告、对比同一 A03 下两份 A04 或 A05 归档，以及用完整 InChIKey 和人源单蛋白 UniProt 核查 ChEMBL 活性。A05 对照显著条目的命中基因、命中数和校正后 P 值。两个在线入口记录原响应的指纹。
+
+  - `python tools/check_database_evidence.py structures --data-root <归档根目录> --study-id <研究编号> --run <A06补救运行> --target <HGNC编号>`
+  - `python tools/check_database_evidence.py compare --data-root <归档根目录> --study-id <研究编号> --run <原运行> --against <对照运行>`
+  - `python tools/check_database_evidence.py chembl --inchikey <已核验结构键> --uniprot <已核验蛋白编号>`

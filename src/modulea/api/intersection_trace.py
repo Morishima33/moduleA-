@@ -12,7 +12,7 @@ from .errors import from_contract, not_found
 UNKNOWN = '未归属'
 FIELDS = ('记录类型', '侧别', '数据库', '不同交集基因数', '仅见于此来源', '已知跨库重叠',
           '含未归属证据', 'HGNC编号', '标准基因符号', '成分编号', '成分名称', '成分关联药味', '来源定位',
-          '药味', '参与交集的不同成分数')
+          '药味', '参与交集的不同成分数', '原来源证据类别')
 
 
 def _formula_source(ref, edge, sources):
@@ -28,6 +28,15 @@ def _safe_cells(row):
     # Source-derived text may be opened in a spreadsheet.
     return {key: "'" + value if isinstance(value, str) and
             value.lstrip().startswith(('=', '+', '-', '@')) else value for key, value in row.items()}
+
+
+def _evidence_type(side, database, ref):
+    if side == '方剂':
+        if database == 'HERB' and ':ingredient_target:' in ref:
+            return 'HERB成分已有靶点表，逐条证据见原件'
+        if database == 'BATMAN' and '/BATMAN_known_browse_by_ingredients.txt.gz:' in ref:
+            return 'BATMAN已知关联表'
+    return ''
 
 
 def trace_csv(result, formula):
@@ -60,9 +69,11 @@ def trace_csv(result, formula):
             for ref in edge['source_ref'].split('|'):
                 db = _formula_source(ref, edge, sources) if side == '方剂' else edge.get('database') or UNKNOWN
                 coverage[side, gene].add(db)
-                details.append(dict(zip(FIELDS, (
+                detail = dict(zip(FIELDS, (
                     '交集来源明细', side, db, '', '', '', '', gene, genes[gene],
-                    component.get('compound_id', ''), component.get('name', ''), component.get('herbs', ''), ref))))
+                    component.get('compound_id', ''), component.get('name', ''), component.get('herbs', ''), ref)))
+                detail['原来源证据类别'] = _evidence_type(side, db, ref)
+                details.append(detail)
         require(side_genes == genes.keys(), '本批交集缺少一侧归档来源')
 
     stats = defaultdict(lambda: [0, 0, 0, 0])
