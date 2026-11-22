@@ -49,7 +49,7 @@ def _complete(result, label):
 
 
 def execute(workflow, sid, payload, *, progress, new_workflow=None):
-    """已登记的旧批沿原协议；个性化登记分别接续两条资料链。"""
+    """新版个性化接续走独立资料链，旧批次留作原协议回放。"""
     def check():
         return current_approval(workflow, sid, payload)[0]
 
@@ -71,6 +71,14 @@ def execute(workflow, sid, payload, *, progress, new_workflow=None):
         return body['request_id']
 
     m, review = current_approval(workflow, sid, payload)
+    draft = workflow._analysis_plan_records(m)[-1]
+    current_a02 = m['current'].get('A02')
+    a02_version = workflow.run(m, current_a02)['config'].get('version') if current_a02 else None
+    modern_disease = a02_version in (None, 'A02.system_collection.1',
+                                    'A02.system_normalization.3', 'A02.system_normalization.6')
+    if draft['plan']['mode'] == 'personalized' and modern_disease and not m.get('current_analysis_plan_identity_exception'):
+        return execute_parallel(new_workflow or (lambda: type(workflow)(workflow.root)), sid, payload, progress=progress)
+
     batch_request_id = 'systembatchreq_' + fingerprint(payload)[:32]
     batch = None
     for ref in m.get(execution.BATCHES, []):
@@ -78,12 +86,6 @@ def execute(workflow, sid, payload, *, progress, new_workflow=None):
         if saved['request']['request_id'] == batch_request_id:
             batch, _ = execution.read_batch(workflow, m, ref)
             break
-
-    draft = workflow._analysis_plan_records(m)[-1]
-    current_a02 = m['current'].get('A02')
-    old_candidate = bool(current_a02 and workflow.run(m, current_a02)['config'].get('version') == 'A02.collect.2')
-    if batch is None and not old_candidate and draft['plan']['mode'] == 'personalized':
-        return execute_parallel(new_workflow or (lambda: type(workflow)(workflow.root)), sid, payload, progress=progress)
 
     if batch is None:
         require(not m['current'].get('A01'), '已存在 A01 计算版本，请在计算工作台查看或续做原批次')

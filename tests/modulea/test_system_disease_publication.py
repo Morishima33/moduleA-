@@ -220,6 +220,34 @@ class SystemDiseasePublicationTests(unittest.TestCase):
         self.assertTrue(self.w.result(manifest, manifest['current']['A01']))
         self.assertEqual(len(manifest['reviews']), 1)
 
+    def test_personalized_followup_leaves_old_batch_and_resumes_a02_independently(self):
+        from modulea.tasks.a00_followup import execute
+
+        raw = self.publish()
+        a00 = self.w.load(self.sid)['current']['A00']
+        draft = self.w._analysis_plan_records(self.w.load(self.sid))[-1]
+        plan = self.w.save_analysis_plan_draft(self.sid, {
+            'request_id':'planreq_'+uuid4().hex, 'expected_a00':a00, 'expected_draft_id':draft['plan_id'],
+            'specification':{'mode':'personalized'}, 'author':'隔离复核', 'note':'旧批次接续验证'})['draft']
+        self.prepare_a01()
+        review = self.w.review(self.sid, a00, 'approved', '隔离复核', '验证旧批次只读保留')
+        approval = {'run_id':a00, 'review_id':review['review_id'], 'plan_id':plan['plan_id']}
+        status = system_execution.info(self.w, self.sid)
+        batch = self.w.start_analysis_plan_foundation_system_batch(self.sid, {
+            'expected_a00':a00, 'expected_plan_id':plan['plan_id'], 'expected_input_hash':status['expected_input_hash'],
+            'request_id':'systembatchreq_'+fingerprint(approval)[:32], 'author':'历史批次', 'note':'历史串行协议',
+            'confirmed':True})
+        a01 = self.w.execute_analysis_plan_system_stage(self.sid, {
+            'batch_id':batch['batch_id'], 'stage':'A01', 'expected_current_run_id':None})
+        execute(self.w, self.sid, approval, progress=lambda _:None, new_workflow=lambda:full_workflow(self.root))
+        manifest = self.w.load(self.sid)
+        result = self.w.run(manifest, manifest['current']['A02'])
+        self.assertEqual(result['config']['version'], 'A02.system_normalization.6')
+        self.assertEqual(result['parent_runs'], {'A00':a00})
+        self.assertEqual(manifest['current']['A01'], a01['run_id'])
+        self.assertEqual(system_disease_sources.resolve(self.w, manifest)['base_run_id'], raw['run_id'])
+        self.assertIsNone(system_execution.read_batch(self.w, manifest, batch['file'])[0].get('foundation_stage'))
+
     def test_new_collection_full_empty_pipeline_preserves_zero_and_generates_two_real_reports(self):
         from modulea.core import system_pipeline
         from science_modules.a04 import plan_flow as network

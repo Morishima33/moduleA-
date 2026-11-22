@@ -23,6 +23,7 @@ from collections.abc import Iterator
 from datetime import datetime, timezone
 from pathlib import Path
 
+from ..child_environment import child_environment
 from ..config import LEGACY_SRC, Settings
 
 ACTIVE = ("queued", "running")
@@ -280,7 +281,7 @@ class TaskManager:
 
     def _spawn(self, task_id: str, log_path: Path) -> None:
         """用配置的科学解释器启动子进程：python -m modulea task-run <task_id>。"""
-        env = dict(os.environ)
+        env = child_environment(os.environ)
         env['PYTHONIOENCODING'] = 'utf-8'  # 仅child副本；此变量可覆盖-X utf8的标准流编码。
         env["PYTHONPATH"] = str(LEGACY_SRC) + os.pathsep + env.get("PYTHONPATH", "")
         env["MODULEA_DATA_ROOT"] = str(self.settings.data_root)

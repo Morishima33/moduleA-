@@ -273,7 +273,10 @@ class PlanA05HttpTests(unittest.TestCase):
 
     def test_real_task_subprocess_and_result_readback(self):
         before=self.w.load(self.sid)
-        status,value=self.call('POST',self.payload());self.assertEqual(status,202,value)
+        with patch.dict(os.environ):
+            # Exercise a service started directly with the Windows metadata missing.
+            os.environ.pop('PROCESSOR_ARCHITECTURE', None)
+            status,value=self.call('POST',self.payload());self.assertEqual(status,202,value)
         deadline=time.monotonic()+90
         while time.monotonic()<deadline:
             task=self.app.tasks.get(value['task']['task_id'])
@@ -282,6 +285,12 @@ class PlanA05HttpTests(unittest.TestCase):
         self.assertEqual(task['state'],'succeeded',task)
         m=self.w.load(self.sid);result=self.w.result(m,m['current']['A05'])
         self.assertEqual(result['summary']['protocol_version'],engine.VERSION)
+        home = self.w.location(self.sid)
+        figures = [verified_file(home, ref) for ref in result['figures']]
+        self.assertEqual({path.name for path in figures}, {
+            f'{group}_plan.{extension}' for group in engine.GROUPS for extension in ('png', 'svg')})
+        tables = {verified_file(home, ref).name for ref in result['files'] if ref['role'] == 'table'}
+        self.assertTrue({f'{group.lower()}_all.csv' for group in engine.GROUPS} <= tables)
         self.assertEqual(m['reviews'],before['reviews']);self.assertNotIn('A07',m['current'])
         self.assertTrue(self.call('GET')[1]['completed']);self.assertEqual(self.call('POST',self.payload())[0],409)
 
