@@ -1050,6 +1050,7 @@ class App:
         decision = body.get("decision")
         after = body.get("after", "save")
         workflow = self.kernel.workflow()
+        downstream_plan = None
         try:
             manifest = workflow.load(study_id)
             run_id = body.get("run_id") or ""
@@ -1060,6 +1061,15 @@ class App:
                 plans = workflow._analysis_plan_records(manifest)
                 if not plans or plans[-1]['expected_a00'] != run_id or plans[-1]['plan_id'] != body.get('expected_plan_id'):
                     raise ApiError(409, 'STALE_VERSION', 'A00 的保存方案已改变，请刷新后确认')
+            if (module_id == 'A03' and decision == 'approved' and run_id == manifest['current'].get('A03')
+                    and is_plan_created(workflow, manifest) and has_new_intersection(workflow, manifest)):
+                plans = workflow._analysis_plan_records(manifest)
+                run = workflow.run(manifest, run_id)
+                if (plans and plans[-1]['plan']['mode'] == 'personalized' and
+                        plans[-1]['plan_id'] == run['inputs'].get('analysis_plan_id')):
+                    if self.tasks.active_for(study_id):
+                        raise ApiError(409, 'GATE_BLOCKED', '本研究后台任务即将归档，请等任务结束后再通过 A03。')
+                    downstream_plan = plans[-1]['plan_id']
             review = workflow.review(study_id, run_id, decision, body.get("reviewer", ""), body.get("note", ""), body.get("expected_review_id") or None)
         except ModuleNotFoundError as error:
             # A07 通过需核对报告通路，依赖 python-docx 等报告库；本机缺少时如实说明
@@ -1075,6 +1085,11 @@ class App:
                 return {'review':review, 'task':None, 'message_zh':'A00 复核已保存。'+str(error)}, 201
             return {'review':review, 'task':task,
                     'message_zh':'A00 复核已保存。'+self._task_message(task)}, 201
+        if downstream_plan:
+            payload = {'run_id':run_id, 'review_id':review['review_id'], 'plan_id':downstream_plan}
+            task, created = self.tasks.submit(study_id, 'plan_a03_followup', review['reviewer'], payload)
+            message = self._task_message(task) if created else ' 当前研究已有运行中任务，请在该任务结束后使用本研究计算入口。'
+            return {'review':review, 'task':task if created else None, 'message_zh':'A03 复核已保存。'+message}, 201
         automatic_a00 = module_id == "A00" and manifest.get("workflow_profile") in PREUPLOAD_PROFILES
         if decision == "approved" and (after == "continue" or automatic_a00):
             prep_id = manifest.get('current', {}).get('A06_PREP')

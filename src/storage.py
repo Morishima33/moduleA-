@@ -1,10 +1,12 @@
 # 本文件只负责研究包的安全读写，不执行药理计算。
 from contextlib import contextmanager  # 管理写入锁的获取与释放。
+from contextvars import ContextVar
 from datetime import datetime, timezone  # 记录明确的 UTC 时间。
 from pathlib import Path  # 处理中文路径和相对路径。
 import hashlib  # 校验文件内容。
 import json  # 读取结构化文件。
 import os  # 完成原子替换和系统级文件操作。
+import time
 import uuid  # 生成无冲突的内部编号。
 from contracts import ContractError, encoded, require  # 复用全项目统一的数据规则。
 
@@ -53,6 +55,19 @@ def verified_file(root, record):  # 读取前验证归档文件仍然完整。
     require(hashlib.sha256(data).hexdigest() == record.get("sha256") and len(data) == record.get("bytes"), "归档文件校验失败，暂停使用")  # 不继续使用被修改的文件。
     return path  # 返回已核验的文件。
 
+_write_lock_wait = ContextVar("write_lock_wait", default=0)
+
+
+@contextmanager
+def wait_for_parallel_publication():
+    """后台并行分支只等待写锁，仍使用同一把跨进程锁和全部发布校验。"""
+    token = _write_lock_wait.set(30)
+    try:
+        yield
+    finally:
+        _write_lock_wait.reset(token)
+
+
 @contextmanager  # 自动在函数退出时释放跨进程写入锁。
 def write_lock(root):  # 防止多个页面或进程同时覆盖总索引。
     lock_path = Path(root) / "environments" / ".write.lock"  # 锁属于运行环境，不冒充研究资料。
@@ -64,12 +79,21 @@ def write_lock(root):  # 防止多个页面或进程同时覆盖总索引。
     stream.seek(0)  # 锁定统一的第一个字节。
     acquired = False  # 只释放本次成功取得的锁。
     try:  # 获取锁失败时不进行任何业务写入。
-        if os.name == "nt":  # Windows 使用系统字节锁。
-            import msvcrt  # 标准库提供本机文件锁。
-            msvcrt.locking(stream.fileno(), msvcrt.LK_NBLCK, 1)  # 锁被占用时立即提示重试。
-        else:  # 保留其他平台的等效基础支持。
-            import fcntl  # Unix 平台使用文件锁。
-            fcntl.flock(stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)  # 不等待另一个写入结束。
+        deadline = time.monotonic() + _write_lock_wait.get()
+        while True:
+            try:
+                if os.name == "nt":
+                    import msvcrt
+                    msvcrt.locking(stream.fileno(), msvcrt.LK_NBLCK, 1)
+                else:
+                    import fcntl
+                    fcntl.flock(stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except OSError as error:
+                # Windows 为 EACCES，Unix 为 EAGAIN。其他系统异常立即上报。
+                if error.errno not in (13, 11) or time.monotonic() >= deadline:
+                    raise
+                time.sleep(0.05)
         acquired = True  # 标记锁已成功取得。
         yield  # 允许调用者完成一次原子业务操作。
     except OSError as error:  # Windows 和其他系统的锁占用异常类型可能不同。

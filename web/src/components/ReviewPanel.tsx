@@ -7,6 +7,7 @@ import type { Decision, ModuleView, Task } from '../api/types';
 import { decisionLabel, useApp } from '../lib/appContext';
 import { fmtTime } from '../lib/format';
 import { stateStyle } from '../lib/theme';
+import { hrefFor } from '../lib/route';
 import BatchReviewModal from './BatchReviewModal';
 import DecisionPicker from './DecisionPicker';
 import ReviewBlockers from './ReviewBlockers';
@@ -158,6 +159,14 @@ export default function ReviewPanel({ studyId, view, onSaved, onStale }: Props) 
       <span className="small">此页保留原严格准备记录，当前批次无需重复在这里确认。</span>
     </Box>;
   }
+  if (r.review_at_intersection && !view.historical) {
+    return <Box title="A03 集中复核">
+      {view.state.reason_zh && <span className="small">{view.state.reason_zh}</span>}
+      {!!r.blockers?.length && <ReviewBlockers studyId={studyId} blockers={r.blockers} />}
+      <a href={hrefFor({ page: 'study', studyId, moduleId: 'A03' })}>前往 A03 核对两侧资料</a>
+    </Box>;
+  }
+
   // —— 不显示表单的状态 ——
   if (NO_FORM.has(code) || view.historical) {
     return (
@@ -200,6 +209,8 @@ export default function ReviewPanel({ studyId, view, onSaved, onStale }: Props) 
   const allowed = new Set(r.allowed_decisions); // 接口允许的决定
   const all: Decision[] = ['approved', 'rejected', 'pending']; // 三个决定的固定顺序
   const canContinue = r.continue.available; // 是否提供“保存并继续”
+  const waitingForA03Archive = r.parallel_after_approval && decision === 'approved'
+    && view.tasks.some(task => task.state === 'queued' || task.state === 'running');
   return (
     <Box title={view.module.module_id === 'A02' && view.disease_workflow ? '第5步：整体复核' : '复核决定'}>
       <span className="small muted">
@@ -246,14 +257,15 @@ export default function ReviewPanel({ studyId, view, onSaved, onStale }: Props) 
         {planId && decision === 'approved' ?
           <Button block size="large" type="primary" loading={saving === 'continue'} disabled={!!saving}
             onClick={() => submit('continue')}>确认 A00 并开始计算 A01、A02</Button> :
-          <Button block size="large" type={canContinue ? 'default' : 'primary'} loading={saving === 'save'} disabled={!!saving} onClick={() => submit('save')}>
-            {planId ? '保存复核决定' : '仅保存复核决定'}
+          <Button block size="large" type={canContinue ? 'default' : 'primary'} loading={saving === 'save'} disabled={!!saving || waitingForA03Archive} onClick={() => submit('save')}>
+            {r.parallel_after_approval && decision === 'approved' ? '通过 A03 并启动 A04、A05' : planId ? '保存复核决定' : '仅保存复核决定'}
           </Button>}
         {changeOpen && <Button block type="text" onClick={() => setChangeOpen(false)}>取消更改</Button>}
       </Space>
       <p className="tiny muted" style={{ margin: 0 }}>
-        {planId ? 'A00 通过后后台核验资料并依次计算 A01、A02，结果仍需复核。' :
-          canContinue ? r.continue.note_zh : r.continue.note_zh ? `本次不提供“保存并继续”。${r.continue.note_zh}` : '本次不提供“保存并继续”。'}
+        {planId ? 'A00 通过后开始核验资料。个性化方案的 A01、A02 各自资料就绪即开算，进入 A03 集中核对。' :
+          waitingForA03Archive ? '请等后台任务归档后，再通过 A03。' :
+          canContinue || r.parallel_after_approval ? r.continue.note_zh : r.continue.note_zh ? `本次不提供“保存并继续”。${r.continue.note_zh}` : '本次不提供“保存并继续”。'}
       </p>
       <p className="tiny muted" style={{ margin: 0 }}>{view.module.module_id === 'A07' ? '通过表示本版报告已完成复核，不代表已经证明药效。' : '通过只表示本版本可交给下一步使用，不代表已经证明药效。'}</p>
       {/* A01/A02 一起提交 */}

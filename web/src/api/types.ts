@@ -351,6 +351,8 @@ export interface ReviewRecord {
 }
 /** 模块复核信息 */
 export interface ReviewInfo {
+  review_at_intersection?: boolean;
+  parallel_after_approval?: boolean;
   current: ReviewRecord | null;
   history: ReviewRecord[];
   can_review: boolean;

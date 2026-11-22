@@ -1,6 +1,7 @@
 """完整疾病原件的真实候选、第三版标准化及旧协议兼容；仅合成研究。"""
 from copy import deepcopy
 from pathlib import Path
+from threading import Event
 import hashlib,shutil,tempfile,unittest
 from unittest.mock import patch
 from uuid import uuid4
@@ -150,6 +151,74 @@ class SystemDiseasePublicationTests(unittest.TestCase):
         current=self.w.load(self.sid);self.assertEqual(self.publish(),raw);self.assertEqual(self.w.load(self.sid),current)
         self.w.review(self.sid,current['current']['A00'],'pending','明确合成测试','科学批次结束后暂停登记')
         with self.assertRaises(ContractError):self.publish()
+
+    def test_personalized_a02_finishes_while_a01_is_still_waiting_for_originals(self):
+        from modulea.tasks.a00_followup import execute
+
+        raw = self.publish()
+        mapping_root = Path(self.temp.name)/'mapping'
+        mapping_fixture.prepare(mapping_root, modern=True)
+        shutil.copytree(mapping_root/'references', self.root/'references')
+        a00 = self.w.load(self.sid)['current']['A00']
+        draft = self.w._analysis_plan_records(self.w.load(self.sid))[-1]
+        plan = self.w.save_analysis_plan_draft(self.sid, {
+            'request_id':'planreq_'+uuid4().hex, 'expected_a00':a00, 'expected_draft_id':draft['plan_id'],
+            'specification':{'mode':'personalized'}, 'author':'隔离复核', 'note':'并行计算验证'})['draft']
+        review = self.w.review(self.sid, a00, 'approved', '隔离复核', '接续两条原件链')
+        approval = {'run_id':a00, 'review_id':review['review_id'], 'plan_id':plan['plan_id']}
+        published = Event()
+        a01_waited = Event()
+        workflow_class = type(self.w)
+        original = workflow_class.execute_analysis_plan_system_stage
+
+        def calculator(workflow, sid, request, **kwargs):
+            result = original(workflow, sid, request, **kwargs)
+            if request['stage'] == 'A02':
+                self.assertNotIn('A01', workflow.load(sid)['current'])
+                published.set()
+            return result
+
+        def formula(*args, **kwargs):
+            a01_waited.set()
+            if not published.wait(15):
+                raise AssertionError('方剂等待期间应完成疾病标准化')
+            return a01_fixture.synthetic_source(*args, **kwargs)
+
+        with (patch.object(a01_fixture.collection,'acquire_for_plan', side_effect=formula),
+              patch.object(workflow_class, 'execute_analysis_plan_system_stage', autospec=True, side_effect=calculator)):
+            execute(self.w, self.sid, approval, progress=lambda _:None, new_workflow=lambda:full_workflow(self.root))
+        self.assertTrue(a01_waited.is_set())
+        manifest = self.w.load(self.sid)
+        normalized = self.w.run(manifest, manifest['current']['A02'])
+        self.assertEqual(normalized['config']['version'], 'A02.system_normalization.6')
+        self.assertEqual(normalized['parent_runs'], {'A00':a00})
+        self.assertEqual(system_disease_sources.resolve(self.w, manifest)['base_run_id'], raw['run_id'])
+        self.assertEqual(len(manifest['reviews']), 1)
+        self.assertEqual(self.w.result(manifest, normalized['run_id'])['summary']['标准化基因数'], 1)
+        with patch.object(workflow_class, 'execute_analysis_plan_system_stage', side_effect=AssertionError('已完成不重算')):
+            execute(self.w, self.sid, approval, progress=lambda _:None, new_workflow=lambda:full_workflow(self.root))
+
+    def test_personalized_a01_publishes_despite_missing_disease_originals(self):
+        from modulea.tasks.a00_followup import execute
+
+        raw = fixture.SystemDiseaseAcquisitionTests()
+        raw.setUp()
+        self.addCleanup(raw.doCleanups)
+        self.w, self.root, self.sid = raw.w, raw.root, raw.sid
+        a00 = self.w.load(self.sid)['current']['A00']
+        draft = self.w._analysis_plan_records(self.w.load(self.sid))[-1]
+        plan = self.w.save_analysis_plan_draft(self.sid, {
+            'request_id':'planreq_'+uuid4().hex, 'expected_a00':a00, 'expected_draft_id':draft['plan_id'],
+            'specification':{'mode':'personalized'}, 'author':'隔离复核', 'note':'疾病侧缺资料'})['draft']
+        self.prepare_a01()
+        review = self.w.review(self.sid, a00, 'approved', '隔离复核', '验证缺原件只卡对应支路')
+        approval = {'run_id':a00, 'review_id':review['review_id'], 'plan_id':plan['plan_id']}
+        with self.assertRaisesRegex(ContractError, 'A01 已归档.*A02.*GeneCards.*OMIM'):
+            execute(self.w, self.sid, approval, progress=lambda _:None, new_workflow=lambda:full_workflow(self.root))
+        manifest = self.w.load(self.sid)
+        self.assertNotIn('A02', manifest['current'])
+        self.assertTrue(self.w.result(manifest, manifest['current']['A01']))
+        self.assertEqual(len(manifest['reviews']), 1)
 
     def test_new_collection_full_empty_pipeline_preserves_zero_and_generates_two_real_reports(self):
         from modulea.core import system_pipeline

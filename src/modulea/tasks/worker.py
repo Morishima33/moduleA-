@@ -616,6 +616,8 @@ from .system_pipeline import run as run_system_pipeline
 HANDLERS['plan_system_pipeline']=run_system_pipeline
 from .a00_followup import run as run_a00_followup
 HANDLERS['plan_a00_followup']=run_a00_followup
+from .a03_followup import run as run_a03_followup
+HANDLERS['plan_a03_followup']=run_a03_followup
 from .system_acquisition import run as run_system_acquisition
 HANDLERS['plan_system_acquisition']=run_system_acquisition
 

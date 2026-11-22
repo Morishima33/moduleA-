@@ -26,6 +26,7 @@ def batch_for(workflow,m,batch_id):
     ref=next((r for r in m.get(execution.BATCHES,[]) if execution.read_batch(workflow,m,r)[0]['batch_id']==batch_id),None)
     require(ref,'本研究不存在已明确授权的系统批次')
     batch,plan=execution.require_batch(workflow,m,ref)
+    require(not batch.get('foundation_stage'),'独立基础阶段授权不能用于完整系统编排')
     return ref,batch,plan
 
 
@@ -54,7 +55,7 @@ def required_inputs(workflow,m,batch=None):
     for row in rows:
         require(isinstance(row.get('version'),str) and (row['version'].strip().casefold() not in ('','unknown','未知','未注明')
             or historical and row['database'] in ('GeneCards','OMIM') and any(slot['database']==row['database'] and slot['archive']==row['source_record'] for slot in value['binding']['sources'])),
-            '五库来源版本待核，不启动统一处理')
+            '五库来源版本待核：'+row['database']+'。请在 A02 核对原件版本或补入带版本说明的原始导出。')
         verified_file(home,row['source_record'])
     return True
 
@@ -91,6 +92,8 @@ def info(workflow,sid):
     m=workflow.load(sid);items=[]
     for ref in m.get(execution.BATCHES,[]):
         batch,plan=execution.read_batch(workflow,m,ref)
+        if batch.get('foundation_stage'):
+            continue
         history=[dict(read_record(workflow,m,r),file=deepcopy(r)) for r in m.get(INDEX,[])
             if read_json(verified_file(workflow.location(sid),r))['batch_file']==ref]
         items.append({'batch_id':batch['batch_id'],'plan_id':plan['plan_id'],'batch_file':deepcopy(ref),'history':history,

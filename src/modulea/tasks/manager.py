@@ -71,6 +71,7 @@ KINDS['plan_system_validation'] = '真实复算本批科学证据并归档独立
 KINDS['plan_report'] = '按同批真实系统证据生成主报告与简略版'
 KINDS['plan_system_pipeline'] = '按一次明确批次统一接续实际科学阶段和双报告'
 KINDS['plan_a00_followup'] = '按已复核的 A00 准备资料并计算 A01、A02'
+KINDS['plan_a03_followup'] = '按已复核的 A03 并行计算 A04、A05'
 KINDS['plan_system_acquisition'] = '获取本方案三库原件并保留逐库恢复记录（不发布）'
 KINDS['plan_system_source_binding'] = '复验三库原ZIP并绑定独立科学输入（不发布A01）'
 KINDS['plan_system_disease_acquisition'] = '获取疾病五库原件并保留逐库恢复记录（不发布A02）'

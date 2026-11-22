@@ -256,7 +256,7 @@ def _build_base(workflow,sid,*,source_evidence=None):
     sources=[{'label':'方剂成分与靶点来源','description':'、'.join(databases)+'；本研究原始三库资料经方案门槛及唯一人类身份核对后形成标准化集合，逐条原件见追溯包。'},
              {'label':'疾病靶点来源与筛选范围','description':'、'.join(disease_databases)+'；只采用本批保存的本病直接范围，标准化后按同一HGNC口径去重；未用缺失评分补零或附加阈值。'},
              {'label':'基因身份口径','description':str(results['A01']['summary']['mapping_rule'])+'；两侧实际映射及补充依据的版本和SHA保存在同批原件索引。'}]
-    if runs['A02']['config'].get('version') in ('A02.system_normalization.1','A02.system_normalization.2','A02.system_normalization.3','A02.system_normalization.4','A02.system_normalization.5'):
+    if runs['A02']['config'].get('version') in ('A02.system_normalization.1','A02.system_normalization.2','A02.system_normalization.3','A02.system_normalization.4','A02.system_normalization.5','A02.system_normalization.6'):
         scope=results['A02'];deferred=scope['summary']['暂缓范围组数']
         require(deferred==sum(row['action']=='deferred' for row in scope['tables']['scope_system_decisions']),
             '报告疾病暂缓数量与实际范围记录不同')

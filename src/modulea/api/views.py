@@ -609,6 +609,11 @@ class Views:
             value=stages_info(workflow,study_id)
             if value['supported']:
                 response['review']['continue'].update(available=False,note_zh='请仅保存本阶段复核决定，再到本方案阶段入口明确执行已就绪的下一步。')
+                if (module_id=='A03' and value['plan_mode']=='personalized' and run
+                        and run['inputs'].get('analysis_plan_id')==value['expected_plan_id']
+                        and is_plan_created(workflow,real)):
+                    response['review']['continue']['note_zh']='通过 A03 后，系统会并行启动 A04 和 A05。'
+                    response['review']['parallel_after_approval']=True
                 if self.tasks.active_for(study_id):
                     for stage in value['stages']:
                         stage['enabled']=False;stage['blockers'].append('请等待当前研究后台任务结束')
@@ -732,6 +737,10 @@ class Views:
             response['input_audit'] = None  # 两侧文献数量已由同源结果数量链展示，避免重复常规范围表。
         from .review_blockers import blockers
         response['review']['blockers'] = blockers(response, result, study_id)
+        if not historical and module_id in ('A01', 'A02') and is_plan_created(workflow, real):
+            plans = workflow._analysis_plan_records(real)
+            if plans and plans[-1]['plan']['mode'] == 'personalized':
+                response['review']['review_at_intersection'] = True
         if response['review']['blockers']:
             reason = '、'.join(item['title_zh'] for item in response['review']['blockers'])
             response['review']['blocked_reason_zh'] = reason

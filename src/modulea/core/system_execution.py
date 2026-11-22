@@ -16,6 +16,13 @@ SCIENTIFIC_VERSIONS={'A01':'A01.plan_publication.1','A02':'A02.system_normalizat
 FIELDS={'request_id','expected_a00','expected_plan_id','expected_input_hash','author','note','confirmed'}
 
 
+def dependencies(module, foundation_stage=None):
+    if foundation_stage:
+        require(foundation_stage == module, '独立基础批次仅授权其对应阶段')
+        return {'A00'}
+    return DEPENDENCIES[module]
+
+
 def scientific_version(module,config):
     """新资格修订仍属PREP，显式列出科学版本，不修改旧人工协议。"""
     if module=='A04' and config.get('version')=='A04.plan_network.2':
@@ -24,6 +31,8 @@ def scientific_version(module,config):
         return config.get('text_encoding_rule')=='R.unicode_literals.1'
     if module=='A01' and config.get('version')=='A01.system_publication.2':
         return config.get('identity_exception_protocol')=='ModuleA.identity_exception.1'
+    if module=='A02' and config.get('version')=='A02.system_normalization.6':
+        return config.get('source_binding_protocol')=='A02.system_source_reuse.2'
     if module=='A02' and config.get('version')=='A02.system_normalization.5':
         return config.get('identity_policy')=='explicit_bound_test_exception'
     if module=='A06_PREP' and config.get('version') in ('A06.system_preparation.3','A06.system_qualification.3'):
@@ -59,7 +68,7 @@ def source_for(workflow,m,plan_id):
     return (system,sources.VERSION) if system else (deepcopy(m.get('current_component_uploads')),None)
 
 
-def info(workflow,sid):
+def info(workflow,sid,*,foundation_stage=None):
     """内部批次资格，不开放尚未接齐的网页一键全流程。"""
     m=workflow.load(sid);a00=m['current'].get('A00');home=workflow.location(sid);blockers=[]
     intake=workflow.result(m,a00)['summary'] if a00 else {}
@@ -68,12 +77,13 @@ def info(workflow,sid):
     if not supported:blockers.append('系统执行要求新版已核验疾病身份的登记')
     if m.get('trashed'):blockers.append('回收站研究只读')
     if not draft:blockers.append('当前登记没有可绑定方案')
-    staging,protocol=source_for(workflow,m,draft['plan_id'] if draft else None)
-    if not staging:blockers.append('请先补齐并明确绑定三库实际原件')
-    else:
-        value=read_json(verified_file(home,staging))
-        if {row['database'] for row in value['datasets']}!={'TCMSP','HERB','BATMAN'} or len(value['datasets'])!=3:
-            blockers.append('三库原件尚未完整暂存，不回退单库')
+    if foundation_stage != 'A02':
+        staging,_=source_for(workflow,m,draft['plan_id'] if draft else None)
+        if not staging:blockers.append('请先补齐并明确绑定三库实际原件')
+        else:
+            value=read_json(verified_file(home,staging))
+            if {row['database'] for row in value['datasets']}!={'TCMSP','HERB','BATMAN'} or len(value['datasets'])!=3:
+                blockers.append('三库原件尚未完整暂存，不回退单库')
     return {'schema_version':VERSION,'supported':supported,'enabled':not blockers,'blockers':blockers,
         'expected_a00':a00,'expected_plan_id':draft['plan_id'] if draft else None,'expected_input_hash':fingerprint(snapshot(workflow,m)),
         'implemented_stages':list(IMPLEMENTED),'automatic_execution_available':False,
@@ -99,14 +109,24 @@ def read_batch(workflow,m,reference):
     checked_plan(plan['plan'])
     require(value['initial_binding']['study_id']==m['study_id']
         and fingerprint(value['initial_binding'])==value['request']['expected_input_hash'],'系统执行原始输入指纹无效')
-    if value.get('component_source_protocol'):
+    stage=value.get('foundation_stage')
+    require(stage in (None,'A01','A02'), '独立基础批次阶段无效')
+    if stage:
+        require(plan['plan']['mode']=='personalized' and not value.get('identity_exception_file'),
+                '独立基础批次要求个性化方案和原规范来源')
+    if stage=='A02':
+        require(value['staging_file'] is None and not value.get('component_source_protocol')
+                and value.get('disease_source_protocol')=='A02.system_source_reuse.2','独立疾病批次来源无效')
+    elif value.get('component_source_protocol'):
         from . import system_component_sources as sources
         require(value['component_source_protocol']==sources.VERSION
             and value['staging_file']==value['initial_binding'].get('system_component_source_file'),'系统批次新三库绑定不同')
         source=sources.read_record(workflow,m,value['staging_file'])
         require(source['plan_file']==value['plan_file'] and source['a00_run_id']==value['request']['expected_a00'],'系统批次来源不是原方案和登记')
     else:require(value['staging_file']==value['initial_binding']['staging_file'],'系统执行原始三库输入不同')
-    for ref in (value['staging_file'],value['mapping']['mapping_file'],*value['mapping']['identity_evidence_files']):verified_file(home,ref)
+    refs=[value['mapping']['mapping_file'],*value['mapping']['identity_evidence_files']]
+    if stage!='A02':refs.append(value['staging_file'])
+    for ref in refs:verified_file(home,ref)
     if value.get('identity_exception_file'):
         from . import identity_exceptions
         exception=identity_exceptions.read_record(workflow,m,value['identity_exception_file'])
@@ -120,7 +140,7 @@ def read_batch(workflow,m,reference):
     return value,plan
 
 
-def start(workflow,sid,body,*,preparation_protocol=None,enrichment_protocol=None,report_protocol=None):
+def start(workflow,sid,body,*,preparation_protocol=None,enrichment_protocol=None,report_protocol=None,foundation_stage=None):
     """公开Workflow一次登记明确批次；不写人工reviews，不启动隐含科学计算。"""
     require(isinstance(body,dict) and set(body)==FIELDS,'系统批次请求字段错误，不接受通过标记、参数或路径覆盖')
     require(preparation_protocol in (None,'A06.system_preparation.2','A06.system_preparation.3'),'尚未接通该准备恢复协议')
@@ -131,19 +151,34 @@ def start(workflow,sid,body,*,preparation_protocol=None,enrichment_protocol=None
         '请填写执行人、依据并明确确认本批次')
     with write_lock(workflow.root):
         m=workflow.load(sid);home=workflow.location(sid)
+        if foundation_stage:
+            require(foundation_stage in ('A01','A02') and not m.get('current_analysis_plan_identity_exception'),
+                    '独立阶段不接管有明确例外的既有批次')
+            require(body['expected_input_hash'] is None,'独立阶段须由后台绑定当前原件')
         for ref in m.get(BATCHES,[]):
-            previous,_=read_batch(workflow,m,ref)
-            if previous['request']['request_id']==body['request_id']:
-                require(previous['request']==body,'批次请求号已用于其他内容');return dict(previous,file=deepcopy(ref),created=False)
-        value=info(workflow,sid);require(value['enabled'],'系统批次条件未齐：'+'；'.join(value['blockers']))
+            if read_json(verified_file(home,ref))['request']['request_id']==body['request_id']:
+                previous,_=read_batch(workflow,m,ref)
+                expected = dict(body, expected_input_hash=previous['request']['expected_input_hash']) if foundation_stage else body
+                require(previous.get('foundation_stage')==foundation_stage and previous['request']==expected,'批次请求号已用于其他内容')
+                return dict(previous,file=deepcopy(ref),created=False)
+        value=info(workflow,sid,foundation_stage=foundation_stage)
+        require(value['enabled'],'系统批次条件未齐：'+'；'.join(value['blockers']))
+        if foundation_stage:
+            body=dict(body,expected_input_hash=value['expected_input_hash'])
+            require(workflow._analysis_plan_records(m)[-1]['plan']['mode']=='personalized','独立基础批次仅用于个性化方案')
         require(all(body[k]==value[k] for k in ('expected_a00','expected_plan_id','expected_input_hash')),'批次输入或方案已改变，请刷新')
         plan_ref=next(ref for ref in m['analysis_plan_records'] if read_json(verified_file(home,ref))['plan_id']==body['expected_plan_id'])
         from science_modules.a01.uploads import mapping_binding
+        staging,protocol=(None,None) if foundation_stage=='A02' else source_for(workflow,m,body['expected_plan_id'])
         record={'schema_version':VERSION,'study_id':sid,'batch_id':new_id('systembatch'),'request':deepcopy(body),
             'request_hash':fingerprint(body),'initial_binding':snapshot(workflow,m),'plan_file':deepcopy(plan_ref),
-            'staging_file':source_for(workflow,m,body['expected_plan_id'])[0],'mapping':mapping_binding(workflow,m),
+            'staging_file':staging,'mapping':mapping_binding(workflow,m),
             'human_review_written':False,'created_at':now()}
-        protocol=source_for(workflow,m,body['expected_plan_id'])[1]
+        if foundation_stage:
+            record['foundation_stage']=foundation_stage
+            if foundation_stage=='A02':
+                from . import system_disease_sources as disease_sources
+                require(disease_sources.resolve(workflow,m,record['initial_binding'])['schema_version']=='A02.system_source_reuse.2','独立疾病批次需要现代五库原候选')
         if preparation_protocol:record['preparation_protocol']=preparation_protocol
         if enrichment_protocol:record['enrichment_protocol']=enrichment_protocol
         if report_protocol:record['report_protocol']=report_protocol
@@ -156,7 +191,7 @@ def start(workflow,sid,body,*,preparation_protocol=None,enrichment_protocol=None
             record['identity_exception_file']=deepcopy(identity_ref);record['mapping']=deepcopy(exception['mapping'])
         a02=m['current'].get('A02')
         from . import system_disease_sources
-        if a02 and workflow.run(m,a02)['config'].get('version') in (system_disease_sources.NORMALIZED|{system_disease_sources.COLLECTION_VERSION,system_disease_sources.HISTORICAL_COLLECTION}):
+        if foundation_stage!='A01' and a02 and workflow.run(m,a02)['config'].get('version') in (system_disease_sources.NORMALIZED|{system_disease_sources.COLLECTION_VERSION,system_disease_sources.HISTORICAL_COLLECTION}):
             record['disease_source_protocol']=system_disease_sources.resolve(workflow,m,record['initial_binding'])['schema_version']
             record['disease_source_file']=system_disease_sources.create(workflow,m,record['batch_id'],record['initial_binding'])
             if record['disease_source_protocol']==system_disease_sources.HISTORICAL_REUSE:
@@ -171,6 +206,8 @@ def require_batch(workflow,m,ref):
     """绑定原方案、当前登记和同一原件；后来新草稿不替换正在执行的旧批。"""
     batch,plan=read_batch(workflow,m,ref)
     require(not m.get('trashed') and m['current'].get('A00')==batch['request']['expected_a00'],'批次登记已改变或研究只读')
+    if batch.get('foundation_stage')=='A02':
+        return batch,plan
     if batch.get('component_source_protocol'):
         require(m.get('current_system_component_sources')==batch['staging_file'],'批次系统三库原件已替换，请明确启动新批次')
     else:require(m.get('current_component_uploads')==batch['staging_file'],'批次三库原件已替换，请明确启动新批次')
@@ -212,9 +249,9 @@ def is_active(workflow,m,run):
     try:
         require(run.get('execution_protocol')==VERSION and run['module_id'] in IMPLEMENTED
             and m['current'].get(run['module_id'])==run['run_id'],'系统执行运行或协议无效')
-        require(set(run['parent_runs'])==DEPENDENCIES[run['module_id']]
-            and scientific_version(run['module_id'],run['config']), '系统执行科学版本或完整依赖错误')
         bound_batch,_=require_batch(workflow,m,run['batch_file'])
+        require(set(run['parent_runs'])==dependencies(run['module_id'],bound_batch.get('foundation_stage'))
+            and scientific_version(run['module_id'],run['config']), '系统执行科学版本或完整依赖错误')
         if run['config'].get('version') in ('A06.system_preparation.3','A06.system_qualification.3','A06.system_scoring.3'):
             require(bound_batch.get('preparation_protocol')=='A06.system_preparation.3','第三版来源缺少原批明确协议')
         if run['config'].get('version') in ('A06.system_preparation.2','A06.system_qualification.2','A06.system_scoring.2','A06.system_qualification_paths.1','A06.system_scoring_paths.1'):
@@ -223,7 +260,7 @@ def is_active(workflow,m,run):
             base=read_json(verified_file(workflow.location(m['study_id']),run['inputs']['base_run']))
             review=workflow.latest_review(m,base['artifact_id'])
             require(not review or review['decision']=='approved','疾病原候选已被明确暂存或退回')
-            if run['config'].get('version') in ('A02.system_normalization.2','A02.system_normalization.3','A02.system_normalization.4','A02.system_normalization.5'):
+            if run['config'].get('version') in ('A02.system_normalization.2','A02.system_normalization.3','A02.system_normalization.4','A02.system_normalization.5','A02.system_normalization.6'):
                 from . import system_disease_sources
                 batch,_=read_batch(workflow,m,run['batch_file']);source=system_disease_sources.read(workflow,m,batch)
                 require(run['inputs']['disease_source_binding']==batch['disease_source_file']
@@ -289,8 +326,9 @@ def ensure_parents(workflow,sid,parents):
 def begin(workflow,m,module,inputs,config,reason,batch_ref,parents):
     """只供内部真实科学适配调用，运行明确记录系统授权而不是人工父签名。"""
     require(module in IMPLEMENTED and module in workflow.validators,'系统执行尚未接入该模块')
-    require(set(parents)==DEPENDENCIES[module] and scientific_version(module,config),'系统执行依赖或科学版本错误')
     batch,plan=require_batch(workflow,m,batch_ref)
+    require(set(parents)==dependencies(module,batch.get('foundation_stage')) and scientific_version(module,config),
+            '系统执行依赖或科学版本错误')
     require(inputs['analysis_plan_file']==batch['plan_file'] and inputs['analysis_plan_id']==plan['plan_id']
         and inputs['analysis_parameter_hash']==plan['plan']['parameter_hash'],'系统执行输入与批次绑定方案不一致')
     records=parent_records(workflow,m,parents);artifacts=[workflow.run(m,parents[key])['artifact_id'] for key in sorted(parents)]
@@ -313,8 +351,10 @@ def _execute(workflow,sid,body,*,tools=None,progress=None):
     require(body['stage']!='A06','系统评分须使用绑定实际资格准备的专用评分入口')
     if body['expected_current_run_id'] is not None:safe_id(body['expected_current_run_id'],'run')
     m=workflow.load(sid);home=workflow.location(sid)
-    ref=next((ref for ref in m.get(BATCHES,[]) if read_batch(workflow,m,ref)[0]['batch_id']==body['batch_id']),None)
+    ref=next((ref for ref in m.get(BATCHES,[])
+              if read_json(verified_file(home,ref))['batch_id']==body['batch_id']),None)
     require(ref,'找不到本研究登记的系统批次');batch,plan=require_batch(workflow,m,ref);module=body['stage']
+    parent_modules=dependencies(module,batch.get('foundation_stage'))
     for event_ref in m.get(EVENTS,[]):
         event=read_json(verified_file(home,event_ref))
         require(event.get('schema_version')==VERSION and event.get('study_id')==sid and event.get('human_review_written') is False,
@@ -325,7 +365,7 @@ def _execute(workflow,sid,body,*,tools=None,progress=None):
                 '系统阶段回执与实际结果不一致')
             require(event['request']==body,'本批阶段已经执行，请查看当前结果');return workflow.result(m,run['run_id'])
     require(m['current'].get(module)==body['expected_current_run_id'],'当前阶段已改变，请刷新')
-    parents={key:m['current'].get(key) for key in DEPENDENCIES[module]}
+    parents={key:m['current'].get(key) for key in parent_modules}
     require(all(parents.values()),'系统阶段上游尚未生成');ensure_parents(workflow,sid,parents)
     parent_snapshot=parent_records(workflow,workflow.load(sid),parents)
     if module in ('A03_SELECT','A04','A05'):
@@ -365,7 +405,7 @@ def _execute(workflow,sid,body,*,tools=None,progress=None):
             base=read_json(verified_file(home,computed[0]['base_run']))
             reviews=[r for r in m.get('reviews',[]) if read_json(verified_file(home,r))['artifact_id']==base['artifact_id']]
             require(reviews==computed[0]['base_reviews'],'疾病标准化期间原候选人工决定已改变')
-            if computed[1]['version'] in ('A02.system_normalization.2','A02.system_normalization.3','A02.system_normalization.4','A02.system_normalization.5'):
+            if computed[1]['version'] in ('A02.system_normalization.2','A02.system_normalization.3','A02.system_normalization.4','A02.system_normalization.5','A02.system_normalization.6'):
                 source=read_json(verified_file(home,computed[0]['source_current_run']))
                 reviews=[r for r in m.get('reviews',[]) if read_json(verified_file(home,r))['artifact_id']==source['artifact_id']]
                 require(reviews==computed[0]['source_current_reviews'],'疾病原件复用期间原标准化人工决定已改变')

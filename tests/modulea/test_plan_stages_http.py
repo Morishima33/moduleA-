@@ -91,6 +91,52 @@ class PlanStagesHttpTests(unittest.TestCase):
         self.assertEqual(result['summary']['交集靶点数'], 4)
         self.assertTrue(result['figures'])
 
+    def test_a05_can_start_while_real_a04_waits_for_string(self):
+        from types import SimpleNamespace
+        from modulea.tasks import a03_followup
+        from science_modules.a04 import plan_flow
+        from tests.modulea.test_plan_stages import network_request
+
+        result = self.w.execute_analysis_plan_stage(self.sid, body(self.w, self.sid, 'A03'))
+        review = self.w.review(self.sid, result['run_id'], 'approved', '隔离测试', '同一交集接续网络和富集')
+        approval = {'plan_id':self.plan['plan_id'], 'run_id':result['run_id'], 'review_id':review['review_id']}
+        enrichment_started = threading.Event()
+
+        def string(method, params, opener=None):
+            self.assertTrue(enrichment_started.wait(10), 'A05 应在 STRING 等待期间开始')
+            return network_request(method, params, opener)
+
+        def enrichment(sid, request, *, progress):
+            self.assertEqual(sid, self.sid)
+            self.assertEqual(request['expected_a03'], result['run_id'])
+            self.assertNotIn('A04', self.w.load(sid)['current'])
+            enrichment_started.set()
+            raise RuntimeError('隔离测试：R运行失败')
+
+        def workflow():
+            w = type(self.w)(self.settings.data_root, self.w.validators)
+            w.publish_analysis_plan_a05 = enrichment
+            return w
+
+        with patch.object(plan_flow, 'request', side_effect=string):
+            with self.assertRaisesRegex(Exception, 'A04 已归档.*A05.*R运行失败'):
+                a03_followup.execute(workflow, self.sid, approval, rscript=__file__, progress=lambda _:None)
+        self.assertIn('A04', self.w.load(self.sid)['current'])
+
+    def test_personalized_a03_approval_queues_both_siblings_with_the_same_review(self):
+        result = self.w.execute_analysis_plan_stage(self.sid, body(self.w, self.sid, 'A03'))
+        with (patch('modulea.api.server.is_plan_created', return_value=True),
+              patch.object(self.app.tasks, '_spawn')):
+            status, saved = self.call('POST', f'/studies/{self.sid}/modules/A03/reviews', {
+                'run_id':result['run_id'], 'expected_review_id':None, 'decision':'approved',
+                'reviewer':'隔离测试', 'note':'明确核对交集', 'after':'save'})
+        self.assertEqual(status, 201, saved)
+        self.assertEqual(saved['task']['kind'], 'plan_a03_followup')
+        import json
+        payload = json.loads(self.app.tasks._raw(saved['task']['task_id'])['payload'])
+        self.assertEqual(payload, {'run_id':result['run_id'], 'review_id':saved['review']['review_id'],
+                                   'plan_id':self.plan['plan_id']})
+
     def test_csrf_hidden_stale_busy_and_worker_revalidation(self):
         """非法请求不入队，排队后上游改变则实际科学任务失败且不发布结果。"""
         request=body(self.w,self.sid,'A03')

@@ -5,15 +5,16 @@ from contracts import fingerprint,require
 from storage import read_json,verified_file
 
 VERSION='A02.system_normalization.3'
+PARALLEL_VERSION='A02.system_normalization.6'
 
 
-def configuration():
-    return {'version':VERSION,'source_binding_protocol':'A02.system_source_reuse.2','scope_policy':'direct_only_defer_unresolved',
+def configuration(version=VERSION):
+    return {'version':version,'source_binding_protocol':'A02.system_source_reuse.2','scope_policy':'direct_only_defer_unresolved',
         'score_filter':'none','mapping_rule':'HGNC.resolve.3','identity_policy':'block_unresolved',
         'source_profile':'A02.source_profile.3'}
 
 
-def facts(home,inputs):
+def facts(home,inputs,version=VERSION):
     """逐件核验批次原候选和五库原件，重新解析后才调用原标准化算法。"""
     from disease import CONFIG,organize,source_profile,validate_disease
     from hgnc import HgncMap
@@ -44,11 +45,19 @@ def facts(home,inputs):
         and checked_plan(plan['plan'])['parameter_hash']==inputs['analysis_parameter_hash']
         and plan['expected_a00']==inputs['bound_a00']==batch['request']['expected_a00'],'A02系统方案绑定不一致')
     intake=read_json(verified_file(home,inputs['intake_result']))
-    a01=read_json(verified_file(home,inputs['a01_result']))
-    require(intake['run_id']==inputs['bound_a00'] and intake['study_id']==a01['study_id']==inputs['study_id']
-        and a01['module_id']=='A01' and not a01['summary'].get('handoff_blocked'),'A02登记或三库依赖无效')
+    parallel=version==PARALLEL_VERSION
+    require(parallel==(batch.get('foundation_stage')=='A02') and intake['run_id']==inputs['bound_a00']
+        and intake['study_id']==inputs['study_id'] and intake['module_id']=='A00','A02登记或执行协议无效')
     purpose=intake['summary']['analysis_purpose'];identity=validate_mesh_identity(intake['summary'])
-    require(purpose in ('formal_research','workflow_test') and a01['summary']['analysis_purpose']==purpose,'疾病与三库用途不同')
+    require(purpose in ('formal_research','workflow_test'),'A02登记用途无效')
+    a01=None
+    if parallel:
+        require('a01_result' not in inputs,'独立疾病标准化不绑定方剂结果')
+    else:
+        a01=read_json(verified_file(home,inputs['a01_result']))
+        require(a01['study_id']==inputs['study_id'] and a01['module_id']=='A01'
+            and not a01['summary'].get('handoff_blocked') and a01['summary']['analysis_purpose']==purpose,
+            'A02登记或三库依赖无效')
     base_run=read_json(verified_file(home,inputs['base_run']));base=read_json(verified_file(home,inputs['base_result']))
     require(base_run['run_id']==base['run_id']==base_id and base_run['study_id']==base['study_id']==inputs['study_id']
         and base_run['module_id']==base['module_id']=='A02' and base_run['config'].get('version')=='A02.system_collection.1'
@@ -80,10 +89,11 @@ def facts(home,inputs):
         and len(binding['identity_evidence_files'])==3,'A02映射必须使用本批完整HGNC及身份依据')
     evidence=IdentityEvidence(*(verified_file(home,r).read_bytes() for r in binding['identity_evidence_files']))
     mapper=HgncMap(verified_file(home,binding['mapping_file']).read_bytes(),rule=binding['mapping_rule'],supplement=evidence)
-    require(mapper.digest==binding['mapping_snapshot']==a01['summary']['mapping_snapshot']
-        and mapper.rule==a01['summary']['mapping_rule']
-        and evidence.digest==binding['identity_evidence_snapshot']==a01['summary']['identity_evidence_snapshot'],
-        '疾病与本批A01的HGNC或补充证据不同')
+    require(mapper.digest==binding['mapping_snapshot'] and mapper.rule==binding['mapping_rule']
+        and evidence.digest==binding['identity_evidence_snapshot'],'疾病与本批HGNC或补充证据不同')
+    if a01:
+        require(mapper.digest==a01['summary']['mapping_snapshot'] and mapper.rule==a01['summary']['mapping_rule']
+            and evidence.digest==a01['summary']['identity_evidence_snapshot'],'疾病与本批A01的HGNC或补充证据不同')
     terms={str(t).strip().casefold() for t in [identity['preferred_term'],*identity.get('entry_terms',[])]}
     scopes={};decisions=[]
     for row in rows['scope_groups']:
@@ -99,7 +109,7 @@ def facts(home,inputs):
     require(not tables['identity_issues'],'疾病基因存在关键身份未决，不能系统交接')
     tables['scope_system_decisions']=decisions
     tables['scope_decisions_final']=[dict(row,authority_kind='system_validation') for row in tables['scope_decisions_final']]
-    summary.update(protocol_version=VERSION,source_binding_protocol='A02.system_source_reuse.2',analysis_plan_id=plan['plan_id'],analysis_parameter_hash=plan['plan']['parameter_hash'],
+    summary.update(protocol_version=version,source_binding_protocol='A02.system_source_reuse.2',analysis_plan_id=plan['plan_id'],analysis_parameter_hash=plan['plan']['parameter_hash'],
         handoff_blocked=False,scope_authority='system_validation',**{'暂缓范围组数':sum(row['action']=='deferred' for row in decisions),
         '资料阶段':'本批系统标准化，尚未人工总体复核','身份问题处理':'关键身份全部明确；未决身份不自动略过'})
     anomalies=list(anomalies)+['范围未决项留因暂缓、不纳入本批集合；不标作已排除或人工确认。系统校验不代表人工批准。']
@@ -108,14 +118,16 @@ def facts(home,inputs):
 
 def validator(root,fallback):
     def check(run,summary,tables,anomalies,outcome):
-        if run['config'].get('version')!=VERSION:return fallback(run,summary,tables,anomalies,outcome)
+        version=run['config'].get('version')
+        if version not in (VERSION,PARALLEL_VERSION):return fallback(run,summary,tables,anomalies,outcome)
+        parents={'A00':'intake_result'} if version==PARALLEL_VERSION else {'A00':'intake_result','A01':'a01_result'}
         require(run.get('execution_protocol')=='ModuleA.system_execution.1' and run['module_id']=='A02'
             and run['parent_review_ids']=={} and run['batch_file']==run['inputs']['system_batch_file']
-            and run['config']==configuration(),'疾病系统执行协议或配置无效')
+            and run['config']==configuration(version) and set(run['parent_runs'])==set(parents),'疾病系统执行协议或配置无效')
         home=Path(root)/'studies'/run['study_id'];inputs=run['inputs']
-        for module,key in [('A00','intake_result'),('A01','a01_result')]:
+        for module,key in parents.items():
             require(read_json(verified_file(home,inputs[key]))['run_id']==run['parent_runs'][module],'疾病实际父运行不一致')
-        expected=facts(home,inputs)
+        expected=facts(home,inputs,version)
         require(fingerprint((summary,tables,anomalies))==fingerprint(expected),'疾病系统结果与原件独立复算不同')
         require(outcome==('success' if summary['标准化基因数'] else 'empty'),'疾病系统空集状态错误')
     return check
@@ -130,16 +142,21 @@ def compute(workflow,m,batch,plan,batch_ref):
     source=read_json(verified_file(home,binding['source_current_run']));base=read_json(verified_file(home,binding['base_run']))
     def reviews(artifact):
         return [deepcopy(r) for r in m.get('reviews',[]) if read_json(verified_file(home,r))['artifact_id']==artifact]
-    a01=m['current']['A01'];inputs={'study_id':sid,'bound_a00':batch['request']['expected_a00'],
+    parallel=batch.get('foundation_stage')=='A02'
+    version=PARALLEL_VERSION if parallel else VERSION
+    inputs={'study_id':sid,'bound_a00':batch['request']['expected_a00'],
         'analysis_plan_id':plan['plan_id'],'analysis_plan_file':deepcopy(batch['plan_file']),
         'analysis_parameter_hash':plan['plan']['parameter_hash'],'system_batch_file':deepcopy(batch_ref),
         'base_run':binding['base_run'],'base_result':binding['base_result'],'base_reviews':reviews(base['artifact_id']),
         'disease_source_binding':batch['disease_source_file'],'source_current_run':binding['source_current_run'],
         'source_current_result':binding['source_current_result'],'source_current_reviews':reviews(source['artifact_id']),
-        'mapping':deepcopy(batch['mapping']),'a01_result':deepcopy(m['runs'][a01]['result_file']),
+        'mapping':deepcopy(batch['mapping']),
         'intake_result':deepcopy(m['runs'][batch['request']['expected_a00']]['result_file'])}
-    summary,tables,anomalies=facts(home,inputs)
+    if not parallel:
+        inputs['a01_result']=deepcopy(m['runs'][m['current']['A01']]['result_file'])
+    summary,tables,anomalies=facts(home,inputs,version)
     sources=[batch['plan_file'],inputs['base_run'],inputs['base_result'],inputs['source_current_run'],inputs['source_current_result'],
-        inputs['disease_source_binding'],inputs['a01_result'],inputs['intake_result'],inputs['mapping']['mapping_file'],
+        inputs['disease_source_binding'],*([inputs['a01_result']] if not parallel else []),
+        inputs['intake_result'],inputs['mapping']['mapping_file'],
         *inputs['mapping']['identity_evidence_files'],*read_json(verified_file(home,inputs['base_result']))['sources']]
-    return inputs,configuration(),summary,tables,anomalies,sources
+    return inputs,configuration(version),summary,tables,anomalies,sources

@@ -138,12 +138,12 @@ def a02_validator(root,fallback):
     """系统A02额外核对真实授权及系统父回执；旧疾病规则完全委托。"""
     from science_modules.a02.system_normalization import validator,VERSION
     from science_modules.a02.system_normalization_reuse import validator as reuse_validator,VERSION as REUSE_VERSION
-    from science_modules.a02.system_normalization_collection import validator as collection_validator,VERSION as COLLECTION_VERSION
+    from science_modules.a02.system_normalization_collection import validator as collection_validator,VERSION as COLLECTION_VERSION,PARALLEL_VERSION
     from science_modules.a02.system_normalization_historical import validator as historical_validator,VERSION as HISTORICAL_VERSION
     from science_modules.a02.system_normalization_identity import validator as identity_validator,VERSION as IDENTITY_VERSION
     science=identity_validator(root,historical_validator(root,collection_validator(root,reuse_validator(root,validator(root,fallback)))))
     def check(run,*args):
-        if run['config'].get('version') in (VERSION,REUSE_VERSION,COLLECTION_VERSION,HISTORICAL_VERSION,IDENTITY_VERSION):
+        if run['config'].get('version') in (VERSION,REUSE_VERSION,COLLECTION_VERSION,HISTORICAL_VERSION,IDENTITY_VERSION,PARALLEL_VERSION):
             from pathlib import Path
             from .analysis_plans import AnalysisPlanWorkflow
             from .system_execution import is_active
