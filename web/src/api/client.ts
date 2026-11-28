@@ -299,6 +299,10 @@ export const api = {
   /** 单个模块复核 */
   a00Followup: (sid:string, body:{run_id:string;review_id:string;plan_id:string}) =>
     request<{task:Task;message_zh:string}>('POST',`/studies/${sid}/analysis-plan/a00-followup`,body),
+  a03InputPreview: (sid: string) => request<{preview: import('./types').A03InputPreview | null}>(
+    'GET', `/studies/${sid}/analysis-plan/a03-input-review`),
+  confirmA03Input: (sid: string, body: {token:string; reviewer:string; note:string; omit:string[]; confirmed:true}) =>
+    request<{task:Task;message_zh:string}>('POST', `/studies/${sid}/analysis-plan/a03-input-review`,body),
   review: (sid: string, mid: string, body: { run_id: string; expected_review_id: string | null; decision: Decision; reviewer: string; note: string; after: 'save' | 'continue'; expected_plan_id?:string }) =>
     request<ReviewResponse>('POST', `/studies/${sid}/modules/${mid}/reviews`, body),
   /** A01+A02 一次提交 */

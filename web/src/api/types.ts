@@ -817,6 +817,12 @@ export type TablePage =
 
 /** 复核提交的返回 */
 export interface ReviewResponse { review: ReviewRecord; task: Task | null; message_zh: string }
+export interface A03InputPreview {
+  token: string;
+  purpose: string;
+  issues: Record<'A01' | 'A02' | 'scope', Record<string, string | number>[]>;
+  available_targets: Record<'A01' | 'A02', number>;
+}
 /** 批量复核的返回 */
 export interface BatchReviewResponse { reviews: unknown; task: Task | null; message_zh: string }
 

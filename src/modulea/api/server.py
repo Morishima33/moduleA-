@@ -119,6 +119,8 @@ class App:
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/system-pipeline/start", self.post_system_pipeline_start),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/system-pipeline/continue", self.post_system_pipeline_continue),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a00-followup", self.post_a00_followup),
+            ("GET", rf"/api/v1/studies/{ID}/analysis-plan/a03-input-review", self.get_a03_input_review),
+            ("POST", rf"/api/v1/studies/{ID}/analysis-plan/a03-input-review", self.post_a03_input_review),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/reports", self.get_plan_reports),
             ("GET", rf"/api/v1/studies/{ID}/analysis-plan/display-revisions", self.get_display_revisions),
             ("POST", rf"/api/v1/studies/{ID}/analysis-plan/display-revisions", self.post_display_revision),
@@ -1044,6 +1046,25 @@ class App:
         except ContractError as error:
             raise from_contract(str(error)) from error
         return {'task': task, 'message_zh': self._task_message(task)}, 202
+
+    def get_a03_input_review(self, req, study_id):
+        from ..core.a03_input_review import current
+        workflow = self.kernel.workflow()
+        preview = current(workflow, workflow.load(study_id))
+        return {'preview': {key:preview[key] for key in ('token','issues','purpose','available_targets')}
+                if preview else None}
+
+    def post_a03_input_review(self, req, study_id):
+        from ..core.a03_input_review import validate
+        body = req.json()
+        try:
+            validate(self.kernel.workflow(), study_id, body)
+        except ContractError as error:
+            raise from_contract(str(error)) from error
+        task, created = self.tasks.submit(study_id, 'plan_a03_input_review', body['reviewer'].strip(), body)
+        if not created:
+            raise ApiError(409, 'GATE_BLOCKED', '请等待当前后台任务结束')
+        return {'task':task, 'message_zh':self._task_message(task)}, 202
 
     def post_review(self, req, study_id, module_id):
         body = req.json()

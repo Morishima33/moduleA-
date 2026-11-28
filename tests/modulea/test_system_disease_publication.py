@@ -248,6 +248,42 @@ class SystemDiseasePublicationTests(unittest.TestCase):
         self.assertEqual(system_disease_sources.resolve(self.w, manifest)['base_run_id'], raw['run_id'])
         self.assertIsNone(system_execution.read_batch(self.w, manifest, batch['file'])[0].get('foundation_stage'))
 
+    def test_a03_single_confirmation_recomputes_bound_preview_and_generates_outputs(self):
+        from modulea.core import a03_input_review
+        from modulea.tasks.a00_followup import execute
+
+        self.fresh_disease_sources(symbol='UNMAPPED_FIXTURE')
+        self.publish()
+        a00 = self.w.load(self.sid)['current']['A00']
+        draft = self.w._analysis_plan_records(self.w.load(self.sid))[-1]
+        plan = self.w.save_analysis_plan_draft(self.sid, {
+            'request_id':'planreq_'+uuid4().hex, 'expected_a00':a00, 'expected_draft_id':draft['plan_id'],
+            'specification':{'mode':'personalized'}, 'author':'测试', 'note':'验证集中核验'})['draft']
+        self.prepare_a01()
+        review = self.w.review(self.sid, a00, 'approved', '测试', '核对登记')
+        execute(self.w, self.sid, {'run_id':a00,'review_id':review['review_id'],'plan_id':plan['plan_id']},
+                progress=lambda _:None, new_workflow=lambda:full_workflow(self.root))
+        manifest = self.w.load(self.sid)
+        before = dict(manifest['current'])
+        preview = a03_input_review.current(self.w, manifest)
+        self.assertTrue(preview['issues']['A02'])
+        self.assertNotIn('A03', before)
+        body = {'token':preview['token'], 'reviewer':'测试', 'note':'仅验证流程测试', 'omit':['A02'], 'confirmed':True}
+        for changed in ({'token':'stale'}, {'omit':[]}, {'confirmed':False}):
+            with self.assertRaises(ContractError):
+                a03_input_review.run(self.w, self.sid, dict(body, **changed), progress=lambda _:None)
+        self.assertEqual(self.w.load(self.sid), manifest)
+        a03_input_review.run(self.w, self.sid, body, progress=lambda _:None)
+        done = self.w.load(self.sid)
+        result = self.w.result(done, done['current']['A03'])
+        self.assertTrue(result['figures'])
+        self.assertTrue(result['tables'])
+        self.assertEqual(len(done['reviews']),len(manifest['reviews']) + 2)
+        for run in before.values():
+            self.assertEqual(done['runs'][run],manifest['runs'][run])
+        a03_input_review.run(self.w, self.sid, body, progress=lambda _:None)
+        self.assertEqual(self.w.load(self.sid), done)
+
     def test_new_collection_full_empty_pipeline_preserves_zero_and_generates_two_real_reports(self):
         from modulea.core import system_pipeline
         from science_modules.a04 import plan_flow as network

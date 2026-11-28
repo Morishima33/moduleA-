@@ -618,6 +618,21 @@ from .a00_followup import run as run_a00_followup
 HANDLERS['plan_a00_followup']=run_a00_followup
 from .a03_followup import run as run_a03_followup
 HANDLERS['plan_a03_followup']=run_a03_followup
+
+
+def run_a03_input_review(settings, task, manager):
+    from ..core.a03_input_review import run
+
+    def progress(text):
+        print(text, flush=True)
+        manager.update(task['task_id'], progress={'step_zh':text, 'done':0, 'total':1})
+
+    result = run(full_workflow(settings.data_root), task['study_id'], json.loads(task['payload']), progress=progress)
+    manager.update(task['task_id'], progress={'step_zh':result, 'done':1, 'total':1})
+    return result
+
+
+HANDLERS['plan_a03_input_review'] = run_a03_input_review
 from .system_acquisition import run as run_system_acquisition
 HANDLERS['plan_system_acquisition']=run_system_acquisition
 

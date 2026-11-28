@@ -291,6 +291,9 @@ class AnalysisPlanWorkflow(AutomaticExperienceWorkflow):
             return is_active(self,manifest,run)
         if not super()._active(manifest, run_id):
             return False
+        if 'a03_input_review' in run['inputs']:
+            from .a03_input_review import VERSIONS, is_active
+            return run['config'].get('version') == VERSIONS.get(run['module_id']) and is_active(self, manifest, run)
         run = self.run(manifest, run_id)
         if run['config'].get('version') != 'A06.plan_reviewable_preparation.1':
             return True

@@ -14,7 +14,7 @@ def configuration(version=VERSION):
         'source_profile':'A02.source_profile.3'}
 
 
-def facts(home,inputs,version=VERSION):
+def facts(home,inputs,version=VERSION,*,review_preview=False):
     """逐件核验批次原候选和五库原件，重新解析后才调用原标准化算法。"""
     from disease import CONFIG,organize,source_profile,validate_disease
     from hgnc import HgncMap
@@ -106,13 +106,15 @@ def facts(home,inputs,version=VERSION):
                 '沿用本批已保存范围决定' if saved!='pending' else 'MeSH编号、首选词或官方同义词精确一致'))
     summary,tables,anomalies=compute(base,mapper,'A02',scopes,False,None,purpose,identity)
     # 新显式协议允许范围未决暂缓；身份未决仍阻断，不改变旧compute/validator。
-    require(not tables['identity_issues'],'疾病基因存在关键身份未决，不能系统交接')
+    require(not tables['identity_issues'] or review_preview and parallel,'疾病基因存在关键身份未决，不能系统交接')
     tables['scope_system_decisions']=decisions
     tables['scope_decisions_final']=[dict(row,authority_kind='system_validation') for row in tables['scope_decisions_final']]
     summary.update(protocol_version=version,source_binding_protocol='A02.system_source_reuse.2',analysis_plan_id=plan['plan_id'],analysis_parameter_hash=plan['plan']['parameter_hash'],
-        handoff_blocked=False,scope_authority='system_validation',**{'暂缓范围组数':sum(row['action']=='deferred' for row in decisions),
+        handoff_blocked=bool(tables['identity_issues']),scope_authority='system_validation',**{'暂缓范围组数':sum(row['action']=='deferred' for row in decisions),
         '资料阶段':'本批系统标准化，尚未人工总体复核','身份问题处理':'关键身份全部明确；未决身份不自动略过'})
     anomalies=list(anomalies)+['范围未决项留因暂缓、不纳入本批集合；不标作已排除或人工确认。系统校验不代表人工批准。']
+    if summary['handoff_blocked']:
+        summary['身份问题处理']='仅供核验，关键身份未决'
     return summary,tables,anomalies
 
 
@@ -133,7 +135,7 @@ def validator(root,fallback):
     return check
 
 
-def compute(workflow,m,batch,plan,batch_ref):
+def compute(workflow,m,batch,plan,batch_ref,*,review_preview=False):
     """新批重新标准化但不重取原件，实际新A01及共同HGNC保持绑定。"""
     from copy import deepcopy
     from modulea.core import system_disease_sources
@@ -154,7 +156,7 @@ def compute(workflow,m,batch,plan,batch_ref):
         'intake_result':deepcopy(m['runs'][batch['request']['expected_a00']]['result_file'])}
     if not parallel:
         inputs['a01_result']=deepcopy(m['runs'][m['current']['A01']]['result_file'])
-    summary,tables,anomalies=facts(home,inputs,version)
+    summary,tables,anomalies=facts(home,inputs,version,review_preview=review_preview)
     sources=[batch['plan_file'],inputs['base_run'],inputs['base_result'],inputs['source_current_run'],inputs['source_current_result'],
         inputs['disease_source_binding'],*([inputs['a01_result']] if not parallel else []),
         inputs['intake_result'],inputs['mapping']['mapping_file'],

@@ -30,6 +30,12 @@ def a03_facts(home,inputs):
     require(fingerprint(payload)==fingerprint(inputs['payload']),'A03固定输入与实际父结果不一致')
     calc,summary,tables=build(payload)
     summary.update(protocol_version=A03_VERSION,analysis_plan_id=record['plan_id'],analysis_parameter_hash=plan['parameter_hash'],analysis_purpose=purpose)
+    if any(parent['summary'].get('identity_exception_protocol') == 'ModuleA.a03_input_review.1' for parent in parents):
+        require(purpose == 'workflow_test', '流程测试例外不能进入正式研究交集')
+        tables['input_review_limits'] = [
+            {'module_id': parent['module_id'], 'temporarily_omitted': len(parent['tables'].get('identity_exception_scope', [])),
+             'notice_zh': ' '.join(parent['summary'].get('identity_limitations_zh', []))}
+            for parent in parents]
     return calc,summary,tables
 
 

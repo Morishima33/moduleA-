@@ -75,7 +75,7 @@ def execute(workflow, sid, payload, *, progress, new_workflow=None):
     current_a02 = m['current'].get('A02')
     a02_version = workflow.run(m, current_a02)['config'].get('version') if current_a02 else None
     modern_disease = a02_version in (None, 'A02.system_collection.1',
-                                    'A02.system_normalization.3', 'A02.system_normalization.6')
+                                    'A02.system_normalization.3', 'A02.system_normalization.6', 'A02.a03_input_review.1')
     if draft['plan']['mode'] == 'personalized' and modern_disease and not m.get('current_analysis_plan_identity_exception'):
         return execute_parallel(new_workflow or (lambda: type(workflow)(workflow.root)), sid, payload, progress=progress)
 
@@ -174,7 +174,7 @@ def execute_parallel(new_workflow, sid, payload, *, progress):
             if rid:
                 run = workflow.run(m, rid)
                 if stage == 'A01' or run['config'].get('version') in {
-                        'A02.system_normalization.3','A02.system_normalization.6'}:
+                        'A02.system_normalization.3','A02.system_normalization.6','A02.a03_input_review.1'}:
                     require(run['inputs'].get('analysis_plan_id') == payload['plan_id'], '已有其他方案结果，请核对当前版本')
                     system_pipeline.usable(workflow, m, rid)
                     return stage + ' 已有本方案计算结果'
@@ -213,6 +213,14 @@ def execute_parallel(new_workflow, sid, payload, *, progress):
                 messages.append(job.result())
             except Exception as error:
                 failures.append(stage + ' · ' + str(error))
+    if not failures or all(reason.startswith('A02 · 疾病基因存在关键身份未决') for reason in failures):
+        from ..core import a03_input_review
+        latest = workflow.load(sid)
+        if all(latest['current'].get(k) for k in ('A01', 'A02')) and (
+                failures or workflow.result(latest, latest['current']['A01'])['summary'].get('handoff_blocked')):
+            progress('整理 A03 集中核验证据')
+            if a03_input_review.prepare(workflow, sid):
+                return '两侧证据已就绪，请在 A03 集中核验剩余问题。'
     require(not failures, '；'.join(messages + failures))
     return '；'.join(messages) + '。请在 A03 一次核对两侧。'
 

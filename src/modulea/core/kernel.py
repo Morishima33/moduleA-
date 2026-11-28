@@ -149,6 +149,9 @@ def full_workflow(data_root: Path) -> Workflow:
         "A06": incremental_scoring_validator(root,system_scoring_validator(root,plan_scoring_validator(root, reference_validator(root, rescue_validator(root, automatic_validator(root, trial_handoff_validator(root, formal_validator(root)))))))),
         "A07": rescue_report_validator(root, revised_report_validator(root, plan_report_validator(root, report_validator(root)))),
     }
+    from .a03_input_review import validator as concentrated_input_validator
+    for module in ('A01', 'A02'):
+        validators[module] = concentrated_input_validator(root, module, validators[module])
     validators["A06_PREP"] = path_qualification_validator(root, validators["A06_PREP"])
     validators["A06"] = path_scoring_validator(root, validators["A06"])
     from science_modules.a06.system_preparation_sources import validator as source_preparation_validator
